@@ -64,6 +64,7 @@ export interface RemoteWorldCoreOptions {
  * - Credential hygiene: No credentials or internal secrets are exposed in logs or errors.
  */
 export class RemoteWorldCoreAdapter implements WorldCorePort {
+  public readonly mode = 'remote' as const;
   private readonly baseURL: string;
   private readonly fetchFn: typeof fetch;
   private readonly timeoutMs: number;
@@ -79,6 +80,34 @@ export class RemoteWorldCoreAdapter implements WorldCorePort {
 
   public getBaseURL(): string {
     return this.baseURL;
+  }
+
+  /**
+   * Fast, non-throwing probe to check whether the remote World Core endpoint is reachable.
+   * Probes /api/status using an AbortController with a strict timeout (<= 500ms).
+   */
+  public async probeHealth(timeoutMs: number = 500): Promise<{ connected: boolean; latencyMs?: number }> {
+    const controller = new AbortController();
+    const timeoutHandle = setTimeout(() => controller.abort(), timeoutMs);
+    const start = performance.now();
+    try {
+      const url = `${this.baseURL}/api/status`;
+      const res = await this.fetchFn(url, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        return { connected: false, latencyMs: Math.round(performance.now() - start) };
+      }
+      const data = (await res.json().catch(() => null)) as any;
+      const isConnected = Boolean(data && (data.success === true || data.result));
+      return { connected: isConnected, latencyMs: Math.round(performance.now() - start) };
+    } catch {
+      return { connected: false, latencyMs: Math.round(performance.now() - start) };
+    } finally {
+      clearTimeout(timeoutHandle);
+    }
   }
 
   /**

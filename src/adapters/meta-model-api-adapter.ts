@@ -42,6 +42,7 @@ export interface MetaModelApiAdapterOptions {
  * - Zero external dependencies.
  */
 export class MetaModelApiAdapter implements MetaModelPort {
+  public readonly mode = 'live-api' as const;
   private readonly config: MetaConfig;
   private readonly fetchFn: typeof fetch;
   private readonly timeoutMs: number;

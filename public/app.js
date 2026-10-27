@@ -61,8 +61,13 @@
       title: 'MyVirtualCommunity AI',
       subtitle: 'Authoritative Local Business Assistant Grounded in World Simulation',
       regionalInfo: 'Ciudad Juárez (America/Ciudad_Juarez, MST/MDT) • Authoritative Simulation Data',
-      simStatusConnected: 'World Core Connected',
-      simStatusOffline: 'World Core Offline',
+      simStatusConnected: 'World Core Connected (Remote)',
+      simStatusFixture: 'World Core Fixture (Standalone)',
+      simStatusOffline: 'World Core Offline (Retry)',
+      simStatusChecking: 'Checking World Core...',
+      simTitleConnected: 'Remote World Core is connected on port 3001. Click to recheck.',
+      simTitleFixture: 'In-memory simulation fixture is active (standalone mode). Click to recheck.',
+      simTitleOffline: 'Remote World Core server is unreachable. Click to retry.',
       lblBusiness: 'Select Business',
       hintBusiness: 'Verified customer-facing business registered in World Core.',
       lblEvalMode: 'Evaluation Time',
@@ -153,6 +158,35 @@
       txtQuickSchedule: 'Operating Schedule',
       txtQuickAdmission: 'Test 5:50 PM Cutoff',
 
+      // Scenario Explorer
+      txtScenarioExplorerTitle: 'Scenario Explorer',
+      txtScenarioExplorerBadge: 'Authoritative State & Rules',
+      txtScenarioExplorerDesc: 'Evaluate how authoritative World Core state, business rules, world time, and Meta Muse Spark work together for ',
+      badgeSc1: 'Authoritative Snapshot',
+      txtSc1Title: '⚡ Current Business Status',
+      txtSc1Eval: 'Inspect latest point-in-time snapshot from authoritative World Core simulation clock.',
+      txtBtnSc1: 'Inspect Status',
+      badgeSc2: 'Configured Schedule',
+      txtSc2Title: '🕒 Operating Schedule',
+      txtSc2Eval: 'Explain official opening/closing hours, operating days, and scheduled closures.',
+      txtBtnSc2: 'Explain Schedule',
+      badgeSc3: 'Authoritative ?at= Rule',
+      txtSc3Title: '🚪 Admission Cutoff Rule',
+      txtSc3Eval: 'Examine rule closing entry before close. Evaluated via authoritative World Core ?at= API.',
+      txtBtnSc3: 'Evaluate Cutoff',
+      badgeSc4: 'Meta Muse Spark',
+      txtSc4Title: '✏️ Ask Custom Question',
+      txtSc4Eval: 'Ask any natural-language question in English or Spanish, grounded in verified snapshot.',
+      txtBtnSc4: 'Customize Question',
+      txtInfraScenarioTitle: 'International Bridge Infrastructure Corridor',
+      txtInfraScenarioDesc: 'Puente Internacional Paso del Norte is a 24/7 binational border crossing (non-commercial). It operates continuously with no retail schedule or commercial admission cutoff.',
+      txtShortcutBenavides: 'Explore Farmacias Benavides',
+      txtShortcutOptica: 'Explore Óptica Fashion',
+      lblResultAuthority: 'Evaluation Basis:',
+      authBasisCurrent: 'Live Simulation Clock (Authoritative World Core Snapshot)',
+      authBasisSpecific: 'Authoritative Domain Rule (?at= parameter at specified civil time)',
+      txtResponseGrounding: '🛡️ Natural-language explanation strictly grounded in authoritative World Core snapshot. Does not invent, alter, or mutate world state.',
+
       // Result card query context
       txtTargetBusinessLabel: 'Queried Business:',
       txtTrustBadge: '🛡️ Grounded in World Core Snapshot',
@@ -217,8 +251,13 @@
       title: 'MyVirtualCommunity AI',
       subtitle: 'Asistente de Negocios Locales Fundamentado en la Simulación del Mundo',
       regionalInfo: 'Ciudad Juárez (America/Ciudad_Juarez, MST/MDT) • Datos Autoritativos de Simulación',
-      simStatusConnected: 'World Core Conectado',
-      simStatusOffline: 'World Core Desconectado',
+      simStatusConnected: 'World Core Conectado (Remoto)',
+      simStatusFixture: 'World Core Ficticio (Sin Conexión)',
+      simStatusOffline: 'World Core Desconectado (Reintentar)',
+      simStatusChecking: 'Comprobando World Core...',
+      simTitleConnected: 'La simulación remota de World Core está conectada en el puerto 3001. Clic para revalidar.',
+      simTitleFixture: 'Simulador ficticio en memoria activo (modo independiente). Clic para revalidar.',
+      simTitleOffline: 'El servidor remoto World Core no responde. Clic para reintentar.',
       lblBusiness: 'Seleccionar Negocio',
       hintBusiness: 'Negocio verificado de atención al público registrado en el World Core.',
       lblEvalMode: 'Hora de Evaluación',
@@ -308,6 +347,35 @@
       txtQuickOpenNow: '¿Está abierto ahora?',
       txtQuickSchedule: 'Horario de Atención',
       txtQuickAdmission: 'Probar límite 5:50 PM',
+
+      // Scenario Explorer
+      txtScenarioExplorerTitle: 'Explorador de Escenarios',
+      txtScenarioExplorerBadge: 'Reglas y Estado Autoritativo',
+      txtScenarioExplorerDesc: 'Evalúa cómo interactúan el estado autoritativo de World Core, reglas de negocio, tiempo del mundo y Meta Muse Spark para ',
+      badgeSc1: 'Snapshot Autoritativo',
+      txtSc1Title: '⚡ Estado Operativo Actual',
+      txtSc1Eval: 'Consulta el snapshot en tiempo real del reloj de la simulación de World Core.',
+      txtBtnSc1: 'Consultar Estado',
+      badgeSc2: 'Horario Configurado',
+      txtSc2Title: '🕒 Horario de Atención',
+      txtSc2Eval: 'Explica los horarios oficiales de apertura y cierre, días de operación y suspensiones.',
+      txtBtnSc2: 'Ver Horarios',
+      badgeSc3: 'Regla Autoritativa ?at=',
+      txtSc3Title: '🚪 Regla de Límite de Admisión',
+      txtSc3Eval: 'Examina la regla que cierra el ingreso antes del cierre. Evaluada mediante la API autoritativa ?at= de World Core.',
+      txtBtnSc3: 'Evaluar Límite',
+      badgeSc4: 'Meta Muse Spark',
+      txtSc4Title: '✏️ Pregunta Personalizada',
+      txtSc4Eval: 'Haz cualquier pregunta en inglés o español fundamentada en el snapshot verificado.',
+      txtBtnSc4: 'Personalizar Pregunta',
+      txtInfraScenarioTitle: 'Corredor de Infraestructura de Puente Internacional',
+      txtInfraScenarioDesc: 'El Puente Internacional Paso del Norte es un cruce fronterizo binacional 24/7 (no comercial). Opera continuamente sin horarios comerciales ni límite de admisión.',
+      txtShortcutBenavides: 'Explorar Farmacias Benavides',
+      txtShortcutOptica: 'Explorar Óptica Fashion',
+      lblResultAuthority: 'Base de Evaluación:',
+      authBasisCurrent: 'Reloj en Vivo de la Simulación (Snapshot Autoritativo de World Core)',
+      authBasisSpecific: 'Regla Autoritativa de Dominio (parámetro ?at= en la hora civil especificada)',
+      txtResponseGrounding: '🛡️ Explicación en lenguaje natural fundamentada estrictamente en el snapshot autoritativo de World Core. No inventa, altera ni muta el estado del mundo.',
 
       // Result card query context
       txtTargetBusinessLabel: 'Negocio Consultado:',
@@ -431,6 +499,84 @@
   const diagReasoningTokens = document.getElementById('diag-reasoning-tokens');
   const diagTotalTokens = document.getElementById('diag-total-tokens');
 
+  // Simulation Health & Mode Synchronization
+  let currentHealthState = null;
+  let isHealthCheckInFlight = false;
+
+  function renderSimulationBadge() {
+    const badgeEl = document.getElementById('sim-badge');
+    const textEl = document.getElementById('txt-sim-status');
+    if (!badgeEl || !textEl) return;
+
+    const t = I18N[currentLang];
+    badgeEl.classList.remove('connected', 'fixture', 'offline', 'checking');
+
+    if (isHealthCheckInFlight && !currentHealthState) {
+      badgeEl.classList.add('checking');
+      textEl.textContent = t.simStatusChecking;
+      badgeEl.title = t.simStatusChecking;
+      return;
+    }
+
+    if (!currentHealthState) {
+      badgeEl.classList.add('offline');
+      textEl.textContent = t.simStatusOffline;
+      badgeEl.title = t.simTitleOffline;
+      return;
+    }
+
+    if (currentHealthState.mode === 'in-memory') {
+      badgeEl.classList.add('fixture');
+      textEl.textContent = t.simStatusFixture;
+      badgeEl.title = t.simTitleFixture;
+    } else if (currentHealthState.reachability === 'connected') {
+      badgeEl.classList.add('connected');
+      textEl.textContent = t.simStatusConnected;
+      badgeEl.title = t.simTitleConnected;
+    } else {
+      badgeEl.classList.add('offline');
+      textEl.textContent = t.simStatusOffline;
+      badgeEl.title = t.simTitleOffline;
+    }
+  }
+
+  async function checkSimulationHealth() {
+    if (isHealthCheckInFlight) return;
+    isHealthCheckInFlight = true;
+
+    const badgeEl = document.getElementById('sim-badge');
+    if (badgeEl && !currentHealthState) {
+      badgeEl.classList.add('checking');
+    }
+
+    try {
+      const res = await fetch('/health', {
+        headers: { Accept: 'application/json' },
+        cache: 'no-store',
+      });
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      currentHealthState = {
+        mode: data.worldCore?.mode || 'in-memory',
+        reachability: data.worldCore?.reachability || (data.status === 'ok' ? 'connected' : 'disconnected'),
+        connected: Boolean(data.worldCore?.connected),
+        metaProvider: data.metaProvider || 'local-mock',
+      };
+    } catch {
+      currentHealthState = {
+        mode: 'remote',
+        reachability: 'disconnected',
+        connected: false,
+        metaProvider: 'local-mock',
+      };
+    } finally {
+      isHealthCheckInFlight = false;
+      renderSimulationBadge();
+    }
+  }
+
   // I18N Updater
   function updateLanguage(lang) {
     currentLang = lang;
@@ -442,7 +588,7 @@
     document.getElementById('txt-title').textContent = t.title;
     document.getElementById('txt-subtitle').textContent = t.subtitle;
     document.getElementById('txt-regional-info').textContent = t.regionalInfo;
-    document.getElementById('txt-sim-status').textContent = t.simStatusConnected;
+    renderSimulationBadge();
 
     // Demonstration Flow
     const f1 = document.getElementById('txt-flow-1');
@@ -511,6 +657,61 @@
     if (btnQs) btnQs.textContent = t.txtQuickSchedule;
     const btnQa = document.getElementById('txt-quick-admission');
     if (btnQa) btnQa.textContent = t.txtQuickAdmission;
+
+    // Scenario Explorer strings
+    const scTitle = document.getElementById('txt-scenario-explorer-title');
+    if (scTitle) scTitle.textContent = t.txtScenarioExplorerTitle;
+    const scBadge = document.getElementById('txt-scenario-explorer-badge');
+    if (scBadge) scBadge.textContent = t.txtScenarioExplorerBadge;
+    const bSc1 = document.getElementById('badge-sc-1');
+    if (bSc1) bSc1.textContent = t.badgeSc1;
+    const tSc1 = document.getElementById('txt-sc1-title');
+    if (tSc1) tSc1.textContent = t.txtSc1Title;
+    const eSc1 = document.getElementById('txt-sc1-eval');
+    if (eSc1) eSc1.textContent = t.txtSc1Eval;
+    const btnSc1 = document.getElementById('txt-btn-sc1');
+    if (btnSc1) btnSc1.textContent = t.txtBtnSc1;
+
+    const bSc2 = document.getElementById('badge-sc-2');
+    if (bSc2) bSc2.textContent = t.badgeSc2;
+    const tSc2 = document.getElementById('txt-sc2-title');
+    if (tSc2) tSc2.textContent = t.txtSc2Title;
+    const eSc2 = document.getElementById('txt-sc2-eval');
+    if (eSc2) eSc2.textContent = t.txtSc2Eval;
+    const btnSc2 = document.getElementById('txt-btn-sc2');
+    if (btnSc2) btnSc2.textContent = t.txtBtnSc2;
+
+    const bSc3 = document.getElementById('badge-sc-3');
+    if (bSc3) bSc3.textContent = t.badgeSc3;
+    const tSc3 = document.getElementById('txt-sc3-title');
+    if (tSc3) tSc3.textContent = t.txtSc3Title;
+    const eSc3 = document.getElementById('txt-sc3-eval');
+    if (eSc3) eSc3.textContent = t.txtSc3Eval;
+    const btnSc3 = document.getElementById('txt-btn-sc3');
+    if (btnSc3) btnSc3.textContent = t.txtBtnSc3;
+
+    const bSc4 = document.getElementById('badge-sc-4');
+    if (bSc4) bSc4.textContent = t.badgeSc4;
+    const tSc4 = document.getElementById('txt-sc4-title');
+    if (tSc4) tSc4.textContent = t.txtSc4Title;
+    const eSc4 = document.getElementById('txt-sc4-eval');
+    if (eSc4) eSc4.textContent = t.txtSc4Eval;
+    const btnSc4 = document.getElementById('txt-btn-sc4');
+    if (btnSc4) btnSc4.textContent = t.txtBtnSc4;
+
+    const tInfraSc = document.getElementById('txt-infra-scenario-title');
+    if (tInfraSc) tInfraSc.textContent = t.txtInfraScenarioTitle;
+    const dInfraSc = document.getElementById('txt-infra-scenario-desc');
+    if (dInfraSc) dInfraSc.textContent = t.txtInfraScenarioDesc;
+    const sBen = document.getElementById('txt-shortcut-benavides');
+    if (sBen) sBen.textContent = t.txtShortcutBenavides;
+    const sOpt = document.getElementById('txt-shortcut-optica');
+    if (sOpt) sOpt.textContent = t.txtShortcutOptica;
+
+    const lblResAuth = document.getElementById('lbl-result-authority');
+    if (lblResAuth) lblResAuth.textContent = t.lblResultAuthority;
+    const txtRespGrd = document.getElementById('txt-response-grounding');
+    if (txtRespGrd) txtRespGrd.textContent = t.txtResponseGrounding;
 
     // Result card query context strings
     const txtTargLbl = document.getElementById('txt-target-business-label');
@@ -635,12 +836,22 @@
         const civilIso = st.civilTime?.isoCivilString || '';
         freshnessEl.textContent = `${st.evaluatedAtUtc} (${civilIso} MST/MDT) • ${st.timeZone}`;
       }
+      if (currentHealthState && currentHealthState.mode === 'remote' && currentHealthState.reachability !== 'connected') {
+        currentHealthState.reachability = 'connected';
+        currentHealthState.connected = true;
+        renderSimulationBadge();
+      }
     } catch (err) {
       console.warn(`Could not retrieve live status for ${businessId}:`, err);
       statusPill.className = 'snapshot-value status-pill closed';
       statusPill.textContent = t.snapshotUnavailable || 'World Core Unavailable';
       if (freshnessEl) {
         freshnessEl.textContent = 'World Core simulation server offline or unreachable';
+      }
+      if (currentHealthState && currentHealthState.mode === 'remote' && currentHealthState.reachability !== 'disconnected') {
+        currentHealthState.reachability = 'disconnected';
+        currentHealthState.connected = false;
+        renderSimulationBadge();
       }
     }
   }
@@ -678,11 +889,19 @@
     }
     if (sourcesEl) sourcesEl.textContent = entity.sources;
 
+    const scSelectedName = document.getElementById('scenario-selected-business-name');
+    const scCardsGrid = document.getElementById('scenario-cards-grid');
+    const scInfraCard = document.getElementById('scenario-infra-card');
+
+    if (scSelectedName) scSelectedName.textContent = entity.name;
+
     if (entity.businessId) {
       if (actionsEl) actionsEl.style.display = 'block';
       if (snapshotGrid) snapshotGrid.hidden = false;
       if (infraNote) infraNote.hidden = true;
       if (quickQueries) quickQueries.hidden = false;
+      if (scCardsGrid) scCardsGrid.hidden = false;
+      if (scInfraCard) scInfraCard.hidden = true;
       fetchEntityLiveStatus(entity.businessId);
     } else {
       // Infrastructure is non-commercial
@@ -690,6 +909,8 @@
       if (snapshotGrid) snapshotGrid.hidden = true;
       if (infraNote) infraNote.hidden = false;
       if (quickQueries) quickQueries.hidden = true;
+      if (scCardsGrid) scCardsGrid.hidden = true;
+      if (scInfraCard) scInfraCard.hidden = false;
     }
   }
 
@@ -953,8 +1174,8 @@
           });
         }
 
-        // 1-Click Fast Judge Query Actions
-        function executeFastQuery(action) {
+        // Scenario Explorer Action Runner
+        function runScenario(action) {
           const ent = CORRIDOR_ENTITIES[selectedEntityId];
           if (!ent || !ent.businessId) return;
 
@@ -962,42 +1183,98 @@
           renderSuggestions();
 
           const name = ent.name;
-          if (action === 'open-now') {
+          if (action === 'status' || action === 'open-now') {
             setMode('current');
             questionInput.value =
               currentLang === 'es'
-                ? `¿Está abierto ${name} en este momento y a qué hora cierra?`
-                : `Is ${name} open right now, and what time does it close?`;
+                ? `¿Está abierto ${name} en este momento y cuál es su estado operativo actual?`
+                : `Is ${name} open right now, and what is its current operating status?`;
+            updateCharCount();
+            handleSubmit();
           } else if (action === 'schedule') {
             setMode('current');
             questionInput.value =
               currentLang === 'es'
-                ? `¿Cuáles son los días y horarios de atención de ${name}?`
-                : `What are the operating days and hours for ${name}?`;
-          } else if (action === 'admission') {
+                ? `¿Cuáles son los días de operación, horarios de apertura y horas de cierre oficiales de ${name}?`
+                : `What are the official operating days, opening hours, and closing times for ${name}?`;
+            updateCharCount();
+            handleSubmit();
+          } else if (action === 'cutoff' || action === 'admission') {
             setMode('specific');
-            evalTimeInput.value = '2026-10-24T17:50';
-            questionInput.value =
-              currentLang === 'es'
-                ? `¿Todavía me dejarán entrar si llego a las 5:50 p. m.?`
-                : `Would I still be admitted if I arrive at 5:50 PM?`;
+            if (ent.businessId === 'restaurant:wing-spot') {
+              evalTimeInput.value = '2026-10-24T17:50';
+              questionInput.value =
+                currentLang === 'es'
+                  ? `¿Todavía me dejarán entrar a Wing Spot Gómez Morín si llego a las 5:50 p. m. o el límite de 15 minutos ya cerró las admisiones?`
+                  : `Will I still be admitted to Wing Spot Gómez Morín if I arrive at 5:50 PM, or has the 15-minute last entry cutoff closed new admissions?`;
+            } else if (ent.businessId === 'restaurant:pasteleria-tia-lupe') {
+              evalTimeInput.value = '2026-10-24T17:50';
+              questionInput.value =
+                currentLang === 'es'
+                  ? `¿Todavía me dejarán entrar a Pastelerías La Tía Lupe si llego a las 5:50 p. m.?`
+                  : `Will I still be admitted to Pastelerías La Tía Lupe if I arrive at 5:50 PM?`;
+            } else if (ent.businessId === 'pharmacy:farmacias-benavides') {
+              evalTimeInput.value = '2026-10-24T21:50';
+              questionInput.value =
+                currentLang === 'es'
+                  ? `¿Farmacias Benavides permite la entrada de clientes a las 9:50 p. m. antes de cerrar a las 10:00 p. m. o aplica un límite de última entrada?`
+                  : `Does Farmacias Benavides allow customer entry at 9:50 PM before closing at 10:00 PM, or does it enforce a last entry cutoff?`;
+            } else if (ent.businessId === 'optical:optica-fashion') {
+              evalTimeInput.value = '2026-10-24T16:50';
+              questionInput.value =
+                currentLang === 'es'
+                  ? `¿Óptica Fashion admite pacientes para consultas a las 4:50 p. m. antes de cerrar a las 5:00 p. m.?`
+                  : `Does Óptica Fashion admit patients for optical consultations at 4:50 PM before closing at 5:00 PM?`;
+            } else {
+              evalTimeInput.value = '2026-10-24T17:50';
+              questionInput.value =
+                currentLang === 'es'
+                  ? `¿Todavía me dejarán entrar si llego a las 5:50 p. m.?`
+                  : `Would I still be admitted if I arrive at 5:50 PM?`;
+            }
+            updateCharCount();
+            handleSubmit();
+          } else if (action === 'custom') {
+            const formEl = document.getElementById('assistant-form');
+            if (questionInput) {
+              if (!questionInput.value.trim()) {
+                questionInput.value =
+                  currentLang === 'es'
+                    ? `¿Cuáles son las políticas y disponibilidad de ${name}?`
+                    : `What are the operating policies and availability for ${name}?`;
+                updateCharCount();
+              }
+              questionInput.focus();
+              if (formEl) {
+                formEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            }
           }
-          updateCharCount();
-          handleSubmit();
         }
 
+        // Bind Scenario Explorer buttons
+        const btnScStat = document.getElementById('btn-scenario-status');
+        if (btnScStat) btnScStat.addEventListener('click', () => runScenario('status'));
+        const btnScSched = document.getElementById('btn-scenario-schedule');
+        if (btnScSched) btnScSched.addEventListener('click', () => runScenario('schedule'));
+        const btnScCut = document.getElementById('btn-scenario-cutoff');
+        if (btnScCut) btnScCut.addEventListener('click', () => runScenario('cutoff'));
+        const btnScCust = document.getElementById('btn-scenario-custom');
+        if (btnScCust) btnScCust.addEventListener('click', () => runScenario('custom'));
+
+        // Bind backwards-compatible alias buttons
         const btnQOpen = document.getElementById('btn-quick-open-now');
-        if (btnQOpen) {
-          btnQOpen.addEventListener('click', () => executeFastQuery('open-now'));
-        }
+        if (btnQOpen) btnQOpen.addEventListener('click', () => runScenario('status'));
         const btnQSched = document.getElementById('btn-quick-schedule');
-        if (btnQSched) {
-          btnQSched.addEventListener('click', () => executeFastQuery('schedule'));
-        }
+        if (btnQSched) btnQSched.addEventListener('click', () => runScenario('schedule'));
         const btnQAdm = document.getElementById('btn-quick-admission');
-        if (btnQAdm) {
-          btnQAdm.addEventListener('click', () => executeFastQuery('admission'));
-        }
+        if (btnQAdm) btnQAdm.addEventListener('click', () => runScenario('cutoff'));
+
+        // Bind Infrastructure Shortcut Buttons
+        const btnShortBen = document.getElementById('btn-shortcut-benavides');
+        if (btnShortBen) btnShortBen.addEventListener('click', () => selectEntity('pharmacy:farmacias-benavides'));
+        const btnShortOpt = document.getElementById('btn-shortcut-optica');
+        if (btnShortOpt) btnShortOpt.addEventListener('click', () => selectEntity('optical:optica-fashion'));
 
         spatialListenersAttached = true;
       }
@@ -1103,7 +1380,9 @@
     if (radioModeSpecific) radioModeSpecific.disabled = isSubmitting;
 
     document
-      .querySelectorAll('.suggestion-chip, .scenario-chip, .btn-quick-query, .action-btn-query, .entity-chip')
+      .querySelectorAll(
+        '.suggestion-chip, .scenario-chip, .btn-quick-query, .action-btn-query, .entity-chip, .btn-scenario-action, .btn-infra-shortcut'
+      )
       .forEach((el) => {
         el.disabled = isSubmitting;
         if (isSubmitting) {
@@ -1152,6 +1431,8 @@
     const resBusName = document.getElementById('result-business-name');
     const resQuestionText = document.getElementById('result-question-text');
     const resRetrievedAt = document.getElementById('result-retrieved-at');
+    const resAuthBasis = document.getElementById('result-evaluation-basis');
+    const resGrounding = document.getElementById('txt-response-grounding');
 
     if (resBusName) {
       resBusName.textContent =
@@ -1166,6 +1447,16 @@
     if (resRetrievedAt) {
       const civilStr = data.evaluatedAtCivil || data.verifiedStatus?.civilTime?.isoCivilString || '';
       resRetrievedAt.textContent = `${data.evaluatedAtUtc || data.verifiedStatus?.evaluatedAtUtc || '-'} (${civilStr} MST/MDT)`;
+    }
+    if (resAuthBasis) {
+      if (data.evaluationMode === 'specific') {
+        resAuthBasis.textContent = t.authBasisSpecific;
+      } else {
+        resAuthBasis.textContent = t.authBasisCurrent;
+      }
+    }
+    if (resGrounding) {
+      resGrounding.textContent = t.txtResponseGrounding;
     }
 
     // Assistant response
@@ -1324,12 +1615,29 @@
         const isWorldCoreError =
           data?.error?.code === 'world-core-unavailable' || response.status === 502 || response.status === 503;
 
+        if (isWorldCoreError && currentHealthState && currentHealthState.mode === 'remote') {
+          currentHealthState.reachability = 'disconnected';
+          currentHealthState.connected = false;
+          renderSimulationBadge();
+        }
+
         showError(errorMsg, isWorldCoreError ? I18N[currentLang].errorWorldCoreDown : '');
         return;
       }
 
+      if (currentHealthState && currentHealthState.mode === 'remote' && currentHealthState.reachability !== 'connected') {
+        currentHealthState.reachability = 'connected';
+        currentHealthState.connected = true;
+        renderSimulationBadge();
+      }
+
       showResult(data);
     } catch (err) {
+      if (currentHealthState && currentHealthState.mode === 'remote') {
+        currentHealthState.reachability = 'disconnected';
+        currentHealthState.connected = false;
+        renderSimulationBadge();
+      }
       showError(err instanceof Error ? err.message : String(err), I18N[currentLang].errorWorldCoreDown);
     }
   }
@@ -1363,9 +1671,24 @@
 
   form.addEventListener('submit', handleSubmit);
 
+  // Bind Simulation Badge for manual health recheck
+  const simBadgeEl = document.getElementById('sim-badge');
+  if (simBadgeEl) {
+    simBadgeEl.addEventListener('click', () => {
+      checkSimulationHealth();
+    });
+    simBadgeEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        checkSimulationHealth();
+      }
+    });
+  }
+
   // Initialize
   updateLanguage('en');
   updateCharCount();
   setMode('current');
   initMap();
+  checkSimulationHealth();
 })();

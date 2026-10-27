@@ -35,21 +35,31 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
   const publicDir = options.publicDir ?? resolve(process.cwd(), 'public');
 
   let worldCore: WorldCorePort;
+  let isExplicitRemoteWorldCore = false;
   if (options.worldCore) {
     worldCore = options.worldCore;
+    isExplicitRemoteWorldCore =
+      (worldCore as any).mode === 'remote' || worldCore instanceof RemoteWorldCoreAdapter;
   } else if (config.worldCore.isRemote && config.worldCore.baseURL) {
     worldCore = new RemoteWorldCoreAdapter({ baseURL: config.worldCore.baseURL });
+    isExplicitRemoteWorldCore = true;
   } else {
     worldCore = new InMemoryWorldCoreAdapter();
+    isExplicitRemoteWorldCore = false;
   }
 
   let metaModel: MetaModelPort;
+  let isExplicitLiveMeta = false;
   if (options.metaModel) {
     metaModel = options.metaModel;
+    isExplicitLiveMeta =
+      (metaModel as any).mode === 'live-api' || metaModel instanceof MetaModelApiAdapter;
   } else if (config.meta.isConfigured && config.meta.apiKey) {
     metaModel = new MetaModelApiAdapter({ config: config.meta });
+    isExplicitLiveMeta = true;
   } else {
     metaModel = new MockMetaModelAdapter({ modelName: `${config.meta.model}-local-mock` });
+    isExplicitLiveMeta = false;
   }
 
   const useCase = new AnswerBusinessHoursQueryUseCase({
@@ -134,11 +144,54 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
 
       // 2. Health check
       if (method === 'GET' && pathname === '/health') {
+        const worldCoreMode: 'remote' | 'in-memory' = isExplicitRemoteWorldCore ? 'remote' : 'in-memory';
+        const metaProvider: 'live-api' | 'local-mock' = isExplicitLiveMeta ? 'live-api' : 'local-mock';
+
+        let reachability: 'connected' | 'disconnected' | 'not-applicable' = 'not-applicable';
+        let latencyMs: number | undefined = undefined;
+
+        if (worldCoreMode === 'remote') {
+          if (typeof (worldCore as any).probeHealth === 'function') {
+            const probeResult = await (worldCore as any).probeHealth(500);
+            reachability = probeResult.connected ? 'connected' : 'disconnected';
+            latencyMs = probeResult.latencyMs;
+          } else {
+            // Fallback probe for custom injected WorldCorePort with strict 500ms timeout
+            const controller = new AbortController();
+            const timeoutHandle = setTimeout(() => controller.abort(), 500);
+            const start = performance.now();
+            try {
+              await Promise.race([
+                worldCore.getCurrentWorldTime(),
+                new Promise((_, reject) => {
+                  controller.signal.addEventListener('abort', () => reject(new Error('timeout')));
+                }),
+              ]);
+              reachability = 'connected';
+              latencyMs = Math.round(performance.now() - start);
+            } catch {
+              reachability = 'disconnected';
+              latencyMs = Math.round(performance.now() - start);
+            } finally {
+              clearTimeout(timeoutHandle);
+            }
+          }
+        } else {
+          reachability = 'not-applicable';
+        }
+
         sendJson(res, 200, {
           status: 'ok',
           service: 'MyVirtualCommunity AI Hackathon Assistant',
           metaModelConfigured: config.meta.isConfigured,
           model: config.meta.model,
+          metaProvider,
+          worldCore: {
+            mode: worldCoreMode,
+            reachability,
+            connected: reachability === 'connected',
+            ...(latencyMs !== undefined ? { latencyMs } : {}),
+          },
           timestamp: new Date().toISOString(),
         });
         return;

@@ -1,14 +1,19 @@
 import assert from 'node:assert/strict';
+import { createServer as createHttpServer } from 'node:http';
 import { afterEach, beforeEach, describe, it } from 'node:test';
 import { InMemoryWorldCoreAdapter } from '../../src/adapters/in-memory-world-core-adapter.js';
+import { MetaModelApiAdapter } from '../../src/adapters/meta-model-api-adapter.js';
 import { MockMetaModelAdapter } from '../../src/adapters/mock-meta-model-adapter.js';
 import {
+  RemoteWorldCoreAdapter,
   WorldCoreConnectionError,
   WorldCoreResponseValidationError,
 } from '../../src/adapters/remote-world-core-adapter.js';
+import { loadConfig } from '../../src/config/index.js';
 import type { BusinessId } from '../../src/domain/business-id.js';
 import type { WorldCorePort } from '../../src/ports/world-core-port.js';
 import { createAssistantServer } from '../../src/server/index.js';
+
 
 describe('API and Browser Integration (Offline Server Tests)', () => {
   let serverInstance: ReturnType<typeof createAssistantServer>;
@@ -479,4 +484,555 @@ describe('API and Browser Integration (Offline Server Tests)', () => {
       }
     });
   });
+
+  describe('5. Scenario Explorer Contract & Semantic Invariants', () => {
+    it('serves index.html with Scenario Explorer container, 4 scenario cards, and authority badges', async () => {
+      const res = await fetch(`${baseUrl}/`);
+      assert.strictEqual(res.status, 200);
+      const html = await res.text();
+
+      // Main Scenario Explorer elements
+      assert.ok(html.includes('id="scenario-explorer"'), 'Must include scenario explorer container');
+      assert.ok(html.includes('id="txt-scenario-explorer-title"'), 'Must include scenario explorer title');
+      assert.ok(html.includes('id="txt-scenario-explorer-badge"'), 'Must include scenario explorer badge');
+      assert.ok(html.includes('id="scenario-selected-business-name"'), 'Must include selected business name target');
+      assert.ok(html.includes('id="scenario-cards-grid"'), 'Must include 4 scenario cards grid');
+
+      // 4 Scenarios
+      assert.ok(html.includes('id="scenario-card-status"'), 'Must include Scenario 1 (Status)');
+      assert.ok(html.includes('id="btn-scenario-status"'), 'Must include Scenario 1 action button');
+      assert.ok(html.includes('id="scenario-card-schedule"'), 'Must include Scenario 2 (Schedule)');
+      assert.ok(html.includes('id="btn-scenario-schedule"'), 'Must include Scenario 2 action button');
+      assert.ok(html.includes('id="scenario-card-cutoff"'), 'Must include Scenario 3 (Cutoff)');
+      assert.ok(html.includes('id="btn-scenario-cutoff"'), 'Must include Scenario 3 action button');
+      assert.ok(html.includes('id="scenario-card-custom"'), 'Must include Scenario 4 (Custom)');
+      assert.ok(html.includes('id="btn-scenario-custom"'), 'Must include Scenario 4 action button');
+
+      // Infrastructure non-commercial alternate panel
+      assert.ok(html.includes('id="scenario-infra-card"'), 'Must include scenario infrastructure card');
+      assert.ok(html.includes('id="btn-shortcut-benavides"'), 'Must include shortcut to Farmacias Benavides');
+      assert.ok(html.includes('id="btn-shortcut-optica"'), 'Must include shortcut to Óptica Fashion');
+
+      // Result semantic distinction elements
+      assert.ok(html.includes('id="result-evaluation-basis"'), 'Must include evaluation basis element in result');
+      assert.ok(html.includes('id="txt-response-grounding"'), 'Must include response grounding note in result');
+    });
+
+    it('serves app.js with bilingual Scenario Explorer translations, action runner, and duplicate submission locks', async () => {
+      const res = await fetch(`${baseUrl}/app.js`);
+      assert.strictEqual(res.status, 200);
+      const js = await res.text();
+
+      // Logic functions
+      assert.ok(js.includes('runScenario'), 'Must define runScenario');
+      assert.ok(js.includes('btn-scenario-status'), 'Must bind btn-scenario-status');
+      assert.ok(js.includes('btn-scenario-schedule'), 'Must bind btn-scenario-schedule');
+      assert.ok(js.includes('btn-scenario-cutoff'), 'Must bind btn-scenario-cutoff');
+      assert.ok(js.includes('btn-scenario-custom'), 'Must bind btn-scenario-custom');
+
+      // Bilingual labels
+      assert.ok(js.includes('Scenario Explorer'), 'Must include English title');
+      assert.ok(js.includes('Explorador de Escenarios'), 'Must include Spanish title');
+      assert.ok(js.includes('Authoritative ?at= Rule'), 'Must include English rule badge');
+      assert.ok(js.includes('Regla Autoritativa ?at='), 'Must include Spanish rule badge');
+
+      // Duplicate submission lock
+      assert.ok(js.includes('.btn-scenario-action'), 'Must disable scenario action buttons in setSubmittingState');
+      assert.ok(js.includes('.btn-infra-shortcut'), 'Must disable infra shortcut buttons in setSubmittingState');
+    });
+
+    it('Scenario 1 (Current Status): evaluates authoritative current-time snapshot without changing clock', async () => {
+      const res = await fetch(`${baseUrl}/api/assistant/query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessId: 'pharmacy:farmacias-benavides',
+          question: 'Is Farmacias Benavides open right now, and what is its current operating status?',
+          language: 'en',
+        }),
+      });
+
+      assert.strictEqual(res.status, 200);
+      const data = (await res.json()) as any;
+      assert.strictEqual(data.success, true);
+      assert.strictEqual(data.evaluationMode, 'current');
+      assert.strictEqual(data.businessId, 'pharmacy:farmacias-benavides');
+      assert.strictEqual(data.verifiedStatus.businessName, 'Farmacias Benavides');
+      assert.ok(data.verifiedStatus.openTimeCivil);
+      assert.ok(data.verifiedStatus.closeTimeCivil);
+      assert.ok(data.evaluatedAtUtc);
+    });
+
+    it('Scenario 2 (Operating Schedule): explains official configured hours and operating days', async () => {
+      const res = await fetch(`${baseUrl}/api/assistant/query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessId: 'optical:optica-fashion',
+          question: 'What are the official operating days, opening hours, and closing times for Óptica Fashion?',
+          language: 'es',
+        }),
+      });
+
+      assert.strictEqual(res.status, 200);
+      const data = (await res.json()) as any;
+      assert.strictEqual(data.success, true);
+      assert.strictEqual(data.language, 'es');
+      assert.strictEqual(data.verifiedStatus.businessName, 'Óptica Fashion');
+      assert.strictEqual(data.schedule.hours.openHour, 9);
+      assert.strictEqual(data.schedule.hours.closeHour, 17);
+      assert.deepStrictEqual(data.schedule.operatingDays, [1, 2, 3, 4, 5, 6]);
+    });
+
+    it('Scenario 3 (Admission Cutoff Rule): evaluates authoritative ?at= rule without mutating world clock', async () => {
+      // Wing Spot closes at 18:00 with 15-minute last entry cutoff (cutoff at 17:45).
+      // Evaluating at 17:50: open for dining guests, but admission is denied!
+      inMemoryWorldCore.setSimulatedWorldTime('2026-10-27T18:00:00.000Z');
+      const initialWorldTime = await inMemoryWorldCore.getCurrentWorldTime();
+
+      const res = await fetch(`${baseUrl}/api/assistant/query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessId: 'restaurant:wing-spot',
+          question: 'Will I still be admitted to Wing Spot Gómez Morín if I arrive at 5:50 PM, or has the 15-minute last entry cutoff closed new admissions?',
+          language: 'en',
+          evaluationTime: '2026-10-24T17:50',
+        }),
+      });
+
+      assert.strictEqual(res.status, 200);
+      const data = (await res.json()) as any;
+      assert.strictEqual(data.success, true);
+      assert.strictEqual(data.evaluationMode, 'specific');
+      assert.strictEqual(data.verifiedStatus.status, 'CLOSING_SOON');
+      assert.strictEqual(data.verifiedStatus.isOpen, true);
+      assert.strictEqual(data.verifiedStatus.admissionPermitted, false);
+      assert.ok(data.verifiedStatus.summaryMessage.length > 0);
+      assert.strictEqual(data.schedule.lastEntryCutoffMinutes, 15);
+
+      // Verify that evaluating an explicit hypothetical time did NOT mutate live world clock
+      const currentWorldTime = await inMemoryWorldCore.getCurrentWorldTime();
+      assert.strictEqual(currentWorldTime, initialWorldTime, 'World Core clock must remain unmutated by explicit-time evaluation');
+      assert.strictEqual(currentWorldTime, '2026-10-27T18:00:00.000Z');
+    });
+
+    it('clearly distinguishes current authoritative facts, domain rule results, and AI interpretation', async () => {
+      const res = await fetch(`${baseUrl}/api/assistant/query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          businessId: 'pharmacy:farmacias-benavides',
+          question: 'Does Farmacias Benavides allow customer entry at 9:50 PM before closing at 10:00 PM?',
+          language: 'en',
+          evaluationTime: '2026-10-24T21:50',
+        }),
+      });
+
+      assert.strictEqual(res.status, 200);
+      const data = (await res.json()) as any;
+
+      // 1. Current Authoritative Facts (static schedule definitions)
+      assert.ok(data.schedule, 'Must include authoritative schedule');
+      assert.strictEqual(data.schedule.name, 'Farmacias Benavides');
+      assert.strictEqual(data.schedule.hours.openHour, 7);
+      assert.strictEqual(data.schedule.hours.closeHour, 22);
+      assert.strictEqual(data.schedule.lastEntryCutoffMinutes, 0);
+
+      // 2. Authoritative Domain Rule Evaluation (deterministic calculation at ?at= instant)
+      assert.ok(data.verifiedStatus, 'Must include verified status from domain rule');
+      assert.strictEqual(data.verifiedStatus.status, 'OPEN');
+      assert.strictEqual(data.verifiedStatus.admissionPermitted, true);
+      assert.ok(data.verifiedStatus.summaryMessage.length > 0);
+      assert.strictEqual(data.evaluationMode, 'specific');
+      assert.ok(data.evaluatedAtUtc);
+      assert.ok(data.evaluatedAtCivil);
+
+      // 3. AI Interpretation (Muse Spark natural language formulation)
+      assert.ok(data.answer, 'Must include AI answer');
+      assert.strictEqual(data.modelUsed, 'muse-spark-1.3-mock');
+      assert.strictEqual(mockMeta.lastContextReceived?.schedule?.name, 'Farmacias Benavides');
+      assert.strictEqual(mockMeta.lastContextReceived?.verifiedData?.businessName, 'Farmacias Benavides');
+    });
+
+    it('properly handles missing or unavailable World Core data without fabricating answers', async () => {
+      const failingWorldCore: WorldCorePort = {
+        async getBusinessSchedule() {
+          throw new WorldCoreConnectionError('World Core offline');
+        },
+        async getCurrentWorldTime() {
+          throw new WorldCoreConnectionError('World Core offline');
+        },
+        async getBusinessOperationalStatus() {
+          throw new WorldCoreConnectionError('World Core offline');
+        },
+        async getBusinessScheduleSnapshot() {
+          throw new WorldCoreConnectionError('World Core offline');
+        },
+      };
+
+      const failingServer = createAssistantServer({
+        worldCore: failingWorldCore,
+        metaModel: mockMeta,
+      });
+
+      await failingServer.start(0, '127.0.0.1');
+      const addr = failingServer.server.address() as any;
+      const failingUrl = `http://127.0.0.1:${addr.port}`;
+
+      try {
+        const metaCallsBefore = mockMeta.callCount;
+
+        const res = await fetch(`${failingUrl}/api/assistant/query`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            businessId: 'pharmacy:farmacias-benavides',
+            question: 'Is it open?',
+          }),
+        });
+
+        assert.strictEqual(res.status, 502);
+        const data = (await res.json()) as any;
+        assert.strictEqual(data.success, false);
+        assert.strictEqual(data.error.code, 'world-core-unavailable');
+
+        // Meta Muse Spark was NOT invoked
+        assert.strictEqual(mockMeta.callCount, metaCallsBefore, 'Meta model must not be called when World Core fails');
+      } finally {
+        await failingServer.stop();
+      }
+    });
+  });
+
+  describe('6. Simulation Health Probe & Provider Mode Synchronization', () => {
+    // 1. Remote World Core responds successfully
+    it('reports connected remote World Core when remote endpoint responds 200', async () => {
+      const mockWcServer = createHttpServer((req, res) => {
+        if (req.url === '/api/status') {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(
+            JSON.stringify({
+              success: true,
+              result: {
+                worldId: 'gomez-morin-world',
+                worldTime: '2026-10-27T18:00:00.000Z',
+                status: 'RUNNING',
+              },
+            })
+          );
+          return;
+        }
+        res.writeHead(404).end();
+      });
+
+      await new Promise<void>((resolve) => mockWcServer.listen(0, '127.0.0.1', () => resolve()));
+      const wcPort = (mockWcServer.address() as any).port;
+
+      const remoteAdapter = new RemoteWorldCoreAdapter({
+        baseURL: `http://127.0.0.1:${wcPort}`,
+      });
+
+      const server = createAssistantServer({
+        worldCore: remoteAdapter,
+        metaModel: mockMeta,
+      });
+
+      await server.start(0, '127.0.0.1');
+      const addr = server.server.address() as any;
+      const url = `http://127.0.0.1:${addr.port}`;
+
+      try {
+        const res = await fetch(`${url}/health`);
+        assert.strictEqual(res.status, 200);
+        const data = (await res.json()) as any;
+
+        assert.strictEqual(data.status, 'ok');
+        assert.strictEqual(data.worldCore.mode, 'remote');
+        assert.strictEqual(data.worldCore.reachability, 'connected');
+        assert.strictEqual(data.worldCore.connected, true);
+        assert.strictEqual(typeof data.worldCore.latencyMs, 'number');
+        assert.strictEqual(data.metaProvider, 'local-mock');
+      } finally {
+        await server.stop();
+        await new Promise<void>((resolve) => mockWcServer.close(() => resolve()));
+      }
+    });
+
+    // 2. Remote World Core refuses the connection
+    it('reports disconnected remote World Core when connection is refused without crashing', async () => {
+      const remoteAdapter = new RemoteWorldCoreAdapter({
+        baseURL: 'http://127.0.0.1:59999',
+      });
+
+      const server = createAssistantServer({
+        worldCore: remoteAdapter,
+        metaModel: mockMeta,
+      });
+
+      await server.start(0, '127.0.0.1');
+      const addr = server.server.address() as any;
+      const url = `http://127.0.0.1:${addr.port}`;
+
+      try {
+        const res = await fetch(`${url}/health`);
+        assert.strictEqual(res.status, 200);
+        const data = (await res.json()) as any;
+
+        assert.strictEqual(data.status, 'ok');
+        assert.strictEqual(data.worldCore.mode, 'remote');
+        assert.strictEqual(data.worldCore.reachability, 'disconnected');
+        assert.strictEqual(data.worldCore.connected, false);
+      } finally {
+        await server.stop();
+      }
+    });
+
+    // 3. Remote World Core times out within configured bound (<= 500 ms)
+    it('times out and reports disconnected within strict bound when World Core hangs', async () => {
+      const hangingWcServer = createHttpServer((_req, res) => {
+        // Deliberately delay response for 1200ms to test timeout cancellation
+        setTimeout(() => {
+          if (!res.writableEnded) {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true, result: {} }));
+          }
+        }, 1200);
+      });
+
+      await new Promise<void>((resolve) => hangingWcServer.listen(0, '127.0.0.1', () => resolve()));
+      const wcPort = (hangingWcServer.address() as any).port;
+
+      const remoteAdapter = new RemoteWorldCoreAdapter({
+        baseURL: `http://127.0.0.1:${wcPort}`,
+      });
+
+      const server = createAssistantServer({
+        worldCore: remoteAdapter,
+        metaModel: mockMeta,
+      });
+
+      await server.start(0, '127.0.0.1');
+      const addr = server.server.address() as any;
+      const url = `http://127.0.0.1:${addr.port}`;
+
+      try {
+        const start = performance.now();
+        const res = await fetch(`${url}/health`);
+        const elapsed = performance.now() - start;
+
+        assert.strictEqual(res.status, 200);
+        const data = (await res.json()) as any;
+
+        assert.strictEqual(data.worldCore.mode, 'remote');
+        assert.strictEqual(data.worldCore.reachability, 'disconnected');
+        assert.strictEqual(data.worldCore.connected, false);
+
+        // Strict bound: 500ms timeout should resolve around ~500-750ms, well under the 1200ms server delay
+        assert.ok(elapsed < 900, `Probe must cancel within bound; took ${elapsed}ms`);
+      } finally {
+        await server.stop();
+        await new Promise<void>((resolve) => hangingWcServer.close(() => resolve()));
+      }
+    });
+
+    // 4. In-memory mode reports a fixture, not a live connection
+    it('reports in-memory fixture and not-applicable reachability in default in-memory mode', async () => {
+      const res = await fetch(`${baseUrl}/health`);
+      assert.strictEqual(res.status, 200);
+      const data = (await res.json()) as any;
+
+      assert.strictEqual(data.status, 'ok');
+      assert.strictEqual(data.worldCore.mode, 'in-memory');
+      assert.strictEqual(data.worldCore.reachability, 'not-applicable');
+      assert.strictEqual(data.worldCore.connected, false, 'Must not claim a live connection in fixture mode');
+    });
+
+    // 5. Provider mode accurately distinguishes live Meta API and local mock
+    it('accurately distinguishes live Meta API and local mock in provider mode', async () => {
+      // A. Mock Meta Model
+      const mockRes = await fetch(`${baseUrl}/health`);
+      const mockData = (await mockRes.json()) as any;
+      assert.strictEqual(mockData.metaProvider, 'local-mock');
+
+      // B. Live Meta API Adapter (mocked without actual remote calls)
+      let networkCalled = false;
+      const dummyLiveAdapter = new MetaModelApiAdapter({
+        config: {
+          apiKey: 'mock-meta-key-for-test',
+          baseURL: 'https://api.meta.test/v1',
+          model: 'muse-spark-1.3',
+          isConfigured: true,
+        },
+        fetchFn: (async () => {
+          networkCalled = true;
+          return new Response('{}');
+        }) as any,
+      });
+
+      const liveMetaServer = createAssistantServer({
+        worldCore: inMemoryWorldCore,
+        metaModel: dummyLiveAdapter,
+        config: {
+          ...loadConfig(),
+          meta: {
+            apiKey: 'mock-meta-key-for-test',
+            baseURL: 'https://api.meta.test/v1',
+            model: 'muse-spark-1.3',
+            isConfigured: true,
+          },
+        },
+      });
+
+      await liveMetaServer.start(0, '127.0.0.1');
+      const addr = liveMetaServer.server.address() as any;
+      const liveUrl = `http://127.0.0.1:${addr.port}`;
+
+      try {
+        const res = await fetch(`${liveUrl}/health`);
+        const data = (await res.json()) as any;
+
+        assert.strictEqual(data.metaProvider, 'live-api');
+        assert.strictEqual(data.metaModelConfigured, true);
+        assert.strictEqual(data.model, 'muse-spark-1.3');
+        assert.strictEqual(networkCalled, false, 'Health check must never trigger paid/live Meta API calls');
+      } finally {
+        await liveMetaServer.stop();
+      }
+    });
+
+    // 6. Browser badge displays the correct state for each health response
+    it('delivers accessible browser badge markup, styles, and state-mapping logic', async () => {
+      const htmlRes = await fetch(`${baseUrl}/`);
+      const html = await htmlRes.text();
+      assert.ok(html.includes('id="sim-badge"'), 'HTML must have id="sim-badge"');
+      assert.ok(html.includes('role="button"'), 'HTML badge must have role="button"');
+      assert.ok(html.includes('tabindex="0"'), 'HTML badge must be keyboard focusable');
+
+      const cssRes = await fetch(`${baseUrl}/style.css`);
+      const css = await cssRes.text();
+      assert.ok(css.includes('.sim-badge.connected'), 'CSS must define connected badge style');
+      assert.ok(css.includes('.sim-badge.fixture'), 'CSS must define fixture badge style');
+      assert.ok(css.includes('.sim-badge.offline'), 'CSS must define offline badge style');
+      assert.ok(css.includes('.sim-badge:focus-visible'), 'CSS must define accessible focus ring');
+
+      const jsRes = await fetch(`${baseUrl}/app.js`);
+      const js = await jsRes.text();
+      assert.ok(js.includes('renderSimulationBadge'), 'app.js must implement renderSimulationBadge');
+      assert.ok(js.includes('checkSimulationHealth'), 'app.js must implement checkSimulationHealth');
+    });
+
+    // 7. English/Spanish changes update all badge states
+    it('provides complete bilingual localization for all badge states in app.js', async () => {
+      const jsRes = await fetch(`${baseUrl}/app.js`);
+      const js = await jsRes.text();
+
+      // Check English localization
+      assert.ok(js.includes("simStatusConnected: 'World Core Connected (Remote)'"), 'Must have EN live status');
+      assert.ok(js.includes("simStatusFixture: 'World Core Fixture (Standalone)'"), 'Must have EN fixture status');
+      assert.ok(js.includes("simStatusOffline: 'World Core Offline (Retry)'"), 'Must have EN offline status');
+
+      // Check Spanish localization
+      assert.ok(js.includes("simStatusConnected: 'World Core Conectado (Remoto)'"), 'Must have ES live status');
+      assert.ok(js.includes("simStatusFixture: 'World Core Ficticio (Sin Conexión)'"), 'Must have ES fixture status');
+      assert.ok(js.includes("simStatusOffline: 'World Core Desconectado (Reintentar)'"), 'Must have ES offline status');
+
+      // Check that updateLanguage updates badge
+      assert.ok(js.includes('renderSimulationBadge()'), 'updateLanguage must re-render simulation badge');
+    });
+
+    // 8. A health-probe failure does not crash the assistant server or expose secrets
+    it('does not expose secrets or stack traces on failed probe and keeps server running', async () => {
+      const secretKey = 'super-secret-token-do-not-leak-9988';
+      const failingAdapter = new RemoteWorldCoreAdapter({
+        baseURL: 'http://127.0.0.1:59998',
+      });
+
+      const server = createAssistantServer({
+        worldCore: failingAdapter,
+        metaModel: mockMeta,
+        config: {
+          ...loadConfig(),
+          meta: {
+            apiKey: secretKey,
+            baseURL: 'https://api.meta.test',
+            model: 'muse-spark-1.3',
+            isConfigured: true,
+          },
+        },
+      });
+
+      await server.start(0, '127.0.0.1');
+      const addr = server.server.address() as any;
+      const url = `http://127.0.0.1:${addr.port}`;
+
+      try {
+        const res = await fetch(`${url}/health`);
+        assert.strictEqual(res.status, 200);
+        const text = await res.text();
+
+        assert.ok(!text.includes(secretKey), 'Must never leak API key in health response');
+        assert.ok(!text.includes('ECONNREFUSED'), 'Must not leak raw internal error names');
+        assert.ok(!text.includes('at '), 'Must not leak stack traces in response');
+
+        // Verify server is still operational for subsequent requests
+        const corridorRes = await fetch(`${url}/api/spatial/corridor`);
+        assert.strictEqual(corridorRes.status, 200);
+      } finally {
+        await server.stop();
+      }
+    });
+
+    // 9. Existing query behavior still suppresses AI generation when authoritative World Core data is unavailable
+    it('suppresses AI generation when authoritative World Core data is unavailable during assistant query', async () => {
+      const failingWorldCore: WorldCorePort = {
+        async getBusinessSchedule() {
+          throw new WorldCoreConnectionError('World Core connection refused');
+        },
+        async getCurrentWorldTime() {
+          throw new WorldCoreConnectionError('World Core connection refused');
+        },
+        async getBusinessOperationalStatus() {
+          throw new WorldCoreConnectionError('World Core connection refused');
+        },
+        async getBusinessScheduleSnapshot() {
+          throw new WorldCoreConnectionError('World Core connection refused');
+        },
+      };
+
+      const failingServer = createAssistantServer({
+        worldCore: failingWorldCore,
+        metaModel: mockMeta,
+      });
+
+      await failingServer.start(0, '127.0.0.1');
+      const addr = failingServer.server.address() as any;
+      const url = `http://127.0.0.1:${addr.port}`;
+
+      try {
+        const callsBefore = mockMeta.callCount;
+        const res = await fetch(`${url}/api/assistant/query`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            businessId: 'restaurant:wing-spot',
+            question: 'What are your hours today?',
+          }),
+        });
+
+        assert.strictEqual(res.status, 502);
+        const data = (await res.json()) as any;
+        assert.strictEqual(data.success, false);
+        assert.strictEqual(data.error.code, 'world-core-unavailable');
+        assert.strictEqual(
+          mockMeta.callCount,
+          callsBefore,
+          'AI generation must be strictly suppressed when World Core is unavailable'
+        );
+      } finally {
+        await failingServer.stop();
+      }
+    });
+  });
 });
+

@@ -20,6 +20,7 @@ export interface MockMetaModelOptions {
  * - Allows testing simulated failures and response overrides.
  */
 export class MockMetaModelAdapter implements MetaModelPort {
+  public readonly mode = 'local-mock' as const;
   private readonly modelName: string;
   private shouldFail: boolean;
   private failureError: Error | null;

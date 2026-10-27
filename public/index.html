@@ -21,9 +21,9 @@
 
       <!-- Language Switcher & Simulation Status -->
       <div class="header-controls">
-        <div class="sim-badge" title="Authoritative World Core status">
-          <span class="sim-dot"></span>
-          <span id="txt-sim-status">World Core Connected</span>
+        <div class="sim-badge" id="sim-badge" role="button" tabindex="0" title="Authoritative World Core simulation status. Click to verify." aria-label="Authoritative World Core status">
+          <span class="sim-dot" id="sim-dot"></span>
+          <span id="txt-sim-status">Checking World Core...</span>
         </div>
         <div class="lang-selector-group" role="group" aria-label="Language Selector">
           <button type="button" class="lang-btn active" id="btn-lang-en" data-lang="en">EN</button>
@@ -161,19 +161,98 @@
           </div>
         </div>
 
-        <!-- 1-Click Fast Judge Queries -->
-        <div class="entity-quick-queries" id="entity-quick-queries">
-          <span class="quick-queries-label" id="lbl-entity-quick-queries">1-Click Judge Scenarios:</span>
-          <div class="quick-query-buttons">
-            <button type="button" class="btn-quick-query" id="btn-quick-open-now">
-              <span>⚡</span> <span id="txt-quick-open-now">Check If Open Now</span>
-            </button>
-            <button type="button" class="btn-quick-query" id="btn-quick-schedule">
-              <span>🕒</span> <span id="txt-quick-schedule">Operating Schedule</span>
-            </button>
-            <button type="button" class="btn-quick-query" id="btn-quick-admission">
-              <span>🚪</span> <span id="txt-quick-admission">Test 5:50 PM Cutoff</span>
-            </button>
+        <!-- Scenario Explorer (Milestone: Scenario Explorer) -->
+        <div class="scenario-explorer" id="scenario-explorer" role="region" aria-label="Scenario Explorer">
+          <div class="scenario-explorer-header">
+            <div class="scenario-header-title-group">
+              <span class="scenario-icon">🧭</span>
+              <h4 class="scenario-explorer-title" id="txt-scenario-explorer-title">Scenario Explorer</h4>
+            </div>
+            <span class="scenario-explorer-badge" id="txt-scenario-explorer-badge">Authoritative State &amp; Rules</span>
+          </div>
+          <p class="scenario-explorer-desc" id="txt-scenario-explorer-desc">
+            Evaluate how authoritative World Core state, business rules, world time, and Meta Muse Spark work together for <strong id="scenario-selected-business-name">Farmacias Benavides</strong>.
+          </p>
+
+          <!-- 4 Scenarios Grid -->
+          <div class="scenario-cards-grid" id="scenario-cards-grid">
+            <!-- Scenario 1: Current Business Status -->
+            <div class="scenario-card" id="scenario-card-status" data-scenario="status">
+              <div class="scenario-card-header">
+                <span class="scenario-num">1</span>
+                <span class="scenario-authority-badge badge-authoritative" id="badge-sc-1">Authoritative Snapshot</span>
+              </div>
+              <h5 class="scenario-card-title" id="txt-sc1-title">⚡ Current Business Status</h5>
+              <p class="scenario-card-eval" id="txt-sc1-eval">Inspect latest point-in-time snapshot from authoritative World Core simulation clock.</p>
+              <button type="button" class="btn-scenario-action" id="btn-scenario-status">
+                <span id="txt-btn-sc1">Inspect Status</span>
+              </button>
+            </div>
+
+            <!-- Scenario 2: Operating Schedule -->
+            <div class="scenario-card" id="scenario-card-schedule" data-scenario="schedule">
+              <div class="scenario-card-header">
+                <span class="scenario-num">2</span>
+                <span class="scenario-authority-badge badge-schedule" id="badge-sc-2">Configured Schedule</span>
+              </div>
+              <h5 class="scenario-card-title" id="txt-sc2-title">🕒 Operating Schedule</h5>
+              <p class="scenario-card-eval" id="txt-sc2-eval">Explain official opening/closing hours, operating days, and scheduled closures.</p>
+              <button type="button" class="btn-scenario-action" id="btn-scenario-schedule">
+                <span id="txt-btn-sc2">Explain Schedule</span>
+              </button>
+            </div>
+
+            <!-- Scenario 3: Admission Cutoff -->
+            <div class="scenario-card" id="scenario-card-cutoff" data-scenario="cutoff">
+              <div class="scenario-card-header">
+                <span class="scenario-num">3</span>
+                <span class="scenario-authority-badge badge-rule" id="badge-sc-3">Authoritative ?at= Rule</span>
+              </div>
+              <h5 class="scenario-card-title" id="txt-sc3-title">🚪 Admission Cutoff Rule</h5>
+              <p class="scenario-card-eval" id="txt-sc3-eval">Examine rule closing entry before close. Evaluated via authoritative World Core ?at= API.</p>
+              <button type="button" class="btn-scenario-action" id="btn-scenario-cutoff">
+                <span id="txt-btn-sc3">Evaluate Cutoff</span>
+              </button>
+            </div>
+
+            <!-- Scenario 4: Custom Question -->
+            <div class="scenario-card" id="scenario-card-custom" data-scenario="custom">
+              <div class="scenario-card-header">
+                <span class="scenario-num">4</span>
+                <span class="scenario-authority-badge badge-ai" id="badge-sc-4">Meta Muse Spark</span>
+              </div>
+              <h5 class="scenario-card-title" id="txt-sc4-title">✏️ Ask Custom Question</h5>
+              <p class="scenario-card-eval" id="txt-sc4-eval">Ask any natural-language question in English or Spanish, grounded in verified snapshot.</p>
+              <button type="button" class="btn-scenario-action" id="btn-scenario-custom">
+                <span id="txt-btn-sc4">Customize Question</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Backwards-compatibility alias buttons for fast queries -->
+          <div class="entity-quick-queries" id="entity-quick-queries" style="display: none;" aria-hidden="true">
+            <button type="button" class="btn-quick-query" id="btn-quick-open-now"><span>⚡</span> <span id="txt-quick-open-now">Check If Open Now</span></button>
+            <button type="button" class="btn-quick-query" id="btn-quick-schedule"><span>🕒</span> <span id="txt-quick-schedule">Operating Schedule</span></button>
+            <button type="button" class="btn-quick-query" id="btn-quick-admission"><span>🚪</span> <span id="txt-quick-admission">Test 5:50 PM Cutoff</span></button>
+          </div>
+
+          <!-- Infrastructure Non-Commercial Alternate Panel (shown when bridge is selected) -->
+          <div class="scenario-infra-card" id="scenario-infra-card" hidden>
+            <div class="scenario-infra-header">
+              <span class="scenario-icon">🌉</span>
+              <h5 id="txt-infra-scenario-title">International Bridge Infrastructure Corridor</h5>
+            </div>
+            <p id="txt-infra-scenario-desc">
+              Puente Internacional Paso del Norte is a 24/7 binational border crossing (non-commercial). It operates continuously with no retail schedule or commercial admission cutoff.
+            </p>
+            <div class="scenario-infra-actions">
+              <button type="button" class="btn-infra-shortcut" id="btn-shortcut-benavides">
+                💊 <span id="txt-shortcut-benavides">Explore Farmacias Benavides</span>
+              </button>
+              <button type="button" class="btn-infra-shortcut" id="btn-shortcut-optica">
+                👓 <span id="txt-shortcut-optica">Explore Óptica Fashion</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -342,6 +421,11 @@
               <span class="provenance-label" id="lbl-result-retrieved-at">Snapshot Evaluated & Retrieved:</span>
               <span class="provenance-value fact-mono" id="result-retrieved-at">-</span>
             </div>
+            <div class="query-authority-row">
+              <span class="auth-icon">⚖️</span>
+              <span class="auth-label" id="lbl-result-authority">Evaluation Basis:</span>
+              <span class="auth-value" id="result-evaluation-basis">Live Simulation Clock (Authoritative World Core Snapshot)</span>
+            </div>
           </div>
 
           <!-- Assistant Natural Language Response -->
@@ -354,6 +438,9 @@
               <span class="latency-pill" id="lbl-latency">480ms</span>
             </div>
             <div class="assistant-answer" id="assistant-answer-text"></div>
+            <div class="response-grounding-note" id="txt-response-grounding">
+              🛡️ Natural-language explanation strictly grounded in authoritative World Core snapshot. Does not invent, alter, or mutate world state.
+            </div>
           </div>
 
           <!-- Authoritative World Core Facts Panel -->

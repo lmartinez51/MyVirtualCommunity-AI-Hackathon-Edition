@@ -382,4 +382,59 @@ describe('RemoteWorldCoreAdapter (Unit Tests with Mocked HTTP)', () => {
       );
     });
   });
+
+  describe('7. probeHealth (Lightweight Reachability Probe)', () => {
+    it('reports remote mode', () => {
+      const adapter = new RemoteWorldCoreAdapter({ baseURL: TEST_BASE_URL });
+      assert.strictEqual(adapter.mode, 'remote');
+    });
+
+    it('returns connected: true when /api/status responds 200 with success: true', async () => {
+      let probedUrl = '';
+      const mockFetch = createMockFetch(async (url) => {
+        probedUrl = url;
+        return { status: 200, body: JSON.stringify(VALID_STATUS_RESPONSE) };
+      });
+
+      const adapter = new RemoteWorldCoreAdapter({
+        baseURL: TEST_BASE_URL,
+        fetchFn: mockFetch,
+      });
+
+      const result = await adapter.probeHealth(500);
+      assert.strictEqual(result.connected, true);
+      assert.strictEqual(typeof result.latencyMs, 'number');
+      assert.ok(probedUrl.endsWith('/api/status'));
+    });
+
+    it('returns connected: false when /api/status responds with HTTP error', async () => {
+      const mockFetch = createMockFetch(async () => {
+        return { status: 503, body: JSON.stringify({ error: 'Service Unavailable' }) };
+      });
+
+      const adapter = new RemoteWorldCoreAdapter({
+        baseURL: TEST_BASE_URL,
+        fetchFn: mockFetch,
+      });
+
+      const result = await adapter.probeHealth(500);
+      assert.strictEqual(result.connected, false);
+    });
+
+    it('returns connected: false without throwing when connection is refused or aborted', async () => {
+      const mockFetch: typeof fetch = (async () => {
+        const err = new Error('ECONNREFUSED');
+        throw err;
+      }) as unknown as typeof fetch;
+
+      const adapter = new RemoteWorldCoreAdapter({
+        baseURL: TEST_BASE_URL,
+        fetchFn: mockFetch,
+      });
+
+      const result = await adapter.probeHealth(500);
+      assert.strictEqual(result.connected, false);
+    });
+  });
 });
+

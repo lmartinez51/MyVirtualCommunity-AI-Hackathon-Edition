@@ -47,4 +47,13 @@ describe('InMemoryWorldCoreAdapter Fixture', () => {
     const realTime = await adapter.getCurrentWorldTime();
     assert.notEqual(realTime, fixedTime);
   });
+
+  it('exposes in-memory mode and fast health probe', async () => {
+    const adapter = new InMemoryWorldCoreAdapter();
+    assert.strictEqual(adapter.mode, 'in-memory');
+    const health = await adapter.probeHealth();
+    assert.strictEqual(health.connected, true);
+    assert.strictEqual(health.latencyMs, 0);
+  });
 });
+

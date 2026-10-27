@@ -19,6 +19,7 @@ import { WorldCorePort, BusinessScheduleSnapshot } from '../ports/world-core-por
  * implementing the same WorldCorePort boundary once the World Core exposes the endpoint.
  */
 export class InMemoryWorldCoreAdapter implements WorldCorePort {
+  public readonly mode = 'in-memory' as const;
   private schedules: Map<string, BusinessSchedule> = new Map();
   private simulatedWorldTime: string | null = null;
 
@@ -132,6 +133,14 @@ export class InMemoryWorldCoreAdapter implements WorldCorePort {
       return this.simulatedWorldTime;
     }
     return new Date().toISOString();
+  }
+
+  /**
+   * Health probe for in-memory development fixture.
+   * Reports fixture status with zero network latency.
+   */
+  public async probeHealth(): Promise<{ connected: boolean; latencyMs: number }> {
+    return { connected: true, latencyMs: 0 };
   }
 
   public async getBusinessOperationalStatus(
