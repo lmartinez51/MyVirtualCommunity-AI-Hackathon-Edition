@@ -4,8 +4,14 @@ import {
   BusinessOperationalStatus,
   evaluateBusinessOperationalStatus,
 } from '../domain/operational-status.js';
+import {
+  InvalidEvaluationTimeError,
+  parseLocalCivilTimeToUtc,
+} from '../domain/civil-time.js';
 import { MetaModelPort, MetaModelUsage } from '../ports/meta-model-port.js';
 import { WorldCorePort } from '../ports/world-core-port.js';
+
+export { InvalidEvaluationTimeError };
 
 export class BusinessNotFoundError extends Error {
   constructor(businessId: string) {
@@ -28,6 +34,8 @@ export interface BusinessHoursQueryRequest {
   readonly question?: string;
   readonly userQuery?: string;
   readonly language?: SupportedLanguage | string;
+  readonly evaluationTime?: string | Date;
+  readonly evaluatedAt?: string | Date;
   readonly evaluatedAtOverride?: Date | string | number;
 }
 
@@ -37,6 +45,10 @@ export interface BusinessHoursQueryResponse {
   readonly verifiedStatus: BusinessOperationalStatus;
   readonly schedule: BusinessSchedule;
   readonly evaluatedAtUtc: string;
+  readonly evaluatedAtCivil: string;
+  readonly evaluationMode: 'current' | 'specific';
+  readonly isAmbiguousEvaluationTime?: boolean;
+  readonly disambiguationNotice?: string;
   readonly modelUsed: string;
   readonly latencyMs: number;
   readonly language: SupportedLanguage;
@@ -94,7 +106,48 @@ export class AnswerBusinessHoursQueryUseCase {
     // 3. Validate business ID
     const businessId: BusinessId = createBusinessId(request.businessId);
 
-    // 4. Fetch coherent authoritative snapshot from World Core
+    // 4. Resolve optional evaluation time
+    let evaluationInstant: Date | undefined = undefined;
+    let evaluationMode: 'current' | 'specific' = 'current';
+    let isAmbiguousEvaluationTime = false;
+    let disambiguationNotice: string | undefined = undefined;
+
+    const rawEvalTime =
+      request.evaluationTime ?? request.evaluatedAt ?? request.evaluatedAtOverride;
+
+    if (rawEvalTime !== undefined && rawEvalTime !== null && rawEvalTime !== '') {
+      evaluationMode = 'specific';
+      if (rawEvalTime instanceof Date) {
+        if (Number.isNaN(rawEvalTime.getTime())) {
+          throw new InvalidEvaluationTimeError('Provided evaluation Date is invalid (NaN)');
+        }
+        evaluationInstant = rawEvalTime;
+      } else if (typeof rawEvalTime === 'number') {
+        if (!Number.isFinite(rawEvalTime) || Number.isNaN(rawEvalTime)) {
+          throw new InvalidEvaluationTimeError(`Invalid numeric evaluation timestamp: ${rawEvalTime}`);
+        }
+        evaluationInstant = new Date(rawEvalTime);
+      } else if (typeof rawEvalTime === 'string') {
+        // Parse local civil time in America/Ciudad_Juarez
+        const parseResult = parseLocalCivilTimeToUtc(rawEvalTime, 'America/Ciudad_Juarez');
+        if (!parseResult.success) {
+          throw new InvalidEvaluationTimeError(
+            parseResult.error ?? `Invalid evaluation time: "${rawEvalTime}"`
+          );
+        }
+        evaluationInstant = parseResult.utcInstant;
+        if (parseResult.isAmbiguous) {
+          isAmbiguousEvaluationTime = true;
+          disambiguationNotice = parseResult.disambiguationNotice;
+        }
+      } else {
+        throw new InvalidEvaluationTimeError(
+          `Invalid evaluation time type: expected string, Date, or number; received ${typeof rawEvalTime}`
+        );
+      }
+    }
+
+    // 5. Fetch coherent authoritative snapshot from World Core
     let schedule: BusinessSchedule;
     let verifiedStatus: BusinessOperationalStatus;
     let evaluatedAtUtc: string;
@@ -102,7 +155,7 @@ export class AnswerBusinessHoursQueryUseCase {
     if (typeof this.worldCore.getBusinessScheduleSnapshot === 'function') {
       const snapshot = await this.worldCore.getBusinessScheduleSnapshot(
         businessId,
-        request.evaluatedAtOverride
+        evaluationInstant
       );
       if (!snapshot) {
         throw new BusinessNotFoundError(businessId);
@@ -117,30 +170,32 @@ export class AnswerBusinessHoursQueryUseCase {
       }
       schedule = sched;
       const evaluationTime =
-        request.evaluatedAtOverride ?? (await this.worldCore.getCurrentWorldTime());
+        evaluationInstant ?? (await this.worldCore.getCurrentWorldTime());
       verifiedStatus = evaluateBusinessOperationalStatus(schedule, evaluationTime);
       evaluatedAtUtc = verifiedStatus.evaluatedAtUtc;
     }
 
-    // 5. Build targeted system prompt according to selected language
+    // 6. Build targeted system prompt according to selected language
     const systemPrompt =
       lang === 'es'
         ? 'Eres un asistente de negocios locales cortés, claro y conciso para la comunidad virtual de Ciudad Juárez y El Paso. ' +
-          'Responde en español a las consultas sobre horarios y disponibilidad. ' +
+          'Responde en español a las consultas sobre horarios, disponibilidad y admisión para la fecha y hora evaluada. ' +
           'REGLAS CRÍTICAS: ' +
           '1. Basa tu respuesta estricta y autoritativamente en los DATOS OPERATIVOS VERIFICADOS proporcionados abajo. ' +
           '2. Conserva los nombres comerciales canónicos exactamente como se proporcionan (por ejemplo, "Wing Spot Gómez Morín"). No traduzcas, transliteres, normalices ni alteres los nombres comerciales. ' +
           '3. No recalcules el estado operativo por tu cuenta, no inventes horarios ni contradigas los datos verificados. ' +
-          '4. Cuando el negocio esté abierto pero el ingreso ya no esté permitido (por ejemplo, por cerrar / límite de admisión alcanzado), distingue claramente que el local sigue abierto para los clientes dentro pero ya no se admiten nuevos ingresos.'
+          '4. Distingue claramente entre si el negocio está operativamente abierto y si la admisión / entrada todavía está permitida a la hora consultada. ' +
+          'Cuando el negocio esté abierto pero el ingreso ya no esté permitido (límite de última entrada alcanzado), aclara explícitamente que el local sigue operando para clientes dentro pero no se admiten nuevos ingresos ni comensales.'
         : 'You are a courteous, clear, and concise local-business assistant for the Ciudad Juárez–El Paso virtual community. ' +
-          'Respond in American English to customer questions about business hours and operational availability. ' +
+          'Respond in American English to customer questions about business hours, operational availability, and admission for the evaluated date and time. ' +
           'CRITICAL RULES: ' +
           '1. Base your answer strictly and authoritatively on the VERIFIED OPERATIONAL DATA provided below. ' +
           '2. Preserve the canonical business name exactly as returned by the World Core (e.g. "Wing Spot Gómez Morín"). Do not translate, transliterate, normalize, or alter business names. ' +
           '3. Do not recalculate operational status, guess, or contradict the verified data. ' +
-          '4. When the business is open but admission is no longer permitted (e.g. closing soon / last entry cutoff reached), clearly distinguish that the business is currently open for existing guests but no new admissions or dine-in entries are permitted.';
+          '4. Clearly distinguish between whether the business is operationally open and whether admission is permitted at the evaluated time. ' +
+          'When the business is open but admission is no longer permitted (last entry cutoff reached), explicitly state that the business is open for existing guests but new admissions, dine-in entries, or orders are denied.';
 
-    // 6. Formulate natural language response using Meta Model grounded in verified data
+    // 7. Formulate natural language response using Meta Model grounded in verified data
     const startTime = performance.now();
     const metaResponse = await this.metaModel.generateAssistantResponse({
       userQuery: cleanQuery,
@@ -156,6 +211,10 @@ export class AnswerBusinessHoursQueryUseCase {
       verifiedStatus,
       schedule,
       evaluatedAtUtc,
+      evaluatedAtCivil: verifiedStatus.civilTime.isoCivilString,
+      evaluationMode,
+      isAmbiguousEvaluationTime: isAmbiguousEvaluationTime ? true : undefined,
+      disambiguationNotice,
       modelUsed: metaResponse.model,
       latencyMs,
       language: lang,

@@ -5,7 +5,7 @@ import { evaluateBusinessOperationalStatus } from '../../src/domain/operational-
 
 describe('Deterministic Operational Status Evaluation', () => {
   // Wing Spot: 09:00 - 18:00, Mon-Sat (1-6), Cutoff 15 mins (17:45), Closed Sun (0)
-  // Timezone: America/Ciudad_Juarez (UTC-06:00 in Oct 2026)
+  // Timezone: America/Ciudad_Juarez (UTC-06:00 MDT in Oct 2026)
   const wingSpotSchedule = validateBusinessSchedule({
     businessId: 'restaurant:wing-spot',
     name: 'Wing Spot Gómez Morín',
@@ -100,7 +100,7 @@ describe('Deterministic Operational Status Evaluation', () => {
 
   it('evaluates status on scheduled holiday / closure override', () => {
     // 2026-12-25 is in closureOverrides
-    // 12:00 local Ciudad Juárez (in Dec: UTC-06:00 = 18:00 UTC)
+    // 11:00 local Ciudad Juárez (in Dec: UTC-07:00 MST = 18:00 UTC)
     const status = evaluateBusinessOperationalStatus(wingSpotSchedule, '2026-12-25T18:00:00.000Z');
     assert.equal(status.status, 'SPECIAL_CLOSURE');
     assert.equal(status.isOpen, false);

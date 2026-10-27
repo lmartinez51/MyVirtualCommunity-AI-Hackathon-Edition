@@ -14,6 +14,7 @@ import {
 import {
   AnswerBusinessHoursQueryUseCase,
   BusinessNotFoundError,
+  InvalidEvaluationTimeError,
   InvalidQueryError,
 } from '../application/answer-business-hours-query.js';
 import { AppConfig, loadConfig, maskApiKey } from '../config/index.js';
@@ -194,7 +195,7 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
           return;
         }
 
-        const { businessId, question, userQuery, language, evaluatedAt } = body;
+        const { businessId, question, userQuery, language, evaluationTime, evaluatedAt } = body;
         const queryText = question ?? userQuery;
 
         if (!businessId || typeof businessId !== 'string' || businessId.trim() === '') {
@@ -233,7 +234,7 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
           businessId,
           question: queryText,
           language,
-          evaluatedAtOverride: evaluatedAt,
+          evaluationTime: evaluationTime ?? evaluatedAt,
         });
 
         sendJson(res, 200, result);
@@ -275,6 +276,14 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
             code: 'world-core-invalid-response',
             message: err.message,
           },
+        });
+        return;
+      }
+
+      if (err instanceof InvalidEvaluationTimeError) {
+        sendJson(res, 400, {
+          success: false,
+          error: { code: 'invalid-evaluation-time', message: err.message },
         });
         return;
       }

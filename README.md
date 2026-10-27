@@ -96,6 +96,32 @@ http://127.0.0.1:3000/
 - Click **Ask Assistant** (or press `Ctrl+Enter`).
 - The assistant retrieves an atomic snapshot from the local World Core and synthesizes a grounded answer with Meta Muse Spark.
 
+### 4.1 Milestone 2: Time-Specific Business Admission & Operating Hours
+
+The demo supports evaluating business operational status and admission eligibility at an explicit point in time:
+
+- **Business-Local Time Semantics**: Any requested evaluation time is interpreted strictly in the business's authoritative IANA timezone (`America/Ciudad_Juarez`), **never** as the browser user's local timezone. Ciudad Juárez observes Mountain Time with daylight saving time under Northern Mexico border regulations:
+  - **Mountain Daylight Time (MDT, UTC-6)**: In summer/autumn (from second Sunday in March through first Sunday in November, e.g. Oct 31, 2026).
+  - **Mountain Standard Time (MST, UTC-7)**: In winter (from first Sunday in November through second Sunday in March, e.g. Nov 1, 2026 post-transition).
+- **Critical Business Rule (Open vs. Admission Eligibility)**:
+  - **Operating Hours**: Wing Spot Gómez Morín operates Mon–Sat from 09:00 to 18:00 with a 15-minute last-entry cutoff (17:45).
+  - **At 5:40 PM**: The business is **OPEN** and new admissions are **PERMITTED**.
+  - **At 5:50 PM**: The business is **OPEN** (status `CLOSING_SOON`), but new admissions are **DENIED** (`admission-cutoff-reached`).
+  - **At 6:05 PM**: The business is **CLOSED** (`business-closed`).
+  - **On Sunday**: The business is **CLOSED** (non-operating day).
+- **Daylight Saving Time (DST) & Calendar Guardrails**:
+  - Rejects non-existent calendar dates (e.g. Feb 30, non-leap Feb 29).
+  - Detects spring-forward gaps (e.g. 2026-03-08 02:30 in `America/Ciudad_Juarez`) and rejects with HTTP 400 `invalid-evaluation-time`.
+  - Flags fall-back overlaps (e.g. 2026-11-01 01:30, which occurs at both 07:30 UTC [MDT, UTC-6] and 08:30 UTC [MST, UTC-7]) with a clear warning communicating that the earlier occurrence (01:30 MDT / 07:30 UTC, offset -06:00) was evaluated.
+- **Distinct Clock vs. Scenario Display**:
+  - The UI facts panel clearly labels whether the evaluation was run against the **Live Simulation Clock** or a **Specific Scenario**, and displays both the local civil timestamp (e.g. `2026-10-31 17:50:00 -06:00` in MDT or `2026-11-01 12:00:00 -07:00` in MST) and the authoritative UTC world time (`2026-10-31T23:50:00.000Z` or `2026-11-01T19:00:00.000Z`).
+- **Quick-Test Scenario Chips**:
+  - The interface provides one-click scenario chips for judges to easily test:
+    - *Sat 5:40 PM (Open & Admitting)*
+    - *Sat 5:50 PM (Closing Soon / Cutoff)*
+    - *Sat 6:05 PM (Closed)*
+    - *Sun 12:00 PM (Closed / Sunday)*
+
 The project follows a strict Hexagonal / Clean Architecture pattern:
 
 ```

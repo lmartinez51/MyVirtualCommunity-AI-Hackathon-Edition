@@ -33,7 +33,7 @@
     <!-- Regional & World Simulation Banner -->
     <div class="regional-banner">
       <span class="banner-icon">📍</span>
-      <span id="txt-regional-info">Ciudad Juárez (America/Ciudad_Juarez, UTC-6) • Authoritative Simulation Data</span>
+      <span id="txt-regional-info">Ciudad Juárez (America/Ciudad_Juarez, MST/MDT) • Authoritative Simulation Data</span>
     </div>
 
     <!-- Main Content Grid -->
@@ -49,6 +49,56 @@
               <option value="restaurant:pasteleria-tia-lupe">Pastelerías La Tía Lupe</option>
             </select>
             <span class="field-hint" id="hint-business">Verified customer-facing business registered in World Core.</span>
+          </div>
+
+          <!-- Evaluation Time Mode Selector -->
+          <div class="form-group">
+            <div class="label-row">
+              <label id="lbl-eval-mode">Evaluation Time</label>
+              <span class="field-badge" id="badge-tz">America/Ciudad_Juarez (MST/MDT)</span>
+            </div>
+            <div class="time-mode-selector" role="radiogroup" aria-labelledby="lbl-eval-mode">
+              <label class="radio-card active" id="lbl-mode-current">
+                <input type="radio" name="evalMode" id="radio-mode-current" value="current" checked>
+                <div class="radio-card-content">
+                  <span class="radio-card-title" id="txt-mode-current-title">Current World Clock</span>
+                  <span class="radio-card-desc" id="txt-mode-current-desc">Evaluate at live simulation time</span>
+                </div>
+              </label>
+              <label class="radio-card" id="lbl-mode-specific">
+                <input type="radio" name="evalMode" id="radio-mode-specific" value="specific">
+                <div class="radio-card-content">
+                  <span class="radio-card-title" id="txt-mode-specific-title">Specific Date & Time</span>
+                  <span class="radio-card-desc" id="txt-mode-specific-desc">Evaluate admission at a chosen instant</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Specific Date & Time Input (shown when specific mode is selected) -->
+          <div class="form-group" id="eval-time-container" hidden>
+            <div class="label-row">
+              <label for="eval-time-input" id="lbl-eval-time">Local Date & Time (Ciudad Juárez)</label>
+              <button type="button" class="text-link-btn" id="btn-reset-time">Reset to Current</button>
+            </div>
+            <input
+              type="datetime-local"
+              id="eval-time-input"
+              name="evaluationTime"
+              class="form-input"
+              step="60"
+            >
+            <span class="field-hint" id="hint-eval-time">
+              Interpreted strictly in America/Ciudad_Juarez (not your browser's local timezone).
+            </span>
+
+            <!-- Scenario Quick-Pick Chips -->
+            <div class="scenario-quick-picks">
+              <span class="quick-picks-label" id="lbl-quick-scenarios">Quick Test Scenarios:</span>
+              <div class="scenario-chips-container" id="scenario-chips-container">
+                <!-- Dynamically populated per language -->
+              </div>
+            </div>
           </div>
 
           <!-- Suggested Queries -->
@@ -152,7 +202,15 @@
                 <span class="fact-value" id="fact-cutoff">-</span>
               </div>
               <div class="fact-item">
-                <span class="fact-label" id="lbl-fact-time">World Time (Evaluated)</span>
+                <span class="fact-label" id="lbl-fact-mode">Evaluation Mode</span>
+                <span class="fact-value mode-pill" id="fact-eval-mode">Current World Clock</span>
+              </div>
+              <div class="fact-item">
+                <span class="fact-label" id="lbl-fact-civil-time">Local Evaluated Time</span>
+                <span class="fact-value fact-mono" id="fact-civil-time">-</span>
+              </div>
+              <div class="fact-item">
+                <span class="fact-label" id="lbl-fact-time">World Time (Evaluated UTC)</span>
                 <span class="fact-value fact-mono" id="fact-world-time">-</span>
               </div>
               <div class="fact-item">
@@ -163,6 +221,11 @@
                 <span class="fact-label" id="lbl-fact-summary">World Core Directive</span>
                 <span class="fact-value" id="fact-summary">-</span>
               </div>
+            </div>
+            <!-- DST Ambiguity Warning -->
+            <div class="dst-warning" id="dst-ambiguity-warning" hidden>
+              <span class="warning-icon">⚠️</span>
+              <span id="txt-dst-warning">Ambiguous local time: This wall clock time occurs twice due to Daylight Saving Time fall-back. Evaluated using the earlier occurrence (01:30 MDT, UTC-6 / 07:30 UTC).</span>
             </div>
             <div class="facts-footer">
               <span class="guarantee-icon">🛡️</span>

@@ -6,10 +6,8 @@ import {
   WorldCoreConnectionError,
   WorldCoreResponseValidationError,
 } from '../../src/adapters/remote-world-core-adapter.js';
-import { BusinessId } from '../../src/domain/business-id.js';
-import { BusinessSchedule } from '../../src/domain/business-schedule.js';
-import { BusinessOperationalStatus } from '../../src/domain/operational-status.js';
-import { BusinessScheduleSnapshot, WorldCorePort } from '../../src/ports/world-core-port.js';
+import type { BusinessId } from '../../src/domain/business-id.js';
+import type { WorldCorePort } from '../../src/ports/world-core-port.js';
 import { createAssistantServer } from '../../src/server/index.js';
 
 describe('API and Browser Integration (Offline Server Tests)', () => {
