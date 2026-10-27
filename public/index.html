@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyVirtualCommunity AI — Bilingual Local Business Assistant</title>
+  <meta name="description" content="Judge-ready interactive demo of the MyVirtualCommunity bilingual local-business assistant grounded in real-time World Core simulation data.">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="brand-badge">AI Hackathon Edition</div>
+        <h1 class="brand-title" id="txt-title">MyVirtualCommunity AI</h1>
+        <p class="brand-subtitle" id="txt-subtitle">Authoritative Local Business Assistant Grounded in World Simulation</p>
+      </div>
+
+      <!-- Language Switcher & Simulation Status -->
+      <div class="header-controls">
+        <div class="sim-badge" title="Authoritative World Core status">
+          <span class="sim-dot"></span>
+          <span id="txt-sim-status">World Core Connected</span>
+        </div>
+        <div class="lang-selector-group" role="group" aria-label="Language Selector">
+          <button type="button" class="lang-btn active" id="btn-lang-en" data-lang="en">EN</button>
+          <button type="button" class="lang-btn" id="btn-lang-es" data-lang="es">ES</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Regional & World Simulation Banner -->
+    <div class="regional-banner">
+      <span class="banner-icon">📍</span>
+      <span id="txt-regional-info">Ciudad Juárez (America/Ciudad_Juarez, UTC-6) • Authoritative Simulation Data</span>
+    </div>
+
+    <!-- Main Content Grid -->
+    <main class="main-content">
+      <!-- Query Column -->
+      <section class="card input-card">
+        <form id="assistant-form" novalidate>
+          <!-- Business Selector -->
+          <div class="form-group">
+            <label for="business-select" id="lbl-business">Select Business</label>
+            <select id="business-select" name="businessId" required>
+              <option value="restaurant:wing-spot" selected>Wing Spot Gómez Morín</option>
+              <option value="restaurant:pasteleria-tia-lupe">Pastelerías La Tía Lupe</option>
+            </select>
+            <span class="field-hint" id="hint-business">Verified customer-facing business registered in World Core.</span>
+          </div>
+
+          <!-- Suggested Queries -->
+          <div class="form-group">
+            <label id="lbl-suggestions">Suggested Questions</label>
+            <div class="chip-container" id="suggestions-container">
+              <!-- Dynamically populated per language/business -->
+            </div>
+          </div>
+
+          <!-- Question Input -->
+          <div class="form-group">
+            <div class="label-row">
+              <label for="question-input" id="lbl-question">Your Question</label>
+              <span class="char-count" id="char-counter">0 / 500</span>
+            </div>
+            <textarea
+              id="question-input"
+              name="question"
+              rows="3"
+              maxlength="500"
+              required
+              placeholder="Is Wing Spot Gómez Morín open right now, and what time does it close?"
+            ></textarea>
+            <span class="field-hint" id="hint-question">Press Ask or Ctrl+Enter to submit.</span>
+          </div>
+
+          <!-- Submit Button -->
+          <div class="form-actions">
+            <button type="submit" id="btn-submit" class="primary-btn">
+              <span class="btn-spinner" id="btn-spinner" hidden></span>
+              <span class="btn-text" id="txt-submit-btn">Ask Assistant</span>
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Output Column -->
+      <section class="card output-card" id="output-section">
+        <!-- Initial Idle State -->
+        <div class="idle-state" id="state-idle">
+          <div class="idle-icon">💬</div>
+          <h2 id="txt-idle-title">Ready for Your Query</h2>
+          <p id="txt-idle-desc">Choose a business and question above to get an authoritative, AI-grounded response.</p>
+        </div>
+
+        <!-- Loading State -->
+        <div class="loading-state" id="state-loading" hidden>
+          <div class="spinner-large"></div>
+          <h2 id="txt-loading-title">Retrieving Authoritative Snapshot...</h2>
+          <p id="txt-loading-desc">Consulting World Core simulation and formulating response with Muse Spark.</p>
+        </div>
+
+        <!-- Error State -->
+        <div class="error-state" id="state-error" hidden>
+          <div class="error-icon">⚠️</div>
+          <h2 id="txt-error-title">Service Error</h2>
+          <p class="error-message" id="error-message-text"></p>
+          <div class="error-hint" id="error-hint-text"></div>
+        </div>
+
+        <!-- Result State -->
+        <div class="result-state" id="state-result" hidden>
+          <!-- Assistant Natural Language Response -->
+          <div class="assistant-response-box">
+            <div class="response-header">
+              <div class="response-badge">
+                <span class="ai-spark-icon">✨</span>
+                <span id="txt-assistant-badge">Muse Spark 1.3</span>
+              </div>
+              <span class="latency-pill" id="lbl-latency">480ms</span>
+            </div>
+            <div class="assistant-answer" id="assistant-answer-text"></div>
+          </div>
+
+          <!-- Authoritative World Core Facts Panel -->
+          <div class="facts-panel">
+            <div class="facts-header">
+              <h3 id="txt-facts-title">Authoritative World Core Facts</h3>
+              <span class="source-tag" id="txt-source-tag">Deterministic Source</span>
+            </div>
+            <div class="facts-grid">
+              <div class="fact-item">
+                <span class="fact-label" id="lbl-fact-name">Canonical Name</span>
+                <span class="fact-value" id="fact-canonical-name">-</span>
+              </div>
+              <div class="fact-item">
+                <span class="fact-label" id="lbl-fact-status">Operational Status</span>
+                <span class="fact-value status-pill" id="fact-status">-</span>
+              </div>
+              <div class="fact-item">
+                <span class="fact-label" id="lbl-fact-admission">Admission Status</span>
+                <span class="fact-value admission-pill" id="fact-admission">-</span>
+              </div>
+              <div class="fact-item">
+                <span class="fact-label" id="lbl-fact-hours">Scheduled Hours</span>
+                <span class="fact-value" id="fact-hours">-</span>
+              </div>
+              <div class="fact-item">
+                <span class="fact-label" id="lbl-fact-cutoff">Last Entry Cutoff</span>
+                <span class="fact-value" id="fact-cutoff">-</span>
+              </div>
+              <div class="fact-item">
+                <span class="fact-label" id="lbl-fact-time">World Time (Evaluated)</span>
+                <span class="fact-value fact-mono" id="fact-world-time">-</span>
+              </div>
+              <div class="fact-item">
+                <span class="fact-label" id="lbl-fact-tz">Regional Timezone</span>
+                <span class="fact-value fact-mono" id="fact-timezone">-</span>
+              </div>
+              <div class="fact-item fact-full">
+                <span class="fact-label" id="lbl-fact-summary">World Core Directive</span>
+                <span class="fact-value" id="fact-summary">-</span>
+              </div>
+            </div>
+            <div class="facts-footer">
+              <span class="guarantee-icon">🛡️</span>
+              <span id="txt-guarantee-note">
+                Factual status and admission rules are derived deterministically from the World Core simulation and cannot be fabricated or altered by the language model.
+              </span>
+            </div>
+          </div>
+
+          <!-- Diagnostics Details -->
+          <details class="diagnostics-details">
+            <summary id="txt-diagnostics-summary">Technical Diagnostics & Usage</summary>
+            <div class="diagnostics-grid">
+              <div class="diag-item">
+                <span class="diag-label">Model Identifier:</span>
+                <span class="diag-value" id="diag-model">-</span>
+              </div>
+              <div class="diag-item">
+                <span class="diag-label">Roundtrip Latency:</span>
+                <span class="diag-value" id="diag-latency">-</span>
+              </div>
+              <div class="diag-item">
+                <span class="diag-label">Language:</span>
+                <span class="diag-value" id="diag-lang">-</span>
+              </div>
+              <div class="diag-item">
+                <span class="diag-label">Prompt Tokens:</span>
+                <span class="diag-value" id="diag-prompt-tokens">-</span>
+              </div>
+              <div class="diag-item">
+                <span class="diag-label">Completion Tokens:</span>
+                <span class="diag-value" id="diag-completion-tokens">-</span>
+              </div>
+              <div class="diag-item">
+                <span class="diag-label">Reasoning Tokens:</span>
+                <span class="diag-value" id="diag-reasoning-tokens">-</span>
+              </div>
+              <div class="diag-item">
+                <span class="diag-label">Total Tokens:</span>
+                <span class="diag-value" id="diag-total-tokens">-</span>
+              </div>
+            </div>
+          </details>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p id="txt-footer-note">
+        MyVirtualCommunity AI Hackathon Edition • Powered by Meta Muse Spark 1.3 & Ciudad Juárez World Simulation
+      </p>
+    </footer>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

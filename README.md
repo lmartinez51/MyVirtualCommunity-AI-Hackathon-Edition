@@ -1,5 +1,269 @@
-MyVirtualCommunity-AI-Hackathon-Edition
+# MyVirtualCommunity AI Hackathon Edition
 
-A persistent, engine-independent virtual world based on the Ciudad Juárez–El Paso border region.
+A clean, testable TypeScript foundation for an authoritative, Meta AI-powered local business assistant in the **MyVirtualCommunity** setting (Ciudad Juárez–El Paso region).
 
-The World Core serves as the single source of truth and authoritative owner of world state. Clients, AI, external services, and renderers interact via intent-expressing commands and state queries, never mutating authoritative world state directly.
+---
+
+## 1. Project Purpose
+
+When users or NPCs ask questions about local businesses (e.g. *"Is Wing Spot open right now?"* or *"What time does Pastelería La Tía Lupe close?"*), conversational language models frequently hallucinate hours, invent schedules, or misunderstand timezones.
+
+This project implements a **grounded hexagonal architecture** where:
+1. **Authoritative State:** Operating schedules, timezones, and operational status are derived deterministically in pure domain code.
+2. **Anti-Hallucination Boundary:** The language model (Meta Model API `muse-spark-1.3`) is provided with verified operational facts and constrained to natural-language synthesis without ever deciding or inventing the hours itself.
+3. **Zero Runtime Dependencies:** Built purely on native Node.js ES modules and built-in APIs (`node:http`, `Intl.DateTimeFormat`, native `fetch`).
+
+---
+
+## 2. Prerequisites
+
+- **Node.js**: v20.18.0 or higher (tested on Node v20.19.0)
+- **npm**: v10 or higher
+- **Operating System**: Cross-platform (Windows, Linux, macOS)
+
+---
+
+## 3. Quickstart & Setup
+
+Clone the repository and install development dependencies:
+
+```bash
+npm install
+```
+
+*(Zero runtime dependencies are installed; only TypeScript, `tsx`, and `@types/node` are downloaded as devDependencies).*
+
+### Available Scripts
+
+| Command | Description |
+| :--- | :--- |
+| `npm run dev` | Launches the local interactive web interface & API server at `http://127.0.0.1:3000`. |
+| `npm run build` | Runs strict TypeScript type checking (`tsc --noEmit`). |
+| `npm test` | Runs the 100% offline automated test suite using Node.js native test runner and `tsx`. |
+| `npm run verify:live-assistant` | **Explicit live command** demonstrating exactly one live Muse Spark query grounded in local World Core data. |
+| `npm run test:meta-smoke` | **Explicit live smoke test** verifying the raw Meta Model API handshake. |
+| `npm run test:integration` | Runs the offline end-to-end integration test pairing `RemoteWorldCoreAdapter` with `MockMetaModelAdapter`. |
+
+---
+
+## 4. Interactive Web Demo (Judge-Ready)
+
+The project includes a clean, responsive, single-origin web application served directly by the Node.js server.
+
+### What the Interactive Demo Does
+- **Bilingual Interface**: Toggles dynamically between English (default for judges) and Spanish while strictly preserving canonical business names returned by the simulation.
+- **Verified Business Selector**: Provides point-and-click selection for only the verified customer-facing establishments in the World Core:
+  - `restaurant:wing-spot` (`Wing Spot Gómez Morín`)
+  - `restaurant:pasteleria-tia-lupe` (`Pastelerías La Tía Lupe`)
+- **Interactive Question Input & Suggested Chips**: Users can type custom questions (up to 500 characters) or click contextual query chips.
+- **Explicit Submission**: Requests are sent to `POST /api/assistant/query` without automated polling or premature execution.
+- **Dual Presentation Display**:
+  1. **AI Assistant Natural Language Answer**: Powered by Meta Muse Spark 1.3 with round-trip latency and model badge.
+  2. **Authoritative World Core Facts Panel**: Deterministic factual panel displaying the canonical name, operational status (Open / Closing Soon / Closed), admission status (Permitted / Not Permitted), scheduled hours, last entry cutoff, authoritative world timestamp, and regional timezone (`America/Ciudad_Juarez`).
+- **Resilient Error State**: Visibly and cleanly alerts users if the World Core simulation is unavailable, ensuring no model calls are made when facts cannot be retrieved.
+
+### How to Run the Interactive Demo Locally
+
+#### Step 1: Start the World Core Simulation Server
+In a separate terminal, start the World Core on port 3001:
+
+```powershell
+cd C:\Users\leolm\Desktop\Proyectos_AI\MyVirtualCommunity
+$env:PORT="3001"
+npx tsx src/index.ts
+```
+
+*Confirm the terminal logs `WORLD SERVER READY`.*
+
+#### Step 2: Start the Hackathon Assistant Web Application
+In your hackathon project directory:
+
+```powershell
+cd C:\Users\leolm\Desktop\Proyectos_AI\MyVirtualCommunity-AI-Hackathon-Edition
+npm run dev
+```
+
+*The server will start at `http://127.0.0.1:3000`.*
+
+#### Step 3: Open the Interface in Your Browser
+Navigate to:
+```
+http://127.0.0.1:3000/
+```
+
+- Click **EN** or **ES** in the top header to toggle between American English and Spanish.
+- Select a business from the dropdown and select a suggested query or type your own question.
+- Click **Ask Assistant** (or press `Ctrl+Enter`).
+- The assistant retrieves an atomic snapshot from the local World Core and synthesizes a grounded answer with Meta Muse Spark.
+
+The project follows a strict Hexagonal / Clean Architecture pattern:
+
+```
+src/
+├── domain/            # Pure business logic & contracts (zero dependencies)
+│   ├── business-id.ts          # Branded type <category>:<slug>
+│   ├── civil-time.ts           # Pure mathematical timezone projection
+│   ├── business-schedule.ts    # Schedule schema and strict validation
+│   └── operational-status.ts   # Deterministic status derivation (OPEN/CLOSED/etc.)
+├── ports/             # Boundary contracts
+│   ├── world-core-port.ts      # Read-only World Core query interface
+│   └── meta-model-port.ts      # Meta Model prompt context & response port
+├── adapters/          # Port implementations
+│   ├── in-memory-world-core-adapter.ts # Seeded development fixture
+│   ├── meta-model-api-adapter.ts       # Live Meta Model API adapter (muse-spark-1.3)
+│   └── mock-meta-model-adapter.ts      # Offline deterministic mock adapter
+├── application/       # Use case orchestration
+│   └── answer-business-hours-query.ts  # End-to-end grounded assistant flow
+├── config/            # Environment parsing & secret masking
+│   └── index.ts
+└── server/            # HTTP transport
+    └── index.ts                # Lightweight REST API server
+scripts/
+├── run-tests.js       # Cross-platform test runner
+└── meta-smoke-test.ts # Dedicated, explicitly invoked live smoke test
+tests/                 # 100% offline test suite (41 tests across 7 suites)
+docs/
+├── HACKATHON_SCOPE.md         # Explicit MVP scope and boundaries
+├── ARCHITECTURE.md            # Complete architecture diagrams and data flows
+├── REUSE_AND_ATTRIBUTION.md   # Provenance & separation from pre-existing project
+└── DEMO_PLAN.md               # Step-by-step testable verification scenarios
+```
+
+---
+
+## 5. Two-Project Architecture & World Core Integration
+
+This project integrates with the pre-existing **MyVirtualCommunity World Core** through a strict, read-only HTTP boundary.
+
+```
+┌────────────────────────────────────────────────────────┐
+│         Existing World Core (MyVirtualCommunity)       │
+│  - Authoritative World Clock (ISO UTC)                 │
+│  - Spatial topology & entity persistence               │
+│  - Read-Only Endpoint:                                 │
+│    GET /api/businesses/:businessId/schedule            │
+└───────────────────────────▲────────────────────────────┘
+                            │ HTTP GET (JSON)
+                            │ Read-Only Boundary
+┌───────────────────────────┴────────────────────────────┐
+│      AI Hackathon Edition (This Repository)            │
+│  - RemoteWorldCoreAdapter (HTTP client)                │
+│  - InMemoryWorldCoreAdapter (Development fixture)      │
+│  - Pure Domain Derivation (CivilTime, Status)          │
+│  - Anti-hallucination prompt boundary                  │
+│  - Meta Model API Adapter (muse-spark-1.3)             │
+└────────────────────────────────────────────────────────┘
+```
+
+### 5.1 How to Start the Existing World Core Server
+
+In the `MyVirtualCommunity` repository:
+
+```powershell
+cd C:\Users\leolm\Desktop\Proyectos_AI\MyVirtualCommunity
+$env:PORT="3001"
+npx tsx src/index.ts
+```
+
+The server starts listening on `http://127.0.0.1:3001` and logs `WORLD SERVER READY`.
+
+### 5.2 How to Verify the World Core Endpoint Independently
+
+Execute a direct HTTP request to the running World Core:
+
+```powershell
+# Windows PowerShell
+Invoke-RestMethod -Uri "http://127.0.0.1:3001/api/businesses/restaurant:wing-spot/schedule" | ConvertTo-Json -Depth 5
+
+# Or via curl
+curl http://127.0.0.1:3001/api/businesses/restaurant:wing-spot/schedule
+```
+
+**Expected Response Contract:**
+```json
+{
+  "success": true,
+  "result": {
+    "businessId": "restaurant:wing-spot",
+    "name": "Wing Spot Gómez Morín",
+    "timeZone": "America/Ciudad_Juarez",
+    "worldTime": "2026-10-27T04:30:03.572Z",
+    "schedule": {
+      "operatingDays": [1, 2, 3, 4, 5, 6],
+      "hours": { "openHour": 9, "openMinute": 0, "closeHour": 18, "closeMinute": 0 },
+      "lastEntryCutoffMinutes": 15,
+      "closureOverrides": [],
+      "version": 1
+    },
+    "operationalStatus": {
+      "status": "closed",
+      "isOpen": false,
+      "admissionPermitted": false,
+      "code": "business-closed",
+      "message": "El establecimiento está cerrado. No se permite el ingreso. Cierre: 18:00.",
+      "openTimeStr": "09:00",
+      "closingTimeStr": "18:00"
+    }
+  }
+}
+```
+
+### 5.3 Configuring `WORLD_CORE_BASE_URL` in the Hackathon Application
+
+Configure the base URL in your `.env` file or environment:
+
+```env
+WORLD_CORE_BASE_URL=http://127.0.0.1:3001
+```
+
+- When `WORLD_CORE_BASE_URL` is set, the assistant server instantiates `RemoteWorldCoreAdapter`.
+- When omitted or unset, the application automatically falls back to `InMemoryWorldCoreAdapter` for offline development.
+
+### 5.4 Running the Local End-to-End Integration Test
+
+With the World Core running on port 3001, execute:
+
+```powershell
+$env:WORLD_CORE_BASE_URL="http://127.0.0.1:3001"
+npm run test:integration
+```
+
+This executes `scripts/verify-world-core-integration.ts`, which:
+1. Queries the real local World Core endpoint directly via native `fetch`.
+2. Validates `RemoteWorldCoreAdapter` against Wing Spot, Tía Lupe, and unknown businesses.
+3. Pairs `RemoteWorldCoreAdapter` with `MockMetaModelAdapter` to execute `AnswerBusinessHoursQueryUseCase` end-to-end with **zero cloud API calls and zero credit consumption**.
+
+### 5.5 Real World Core Data vs. Development Fixture
+
+| Aspect | Real World Core (`MyVirtualCommunity`) | In-Memory Fixture (`InMemoryWorldCoreAdapter`) |
+| :--- | :--- | :--- |
+| **Source of Truth** | Authoritative `WorldClock` and engine state | Fixed in-memory development objects |
+| **Wing Spot Hours** | Mon–Sat, 09:00–18:00 (Closed Sunday) | Mon–Sat, 09:00–18:00 (Closed Sunday) |
+| **Tía Lupe Hours** | Mon–Sat, 09:00–18:00 (Closed Sunday) | Everyday, 08:30–20:00 (Provisional mock) |
+| **Time Source** | Live `WorldClock.getTime()` | Simulated or local machine fallback |
+| **Failure Mode** | Returns 404 / network errors explicitly | Never fails unless programmed |
+
+### 5.6 Boundary Between Pre-Existing and Hackathon Code
+
+- **Pre-existing World Core (`MyVirtualCommunity`):**
+  Owns spatial navigation, 3D world topology, entity identities, NPC behavior, simulation ticks, and persistent world state. The only modification made is the addition of the read-only endpoint `GET /api/businesses/:businessId/schedule` via `getBusinessScheduleView` on `WorldSessionController`.
+- **Hackathon Edition (`MyVirtualCommunity-AI-Hackathon-Edition`):**
+  Newly developed repository containing the hexagonal architecture, `RemoteWorldCoreAdapter`, anti-hallucination domain rules, use case orchestrators, REST server, and Meta Model API integration. **No files are vendored or copied from the original project.**
+
+---
+
+## 6. Security & Credential Safety
+
+- **Zero Credential Leaks:** API keys are never printed in logs or test outputs. The `maskApiKey` utility ensures sensitive tokens are always masked (e.g. `[CONFIGURED]` or `[NOT CONFIGURED]`).
+- **No Automatic API Calls:** The automated test suite (`npm test`), build (`npm run build`), integration tests (`npm run test:integration`), and default server startup (`npm run dev`) never call the live Meta API or consume credits.
+- **Environment Isolation:** `.env` and `.env.*` files are strictly excluded via `.gitignore`. An example template is provided in `.env.example`.
+
+---
+
+## 7. Further Documentation
+
+For in-depth details, see:
+- [`docs/HACKATHON_SCOPE.md`](file:///c:/Users/leolm/Desktop/Proyectos_AI/MyVirtualCommunity-AI-Hackathon-Edition/docs/HACKATHON_SCOPE.md)
+- [`docs/ARCHITECTURE.md`](file:///c:/Users/leolm/Desktop/Proyectos_AI/MyVirtualCommunity-AI-Hackathon-Edition/docs/ARCHITECTURE.md)
+- [`docs/REUSE_AND_ATTRIBUTION.md`](file:///c:/Users/leolm/Desktop/Proyectos_AI/MyVirtualCommunity-AI-Hackathon-Edition/docs/REUSE_AND_ATTRIBUTION.md)
+- [`docs/DEMO_PLAN.md`](file:///c:/Users/leolm/Desktop/Proyectos_AI/MyVirtualCommunity-AI-Hackathon-Edition/docs/DEMO_PLAN.md)

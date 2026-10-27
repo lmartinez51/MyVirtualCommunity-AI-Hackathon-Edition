@@ -1,0 +1,19 @@
+{
+  "name": "my-virtual-community-ai-hackathon",
+  "version": "0.1.0",
+  "description": "MyVirtualCommunity AI Hackathon Edition - Meta AI-powered local-business assistant foundation",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "test": "node scripts/run-tests.js",
+    "dev": "tsx src/server/index.ts",
+    "test:meta-smoke": "tsx scripts/meta-smoke-test.ts",
+    "test:integration": "tsx scripts/verify-world-core-integration.ts",
+    "verify:live-assistant": "tsx scripts/verify-live-assistant.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.24",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}
