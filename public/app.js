@@ -117,7 +117,7 @@
       txtChipBridge: 'Puente Santa Fe',
       txtChipBenavides: 'Farmacias Benavides',
       txtChipOptica: 'Óptica Fashion',
-      txtBtnAskEntity: 'Ask About This Business',
+      txtBtnAskEntity: 'Customize Question',
       lblEntityAddress: 'Verified Address',
       lblEntityCoords: 'Geographic Coordinates',
       lblEntitySources: 'Authoritative Sources',
@@ -128,6 +128,36 @@
       mapLibraryUnavailableDesc: 'The interactive mapping library (Leaflet) could not be loaded. Check your connection or assets and retry.',
       mapTilesUnavailableTitle: 'Map Tiles Unavailable',
       mapTilesUnavailableDesc: 'Interactive street map tiles could not be loaded from online providers. You can still inspect verified landmark details and query business status below.',
+
+      // Demonstration Flow & Judge Readiness
+      txtFlow1: 'Select Landmark',
+      txtFlow2: 'Inspect Verified Facts',
+      txtFlow3: 'Ask in EN or ES',
+      txtFlow4: 'Muse Spark Explains',
+
+      // Entity Snapshot Card
+      txtEntitySnapshotTitle: 'Authoritative World Core Snapshot',
+      entitySnapshotBadge: 'Deterministic Authority',
+      lblEntityStatus: 'Operating Status',
+      lblEntityAdmission: 'Admission Eligibility',
+      lblEntityHours: 'Official Hours',
+      lblEntityCutoff: 'Last Entry Cutoff',
+      lblEntityFreshness: 'Snapshot Freshness & Provenance',
+      txtEntityInfraDesc: 'International Bridge Infrastructure • 24/7 Transit Corridor (Non-commercial • No retail admission cutoff)',
+      consultingSnapshot: 'Consulting World Core...',
+      snapshotUnavailable: 'World Core snapshot unavailable',
+
+      // 1-Click Fast Judge Queries
+      lblEntityQuickQueries: '1-Click Judge Scenarios:',
+      txtQuickOpenNow: 'Check If Open Now',
+      txtQuickSchedule: 'Operating Schedule',
+      txtQuickAdmission: 'Test 5:50 PM Cutoff',
+
+      // Result card query context
+      txtTargetBusinessLabel: 'Queried Business:',
+      txtTrustBadge: '🛡️ Grounded in World Core Snapshot',
+      lblResultQuestion: 'Submitted Question:',
+      lblResultRetrievedAt: 'Snapshot Evaluated & Retrieved:',
       badges: {
         infrastructure: 'Border Infrastructure',
         pharmacy: 'Pharmacy',
@@ -243,7 +273,7 @@
       txtChipBridge: 'Puente Santa Fe',
       txtChipBenavides: 'Farmacias Benavides',
       txtChipOptica: 'Óptica Fashion',
-      txtBtnAskEntity: 'Consultar Sobre Este Negocio',
+      txtBtnAskEntity: 'Personalizar Pregunta',
       lblEntityAddress: 'Dirección Verificada',
       lblEntityCoords: 'Coordenadas Geográficas',
       lblEntitySources: 'Fuentes Autoritativas',
@@ -254,6 +284,36 @@
       mapLibraryUnavailableDesc: 'No se pudo cargar la biblioteca de mapas interactivos (Leaflet). Revisa tu conexión o recursos y reintenta.',
       mapTilesUnavailableTitle: 'Capa de Mapa No Disponible',
       mapTilesUnavailableDesc: 'No se pudieron cargar los mosaicos de calles interactivos de los proveedores en línea. Aún puedes inspeccionar los lugares verificados y consultar el estado del negocio abajo.',
+
+      // Demonstration Flow & Judge Readiness
+      txtFlow1: 'Seleccionar Lugar',
+      txtFlow2: 'Inspeccionar Datos Verificados',
+      txtFlow3: 'Preguntar en EN o ES',
+      txtFlow4: 'Muse Spark Explica',
+
+      // Entity Snapshot Card
+      txtEntitySnapshotTitle: 'Snapshot Autoritativo del World Core',
+      entitySnapshotBadge: 'Autoridad Determinista',
+      lblEntityStatus: 'Estado Operativo',
+      lblEntityAdmission: 'Elegibilidad de Admisión',
+      lblEntityHours: 'Horario Oficial',
+      lblEntityCutoff: 'Límite de Admisión',
+      lblEntityFreshness: 'Frescura y Procedencia del Snapshot',
+      txtEntityInfraDesc: 'Infraestructura de Puente Internacional • Corredor de Tránsito 24/7 (No comercial • Sin límite de admisión comercial)',
+      consultingSnapshot: 'Consultando World Core...',
+      snapshotUnavailable: 'Snapshot de World Core no disponible',
+
+      // 1-Click Fast Judge Queries
+      lblEntityQuickQueries: 'Escenarios Rápidos (1 Clic):',
+      txtQuickOpenNow: '¿Está abierto ahora?',
+      txtQuickSchedule: 'Horario de Atención',
+      txtQuickAdmission: 'Probar límite 5:50 PM',
+
+      // Result card query context
+      txtTargetBusinessLabel: 'Negocio Consultado:',
+      txtTrustBadge: '🛡️ Fundamentado en Snapshot de World Core',
+      lblResultQuestion: 'Pregunta Enviada:',
+      lblResultRetrievedAt: 'Snapshot Evaluado y Obtenido:',
       badges: {
         infrastructure: 'Infraestructura Fronteriza',
         pharmacy: 'Farmacia',
@@ -384,6 +444,16 @@
     document.getElementById('txt-regional-info').textContent = t.regionalInfo;
     document.getElementById('txt-sim-status').textContent = t.simStatusConnected;
 
+    // Demonstration Flow
+    const f1 = document.getElementById('txt-flow-1');
+    if (f1) f1.textContent = t.txtFlow1;
+    const f2 = document.getElementById('txt-flow-2');
+    if (f2) f2.textContent = t.txtFlow2;
+    const f3 = document.getElementById('txt-flow-3');
+    if (f3) f3.textContent = t.txtFlow3;
+    const f4 = document.getElementById('txt-flow-4');
+    if (f4) f4.textContent = t.txtFlow4;
+
     // Spatial corridor strings
     const badgeEl = document.getElementById('txt-spatial-badge');
     if (badgeEl) badgeEl.textContent = t.spatialBadge;
@@ -413,6 +483,44 @@
     if (mapFbDesc) mapFbDesc.textContent = t.mapFallbackDesc;
     const btnRetry = document.getElementById('btn-retry-map');
     if (btnRetry) btnRetry.textContent = t.btnRetryMap || 'Retry Map';
+
+    // Entity snapshot panel strings
+    const snapTitle = document.getElementById('txt-entity-snapshot-title');
+    if (snapTitle) snapTitle.textContent = t.txtEntitySnapshotTitle;
+    const snapBadge = document.getElementById('entity-snapshot-badge');
+    if (snapBadge) snapBadge.textContent = t.entitySnapshotBadge;
+    const lblEntStat = document.getElementById('lbl-entity-status');
+    if (lblEntStat) lblEntStat.textContent = t.lblEntityStatus;
+    const lblEntAdm = document.getElementById('lbl-entity-admission');
+    if (lblEntAdm) lblEntAdm.textContent = t.lblEntityAdmission;
+    const lblEntHrs = document.getElementById('lbl-entity-hours');
+    if (lblEntHrs) lblEntHrs.textContent = t.lblEntityHours;
+    const lblEntCut = document.getElementById('lbl-entity-cutoff');
+    if (lblEntCut) lblEntCut.textContent = t.lblEntityCutoff;
+    const lblEntFresh = document.getElementById('lbl-entity-freshness');
+    if (lblEntFresh) lblEntFresh.textContent = t.lblEntityFreshness;
+    const txtEntInfra = document.getElementById('txt-entity-infra-desc');
+    if (txtEntInfra) txtEntInfra.textContent = t.txtEntityInfraDesc;
+
+    // Quick query buttons strings
+    const lblEntQq = document.getElementById('lbl-entity-quick-queries');
+    if (lblEntQq) lblEntQq.textContent = t.lblEntityQuickQueries;
+    const btnQo = document.getElementById('txt-quick-open-now');
+    if (btnQo) btnQo.textContent = t.txtQuickOpenNow;
+    const btnQs = document.getElementById('txt-quick-schedule');
+    if (btnQs) btnQs.textContent = t.txtQuickSchedule;
+    const btnQa = document.getElementById('txt-quick-admission');
+    if (btnQa) btnQa.textContent = t.txtQuickAdmission;
+
+    // Result card query context strings
+    const txtTargLbl = document.getElementById('txt-target-business-label');
+    if (txtTargLbl) txtTargLbl.textContent = t.txtTargetBusinessLabel;
+    const txtTrBadge = document.getElementById('txt-trust-badge');
+    if (txtTrBadge) txtTrBadge.textContent = t.txtTrustBadge;
+    const lblResQ = document.getElementById('lbl-result-question');
+    if (lblResQ) lblResQ.textContent = t.lblResultQuestion;
+    const lblResRet = document.getElementById('lbl-result-retrieved-at');
+    if (lblResRet) lblResRet.textContent = t.lblResultRetrievedAt;
 
     document.getElementById('lbl-business').textContent = t.lblBusiness;
     document.getElementById('hint-business').textContent = t.hintBusiness;
@@ -460,6 +568,83 @@
     renderScenarioChips();
   }
 
+  // Fetch live authoritative operational status for selected commercial entity
+  const statusCache = {};
+  async function fetchEntityLiveStatus(businessId) {
+    const statusPill = document.getElementById('entity-live-status');
+    const admissionPill = document.getElementById('entity-live-admission');
+    const hoursEl = document.getElementById('entity-live-hours');
+    const cutoffEl = document.getElementById('entity-live-cutoff');
+    const freshnessEl = document.getElementById('entity-live-freshness');
+    const t = I18N[currentLang];
+
+    if (!statusPill) return;
+
+    statusPill.className = 'snapshot-value status-pill';
+    statusPill.textContent = t.consultingSnapshot || 'Consulting World Core...';
+    if (admissionPill) {
+      admissionPill.className = 'snapshot-value admission-pill';
+      admissionPill.textContent = '-';
+    }
+
+    try {
+      const res = await fetch(`/api/businesses/${encodeURIComponent(businessId)}/status`);
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const data = await res.json();
+      if (!data || !data.success || !data.status) {
+        throw new Error('Invalid status data');
+      }
+
+      const st = data.status;
+      statusCache[businessId] = st;
+
+      // Render status pill
+      statusPill.className = 'snapshot-value status-pill';
+      if (st.status === 'OPEN') {
+        statusPill.classList.add('open');
+        statusPill.textContent = t.statusOpen;
+      } else if (st.status === 'CLOSING_SOON') {
+        statusPill.classList.add('closing-soon');
+        statusPill.textContent = t.statusClosingSoon;
+      } else {
+        statusPill.classList.add('closed');
+        statusPill.textContent = t.statusClosed;
+      }
+
+      // Render admission pill
+      if (admissionPill) {
+        admissionPill.className = 'snapshot-value admission-pill';
+        if (st.admissionPermitted) {
+          admissionPill.classList.add('permitted');
+          admissionPill.textContent = t.admissionPermitted;
+        } else {
+          admissionPill.classList.add('denied');
+          admissionPill.textContent = t.admissionDenied;
+        }
+      }
+
+      if (hoursEl) {
+        hoursEl.textContent = `${st.openTimeCivil} – ${st.closeTimeCivil}`;
+      }
+      if (cutoffEl) {
+        cutoffEl.textContent = st.cutoffTimeCivil || '-';
+      }
+      if (freshnessEl) {
+        const civilIso = st.civilTime?.isoCivilString || '';
+        freshnessEl.textContent = `${st.evaluatedAtUtc} (${civilIso} MST/MDT) • ${st.timeZone}`;
+      }
+    } catch (err) {
+      console.warn(`Could not retrieve live status for ${businessId}:`, err);
+      statusPill.className = 'snapshot-value status-pill closed';
+      statusPill.textContent = t.snapshotUnavailable || 'World Core Unavailable';
+      if (freshnessEl) {
+        freshnessEl.textContent = 'World Core simulation server offline or unreachable';
+      }
+    }
+  }
+
   // Render entity detail panel
   function renderEntityDetail(entityId) {
     const entity = CORRIDOR_ENTITIES[entityId];
@@ -475,6 +660,11 @@
     const sourcesEl = document.getElementById('entity-sources');
     const actionsEl = document.getElementById('entity-actions');
 
+    const snapshotCard = document.getElementById('entity-snapshot-card');
+    const snapshotGrid = document.getElementById('entity-snapshot-grid');
+    const infraNote = document.getElementById('entity-infrastructure-note');
+    const quickQueries = document.getElementById('entity-quick-queries');
+
     if (badgeEl) {
       badgeEl.className = 'entity-type-badge ' + entity.entityType;
       badgeEl.textContent = t.badges[entity.entityType] || entity.entityType.toUpperCase();
@@ -488,13 +678,18 @@
     }
     if (sourcesEl) sourcesEl.textContent = entity.sources;
 
-    if (actionsEl) {
-      if (entity.businessId) {
-        actionsEl.style.display = 'block';
-      } else {
-        // Infrastructure is non-commercial
-        actionsEl.style.display = 'none';
-      }
+    if (entity.businessId) {
+      if (actionsEl) actionsEl.style.display = 'block';
+      if (snapshotGrid) snapshotGrid.hidden = false;
+      if (infraNote) infraNote.hidden = true;
+      if (quickQueries) quickQueries.hidden = false;
+      fetchEntityLiveStatus(entity.businessId);
+    } else {
+      // Infrastructure is non-commercial
+      if (actionsEl) actionsEl.style.display = 'none';
+      if (snapshotGrid) snapshotGrid.hidden = true;
+      if (infraNote) infraNote.hidden = false;
+      if (quickQueries) quickQueries.hidden = true;
     }
   }
 
@@ -739,7 +934,7 @@
           });
         });
 
-        // "Ask About This Business" button in detail panel
+        // "Ask About This Business" / "Customize Question" button in detail panel
         const btnAskEntity = document.getElementById('btn-entity-ask-assistant');
         if (btnAskEntity) {
           btnAskEntity.addEventListener('click', () => {
@@ -756,6 +951,52 @@
               form.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
           });
+        }
+
+        // 1-Click Fast Judge Query Actions
+        function executeFastQuery(action) {
+          const ent = CORRIDOR_ENTITIES[selectedEntityId];
+          if (!ent || !ent.businessId) return;
+
+          businessSelect.value = ent.businessId;
+          renderSuggestions();
+
+          const name = ent.name;
+          if (action === 'open-now') {
+            setMode('current');
+            questionInput.value =
+              currentLang === 'es'
+                ? `¿Está abierto ${name} en este momento y a qué hora cierra?`
+                : `Is ${name} open right now, and what time does it close?`;
+          } else if (action === 'schedule') {
+            setMode('current');
+            questionInput.value =
+              currentLang === 'es'
+                ? `¿Cuáles son los días y horarios de atención de ${name}?`
+                : `What are the operating days and hours for ${name}?`;
+          } else if (action === 'admission') {
+            setMode('specific');
+            evalTimeInput.value = '2026-10-24T17:50';
+            questionInput.value =
+              currentLang === 'es'
+                ? `¿Todavía me dejarán entrar si llego a las 5:50 p. m.?`
+                : `Would I still be admitted if I arrive at 5:50 PM?`;
+          }
+          updateCharCount();
+          handleSubmit();
+        }
+
+        const btnQOpen = document.getElementById('btn-quick-open-now');
+        if (btnQOpen) {
+          btnQOpen.addEventListener('click', () => executeFastQuery('open-now'));
+        }
+        const btnQSched = document.getElementById('btn-quick-schedule');
+        if (btnQSched) {
+          btnQSched.addEventListener('click', () => executeFastQuery('schedule'));
+        }
+        const btnQAdm = document.getElementById('btn-quick-admission');
+        if (btnQAdm) {
+          btnQAdm.addEventListener('click', () => executeFastQuery('admission'));
         }
 
         spatialListenersAttached = true;
@@ -849,6 +1090,32 @@
     charCounter.textContent = `${len} / 500`;
   }
 
+  // Helper to prevent duplicate in-flight submissions and manage interactive controls
+  function setSubmittingState(isSubmitting) {
+    btnSubmit.disabled = isSubmitting;
+    btnSpinner.hidden = !isSubmitting;
+    txtSubmitBtn.textContent = isSubmitting ? I18N[currentLang].btnSubmitting : I18N[currentLang].btnSubmit;
+
+    businessSelect.disabled = isSubmitting;
+    questionInput.disabled = isSubmitting;
+    if (evalTimeInput) evalTimeInput.disabled = isSubmitting;
+    if (radioModeCurrent) radioModeCurrent.disabled = isSubmitting;
+    if (radioModeSpecific) radioModeSpecific.disabled = isSubmitting;
+
+    document
+      .querySelectorAll('.suggestion-chip, .scenario-chip, .btn-quick-query, .action-btn-query, .entity-chip')
+      .forEach((el) => {
+        el.disabled = isSubmitting;
+        if (isSubmitting) {
+          el.style.pointerEvents = 'none';
+          el.style.opacity = '0.6';
+        } else {
+          el.style.pointerEvents = '';
+          el.style.opacity = '';
+        }
+      });
+  }
+
   // UI state transition helpers
   function showLoading() {
     stateIdle.hidden = true;
@@ -856,9 +1123,7 @@
     stateResult.hidden = true;
     stateLoading.hidden = false;
 
-    btnSubmit.disabled = true;
-    btnSpinner.hidden = false;
-    txtSubmitBtn.textContent = I18N[currentLang].btnSubmitting;
+    setSubmittingState(true);
   }
 
   function showError(message, hint) {
@@ -870,9 +1135,7 @@
     errorMessageText.textContent = message;
     errorHintText.textContent = hint || '';
 
-    btnSubmit.disabled = false;
-    btnSpinner.hidden = true;
-    txtSubmitBtn.textContent = I18N[currentLang].btnSubmit;
+    setSubmittingState(false);
   }
 
   function showResult(data) {
@@ -881,11 +1144,29 @@
     stateError.hidden = true;
     stateResult.hidden = false;
 
-    btnSubmit.disabled = false;
-    btnSpinner.hidden = true;
-    txtSubmitBtn.textContent = I18N[currentLang].btnSubmit;
+    setSubmittingState(false);
 
     const t = I18N[currentLang];
+
+    // Populate Query Context & Provenance Card
+    const resBusName = document.getElementById('result-business-name');
+    const resQuestionText = document.getElementById('result-question-text');
+    const resRetrievedAt = document.getElementById('result-retrieved-at');
+
+    if (resBusName) {
+      resBusName.textContent =
+        data.verifiedStatus?.businessName ||
+        data.schedule?.name ||
+        businessSelect.options[businessSelect.selectedIndex]?.text ||
+        '';
+    }
+    if (resQuestionText) {
+      resQuestionText.textContent = data.question || questionInput.value.trim();
+    }
+    if (resRetrievedAt) {
+      const civilStr = data.evaluatedAtCivil || data.verifiedStatus?.civilTime?.isoCivilString || '';
+      resRetrievedAt.textContent = `${data.evaluatedAtUtc || data.verifiedStatus?.evaluatedAtUtc || '-'} (${civilStr} MST/MDT)`;
+    }
 
     // Assistant response
     assistantAnswerText.textContent = data.answer || '';
@@ -976,6 +1257,12 @@
       diagCompletionTokens.textContent = 'N/A';
       diagReasoningTokens.textContent = 'N/A';
       diagTotalTokens.textContent = 'N/A';
+    }
+
+    // Smooth scroll to output result card for instant judge visibility
+    const outSec = document.getElementById('output-section');
+    if (outSec) {
+      outSec.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   }
 

@@ -108,6 +108,67 @@ describe('API and Browser Integration (Offline Server Tests)', () => {
       assert.ok(html.includes('id="map-fallback"'), 'Must have map fallback container');
       assert.ok(html.includes('id="btn-retry-map"'), 'Must have map retry button');
     });
+
+    it('serves index.html with demonstration flow strip, entity live snapshot card, and 1-click query buttons', async () => {
+      const res = await fetch(`${baseUrl}/`);
+      assert.strictEqual(res.status, 200);
+      const html = await res.text();
+
+      // Demonstration Flow Strip
+      assert.ok(html.includes('demo-flow-strip'), 'Must include demonstration flow strip');
+      assert.ok(html.includes('id="txt-flow-1"'), 'Must include flow step 1');
+      assert.ok(html.includes('id="txt-flow-2"'), 'Must include flow step 2');
+      assert.ok(html.includes('id="txt-flow-3"'), 'Must include flow step 3');
+      assert.ok(html.includes('id="txt-flow-4"'), 'Must include flow step 4');
+
+      // Live Authoritative Snapshot in Entity Detail Panel
+      assert.ok(html.includes('id="entity-snapshot-card"'), 'Must include entity snapshot card');
+      assert.ok(html.includes('id="entity-live-status"'), 'Must include live status pill in panel');
+      assert.ok(html.includes('id="entity-live-admission"'), 'Must include live admission pill in panel');
+      assert.ok(html.includes('id="entity-live-hours"'), 'Must include live hours in panel');
+      assert.ok(html.includes('id="entity-live-cutoff"'), 'Must include live cutoff in panel');
+      assert.ok(html.includes('id="entity-live-freshness"'), 'Must include snapshot provenance in panel');
+
+      // 1-Click Fast Judge Queries
+      assert.ok(html.includes('id="entity-quick-queries"'), 'Must include 1-click fast queries group');
+      assert.ok(html.includes('id="btn-quick-open-now"'), 'Must include check open now quick button');
+      assert.ok(html.includes('id="btn-quick-schedule"'), 'Must include operating schedule quick button');
+      assert.ok(html.includes('id="btn-quick-admission"'), 'Must include test 5:50 PM cutoff quick button');
+
+      // Query Context Card in Result State
+      assert.ok(html.includes('id="query-context-card"'), 'Must include query context card');
+      assert.ok(html.includes('id="result-business-name"'), 'Must include queried business element');
+      assert.ok(html.includes('id="result-question-text"'), 'Must include submitted question element');
+      assert.ok(html.includes('id="result-retrieved-at"'), 'Must include snapshot retrieval timestamp element');
+    });
+
+    it('serves app.js with live status fetcher, 1-click fast queries, and duplicate submission guard', async () => {
+      const res = await fetch(`${baseUrl}/app.js`);
+      assert.strictEqual(res.status, 200);
+      const js = await res.text();
+
+      assert.ok(js.includes('fetchEntityLiveStatus'), 'Must define fetchEntityLiveStatus');
+      assert.ok(js.includes('setSubmittingState'), 'Must define setSubmittingState to guard against duplicate submissions');
+      assert.ok(js.includes('btn-quick-open-now'), 'Must bind btn-quick-open-now');
+      assert.ok(js.includes('result-retrieved-at'), 'Must update result-retrieved-at');
+    });
+
+    it('returns live operational status and schedule from GET /api/businesses/:id/status', async () => {
+      const res = await fetch(`${baseUrl}/api/businesses/pharmacy%3Afarmacias-benavides/status`);
+      assert.strictEqual(res.status, 200);
+      const data = (await res.json()) as any;
+
+      assert.strictEqual(data.success, true);
+      assert.ok(data.status, 'Must return operational status');
+      assert.strictEqual(data.status.businessName, 'Farmacias Benavides');
+      assert.strictEqual(data.status.businessId, 'pharmacy:farmacias-benavides');
+      assert.strictEqual(data.status.timeZone, 'America/Ciudad_Juarez');
+      assert.ok(data.status.evaluatedAtUtc, 'Must include UTC evaluated instant');
+      assert.ok(data.status.openTimeCivil, 'Must include civil open time');
+      assert.ok(data.status.closeTimeCivil, 'Must include civil close time');
+      assert.ok(data.schedule, 'Must return schedule definition');
+      assert.strictEqual(data.schedule.name, 'Farmacias Benavides');
+    });
   });
 
   describe('2. POST /api/assistant/query Validation & Language Routing', () => {
@@ -130,6 +191,8 @@ describe('API and Browser Integration (Offline Server Tests)', () => {
       // Canonical name preserved without alteration
       assert.strictEqual(data.verifiedStatus.businessName, 'Wing Spot Gómez Morín');
       assert.strictEqual(data.schedule.name, 'Wing Spot Gómez Morín');
+      assert.strictEqual(data.businessId, 'restaurant:wing-spot');
+      assert.strictEqual(data.question, 'Is Wing Spot Gómez Morín open right now, and what time does it close?');
 
       // Model grounding prompt check
       assert.ok(mockMeta.lastContextReceived);

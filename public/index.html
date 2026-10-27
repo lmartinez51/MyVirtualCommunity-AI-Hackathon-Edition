@@ -38,6 +38,29 @@
       <span id="txt-regional-info">Ciudad Juárez (America/Ciudad_Juarez, MST/MDT) • Authoritative Simulation Data</span>
     </div>
 
+    <!-- Demonstration Flow Strip (Judge Orientation) -->
+    <div class="demo-flow-strip" role="region" aria-label="Demonstration Flow">
+      <div class="flow-step">
+        <span class="flow-num">1</span>
+        <span class="flow-text" id="txt-flow-1">Select Landmark</span>
+      </div>
+      <span class="flow-arrow">➔</span>
+      <div class="flow-step">
+        <span class="flow-num">2</span>
+        <span class="flow-text" id="txt-flow-2">Inspect Verified Facts</span>
+      </div>
+      <span class="flow-arrow">➔</span>
+      <div class="flow-step">
+        <span class="flow-num">3</span>
+        <span class="flow-text" id="txt-flow-3">Ask in EN or ES</span>
+      </div>
+      <span class="flow-arrow">➔</span>
+      <div class="flow-step">
+        <span class="flow-num">4</span>
+        <span class="flow-text" id="txt-flow-4">Muse Spark Explains</span>
+      </div>
+    </div>
+
     <!-- Spatial Corridor Section (Milestone 3) -->
     <section class="card spatial-card" id="spatial-section" aria-label="Interactive Map of Avenida Benito Juárez Corridor">
       <div class="spatial-header">
@@ -92,13 +115,68 @@
           <div class="entity-actions" id="entity-actions">
             <button type="button" class="action-btn-query" id="btn-entity-ask-assistant">
               <span class="ai-spark-icon">✨</span>
-              <span id="txt-btn-ask-entity">Ask About This Business</span>
+              <span id="txt-btn-ask-entity">Customize Question</span>
             </button>
           </div>
         </div>
         <p class="entity-description" id="entity-description">
           Verified retail pharmacy offering prescription medications, personal care items, and convenience goods along the Avenida Benito Juárez corridor near the international border crossing.
         </p>
+
+        <!-- Live Authoritative World Core Snapshot Card inside Entity Panel -->
+        <div class="entity-snapshot-card" id="entity-snapshot-card">
+          <div class="snapshot-header">
+            <div class="snapshot-title-group">
+              <span class="snapshot-icon">🏛️</span>
+              <span class="snapshot-title" id="txt-entity-snapshot-title">Authoritative World Core Snapshot</span>
+            </div>
+            <span class="snapshot-badge" id="entity-snapshot-badge">Deterministic Authority</span>
+          </div>
+          <div class="snapshot-grid" id="entity-snapshot-grid">
+            <div class="snapshot-item">
+              <span class="snapshot-label" id="lbl-entity-status">Operating Status</span>
+              <span class="snapshot-value status-pill" id="entity-live-status">Consulting World Core...</span>
+            </div>
+            <div class="snapshot-item">
+              <span class="snapshot-label" id="lbl-entity-admission">Admission Eligibility</span>
+              <span class="snapshot-value admission-pill" id="entity-live-admission">-</span>
+            </div>
+            <div class="snapshot-item">
+              <span class="snapshot-label" id="lbl-entity-hours">Official Hours</span>
+              <span class="snapshot-value" id="entity-live-hours">-</span>
+            </div>
+            <div class="snapshot-item">
+              <span class="snapshot-label" id="lbl-entity-cutoff">Last Entry Cutoff</span>
+              <span class="snapshot-value" id="entity-live-cutoff">-</span>
+            </div>
+            <div class="snapshot-item snapshot-full">
+              <span class="snapshot-label" id="lbl-entity-freshness">Snapshot Freshness & Provenance</span>
+              <span class="snapshot-value fact-mono" id="entity-live-freshness">World Core read-only integration</span>
+            </div>
+          </div>
+          <!-- Infrastructure note (shown when bridge is selected) -->
+          <div class="snapshot-infrastructure-note" id="entity-infrastructure-note" hidden>
+            <span class="info-icon">ℹ️</span>
+            <span id="txt-entity-infra-desc">International Bridge Infrastructure • 24/7 Transit Corridor (Non-commercial • No retail admission cutoff)</span>
+          </div>
+        </div>
+
+        <!-- 1-Click Fast Judge Queries -->
+        <div class="entity-quick-queries" id="entity-quick-queries">
+          <span class="quick-queries-label" id="lbl-entity-quick-queries">1-Click Judge Scenarios:</span>
+          <div class="quick-query-buttons">
+            <button type="button" class="btn-quick-query" id="btn-quick-open-now">
+              <span>⚡</span> <span id="txt-quick-open-now">Check If Open Now</span>
+            </button>
+            <button type="button" class="btn-quick-query" id="btn-quick-schedule">
+              <span>🕒</span> <span id="txt-quick-schedule">Operating Schedule</span>
+            </button>
+            <button type="button" class="btn-quick-query" id="btn-quick-admission">
+              <span>🚪</span> <span id="txt-quick-admission">Test 5:50 PM Cutoff</span>
+            </button>
+          </div>
+        </div>
+
         <div class="entity-meta-grid">
           <div class="entity-meta-item">
             <span class="meta-label" id="lbl-entity-address">Verified Address</span>
@@ -244,12 +322,34 @@
 
         <!-- Result State -->
         <div class="result-state" id="state-result" hidden>
+          <!-- Query Context & Provenance Card -->
+          <div class="query-context-card" id="query-context-card">
+            <div class="query-context-header">
+              <div class="query-business-tag">
+                <span class="target-icon">🎯</span>
+                <span id="txt-target-business-label">Queried Business:</span>
+                <strong id="result-business-name">-</strong>
+              </div>
+              <span class="trust-badge" id="txt-trust-badge">🛡️ Grounded in World Core Snapshot</span>
+            </div>
+            <div class="query-prompt-row">
+              <span class="prompt-icon">💬</span>
+              <span class="prompt-label" id="lbl-result-question">Submitted Question:</span>
+              <span class="prompt-text" id="result-question-text">-</span>
+            </div>
+            <div class="query-snapshot-provenance">
+              <span class="clock-icon">⏱️</span>
+              <span class="provenance-label" id="lbl-result-retrieved-at">Snapshot Evaluated & Retrieved:</span>
+              <span class="provenance-value fact-mono" id="result-retrieved-at">-</span>
+            </div>
+          </div>
+
           <!-- Assistant Natural Language Response -->
           <div class="assistant-response-box">
             <div class="response-header">
               <div class="response-badge">
                 <span class="ai-spark-icon">✨</span>
-                <span id="txt-assistant-badge">Muse Spark 1.3</span>
+                <span id="txt-assistant-badge">Muse Spark 1.3 Interpretation</span>
               </div>
               <span class="latency-pill" id="lbl-latency">480ms</span>
             </div>

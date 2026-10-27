@@ -41,6 +41,8 @@ export interface BusinessHoursQueryRequest {
 
 export interface BusinessHoursQueryResponse {
   readonly success: true;
+  readonly businessId?: string;
+  readonly question?: string;
   readonly answer: string;
   readonly verifiedStatus: BusinessOperationalStatus;
   readonly schedule: BusinessSchedule;
@@ -207,6 +209,8 @@ export class AnswerBusinessHoursQueryUseCase {
 
     return {
       success: true,
+      businessId: request.businessId,
+      question: cleanQuery,
       answer: metaResponse.text,
       verifiedStatus,
       schedule,

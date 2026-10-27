@@ -1280,3 +1280,288 @@ textarea {
   color: var(--accent-cyan);
   font-size: 0.78rem;
 }
+
+/* ==========================================================================
+   Demonstration Flow Strip (Judge Orientation)
+   ========================================================================== */
+.demo-flow-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  background: linear-gradient(90deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: var(--radius-md);
+  padding: 0.65rem 1.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.flow-step {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.flow-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent-blue);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.flow-arrow {
+  color: var(--accent-cyan);
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+@media (max-width: 768px) {
+  .flow-arrow {
+    display: none;
+  }
+  .demo-flow-strip {
+    justify-content: flex-start;
+  }
+}
+
+/* ==========================================================================
+   Entity Snapshot Card (Authoritative World Core Facts in Selection Panel)
+   ========================================================================== */
+.entity-snapshot-card {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.85) 0%, rgba(30, 41, 59, 0.9) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.snapshot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 0.5rem;
+}
+
+.snapshot-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.snapshot-icon {
+  font-size: 1.1rem;
+}
+
+.snapshot-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #f8fafc;
+  letter-spacing: -0.01em;
+}
+
+.snapshot-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.snapshot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.65rem 1rem;
+}
+
+.snapshot-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.snapshot-item.snapshot-full {
+  grid-column: 1 / -1;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+  padding-top: 0.5rem;
+}
+
+.snapshot-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.snapshot-value {
+  font-size: 0.84rem;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.snapshot-infrastructure-note {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: #cbd5e1;
+  background: rgba(139, 92, 246, 0.1);
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  padding: 0.6rem 0.9rem;
+  border-radius: var(--radius-sm);
+}
+
+/* 1-Click Fast Judge Queries */
+.entity-quick-queries {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.quick-queries-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent-cyan);
+}
+
+.quick-query-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.btn-quick-query {
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #bfdbfe;
+  border-radius: var(--radius-sm);
+  padding: 0.45rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.2s ease;
+}
+
+.btn-quick-query:hover:not(:disabled) {
+  background: var(--accent-blue);
+  color: #ffffff;
+  border-color: var(--accent-blue);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+}
+
+.btn-quick-query:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ==========================================================================
+   Query Context Card (Results Provenance)
+   ========================================================================== */
+.query-context-card {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.query-context-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 0.5rem;
+}
+
+.query-business-tag {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.9rem;
+  color: #f8fafc;
+}
+
+.query-business-tag strong {
+  color: #60a5fa;
+  font-size: 0.95rem;
+}
+
+.trust-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+}
+
+.query-prompt-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  font-size: 0.86rem;
+}
+
+.prompt-label {
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.prompt-text {
+  color: #ffffff;
+  font-style: italic;
+}
+
+.query-snapshot-provenance {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.provenance-label {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.provenance-value {
+  color: var(--accent-cyan);
+}
+

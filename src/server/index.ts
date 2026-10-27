@@ -203,7 +203,8 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
           return;
         }
 
-        sendJson(res, 200, { success: true, status });
+        const schedule = await worldCore.getBusinessSchedule(parseResult.data);
+        sendJson(res, 200, { success: true, status, schedule: schedule ?? undefined });
         return;
       }
 
