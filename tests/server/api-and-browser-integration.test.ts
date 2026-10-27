@@ -70,6 +70,43 @@ describe('API and Browser Integration (Offline Server Tests)', () => {
 
       const js = await res.text();
       assert.ok(js.includes('I18N'), 'Must include bilingual i18n support');
+      assert.ok(js.includes('TILE_PROVIDERS'), 'Must configure tile providers');
+      assert.ok(js.includes('tile.openstreetmap.fr'), 'Must use OSM France basemap provider');
+      assert.ok(js.includes('btn-retry-map'), 'Must bind retry button');
+    });
+
+    it('serves local vendor Leaflet CSS and JS without external CDN dependencies', async () => {
+      const cssRes = await fetch(`${baseUrl}/vendor/leaflet/leaflet.css`);
+      assert.strictEqual(cssRes.status, 200);
+      assert.match(cssRes.headers.get('content-type') || '', /text\/css/);
+      const css = await cssRes.text();
+      assert.ok(css.includes('leaflet-container'), 'Must serve valid Leaflet CSS');
+
+      const jsRes = await fetch(`${baseUrl}/vendor/leaflet/leaflet.js`);
+      assert.strictEqual(jsRes.status, 200);
+      assert.match(jsRes.headers.get('content-type') || '', /application\/javascript/);
+      const js = await jsRes.text();
+      assert.ok(js.includes('Leaflet'), 'Must serve valid Leaflet JS bundle');
+    });
+
+    it('serves local vendor Leaflet image assets', async () => {
+      const iconRes = await fetch(`${baseUrl}/vendor/leaflet/images/marker-icon.png`);
+      assert.strictEqual(iconRes.status, 200);
+      assert.match(iconRes.headers.get('content-type') || '', /image\/png/);
+      const buf = Buffer.from(await iconRes.arrayBuffer());
+      assert.ok(buf.length > 500, 'Must serve valid marker icon binary');
+    });
+
+    it('serves index.html with interactive map structure, local vendor assets, and retry button', async () => {
+      const res = await fetch(`${baseUrl}/`);
+      assert.strictEqual(res.status, 200);
+      const html = await res.text();
+
+      assert.ok(html.includes('/vendor/leaflet/leaflet.css'), 'Must reference local Leaflet CSS');
+      assert.ok(html.includes('/vendor/leaflet/leaflet.js'), 'Must reference local Leaflet JS');
+      assert.ok(html.includes('id="corridor-map"'), 'Must have map container');
+      assert.ok(html.includes('id="map-fallback"'), 'Must have map fallback container');
+      assert.ok(html.includes('id="btn-retry-map"'), 'Must have map retry button');
     });
   });
 

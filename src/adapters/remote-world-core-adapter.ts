@@ -88,6 +88,8 @@ export class RemoteWorldCoreAdapter implements WorldCorePort {
     return [
       createBusinessId('restaurant:wing-spot'),
       createBusinessId('restaurant:pasteleria-tia-lupe'),
+      createBusinessId('pharmacy:farmacias-benavides'),
+      createBusinessId('optical:optica-fashion'),
     ];
   }
 

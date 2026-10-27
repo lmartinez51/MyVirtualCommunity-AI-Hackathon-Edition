@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MyVirtualCommunity AI — Bilingual Local Business Assistant</title>
   <meta name="description" content="Judge-ready interactive demo of the MyVirtualCommunity bilingual local-business assistant grounded in real-time World Core simulation data.">
+  <link rel="stylesheet" href="/vendor/leaflet/leaflet.css" />
   <link rel="stylesheet" href="/style.css">
+  <script src="/vendor/leaflet/leaflet.js"></script>
 </head>
 <body>
   <div class="app-layout">
@@ -36,6 +38,84 @@
       <span id="txt-regional-info">Ciudad Juárez (America/Ciudad_Juarez, MST/MDT) • Authoritative Simulation Data</span>
     </div>
 
+    <!-- Spatial Corridor Section (Milestone 3) -->
+    <section class="card spatial-card" id="spatial-section" aria-label="Interactive Map of Avenida Benito Juárez Corridor">
+      <div class="spatial-header">
+        <div class="spatial-title-group">
+          <div class="spatial-badge">
+            <span class="spatial-icon">🗺️</span>
+            <span id="txt-spatial-badge">Spatial Slice v0.1</span>
+          </div>
+          <h2 id="txt-spatial-title">Avenida Benito Juárez & Puente Internacional Paso del Norte</h2>
+          <p id="txt-spatial-desc" class="spatial-desc">
+            Explore the authentic international border corridor, inspect verified landmarks, and query real business operating status.
+          </p>
+        </div>
+        <div class="spatial-quick-select" role="group" aria-label="Quick Corridor Entity Selection">
+          <span class="quick-select-label" id="lbl-corridor-entities">Select Landmark:</span>
+          <div class="entity-chips" id="corridor-entity-chips">
+            <button type="button" class="entity-chip" data-entity-id="infrastructure:puente-paso-del-norte" id="btn-entity-bridge">
+              🌉 <span id="txt-chip-bridge">Puente Santa Fe</span>
+            </button>
+            <button type="button" class="entity-chip active" data-entity-id="pharmacy:farmacias-benavides" id="btn-entity-benavides">
+              💊 <span id="txt-chip-benavides">Farmacias Benavides</span>
+            </button>
+            <button type="button" class="entity-chip" data-entity-id="optical:optica-fashion" id="btn-entity-optica">
+              👓 <span id="txt-chip-optica">Óptica Fashion</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive Leaflet Map Container -->
+      <div class="map-wrapper">
+        <div id="corridor-map" class="corridor-map" tabindex="0" role="region" aria-label="Interactive map of Avenida Juárez"></div>
+        <!-- Fallback banner if map tiles or Leaflet fail -->
+        <div id="map-fallback" class="map-fallback" hidden>
+          <div class="map-fallback-content">
+            <span class="fallback-icon">🗺️</span>
+            <h3 id="txt-map-fallback-title">Map Unavailable</h3>
+            <p id="txt-map-fallback-desc">Interactive map tiles could not be loaded. You can still inspect verified landmark details and query business status below.</p>
+            <button type="button" class="btn-retry-map" id="btn-retry-map">Retry Map</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Selected Entity Contextual Panel -->
+      <div class="entity-detail-panel" id="entity-detail-panel">
+        <div class="entity-detail-header">
+          <div class="entity-title-row">
+            <span class="entity-type-badge pharmacy" id="entity-type-badge">Pharmacy</span>
+            <h3 id="entity-title" class="entity-title">Farmacias Benavides</h3>
+            <span class="entity-popular-name" id="entity-popular-name">(Av. Juárez 610)</span>
+          </div>
+          <div class="entity-actions" id="entity-actions">
+            <button type="button" class="action-btn-query" id="btn-entity-ask-assistant">
+              <span class="ai-spark-icon">✨</span>
+              <span id="txt-btn-ask-entity">Ask About This Business</span>
+            </button>
+          </div>
+        </div>
+        <p class="entity-description" id="entity-description">
+          Verified retail pharmacy offering prescription medications, personal care items, and convenience goods along the Avenida Benito Juárez corridor near the international border crossing.
+        </p>
+        <div class="entity-meta-grid">
+          <div class="entity-meta-item">
+            <span class="meta-label" id="lbl-entity-address">Verified Address</span>
+            <span class="meta-value" id="entity-address">Av. Benito Juárez 610, Chamizal, 32000 Juárez, Chih., México</span>
+          </div>
+          <div class="entity-meta-item">
+            <span class="meta-label" id="lbl-entity-coords">Geographic Coordinates</span>
+            <span class="meta-value meta-mono" id="entity-coords">31.745488° N, 106.486276° W</span>
+          </div>
+          <div class="entity-meta-item">
+            <span class="meta-label" id="lbl-entity-sources">Authoritative Sources</span>
+            <span class="meta-value" id="entity-sources">Google Maps Place (0x34ac7a36f923b0a1) • World Core Registry</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Main Content Grid -->
     <main class="main-content">
       <!-- Query Column -->
@@ -45,7 +125,9 @@
           <div class="form-group">
             <label for="business-select" id="lbl-business">Select Business</label>
             <select id="business-select" name="businessId" required>
-              <option value="restaurant:wing-spot" selected>Wing Spot Gómez Morín</option>
+              <option value="pharmacy:farmacias-benavides" selected>Farmacias Benavides (Av. Juárez 610)</option>
+              <option value="optical:optica-fashion">Óptica Fashion (Av. Juárez 859)</option>
+              <option value="restaurant:wing-spot">Wing Spot Gómez Morín</option>
               <option value="restaurant:pasteleria-tia-lupe">Pastelerías La Tía Lupe</option>
             </select>
             <span class="field-hint" id="hint-business">Verified customer-facing business registered in World Core.</span>

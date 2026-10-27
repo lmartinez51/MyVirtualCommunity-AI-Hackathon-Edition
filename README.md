@@ -122,6 +122,46 @@ The demo supports evaluating business operational status and admission eligibili
     - *Sat 6:05 PM (Closed)*
     - *Sun 12:00 PM (Closed / Sunday)*
 
+### 4.2 Milestone 3: Spatial Slice v0.1 — Avenida Benito Juárez & Puente Internacional Paso del Norte
+
+Milestone 3 implements the first interactive spatial slice for MyVirtualCommunity, centered on the real-world international border corridor around the **Puente Internacional Paso del Norte** (locally known as **Puente Santa Fe**) and the immediate Mexican access of **Avenida Benito Juárez** in Ciudad Juárez, Chihuahua, Mexico.
+
+- **Real Geographic Coordinates & Authentic Geometry**:
+  All landmark coordinates and geometries are verified against real authoritative sources. Zero coordinates, streets, or building footprints are fabricated:
+  - **Puente Internacional Paso del Norte (Puente Santa Fe)**:
+    - *Type*: `infrastructure` (Public border crossing / POI)
+    - *Coordinates*: `31.74765, -106.48698` (Bridge structure) & `31.74588, -106.48641` (Plaza de Cobro C-51 toll plaza)
+    - *Verified Sources*: Fideicomiso de Puentes Fronterizos de Chihuahua (`https://puentesfronterizos.gob.mx/`) • OpenStreetMap (`way/436474488`)
+    - *Semantics*: Non-commercial public infrastructure. Does not have commercial opening hours, retail admission policies, live wait times, or traffic simulations in this slice.
+  - **Farmacias Benavides**:
+    - *Type*: `pharmacy` (Stable ID: `pharmacy:farmacias-benavides`)
+    - *Address*: `Av. Benito Juárez 610, Chamizal, 32000 Juárez, Chih., México`
+    - *Coordinates*: `31.745518, -106.486266`
+    - *Verified Sources*: Google Maps Place CID `0x86e75c26ea377181:0x34ac7a36f923b0a1` (`https://maps.app.goo.gl/5i87hJyNoYhHDm6XA`) • World Core Authoritative Registry
+    - *Verified Schedule*: Monday–Saturday 07:00–22:00, Sunday Closed. Zero last-entry cutoff (`lastEntryCutoffMinutes: 0`).
+  - **Óptica Fashion**:
+    - *Type*: `optical` (Stable ID: `optical:optica-fashion`)
+    - *Address*: `Av. Benito Juárez 859, Centro, 32000 Juárez, Chih., México`
+    - *Coordinates*: `31.745562, -106.486492`
+    - *Verified Sources*: Google Maps Place CID `0x86e75c24e62247f1:0x17281bd8f8ba4b4d` (`https://maps.app.goo.gl/Si2SQah29Cxm13cRA`) • World Core Authoritative Registry
+    - *Verified Schedule*: Monday–Saturday 09:00–17:00, Sunday Closed. Zero last-entry cutoff (`lastEntryCutoffMinutes: 0`).
+
+- **Interactive Leaflet Web Map**:
+  - Embedded lightweight interactive web map using Leaflet and OpenStreetMap tiles with verified attribution (`© OpenStreetMap contributors`).
+  - Custom dark-theme markers distinguish border infrastructure (`🌉`), retail pharmacy (`💊`), and optical services (`👓`).
+  - Clicking any map marker or quick-select chip centers and zooms the map onto that landmark and opens its contextual detail panel.
+  - Keyboard accessible (`Tab`, `Enter`, `Space`) with descriptive ARIA landmark roles.
+  - Offline-resilient fallback: If map tiles or Leaflet fail, an informative fallback banner appears without blocking or breaking the assistant query workflow.
+
+- **Spatial-to-Assistant Contextual Synchronization**:
+  - Selecting a business on the map immediately activates that business in the query dropdown and populates contextual question suggestions.
+  - Clicking **"Ask About This Business"** smoothly focuses the question input and submits queries directly through `POST /api/assistant/query`.
+  - World Core returns authoritative schedule and admission facts, which Meta Muse Spark explains in natural language in either American English or Spanish.
+
+- **Clean Decoupling for Future 3D Clients**:
+  - The map library is purely a visual presentation layer and has zero authority over world state.
+  - Spatial corridor entities and bounding geometries are exposed through `GET /api/spatial/corridor` and pure domain models (`src/domain/spatial-corridor.ts`), ensuring future 3D clients (such as Unity or WebGL) can consume identical entity IDs, coordinates, and World Core rules.
+
 The project follows a strict Hexagonal / Clean Architecture pattern:
 
 ```
@@ -130,7 +170,8 @@ src/
 │   ├── business-id.ts          # Branded type <category>:<slug>
 │   ├── civil-time.ts           # Pure mathematical timezone projection
 │   ├── business-schedule.ts    # Schedule schema and strict validation
-│   └── operational-status.ts   # Deterministic status derivation (OPEN/CLOSED/etc.)
+│   ├── operational-status.ts   # Deterministic status derivation (OPEN/CLOSED/etc.)
+│   └── spatial-corridor.ts     # Authentic spatial corridor & POI definitions (Milestone 3)
 ├── ports/             # Boundary contracts
 │   ├── world-core-port.ts      # Read-only World Core query interface
 │   └── meta-model-port.ts      # Meta Model prompt context & response port

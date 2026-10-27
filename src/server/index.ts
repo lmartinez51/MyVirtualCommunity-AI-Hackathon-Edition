@@ -1,6 +1,6 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { createServer, IncomingMessage, ServerResponse } from 'node:http';
-import { join, resolve } from 'node:path';
+import { extname, resolve } from 'node:path';
 import { InMemoryWorldCoreAdapter } from '../adapters/in-memory-world-core-adapter.js';
 import { MetaModelApiAdapter } from '../adapters/meta-model-api-adapter.js';
 import { MockMetaModelAdapter } from '../adapters/mock-meta-model-adapter.js';
@@ -19,6 +19,7 @@ import {
 } from '../application/answer-business-hours-query.js';
 import { AppConfig, loadConfig, maskApiKey } from '../config/index.js';
 import { InvalidBusinessIdError, parseBusinessId } from '../domain/business-id.js';
+import { PASO_DEL_NORTE_CORRIDOR } from '../domain/spatial-corridor.js';
 import { MetaModelPort } from '../ports/meta-model-port.js';
 import { WorldCorePort } from '../ports/world-core-port.js';
 
@@ -93,28 +94,41 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
 
     try {
       // 1. Static file serving for browser client
-      if (method === 'GET') {
-        let filePath: string | null = null;
-        let contentType = 'text/plain';
+      if (method === 'GET' && !pathname.startsWith('/api/') && pathname !== '/health') {
+        const safeRelativePath = pathname === '/' ? 'index.html' : pathname.replace(/^\/+/, '');
+        const targetPath = resolve(publicDir, safeRelativePath);
 
-        if (pathname === '/' || pathname === '/index.html') {
-          filePath = join(publicDir, 'index.html');
-          contentType = 'text/html; charset=utf-8';
-        } else if (pathname === '/style.css') {
-          filePath = join(publicDir, 'style.css');
-          contentType = 'text/css; charset=utf-8';
-        } else if (pathname === '/app.js') {
-          filePath = join(publicDir, 'app.js');
-          contentType = 'application/javascript; charset=utf-8';
-        }
-
-        if (filePath && existsSync(filePath)) {
-          const content = readFileSync(filePath);
-          res.statusCode = 200;
-          res.setHeader('Content-Type', contentType);
-          res.setHeader('Content-Length', content.length);
-          res.end(content);
-          return;
+        // Security check: ensure target path is strictly within publicDir and is an existing file
+        if (targetPath.startsWith(resolve(publicDir)) && existsSync(targetPath)) {
+          try {
+            const stat = statSync(targetPath);
+            if (stat.isFile()) {
+              const ext = extname(targetPath).toLowerCase();
+              const mimeMap: Record<string, string> = {
+                '.html': 'text/html; charset=utf-8',
+                '.css': 'text/css; charset=utf-8',
+                '.js': 'application/javascript; charset=utf-8',
+                '.json': 'application/json; charset=utf-8',
+                '.png': 'image/png',
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.svg': 'image/svg+xml',
+                '.ico': 'image/x-icon',
+                '.woff': 'font/woff',
+                '.woff2': 'font/woff2',
+                '.ttf': 'font/ttf',
+              };
+              const contentType = mimeMap[ext] ?? 'application/octet-stream';
+              const content = readFileSync(targetPath);
+              res.statusCode = 200;
+              res.setHeader('Content-Type', contentType);
+              res.setHeader('Content-Length', content.length);
+              res.end(content);
+              return;
+            }
+          } catch {
+            // Fall through to API or 404
+          }
         }
       }
 
@@ -130,7 +144,16 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
         return;
       }
 
-      // 3. List registered businesses
+      // 3. GET /api/spatial/corridor (Authoritative Spatial Slice definition)
+      if (method === 'GET' && pathname === '/api/spatial/corridor') {
+        sendJson(res, 200, {
+          success: true,
+          corridor: PASO_DEL_NORTE_CORRIDOR,
+        });
+        return;
+      }
+
+      // 4. List registered businesses
       if (method === 'GET' && pathname === '/api/businesses') {
         const ids =
           'listBusinessIds' in worldCore &&

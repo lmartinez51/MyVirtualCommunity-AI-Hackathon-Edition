@@ -66,8 +66,38 @@ export class InMemoryWorldCoreAdapter implements WorldCorePort {
       lastEntryCutoffMinutes: 15,
     });
 
+    const farmaciasBenavides = validateBusinessSchedule({
+      businessId: 'pharmacy:farmacias-benavides',
+      name: 'Farmacias Benavides',
+      timeZone: 'America/Ciudad_Juarez',
+      operatingDays: [1, 2, 3, 4, 5, 6], // Mon-Sat (closed Sunday)
+      hours: {
+        openHour: 7,
+        openMinute: 0,
+        closeHour: 22,
+        closeMinute: 0,
+      },
+      lastEntryCutoffMinutes: 0,
+    });
+
+    const opticaFashion = validateBusinessSchedule({
+      businessId: 'optical:optica-fashion',
+      name: 'Óptica Fashion',
+      timeZone: 'America/Ciudad_Juarez',
+      operatingDays: [1, 2, 3, 4, 5, 6], // Mon-Sat (closed Sunday)
+      hours: {
+        openHour: 9,
+        openMinute: 0,
+        closeHour: 17,
+        closeMinute: 0,
+      },
+      lastEntryCutoffMinutes: 0,
+    });
+
     this.schedules.set(wingSpot.businessId, wingSpot);
     this.schedules.set(tiaLupe.businessId, tiaLupe);
+    this.schedules.set(farmaciasBenavides.businessId, farmaciasBenavides);
+    this.schedules.set(opticaFashion.businessId, opticaFashion);
     this.simulatedWorldTime = null;
   }
 
