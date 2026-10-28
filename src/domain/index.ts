@@ -2,3 +2,8 @@ export * from './business-id.js';
 export * from './civil-time.js';
 export * from './business-schedule.js';
 export * from './operational-status.js';
+export * from './spatial-corridor.js';
+export * from './border-crossing.js';
+export * from './synthetic-witness.js';
+export * from './border-concierge.js';
+export * from './business-attendant.js';

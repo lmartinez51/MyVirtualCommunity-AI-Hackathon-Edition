@@ -3,6 +3,7 @@ import { ConciergeIntent } from '../domain/border-concierge.js';
 import { BusinessSchedule } from '../domain/business-schedule.js';
 import { BusinessOperationalStatus } from '../domain/operational-status.js';
 import { SyntheticWitnessProfile } from '../domain/synthetic-witness.js';
+import { BusinessAttendantProfile } from '../domain/business-attendant.js';
 
 /**
  * Context provided to the Meta Model for grounded, hallucination-free generation.
@@ -46,6 +47,21 @@ export interface ConciergePromptContext {
   readonly language: 'en' | 'es';
 }
 
+/**
+ * Context provided to the Meta Model for local storefront business attendants.
+ *
+ * Invariant:
+ * The model receives the attendant's profile and verified business snapshot from World Core.
+ * The model cannot invent inventory, prices, appointments, or medical advice.
+ */
+export interface BusinessAttendantPromptContext {
+  readonly attendant: BusinessAttendantProfile;
+  readonly status: BusinessOperationalStatus;
+  readonly schedule: BusinessSchedule;
+  readonly userMessage: string;
+  readonly language: 'en' | 'es';
+}
+
 export interface MetaModelUsageDetails {
   readonly reasoningTokens?: number;
   readonly acceptedPredictionTokens?: number;
@@ -86,4 +102,9 @@ export interface MetaModelPort {
    * Generates natural language guidance for the Border Concierge grounded in official CBP observations.
    */
   generateConciergeResponse?(context: ConciergePromptContext): Promise<MetaModelResponse>;
+
+  /**
+   * Generates grounded dialogue for a storefront business attendant.
+   */
+  generateBusinessAttendantResponse?(context: BusinessAttendantPromptContext): Promise<MetaModelResponse>;
 }

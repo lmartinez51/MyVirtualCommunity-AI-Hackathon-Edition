@@ -265,6 +265,26 @@
       conciergeError: 'Unable to retrieve concierge guidance. Please inspect the official board above.',
       conciergeTruthNotice: 'ℹ️ Guidance is grounded in official CBP data and public camera portals. Reported wait times are point-in-time snapshots and do not guarantee queue velocity.',
 
+      // Increment 4 — Local Storefront Business Attendants Translations
+      attendantsBadge: 'Storefront Virtual Attendants',
+      attendantsTitle: 'Local Business Attendants (Avenida Juárez)',
+      attendantsDesc: 'Interact with simulated virtual attendants for local businesses along Avenida Juárez. Inquire about verified operating hours, open status, and store locations.',
+      attendantsDisclosure: 'Virtual attendant · AI simulation',
+      attendantPromptsLabel: 'Suggested Questions:',
+      attendantPlaceholder: 'Ask about opening hours, current open status, or store location...',
+      btnAttendantSend: 'Ask Attendant',
+      attendantHint: 'Bilingual (English / Español) • Grounded in authoritative World Core snapshot',
+      attendantLoading: 'Consulting verified storefront facts...',
+      attendantError: 'Unable to communicate with attendant. Please inspect the snapshot above.',
+      attendantFactsTitle: 'Authoritative Business Facts',
+      attendantFactsBadge: 'World Core Verified',
+      lblFactBusiness: 'Establishment:',
+      lblFactStatus: 'Operating Status:',
+      lblFactHours: 'Official Hours:',
+      lblFactAddress: 'Address:',
+      lblFactEval: 'Evaluated Time:',
+      attendantUnavailableNotice: 'Note: Product inventory, live stock, pricing, and medical prescriptions are not part of verified business records. The virtual attendant cannot confirm or fulfill these requests.',
+
       badges: {
         infrastructure: 'Border Infrastructure',
         pharmacy: 'Pharmacy',
@@ -526,6 +546,26 @@
       conciergeLoading: 'Elena Ramos está analizando los datos verificados de CBP...',
       conciergeError: 'No se pudo obtener la orientación del concierge. Por favor consulte el tablero oficial superior.',
       conciergeTruthNotice: 'ℹ️ La orientación está basada en datos oficiales de CBP y cámaras públicas. Los tiempos de espera son instantáneas de momento y no garantizan la velocidad de la fila.',
+
+      // Increment 4 — Local Storefront Business Attendants Translations
+      attendantsBadge: 'Encargados Virtuales de Tienda',
+      attendantsTitle: 'Encargados de Negocios Locales (Avenida Juárez)',
+      attendantsDesc: 'Interactúe con encargados virtuales simulados para comercios de la Avenida Juárez. Consulte horarios verificados, estado de apertura y ubicación de tiendas.',
+      attendantsDisclosure: 'Encargado virtual · Simulación de IA',
+      attendantPromptsLabel: 'Preguntas sugeridas:',
+      attendantPlaceholder: 'Pregunte sobre horarios de atención, si está abierto o la ubicación...',
+      btnAttendantSend: 'Preguntar al Encargado',
+      attendantHint: 'Bilingüe (English / Español) • Basado en snapshot autoritativo de World Core',
+      attendantLoading: 'Consultando datos comerciales verificados...',
+      attendantError: 'No se pudo comunicar con el encargado. Por favor revise el estado oficial superior.',
+      attendantFactsTitle: 'Datos Comerciales Autoritativos',
+      attendantFactsBadge: 'Verificado por World Core',
+      lblFactBusiness: 'Establecimiento:',
+      lblFactStatus: 'Estado Operativo:',
+      lblFactHours: 'Horario Oficial:',
+      lblFactAddress: 'Dirección:',
+      lblFactEval: 'Hora Evaluada:',
+      attendantUnavailableNotice: 'Aviso: El inventario de productos en vivo, existencias, precios y recetas médicas no forman parte de los registros verificados del sistema. El encargado virtual no puede verificar ni comprometer estas solicitudes.',
 
       badges: {
         infrastructure: 'Infraestructura Fronteriza',
@@ -1035,9 +1075,47 @@
     const cTruth = document.getElementById('concierge-truth-notice');
     if (cTruth) cTruth.textContent = t.conciergeTruthNotice;
 
+    // Storefront Business Attendants strings
+    const aBadge = document.getElementById('txt-attendants-badge');
+    if (aBadge) aBadge.textContent = t.attendantsBadge;
+    const aTitle = document.getElementById('txt-attendants-title');
+    if (aTitle) aTitle.textContent = t.attendantsTitle;
+    const aDesc = document.getElementById('txt-attendants-desc');
+    if (aDesc) aDesc.textContent = t.attendantsDesc;
+    const aDisc = document.getElementById('tag-attendants-disclosure');
+    if (aDisc) aDisc.textContent = t.attendantsDisclosure;
+    const aPromptsLbl = document.getElementById('txt-attendant-prompts-label');
+    if (aPromptsLbl) aPromptsLbl.textContent = t.attendantPromptsLabel;
+    const aInput = document.getElementById('attendant-user-input');
+    if (aInput) aInput.placeholder = t.attendantPlaceholder;
+    const aSend = document.getElementById('txt-btn-attendant-send');
+    if (aSend) aSend.textContent = t.btnAttendantSend;
+    const aHint = document.getElementById('txt-attendant-hint');
+    if (aHint) aHint.textContent = t.attendantHint;
+    const aLoad = document.getElementById('txt-attendant-loading');
+    if (aLoad) aLoad.textContent = t.attendantLoading;
+    const aErr = document.getElementById('txt-attendant-error');
+    if (aErr) aErr.textContent = t.attendantError;
+    const aFactsTitle = document.getElementById('txt-attendant-facts-title');
+    if (aFactsTitle) aFactsTitle.textContent = t.attendantFactsTitle;
+    const aFactsBadge = document.getElementById('txt-attendant-facts-badge');
+    if (aFactsBadge) aFactsBadge.textContent = t.attendantFactsBadge;
+    const lblFactBiz = document.getElementById('lbl-attendant-fact-business');
+    if (lblFactBiz) lblFactBiz.textContent = t.lblFactBusiness;
+    const lblFactStat = document.getElementById('lbl-attendant-fact-status');
+    if (lblFactStat) lblFactStat.textContent = t.lblFactStatus;
+    const lblFactHrs = document.getElementById('lbl-attendant-fact-hours');
+    if (lblFactHrs) lblFactHrs.textContent = t.lblFactHours;
+    const lblFactAddr = document.getElementById('lbl-attendant-fact-address');
+    if (lblFactAddr) lblFactAddr.textContent = t.lblFactAddress;
+    const lblFactEv = document.getElementById('lbl-attendant-fact-eval');
+    if (lblFactEv) lblFactEv.textContent = t.lblFactEval;
+
     renderBorderIntelligence();
     renderWitnessCards();
     updateActiveWitnessDisplay();
+    renderAttendantSelector();
+    renderActiveAttendantDetails();
     renderEntityDetail(selectedEntityId);
     renderSuggestions();
     renderScenarioChips();
@@ -1227,6 +1305,12 @@
       if (businessSelect.value !== entity.businessId) {
         businessSelect.value = entity.businessId;
         renderSuggestions();
+      }
+
+      if (entity.businessId === 'pharmacy:farmacias-benavides') {
+        selectStorefrontAttendant('carlos-farmacia-attendant', false);
+      } else if (entity.businessId === 'optical:optica-fashion') {
+        selectStorefrontAttendant('valeria-optica-attendant', false);
       }
     }
   }
@@ -2575,6 +2659,292 @@
     }
   }
 
+  // ============================================================================
+  // Storefront Business Attendants Client State & Logic (Increment 4)
+  // ============================================================================
+  let storefrontAttendants = [];
+  let activeAttendantId = 'carlos-farmacia-attendant';
+  let isAttendantChatLoading = false;
+
+  async function fetchBusinessAttendants() {
+    try {
+      const res = await fetch('/api/businesses/attendants');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data && data.success && Array.isArray(data.attendants)) {
+        storefrontAttendants = data.attendants;
+        renderAttendantSelector();
+        renderActiveAttendantDetails();
+        renderAttendantPrompts();
+      }
+    } catch (err) {
+      console.warn('Failed to fetch storefront business attendants:', err);
+    }
+  }
+
+  function renderAttendantSelector() {
+    const container = document.getElementById('attendant-selector-grid');
+    if (!container || !storefrontAttendants.length) return;
+
+    container.innerHTML = '';
+    const isEs = currentLang === 'es';
+
+    storefrontAttendants.forEach((attendant) => {
+      const card = document.createElement('div');
+      const isActive = attendant.id === activeAttendantId;
+      card.className = `attendant-card ${isActive ? 'active' : ''}`;
+      card.setAttribute('role', 'radio');
+      card.setAttribute('aria-checked', isActive ? 'true' : 'false');
+      card.setAttribute('tabindex', '0');
+
+      card.innerHTML = `
+        <div class="attendant-card-header">
+          <span class="attendant-card-avatar">${attendant.avatar}</span>
+          <div class="attendant-card-titles">
+            <h4 class="attendant-card-name">${attendant.name}</h4>
+            <span class="attendant-card-role">${isEs ? attendant.role.es : attendant.role.en}</span>
+          </div>
+        </div>
+        <div class="attendant-card-biz-badge">${attendant.businessCanonicalName}</div>
+        <p class="attendant-card-bio">${isEs ? attendant.bio.es : attendant.bio.en}</p>
+        <span class="attendant-card-tag">${isEs ? attendant.virtualMarker.es : attendant.virtualMarker.en}</span>
+      `;
+
+      card.addEventListener('click', () => {
+        selectStorefrontAttendant(attendant.id, true);
+      });
+
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          selectStorefrontAttendant(attendant.id, true);
+        }
+      });
+
+      container.appendChild(card);
+    });
+  }
+
+  function selectStorefrontAttendant(attendantId, syncMapEntity = true) {
+    activeAttendantId = attendantId;
+    renderAttendantSelector();
+    renderActiveAttendantDetails();
+    renderAttendantPrompts();
+
+    if (syncMapEntity) {
+      const active = storefrontAttendants.find((a) => a.id === attendantId);
+      if (active && active.businessId) {
+        if (selectedEntityId !== active.businessId) {
+          selectEntity(active.businessId);
+        }
+      }
+    }
+  }
+
+  function renderActiveAttendantDetails() {
+    const active = storefrontAttendants.find((a) => a.id === activeAttendantId);
+    if (!active) return;
+
+    const isEs = currentLang === 'es';
+    const avatarEl = document.getElementById('attendant-active-avatar');
+    if (avatarEl) avatarEl.textContent = active.avatar;
+
+    const nameEl = document.getElementById('txt-attendant-active-name');
+    if (nameEl) nameEl.textContent = active.name;
+
+    const bizEl = document.getElementById('txt-attendant-active-business');
+    if (bizEl) bizEl.textContent = active.businessCanonicalName;
+
+    const markerEl = document.getElementById('txt-attendant-active-marker');
+    if (markerEl) markerEl.textContent = isEs ? active.virtualMarker.es : active.virtualMarker.en;
+
+    const roleEl = document.getElementById('txt-attendant-active-role');
+    if (roleEl) roleEl.textContent = isEs ? active.role.es : active.role.en;
+
+    const bioEl = document.getElementById('txt-attendant-active-bio');
+    if (bioEl) bioEl.textContent = isEs ? active.bio.es : active.bio.en;
+
+    const discEl = document.getElementById('txt-attendant-active-disclosure');
+    if (discEl) {
+      discEl.textContent = `ℹ️ ${isEs ? active.virtualDisclosure.es : active.virtualDisclosure.en}`;
+    }
+
+    const speakerEl = document.getElementById('attendant-speaker-name');
+    if (speakerEl) {
+      speakerEl.textContent = `${active.name} · ${active.businessCanonicalName}`;
+    }
+
+    const valBiz = document.getElementById('val-attendant-fact-business');
+    if (valBiz) valBiz.textContent = active.businessCanonicalName;
+
+    const valAddr = document.getElementById('val-attendant-fact-address');
+    if (valAddr) valAddr.textContent = active.verifiedAddress;
+  }
+
+  function renderAttendantPrompts() {
+    const container = document.getElementById('attendant-chips-container');
+    if (!container) return;
+
+    container.innerHTML = '';
+    const active = storefrontAttendants.find((a) => a.id === activeAttendantId);
+    if (!active || !Array.isArray(active.suggestedPrompts)) return;
+
+    const isEs = currentLang === 'es';
+    active.suggestedPrompts.forEach((item) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn-attendant-chip';
+      btn.textContent = isEs ? item.label.es : item.label.en;
+      btn.setAttribute('data-prompt-en', item.prompt.en);
+      btn.setAttribute('data-prompt-es', item.prompt.es);
+
+      btn.addEventListener('click', () => {
+        const prompt = isEs ? item.prompt.es : item.prompt.en;
+        const input = document.getElementById('attendant-user-input');
+        if (input && prompt) {
+          input.value = prompt;
+          sendAttendantMessage(prompt);
+        }
+      });
+
+      container.appendChild(btn);
+    });
+  }
+
+  function initStorefrontAttendantChat() {
+    const form = document.getElementById('attendant-chat-form');
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const input = document.getElementById('attendant-user-input');
+        if (input && input.value.trim()) {
+          sendAttendantMessage(input.value.trim());
+        }
+      });
+    }
+
+    const input = document.getElementById('attendant-user-input');
+    const counter = document.getElementById('attendant-char-count');
+    if (input && counter) {
+      input.addEventListener('input', () => {
+        counter.textContent = `${input.value.length} / 500`;
+      });
+    }
+  }
+
+  async function sendAttendantMessage(messageText) {
+    if (!messageText || !messageText.trim() || isAttendantChatLoading) return;
+    const cleanMsg = messageText.trim();
+
+    isAttendantChatLoading = true;
+    const loadingEl = document.getElementById('attendant-loading');
+    const errorEl = document.getElementById('attendant-error');
+    const sendBtn = document.getElementById('btn-attendant-send');
+    const inputEl = document.getElementById('attendant-user-input');
+    const t = I18N[currentLang];
+
+    if (loadingEl) loadingEl.hidden = false;
+    if (errorEl) errorEl.hidden = true;
+    if (sendBtn) sendBtn.disabled = true;
+    if (inputEl) inputEl.disabled = true;
+
+    try {
+      const res = await fetch('/api/businesses/attendants/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          attendantId: activeAttendantId,
+          message: cleanMsg,
+          language: currentLang,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Storefront attendant inquiry returned status ${res.status}`);
+      }
+
+      const data = await res.json();
+      if (data && data.success && data.response) {
+        renderAttendantResponse(data.response);
+        if (inputEl) inputEl.value = '';
+        const counter = document.getElementById('attendant-char-count');
+        if (counter) counter.textContent = '0 / 500';
+      } else {
+        throw new Error('Malformed storefront attendant response received');
+      }
+    } catch (err) {
+      console.warn('Storefront attendant consultation failed:', err);
+      if (errorEl) {
+        errorEl.hidden = false;
+        const txtErr = document.getElementById('txt-attendant-error');
+        if (txtErr) txtErr.textContent = t.attendantError;
+      }
+    } finally {
+      isAttendantChatLoading = false;
+      if (loadingEl) loadingEl.hidden = true;
+      if (sendBtn) sendBtn.disabled = false;
+      if (inputEl) {
+        inputEl.disabled = false;
+        inputEl.focus();
+      }
+    }
+  }
+
+  function renderAttendantResponse(resp) {
+    const speechEl = document.getElementById('attendant-speech-text');
+    const speakerEl = document.getElementById('attendant-speaker-name');
+    const tagEl = document.getElementById('attendant-provenance-tag');
+
+    if (speechEl) {
+      speechEl.textContent = resp.text;
+    }
+
+    if (speakerEl) {
+      speakerEl.textContent = `${resp.attendantName} · ${resp.businessCanonicalName}`;
+    }
+
+    if (tagEl) {
+      tagEl.textContent =
+        resp.provider === 'meta-muse-spark-1.3'
+          ? 'Meta Muse Spark 1.3 · Grounded in Storefront Facts'
+          : 'Deterministic Grounded Guidance · Storefront Facts';
+    }
+
+    if (resp.authoritativeFacts) {
+      const facts = resp.authoritativeFacts;
+      const valBiz = document.getElementById('val-attendant-fact-business');
+      if (valBiz) valBiz.textContent = facts.businessName;
+
+      const valStat = document.getElementById('val-attendant-fact-status');
+      if (valStat) {
+        valStat.textContent = facts.status;
+        valStat.className = `fact-value status-pill ${facts.status.toLowerCase()}`;
+      }
+
+      const valHrs = document.getElementById('val-attendant-fact-hours');
+      if (valHrs) {
+        valHrs.textContent = `${facts.openTimeCivil} – ${facts.closeTimeCivil} (${facts.hoursSummary})`;
+      }
+
+      const valAddr = document.getElementById('val-attendant-fact-address');
+      if (valAddr) valAddr.textContent = facts.address;
+
+      const valEval = document.getElementById('val-attendant-fact-eval');
+      if (valEval) valEval.textContent = facts.evaluatedAtCivil;
+
+      const noticeEl = document.getElementById('attendant-unavailable-notice');
+      const msgEl = document.getElementById('txt-attendant-unavailable-msg');
+      if (noticeEl && msgEl) {
+        if (facts.unavailableFactsNotice) {
+          noticeEl.hidden = false;
+          msgEl.textContent = facts.unavailableFactsNotice;
+        } else {
+          noticeEl.hidden = true;
+        }
+      }
+    }
+  }
+
   // Initialize
   updateLanguage('en');
   updateCharCount();
@@ -2584,4 +2954,6 @@
   fetchBorderWaitTimes();
   fetchSyntheticWitnesses();
   initBorderConcierge();
+  initStorefrontAttendantChat();
+  fetchBusinessAttendants();
 })();

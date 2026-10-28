@@ -31,6 +31,12 @@ import {
   AskBorderConciergeUseCase,
   InvalidConciergeMessageError,
 } from '../application/ask-border-concierge.js';
+import {
+  BusinessSnapshotUnavailableError,
+  InvalidAttendantMessageError,
+  TalkToBusinessAttendantUseCase,
+  UnknownBusinessAttendantError,
+} from '../application/talk-to-business-attendant.js';
 import { BorderCrossingPort } from '../ports/border-crossing-port.js';
 import { MetaModelPort } from '../ports/meta-model-port.js';
 import { WorldCorePort } from '../ports/world-core-port.js';
@@ -42,6 +48,7 @@ export interface AssistantServerOptions {
   readonly borderCrossingPort?: BorderCrossingPort;
   readonly witnessUseCase?: TalkToSyntheticWitnessUseCase;
   readonly conciergeUseCase?: AskBorderConciergeUseCase;
+  readonly businessAttendantUseCase?: TalkToBusinessAttendantUseCase;
   readonly publicDir?: string;
 }
 
@@ -99,6 +106,13 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
     options.conciergeUseCase ??
     new AskBorderConciergeUseCase({
       getBorderWaitTimesUseCase: borderUseCase,
+      metaModel,
+    });
+
+  const businessAttendantUseCase =
+    options.businessAttendantUseCase ??
+    new TalkToBusinessAttendantUseCase({
+      worldCore,
       metaModel,
     });
 
@@ -502,6 +516,132 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
             error: {
               code: 'server-error',
               message: 'Internal server error processing concierge inquiry.',
+            },
+          });
+          return;
+        }
+      }
+
+      // 11. GET /api/businesses/attendants (Storefront Business Attendants Roster)
+      if (
+        method === 'GET' &&
+        (pathname === '/api/businesses/attendants' || pathname === '/api/business-attendants')
+      ) {
+        const roster = businessAttendantUseCase.getRoster();
+        sendJson(res, 200, {
+          success: true,
+          ...roster,
+        });
+        return;
+      }
+
+      // 12. POST /api/businesses/attendants/chat (Storefront Business Attendant Interaction)
+      if (
+        method === 'POST' &&
+        (pathname === '/api/businesses/attendants/chat' ||
+          pathname === '/api/business-attendants/chat')
+      ) {
+        let rawBody: any;
+        try {
+          rawBody = await readBody(req);
+        } catch {
+          sendJson(res, 400, {
+            success: false,
+            error: { code: 'invalid-body', message: 'Request body must be valid JSON' },
+          });
+          return;
+        }
+
+        const { attendantId, message, language, evaluationTime } = rawBody ?? {};
+
+        if (!attendantId || typeof attendantId !== 'string') {
+          sendJson(res, 400, {
+            success: false,
+            error: {
+              code: 'missing-attendant-id',
+              message: 'Field "attendantId" is required and must be a string.',
+            },
+          });
+          return;
+        }
+
+        if (typeof message !== 'string' || message.trim().length === 0) {
+          sendJson(res, 400, {
+            success: false,
+            error: {
+              code: 'invalid-message',
+              message: 'Field "message" must be a non-empty string.',
+            },
+          });
+          return;
+        }
+
+        if (message.trim().length > 500) {
+          sendJson(res, 400, {
+            success: false,
+            error: {
+              code: 'message-too-long',
+              message: 'Message must not exceed 500 characters.',
+            },
+          });
+          return;
+        }
+
+        if (
+          language !== undefined &&
+          language !== null &&
+          language !== '' &&
+          !['en', 'es'].includes(String(language).toLowerCase())
+        ) {
+          sendJson(res, 400, {
+            success: false,
+            error: { code: 'invalid-language', message: 'Language must be "en" or "es".' },
+          });
+          return;
+        }
+
+        try {
+          const result = await businessAttendantUseCase.execute({
+            attendantId,
+            message,
+            language,
+            evaluationTime,
+          });
+          sendJson(res, 200, {
+            success: true,
+            response: result,
+          });
+          return;
+        } catch (attendantErr) {
+          if (attendantErr instanceof UnknownBusinessAttendantError) {
+            sendJson(res, 404, {
+              success: false,
+              error: { code: 'attendant-not-found', message: attendantErr.message },
+            });
+            return;
+          }
+          if (attendantErr instanceof InvalidAttendantMessageError) {
+            sendJson(res, 400, {
+              success: false,
+              error: { code: 'invalid-message', message: attendantErr.message },
+            });
+            return;
+          }
+          if (attendantErr instanceof BusinessSnapshotUnavailableError) {
+            sendJson(res, 502, {
+              success: false,
+              error: {
+                code: 'business-source-unavailable',
+                message: attendantErr.message,
+              },
+            });
+            return;
+          }
+          sendJson(res, 500, {
+            success: false,
+            error: {
+              code: 'server-error',
+              message: 'Internal server error processing business attendant inquiry.',
             },
           });
           return;

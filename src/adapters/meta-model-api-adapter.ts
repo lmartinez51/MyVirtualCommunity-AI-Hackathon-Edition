@@ -1,8 +1,10 @@
 import { MetaConfig } from '../config/index.js';
 import { buildConciergePrompt } from '../domain/border-concierge.js';
 import { buildWitnessPrompt } from '../domain/synthetic-witness.js';
+import { buildBusinessAttendantPrompt } from '../domain/business-attendant.js';
 import {
   AssistantPromptContext,
+  BusinessAttendantPromptContext,
   ConciergePromptContext,
   MetaModelPort,
   MetaModelResponse,
@@ -416,6 +418,29 @@ export class MetaModelApiAdapter implements MetaModelPort {
         { role: 'user', content: userContent },
       ],
       { temperature: 0.3, reasoningEffort: 'minimal' }
+    );
+  }
+
+  /**
+   * Generates grounded dialogue for a storefront business attendant.
+   */
+  public async generateBusinessAttendantResponse(
+    context: BusinessAttendantPromptContext
+  ): Promise<MetaModelResponse> {
+    const { systemPrompt, userContent } = buildBusinessAttendantPrompt(
+      context.attendant,
+      context.status,
+      context.schedule,
+      context.userMessage,
+      context.language
+    );
+
+    return this.executeChatCompletion(
+      [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userContent },
+      ],
+      { temperature: 0.4, reasoningEffort: 'minimal' }
     );
   }
 }

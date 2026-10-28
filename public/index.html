@@ -276,6 +276,147 @@
       </div>
     </section>
 
+    <!-- Storefront Business Attendants Section (Increment 4: Local Grounded NPCs) -->
+    <section class="card attendants-card" id="storefront-attendants-section" role="region" aria-label="Local Business Storefront Attendants">
+      <div class="attendants-header">
+        <div class="attendants-title-group">
+          <div class="attendants-badge">
+            <span class="attendants-icon">🏪</span>
+            <span id="txt-attendants-badge">Storefront Virtual Attendants</span>
+          </div>
+          <h2 id="txt-attendants-title">Local Business Attendants (Avenida Juárez)</h2>
+          <p id="txt-attendants-desc" class="attendants-desc">
+            Interact with simulated virtual attendants for local businesses along Avenida Juárez. Inquire about verified operating hours, open status, and store locations.
+          </p>
+        </div>
+        <div class="attendants-disclosure-tag">
+          <span class="tag-pill tag-synthetic" id="tag-attendants-disclosure">Virtual attendant · AI simulation</span>
+        </div>
+      </div>
+
+      <!-- Attendant Selector Grid -->
+      <div class="attendant-selector-grid" id="attendant-selector-grid" role="radiogroup" aria-label="Select storefront attendant">
+        <!-- Rendered dynamically by app.js from /api/businesses/attendants -->
+      </div>
+
+      <!-- Active Attendant Chat Panel -->
+      <div class="attendant-chat-panel" id="attendant-chat-panel">
+        <div class="attendant-active-header">
+          <div class="attendant-avatar-col">
+            <div class="attendant-avatar" id="attendant-active-avatar">💊</div>
+          </div>
+          <div class="attendant-active-info">
+            <div class="attendant-name-row">
+              <h3 class="attendant-active-name" id="txt-attendant-active-name">Carlos Méndez</h3>
+              <span class="tag-pill tag-attendant-business" id="txt-attendant-active-business">Farmacias Benavides</span>
+              <span class="tag-pill tag-synthetic" id="txt-attendant-active-marker">Virtual attendant · AI simulation</span>
+            </div>
+            <div class="attendant-role" id="txt-attendant-active-role">Virtual Pharmacy Attendant</div>
+            <p class="attendant-bio" id="txt-attendant-active-bio">
+              Simulated storefront attendant at Farmacias Benavides on Avenida Juárez. Assists visitors with verified operating hours, open status, and store location near the international bridge.
+            </p>
+            <div class="attendant-disclosure-pill" id="txt-attendant-active-disclosure">
+              ⚠️ Fictional virtual character associated with this storefront. Not an actual employee, pharmacist, or eye care specialist. Responses are grounded strictly in verified business schedule data.
+            </div>
+          </div>
+        </div>
+
+        <!-- Suggested Question Prompts -->
+        <div class="attendant-quick-prompts" id="attendant-quick-prompts">
+          <span class="prompts-label" id="txt-attendant-prompts-label">Suggested Questions:</span>
+          <div class="attendant-chips-row" id="attendant-chips-container">
+            <!-- Populated dynamically per attendant -->
+          </div>
+        </div>
+
+        <!-- Attendant Chat Form -->
+        <form class="attendant-input-form" id="attendant-chat-form" novalidate>
+          <div class="attendant-input-row">
+            <input
+              type="text"
+              id="attendant-user-input"
+              class="attendant-text-input"
+              maxlength="500"
+              placeholder="Ask about opening hours, current open status, or store location..."
+              aria-label="Message to storefront attendant"
+              required
+            >
+            <button type="submit" class="btn-attendant-send" id="btn-attendant-send">
+              <span id="txt-btn-attendant-send">Ask Attendant</span>
+            </button>
+          </div>
+          <div class="attendant-form-meta">
+            <span class="field-hint" id="txt-attendant-hint">Bilingual (English / Español) • Grounded in authoritative World Core snapshot</span>
+            <span class="char-count" id="attendant-char-count">0 / 500</span>
+          </div>
+        </form>
+
+        <!-- Response Transcript Box -->
+        <div class="attendant-transcript-box" id="attendant-transcript-box">
+          <!-- Loading State -->
+          <div class="attendant-loading" id="attendant-loading" hidden>
+            <span class="attendant-spinner"></span>
+            <span id="txt-attendant-loading">Consulting verified storefront facts...</span>
+          </div>
+
+          <!-- Error State -->
+          <div class="attendant-error" id="attendant-error" hidden>
+            <span id="txt-attendant-error">Unable to communicate with attendant. Please inspect the snapshot above.</span>
+          </div>
+
+          <!-- Dialogue Content -->
+          <div class="attendant-dialogue-content" id="attendant-dialogue-content">
+            <div class="dialogue-bubble attendant-speech" id="attendant-speech-bubble">
+              <div class="dialogue-header">
+                <span class="dialogue-speaker" id="attendant-speaker-name">Carlos Méndez · Farmacias Benavides</span>
+                <span class="dialogue-provenance-tag" id="attendant-provenance-tag">Grounded in World Core Records</span>
+              </div>
+              <p class="dialogue-text" id="attendant-speech-text">
+                Hello! I'm Carlos Méndez, virtual attendant for Farmacias Benavides. I'm here to assist you with our confirmed business hours (Monday through Saturday, 07:00 to 22:00, closed Sunday) and store location at Av. Benito Juárez 610. How may I help you today?
+              </p>
+
+              <!-- Dedicated Authoritative Business Facts Card -->
+              <div class="attendant-facts-card" id="attendant-facts-card">
+                <div class="facts-card-header">
+                  <span class="facts-icon">🏛️</span>
+                  <span class="facts-title" id="txt-attendant-facts-title">Authoritative Business Facts</span>
+                  <span class="facts-badge" id="txt-attendant-facts-badge">World Core Verified</span>
+                </div>
+                <div class="facts-grid" id="attendant-facts-grid">
+                  <div class="fact-item">
+                    <span class="fact-label" id="lbl-attendant-fact-business">Establishment:</span>
+                    <span class="fact-value font-bold" id="val-attendant-fact-business">Farmacias Benavides</span>
+                  </div>
+                  <div class="fact-item">
+                    <span class="fact-label" id="lbl-attendant-fact-status">Operating Status:</span>
+                    <span class="fact-value status-pill" id="val-attendant-fact-status">OPEN</span>
+                  </div>
+                  <div class="fact-item">
+                    <span class="fact-label" id="lbl-attendant-fact-hours">Official Hours:</span>
+                    <span class="fact-value" id="val-attendant-fact-hours">07:00 – 22:00 (Mon–Sat)</span>
+                  </div>
+                  <div class="fact-item">
+                    <span class="fact-label" id="lbl-attendant-fact-address">Address:</span>
+                    <span class="fact-value" id="val-attendant-fact-address">Av. Benito Juárez 610, Centro (colonia Chamizal unverified)</span>
+                  </div>
+                  <div class="fact-item fact-full">
+                    <span class="fact-label" id="lbl-attendant-fact-eval">Evaluated Time:</span>
+                    <span class="fact-value fact-mono" id="val-attendant-fact-eval">Local time (Ciudad Juárez)</span>
+                  </div>
+                </div>
+
+                <!-- Unavailable Facts Notice (e.g. inventory/medical/pricing notice) -->
+                <div class="attendant-unavailable-notice" id="attendant-unavailable-notice" hidden>
+                  <span class="unavailable-icon">ℹ️</span>
+                  <span id="txt-attendant-unavailable-msg">Note: Product inventory, live stock, pricing, and medical prescriptions are not part of verified business records. The virtual attendant cannot confirm or fulfill these requests.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Border Intelligence Section (Increment 1: Official Pedestrian Crossings) -->
     <section class="card border-card" id="border-section" aria-label="Border Intelligence — Official Pedestrian Wait Times">
       <div class="border-header">

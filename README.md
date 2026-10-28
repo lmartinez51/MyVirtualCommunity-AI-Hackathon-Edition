@@ -226,6 +226,46 @@ Introduces an interactive, bilingual Border Concierge NPC (**Elena Ramos**, `ele
   2. *Synthetic Community Witnesses*: Simulated queue commuters (Mateo, Sofia, Héctor) with personal narratives and clear simulation disclosures.
   3. *Grounded Border Concierge*: Interactive, grounded guidance (Elena Ramos) explaining observations, comparison rules, and camera resources.
 
+### 4.6 Increment 4: Local Business Attendants — Grounded Storefront NPCs
+
+Introduces interactive virtual storefront attendants stationed at local businesses along the simulated Avenida Benito Juárez commercial corridor:
+
+- **Attendant Personas & Business Associations**:
+  - **Carlos Méndez** (`carlos-farmacia-attendant`, 💊) — Virtual Pharmacy Attendant at **Farmacias Benavides** (`pharmacy:farmacias-benavides`). Courteous, health-conscious, and attentive to operating hours and the pharmacy's physical address (Av. Benito Juárez 610) near the international bridge.
+  - **Valeria Domínguez** (`valeria-optica-attendant`, 👓) — Virtual Optical Attendant at **Óptica Fashion** (`optical:optica-fashion`). Welcoming, stylish, and knowledgeable about confirmed business hours and boutique location (Av. Benito Juárez 859) across from Farmacias Benavides.
+- **Fictional Virtual Character Disclosure**:
+  - Every attendant is visibly labeled in English (`Virtual attendant · AI simulation`) and Spanish (`Encargado virtual · Simulación de IA`).
+  - Strict disclosure: These characters are fictional virtual simulations, **not real human employees, licensed pharmacists, or certified eye care practitioners**. They speak only for the simulated community experience and cannot execute commercial or clinical transactions.
+  - The canonical business names `Farmacias Benavides` and `Óptica Fashion` remain strictly untranslated in both languages.
+- **How to Interact in the Demo**:
+  1. Select a business on the interactive Leaflet map or via the corridor entity chips (`Farmacias Benavides` or `Óptica Fashion`). The Storefront Attendants panel automatically synchronizes to the corresponding character.
+  2. Alternatively, select an attendant card directly in the Storefront Attendants panel, which smoothly pans the map and highlights the business storefront pin above.
+  3. Use the one-click suggested question chips (e.g. Operating Hours, Current Open Status, Store Location, Inventory Check, or Appointment Booking) or enter any custom question in English or Spanish.
+- **Supported Business Inquiries (Grounded in World Core Facts)**:
+  - *Store Location & Address*: Reports verified physical addresses (`Av. Benito Juárez 610` and `Av. Benito Juárez 859`) and spatial orientation along the Avenida Juárez corridor.
+  - *Authoritative Operating Hours*: Reports confirmed schedules (`Mon–Sat 07:00–22:00` for Benavides, `Mon–Sat 09:00–17:00` for Óptica Fashion; both closed Sunday).
+  - *Current Open / Closed Status*: Grounds answers in the authoritative point-in-time snapshot from World Core, reporting whether doors are currently open and whether new admissions are permitted, with evaluated timestamps formatted in local Ciudad Juárez time (`America/Ciudad_Juarez`).
+- **Knowledge Boundaries & Refusal Guardrails**:
+  - *Farmacias Benavides Knowledge Limits*:
+    - **No Medication Inventory or Stock Levels**: Cannot confirm specific drug stocks, pill counts, or brand availability.
+    - **No Pricing or Promotions**: Does not quote medication costs, discounts, or insurance acceptance.
+    - **No Medical Diagnoses or Prescriptions**: Strictly refuses to prescribe treatments, evaluate symptoms, or validate prescriptions. Politely directs visitors to consult a licensed physician or visit the pharmacy in person during open hours.
+  - *Óptica Fashion Knowledge Limits*:
+    - **No Frame/Lens Inventory**: Cannot verify live frame brands, lens treatments, or stock.
+    - **No Pricing or Insurance Quotes**: Does not quote glasses or exam pricing.
+    - **No Appointment Scheduling**: The system does not maintain an appointment booking calendar. Directs visitors to visit the boutique in person during operating hours.
+  - *Explicit Unavailable Facts Notice*: When an unsupported topic (inventory, pricing, appointments, medical) is queried, the response includes an explicit notice identifying that these data categories are absent from trusted business records.
+- **Meta Muse Spark & Deterministic Fallback**:
+  - Uses Meta Model API (`muse-spark-1.3`) constrained strictly by prompt context containing verified World Core snapshots.
+  - When the user asks boundary-violating questions (inventory, medical, pricing, appointments), the system invokes a deterministic, non-hallucinatory domain response path (`getDeterministicAttendantResponse`).
+  - If the Meta API fails or is unreachable, the attendant falls back to the deterministic domain response path, ensuring 100% demo availability.
+  - If the authoritative World Core source itself is unavailable, the attendant returns an explicit source-unavailable error (`502 business-source-unavailable`) and **never falsely claims a live-confirmed status**.
+- **Known Limitations**:
+  - No live inventory, point-of-sale, or payment integration.
+  - No appointment booking database.
+  - Stateless single-turn interaction (no persistent multi-turn conversational memory or session state).
+  - Scope confined to the two configured commercial establishments on Avenida Juárez.
+
 ---
 
 The project follows a strict Hexagonal / Clean Architecture pattern:
@@ -240,11 +280,12 @@ src/
 │   ├── spatial-corridor.ts     # Authentic spatial corridor & POI definitions (Milestone 3)
 │   ├── border-crossing.ts      # Border crossing contracts & deterministic comparison (Increment 1)
 │   ├── synthetic-witness.ts    # Synthetic NPC profiles, boundaries & fallback engine (Increment 2)
-│   └── border-concierge.ts     # Concierge profile, intent classifier & prompt boundaries (Increment 3)
+│   ├── border-concierge.ts     # Concierge profile, intent classifier & prompt boundaries (Increment 3)
+│   └── business-attendant.ts   # Storefront attendant profiles & boundary engines (Increment 4)
 ├── ports/             # Boundary contracts
 │   ├── world-core-port.ts      # Read-only World Core query interface
 │   ├── border-crossing-port.ts # CBP wait time data provider port
-│   └── meta-model-port.ts      # Meta Model prompt context & response port (assistant + witnesses + concierge)
+│   └── meta-model-port.ts      # Meta Model prompt context & response port (assistant + witnesses + concierge + attendants)
 ├── adapters/          # Port implementations
 │   ├── in-memory-world-core-adapter.ts # Seeded development fixture
 │   ├── cbp-border-wait-time-adapter.ts # Official CBP REST API adapter with caching
@@ -254,7 +295,8 @@ src/
 │   ├── answer-business-hours-query.ts  # End-to-end grounded assistant flow
 │   ├── compare-border-wait-times.ts    # Border wait times comparison use case
 │   ├── talk-to-synthetic-witness.ts    # Synthetic witness dialogue orchestration
-│   └── ask-border-concierge.ts         # Border Concierge grounded guidance use case
+│   ├── ask-border-concierge.ts         # Border Concierge grounded guidance use case
+│   └── talk-to-business-attendant.ts   # Storefront attendant grounded interaction use case
 ├── config/            # Environment parsing & secret masking
 │   └── index.ts
 └── server/            # HTTP transport
@@ -262,7 +304,7 @@ src/
 scripts/
 ├── run-tests.js       # Cross-platform test runner
 └── meta-smoke-test.ts # Dedicated, explicitly invoked live smoke test
-tests/                 # 100% offline test suite (275 tests across 71 suites)
+tests/                 # 100% offline test suite (326 tests across 75 suites)
 docs/
 ├── HACKATHON_SCOPE.md         # Explicit MVP scope and boundaries
 ├── ARCHITECTURE.md            # Complete architecture diagrams and data flows

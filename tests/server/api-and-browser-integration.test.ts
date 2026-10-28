@@ -1720,5 +1720,36 @@ describe('API and Browser Integration (Offline Server Tests)', () => {
       assert.ok(js.includes("conciergeTitle: 'Border Concierge'"), 'Must include EN concierge title');
       assert.ok(js.includes("conciergeTitle: 'Concierge Fronterizo'"), 'Must include ES concierge title');
     });
+
+    it('serves HTML, CSS, and JS with Storefront Business Attendants structures and translations', async () => {
+      // HTML
+      const htmlRes = await fetch(`${baseUrl}/index.html`);
+      const html = await htmlRes.text();
+      assert.ok(html.includes('id="storefront-attendants-section"'), 'Must include storefront attendants section');
+      assert.ok(html.includes('id="attendant-selector-grid"'), 'Must include attendant selector grid');
+      assert.ok(html.includes('id="attendant-chat-panel"'), 'Must include attendant chat panel');
+      assert.ok(html.includes('id="txt-attendant-active-name"'), 'Must include active attendant name element');
+      assert.ok(html.includes('id="txt-attendant-active-disclosure"'), 'Must include virtual attendant disclosure');
+      assert.ok(html.includes('id="attendant-facts-card"'), 'Must include authoritative storefront facts card');
+      assert.ok(html.includes('id="attendant-unavailable-notice"'), 'Must include unavailable facts notice');
+
+      // CSS
+      const cssRes = await fetch(`${baseUrl}/style.css`);
+      const css = await cssRes.text();
+      assert.ok(css.includes('.attendants-card'), 'Must define attendants card styles');
+      assert.ok(css.includes('.attendant-selector-grid'), 'Must define selector grid styles');
+      assert.ok(css.includes('.attendant-card'), 'Must define attendant card styles');
+      assert.ok(css.includes('.attendant-facts-card'), 'Must define authoritative facts card styles');
+
+      // JS
+      const jsRes = await fetch(`${baseUrl}/app.js`);
+      const js = await jsRes.text();
+      assert.ok(js.includes('fetchBusinessAttendants'), 'Must define fetchBusinessAttendants');
+      assert.ok(js.includes('selectStorefrontAttendant'), 'Must define selectStorefrontAttendant');
+      assert.ok(js.includes('sendAttendantMessage'), 'Must define sendAttendantMessage');
+      assert.ok(js.includes('renderAttendantResponse'), 'Must define renderAttendantResponse');
+      assert.ok(js.includes("attendantsBadge: 'Storefront Virtual Attendants'"), 'Must include EN attendants badge');
+      assert.ok(js.includes("attendantsBadge: 'Encargados Virtuales de Tienda'"), 'Must include ES attendants badge');
+    });
   });
 });
