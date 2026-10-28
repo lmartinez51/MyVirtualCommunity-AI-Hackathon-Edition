@@ -11,6 +11,8 @@ import {
 } from '../../src/adapters/remote-world-core-adapter.js';
 import { loadConfig } from '../../src/config/index.js';
 import type { BusinessId } from '../../src/domain/business-id.js';
+import { BorderCrossingObservation, STANDARD_PEDESTRIAN_LANE } from '../../src/domain/border-crossing.js';
+import type { BorderCrossingPort } from '../../src/ports/border-crossing-port.js';
 import type { WorldCorePort } from '../../src/ports/world-core-port.js';
 import { createAssistantServer } from '../../src/server/index.js';
 
@@ -19,15 +21,62 @@ describe('API and Browser Integration (Offline Server Tests)', () => {
   let serverInstance: ReturnType<typeof createAssistantServer>;
   let mockMeta: MockMetaModelAdapter;
   let inMemoryWorldCore: InMemoryWorldCoreAdapter;
+  let mockBorderPort: BorderCrossingPort;
   let baseUrl: string;
+
+  const createMockObservation = (overrides: Partial<BorderCrossingObservation> = {}): BorderCrossingObservation => ({
+    crossingId: 'paso-del-norte',
+    portNumber: '240202',
+    canonicalName: 'Paso del Norte (Santa Fe)',
+    direction: 'juarez-to-el-paso',
+    mode: 'pedestrian',
+    laneCategory: 'standard',
+    laneCategoryName: STANDARD_PEDESTRIAN_LANE.name,
+    delayMinutes: 20,
+    unit: 'minutes',
+    operationalStatus: 'no delay',
+    portStatus: 'Open',
+    lanesOpen: 2,
+    maximumLanes: 4,
+    sourceObservationTime: 'At 12:00 pm MDT',
+    sourceObservationTimestamp: '2026-10-27T18:00:00.000Z',
+    fetchedAt: '2026-10-27T18:05:00.000Z',
+    sourceUrl: 'https://bwt.cbp.gov/details/06240202/PED',
+    provider: 'U.S. Customs and Border Protection (CBP)',
+    freshness: 'fresh',
+    ...overrides,
+  });
 
   beforeEach(async () => {
     mockMeta = new MockMetaModelAdapter();
     inMemoryWorldCore = new InMemoryWorldCoreAdapter();
+    mockBorderPort = {
+      async getPedestrianCrossings() {
+        return {
+          observations: {
+            pasoDelNorte: createMockObservation({
+              crossingId: 'paso-del-norte',
+              portNumber: '240202',
+              canonicalName: 'Paso del Norte (Santa Fe)',
+              delayMinutes: 20,
+            }),
+            bridgeOfTheAmericas: createMockObservation({
+              crossingId: 'bridge-of-the-americas',
+              portNumber: '240201',
+              canonicalName: 'Bridge of the Americas (BOTA / Puente Libre)',
+              delayMinutes: 45,
+              sourceUrl: 'https://bwt.cbp.gov/details/06240201/PED',
+            }),
+          },
+          fetchedAt: '2026-10-27T18:05:00.000Z',
+        };
+      },
+    };
 
     serverInstance = createAssistantServer({
       worldCore: inMemoryWorldCore,
       metaModel: mockMeta,
+      borderCrossingPort: mockBorderPort,
     });
 
     await serverInstance.start(0, '127.0.0.1');
@@ -1034,5 +1083,187 @@ describe('API and Browser Integration (Offline Server Tests)', () => {
       }
     });
   });
-});
 
+  describe('7. Border Intelligence API & UI Delivery', () => {
+    it('delivers Border Intelligence markup, official camera links, and UI cards on GET /', async () => {
+      const res = await fetch(`${baseUrl}/`);
+      assert.strictEqual(res.status, 200);
+      const html = await res.text();
+
+      // Border Intelligence section
+      assert.ok(html.includes('id="border-section"'), 'Must include border section');
+      assert.ok(html.includes('id="border-direction-mode"'), 'Must include direction and mode banner');
+      assert.ok(html.includes('id="card-crossing-pdn"'), 'Must include Paso del Norte card');
+      assert.ok(html.includes('id="card-crossing-bota"'), 'Must include Bridge of the Americas card');
+      assert.ok(html.includes('id="border-comparison-banner"'), 'Must include comparison banner');
+      assert.ok(html.includes('id="btn-border-refresh"'), 'Must include refresh button');
+      assert.ok(html.includes('id="btn-shortcut-border"'), 'Must include map shortcut button to border');
+
+      // Official camera links with safe rel and target attributes
+      assert.ok(
+        html.includes('id="link-camera-chihuahua"'),
+        'Must include Chihuahua bridge authority camera link'
+      );
+      assert.ok(
+        html.includes('https://www.puentesfronterizos.gob.mx/camaras-en-vivo.php'),
+        'Must link to official Chihuahua camera page'
+      );
+      assert.ok(
+        html.includes('id="link-camera-elpaso"'),
+        'Must include City of El Paso international bridges camera link'
+      );
+      assert.ok(
+        html.includes('https://pdnuno.com/border-crossings/paso-del-norte'),
+        'Must link to verified City of El Paso bridge camera portal'
+      );
+      assert.ok(
+        html.includes('rel="noopener noreferrer"'),
+        'Camera links must use safe rel="noopener noreferrer"'
+      );
+    });
+
+    it('serves style.css with Border Intelligence card, freshness badges, and camera styles', async () => {
+      const res = await fetch(`${baseUrl}/style.css`);
+      assert.strictEqual(res.status, 200);
+      const css = await res.text();
+
+      assert.ok(css.includes('.border-card'), 'Must define border card style');
+      assert.ok(css.includes('.border-crossing-card'), 'Must define crossing card layout');
+      assert.ok(css.includes('.freshness-pill'), 'Must define freshness badge base style');
+      assert.ok(css.includes('.freshness-pill.fresh'), 'Must define fresh badge style');
+      assert.ok(css.includes('.freshness-pill.stale'), 'Must define stale badge style');
+      assert.ok(css.includes('.freshness-pill.pending'), 'Must define pending badge style');
+      assert.ok(css.includes('.freshness-pill.unavailable'), 'Must define unavailable badge style');
+      assert.ok(css.includes('.btn-camera-link'), 'Must define camera link button styles');
+      assert.ok(css.includes('.border-comparison-banner'), 'Must define comparison banner style');
+      assert.ok(css.includes('.tag-lane'), 'Must define tag-lane style');
+      assert.ok(css.includes('.crossing-lane-badge'), 'Must define crossing lane badge style');
+    });
+
+    it('serves app.js with bilingual border translations, fetchBorderWaitTimes, and render logic', async () => {
+      const res = await fetch(`${baseUrl}/app.js`);
+      assert.strictEqual(res.status, 200);
+      const js = await res.text();
+
+      // Functions
+      assert.ok(js.includes('fetchBorderWaitTimes'), 'Must define fetchBorderWaitTimes');
+      assert.ok(js.includes('renderBorderIntelligence'), 'Must define renderBorderIntelligence');
+      assert.ok(js.includes('btn-border-refresh'), 'Must bind btn-border-refresh');
+
+      // English localization
+      assert.ok(js.includes("borderBadge: 'Border Intelligence'"), 'Must include EN badge');
+      assert.ok(js.includes("borderTitle: 'Official Pedestrian Wait Times (Juárez → El Paso)'"), 'Must include EN title');
+      assert.ok(js.includes("txtCamerasTitle: 'Official Live Bridge Cameras (Paso del Norte)'"), 'Must include camera title');
+      assert.ok(js.includes("tagLane: 'General / Standard Lane'"), 'Must include EN lane tag');
+
+      // Spanish localization
+      assert.ok(js.includes("borderBadge: 'Inteligencia Fronteriza'"), 'Must include ES badge');
+      assert.ok(js.includes("borderTitle: 'Tiempos Oficiales de Espera Peatonal (Juárez → El Paso)'"), 'Must include ES title');
+      assert.ok(js.includes("freshnessFresh: 'Actualizado'"), 'Must include ES fresh badge');
+      assert.ok(js.includes("tagLane: 'Carril General / Estándar'"), 'Must include ES lane tag');
+    });
+
+    it('GET /api/border/wait-times returns 200 with normalized observations, comparison, and camera metadata', async () => {
+      const res = await fetch(`${baseUrl}/api/border/wait-times`);
+      assert.strictEqual(res.status, 200);
+      assert.match(res.headers.get('content-type') || '', /application\/json/);
+
+      const data = (await res.json()) as any;
+      assert.strictEqual(data.success, true);
+      assert.strictEqual(data.comparison.direction, 'juarez-to-el-paso');
+      assert.strictEqual(data.comparison.mode, 'pedestrian');
+      assert.strictEqual(data.comparison.laneCategory, 'standard');
+      assert.strictEqual(data.comparison.laneCategoryDisplay.en, 'Standard / General Pedestrian Lane');
+      assert.strictEqual(data.comparison.laneCategoryDisplay.es, 'Carril Peatonal Estándar / General');
+
+      // Crossing 1: Paso del Norte
+      const pdn = data.comparison.observations.pasoDelNorte;
+      assert.strictEqual(pdn.crossingId, 'paso-del-norte');
+      assert.strictEqual(pdn.portNumber, '240202');
+      assert.strictEqual(pdn.laneCategory, 'standard');
+      assert.strictEqual(pdn.laneCategoryName.en, 'Standard / General Pedestrian Lane');
+      assert.strictEqual(pdn.delayMinutes, 20);
+      assert.strictEqual(pdn.unit, 'minutes');
+      assert.strictEqual(pdn.freshness, 'fresh');
+      assert.strictEqual(pdn.provider, 'U.S. Customs and Border Protection (CBP)');
+      assert.ok(pdn.sourceUrl.includes('06240202/PED'));
+
+      // Crossing 2: Bridge of the Americas
+      const bota = data.comparison.observations.bridgeOfTheAmericas;
+      assert.strictEqual(bota.crossingId, 'bridge-of-the-americas');
+      assert.strictEqual(bota.portNumber, '240201');
+      assert.strictEqual(bota.delayMinutes, 45);
+      assert.strictEqual(bota.unit, 'minutes');
+      assert.strictEqual(bota.freshness, 'fresh');
+      assert.strictEqual(bota.provider, 'U.S. Customs and Border Protection (CBP)');
+      assert.ok(bota.sourceUrl.includes('06240201/PED'));
+
+      // Comparison
+      assert.strictEqual(data.comparison.comparison.canCompare, true);
+      assert.strictEqual(data.comparison.comparison.lowerWaitCrossingId, 'paso-del-norte');
+      assert.strictEqual(data.comparison.comparison.differenceMinutes, 25);
+
+      // Official camera metadata
+      assert.strictEqual(
+        data.comparison.cameras.officialAuthorityUrl,
+        'https://www.puentesfronterizos.gob.mx/camaras-en-vivo.php'
+      );
+      assert.strictEqual(
+        data.comparison.cameras.secondaryAuthorityUrl,
+        'https://pdnuno.com/border-crossings/paso-del-norte'
+      );
+
+      // Security: no internal secrets or raw HTML
+      const rawBody = JSON.stringify(data);
+      assert.ok(!rawBody.includes('<html'), 'Response must not contain raw HTML');
+      assert.ok(!rawBody.includes('<!DOCTYPE'), 'Response must not contain DOCTYPE');
+      assert.ok(!rawBody.includes('Error:'), 'Response must not contain raw errors');
+    });
+
+    it('GET /api/border/wait-times supports ?refresh=true for cache bypassing', async () => {
+      const res = await fetch(`${baseUrl}/api/border/wait-times?refresh=true`);
+      assert.strictEqual(res.status, 200);
+      const data = (await res.json()) as any;
+      assert.strictEqual(data.success, true);
+      assert.ok(data.comparison.fetchedAt);
+    });
+
+    it('GET /api/border/wait-times returns 502 with safe error payload when adapter throws', async () => {
+      const failingBorderPort: BorderCrossingPort = {
+        async getPedestrianCrossings() {
+          throw new Error('CBP API connection timed out (simulated upstream failure)');
+        },
+      };
+
+      const failingServer = createAssistantServer({
+        worldCore: inMemoryWorldCore,
+        metaModel: mockMeta,
+        borderCrossingPort: failingBorderPort,
+      });
+
+      await failingServer.start(0, '127.0.0.1');
+      const addr = failingServer.server.address() as any;
+      const url = `http://127.0.0.1:${addr.port}`;
+
+      try {
+        const res = await fetch(`${url}/api/border/wait-times`);
+        assert.strictEqual(res.status, 502);
+
+        const data = (await res.json()) as any;
+        assert.strictEqual(data.success, false);
+        assert.strictEqual(data.error.code, 'border-source-error');
+        assert.strictEqual(
+          data.error.message,
+          'Failed to retrieve border crossing wait times from official sources.'
+        );
+
+        // Security: no stack traces or internal error details leaked
+        const rawBody = JSON.stringify(data);
+        assert.ok(!rawBody.includes('simulated upstream failure'), 'Must not leak upstream error message');
+        assert.ok(!rawBody.includes('at '), 'Must not leak stack trace');
+      } finally {
+        await failingServer.stop();
+      }
+    });
+  });
+});

@@ -20,6 +20,9 @@ import {
 import { AppConfig, loadConfig, maskApiKey } from '../config/index.js';
 import { InvalidBusinessIdError, parseBusinessId } from '../domain/business-id.js';
 import { PASO_DEL_NORTE_CORRIDOR } from '../domain/spatial-corridor.js';
+import { CbpBorderWaitTimeAdapter } from '../adapters/cbp-border-wait-time-adapter.js';
+import { GetBorderWaitTimesUseCase } from '../application/get-border-wait-times.js';
+import { BorderCrossingPort } from '../ports/border-crossing-port.js';
 import { MetaModelPort } from '../ports/meta-model-port.js';
 import { WorldCorePort } from '../ports/world-core-port.js';
 
@@ -27,6 +30,7 @@ export interface AssistantServerOptions {
   readonly config?: AppConfig;
   readonly worldCore?: WorldCorePort;
   readonly metaModel?: MetaModelPort;
+  readonly borderCrossingPort?: BorderCrossingPort;
   readonly publicDir?: string;
 }
 
@@ -65,6 +69,13 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
   const useCase = new AnswerBusinessHoursQueryUseCase({
     worldCore,
     metaModel,
+  });
+
+  const borderCrossingPort: BorderCrossingPort =
+    options.borderCrossingPort ?? new CbpBorderWaitTimeAdapter();
+
+  const borderUseCase = new GetBorderWaitTimesUseCase({
+    borderCrossingPort,
   });
 
   const sendJson = (res: ServerResponse, statusCode: number, payload: unknown) => {
@@ -315,6 +326,28 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
         });
 
         sendJson(res, 200, result);
+        return;
+      }
+
+      // 6. GET /api/border/wait-times (Official Pedestrian Wait Times: PDN vs BOTA)
+      if (method === 'GET' && pathname === '/api/border/wait-times') {
+        const refreshParam = parsedUrl.searchParams.get('refresh');
+        const bypassCache = refreshParam === 'true' || refreshParam === '1';
+        try {
+          const comparison = await borderUseCase.execute({ bypassCache });
+          sendJson(res, 200, {
+            success: true,
+            comparison,
+          });
+        } catch {
+          sendJson(res, 502, {
+            success: false,
+            error: {
+              code: 'border-source-error',
+              message: 'Failed to retrieve border crossing wait times from official sources.',
+            },
+          });
+        }
         return;
       }
 

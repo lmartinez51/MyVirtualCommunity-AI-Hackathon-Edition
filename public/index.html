@@ -246,6 +246,9 @@
               Puente Internacional Paso del Norte is a 24/7 binational border crossing (non-commercial). It operates continuously with no retail schedule or commercial admission cutoff.
             </p>
             <div class="scenario-infra-actions">
+              <button type="button" class="btn-infra-shortcut highlight" id="btn-shortcut-border">
+                🛂 <span id="txt-shortcut-border">Compare Pedestrian Wait Times</span>
+              </button>
               <button type="button" class="btn-infra-shortcut" id="btn-shortcut-benavides">
                 💊 <span id="txt-shortcut-benavides">Explore Farmacias Benavides</span>
               </button>
@@ -269,6 +272,168 @@
             <span class="meta-label" id="lbl-entity-sources">Authoritative Sources</span>
             <span class="meta-value" id="entity-sources">Google Maps Place (0x34ac7a36f923b0a1) • World Core Registry</span>
           </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Border Intelligence Section (Increment 1: Official Pedestrian Crossings) -->
+    <section class="card border-card" id="border-section" aria-label="Border Intelligence — Official Pedestrian Wait Times">
+      <div class="border-header">
+        <div class="border-title-group">
+          <div class="border-badge">
+            <span class="border-icon">🛂</span>
+            <span id="txt-border-badge">Border Intelligence</span>
+          </div>
+          <h2 id="txt-border-title">Official Pedestrian Wait Times (Juárez → El Paso)</h2>
+          <p id="txt-border-desc" class="border-desc">
+            Direct comparison of official U.S. Customs & Border Protection (CBP) pedestrian wait estimates for Paso del Norte (Santa Fe) and Bridge of the Americas (Puente Libre).
+          </p>
+        </div>
+        <div class="border-controls">
+          <div class="border-modality-tags" id="border-direction-mode">
+            <span class="tag-pill tag-direction" id="tag-direction">Juárez → El Paso (Northbound)</span>
+            <span class="tag-pill tag-mode" id="tag-mode">🚶 Pedestrian Only</span>
+            <span class="tag-pill tag-lane" id="tag-lane">General / Standard Lane</span>
+          </div>
+          <button type="button" class="btn-border-refresh" id="btn-border-refresh" aria-label="Refresh official border wait times">
+            <span class="refresh-icon" id="icon-border-refresh">🔄</span>
+            <span id="txt-btn-border-refresh">Refresh Feeds</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Freshness & Fetch Time Bar -->
+      <div class="border-status-bar" id="border-status-bar">
+        <span class="status-bar-item" id="border-fetch-status">
+          <span class="status-dot dot-live" id="border-status-dot"></span>
+          <span id="txt-border-status-label">Official Feeds Live</span>
+        </span>
+        <span class="status-bar-item" id="border-fetch-time-item">
+          <span class="status-label" id="lbl-border-fetched-at">Fetched at:</span>
+          <span class="status-val meta-mono" id="val-border-fetched-at">—</span>
+        </span>
+      </div>
+
+      <!-- Comparison Cards Grid (Paso del Norte vs BOTA) -->
+      <div class="border-cards-grid">
+        <!-- Paso del Norte Card -->
+        <div class="border-crossing-card" id="card-crossing-pdn">
+          <div class="crossing-card-header">
+            <div class="crossing-header-left">
+              <span class="crossing-tag">Port 240202</span>
+              <h3 class="crossing-name" id="name-crossing-pdn">Paso del Norte (Santa Fe)</h3>
+              <span class="crossing-popular-name" id="pop-crossing-pdn">Av. Benito Juárez / Downtown Crossing</span>
+              <span class="crossing-lane-badge" id="lane-cat-pdn">General / Standard Lane (excludes Ready Lane)</span>
+            </div>
+            <div class="crossing-header-right">
+              <span class="freshness-pill fresh" id="freshness-pdn">Fresh</span>
+            </div>
+          </div>
+
+          <div class="crossing-wait-display">
+            <div class="wait-primary">
+              <span class="wait-number" id="wait-val-pdn">—</span>
+              <span class="wait-unit" id="wait-unit-pdn">min wait</span>
+            </div>
+            <div class="wait-meta-lane">
+              <span class="operational-badge" id="op-status-pdn">No Delay</span>
+              <span class="lanes-open-text" id="lanes-pdn">Lanes open: —</span>
+            </div>
+          </div>
+
+          <div class="crossing-timestamps">
+            <div class="timestamp-row">
+              <span class="ts-label" id="lbl-obs-time-pdn">Source Update Time:</span>
+              <span class="ts-val" id="val-obs-time-pdn">—</span>
+            </div>
+            <div class="timestamp-row">
+              <span class="ts-label" id="lbl-provider-pdn">Official Provider:</span>
+              <span class="ts-val" id="val-provider-pdn">U.S. Customs & Border Protection (CBP)</span>
+            </div>
+          </div>
+
+          <div class="crossing-actions">
+            <a href="https://bwt.cbp.gov/details/06240202/PED" target="_blank" rel="noopener noreferrer" class="link-crossing-source" id="link-source-pdn">
+              <span>↗</span> <span id="txt-source-pdn">View CBP Source (06240202)</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Bridge of the Americas Card -->
+        <div class="border-crossing-card" id="card-crossing-bota">
+          <div class="crossing-card-header">
+            <div class="crossing-header-left">
+              <span class="crossing-tag">Port 240201</span>
+              <h3 class="crossing-name" id="name-crossing-bota">Bridge of the Americas (BOTA)</h3>
+              <span class="crossing-popular-name" id="pop-crossing-bota">Puente Libre / Chamizal Crossing</span>
+              <span class="crossing-lane-badge" id="lane-cat-bota">General / Standard Lane (excludes Ready Lane)</span>
+            </div>
+            <div class="crossing-header-right">
+              <span class="freshness-pill fresh" id="freshness-bota">Fresh</span>
+            </div>
+          </div>
+
+          <div class="crossing-wait-display">
+            <div class="wait-primary">
+              <span class="wait-number" id="wait-val-bota">—</span>
+              <span class="wait-unit" id="wait-unit-bota">min wait</span>
+            </div>
+            <div class="wait-meta-lane">
+              <span class="operational-badge" id="op-status-bota">No Delay</span>
+              <span class="lanes-open-text" id="lanes-bota">Lanes open: —</span>
+            </div>
+          </div>
+
+          <div class="crossing-timestamps">
+            <div class="timestamp-row">
+              <span class="ts-label" id="lbl-obs-time-bota">Source Update Time:</span>
+              <span class="ts-val" id="val-obs-time-bota">—</span>
+            </div>
+            <div class="timestamp-row">
+              <span class="ts-label" id="lbl-provider-bota">Official Provider:</span>
+              <span class="ts-val" id="val-provider-bota">U.S. Customs & Border Protection (CBP)</span>
+            </div>
+          </div>
+
+          <div class="crossing-actions">
+            <a href="https://bwt.cbp.gov/details/06240201/PED" target="_blank" rel="noopener noreferrer" class="link-crossing-source" id="link-source-bota">
+              <span>↗</span> <span id="txt-source-bota">View CBP Source (06240201)</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Deterministic Comparison Statement Banner -->
+      <div class="border-comparison-banner" id="border-comparison-banner">
+        <div class="comparison-icon" id="comparison-icon">⚖️</div>
+        <div class="comparison-content">
+          <h4 id="txt-comparison-title">Deterministic Wait Comparison</h4>
+          <p id="txt-comparison-statement">Loading official wait data...</p>
+          <span class="comparison-disclaimer" id="txt-comparison-disclaimer">
+            Official CBP reported wait time is for Standard / General pedestrian queues only (excludes Ready Lane and vehicular traffic) and does not account for travel time between crossings, route conditions, or changing queues.
+          </span>
+        </div>
+      </div>
+
+      <!-- Official Camera Section (Paso del Norte) -->
+      <div class="border-cameras-box" id="border-cameras-box">
+        <div class="cameras-header">
+          <div class="cameras-title-row">
+            <span class="cameras-icon">📷</span>
+            <h4 id="txt-cameras-title">Official Live Bridge Cameras (Paso del Norte)</h4>
+          </div>
+          <span class="cameras-visual-note" id="txt-cameras-visual-note">Visual Reference Only • Does not compute wait estimates</span>
+        </div>
+        <p class="cameras-desc" id="txt-cameras-desc">
+          Inspect authentic live camera views of the pedestrian and vehicular approaches to Puente Internacional Paso del Norte, published by binational bridge authorities.
+        </p>
+        <div class="cameras-links-row">
+          <a href="https://www.puentesfronterizos.gob.mx/camaras-en-vivo.php" target="_blank" rel="noopener noreferrer" class="btn-camera-link primary" id="link-camera-chihuahua">
+            <span>🎥</span> <span id="txt-camera-chihuahua">Chihuahua Bridge Authority Cameras (Puentes Fronterizos)</span>
+          </a>
+          <a href="https://pdnuno.com/border-crossings/paso-del-norte" target="_blank" rel="noopener noreferrer" class="btn-camera-link secondary" id="link-camera-elpaso">
+            <span>🏛️</span> <span id="txt-camera-elpaso">City of El Paso Bridge Cameras (PDN Uno)</span>
+          </a>
         </div>
       </div>
     </section>

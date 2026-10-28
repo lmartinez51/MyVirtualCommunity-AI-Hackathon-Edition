@@ -192,6 +192,46 @@
       txtTrustBadge: '🛡️ Grounded in World Core Snapshot',
       lblResultQuestion: 'Submitted Question:',
       lblResultRetrievedAt: 'Snapshot Evaluated & Retrieved:',
+
+      // Border Intelligence Translations (Increment 1)
+      borderBadge: 'Border Intelligence',
+      borderTitle: 'Official Pedestrian Wait Times (Juárez → El Paso)',
+      borderDesc: 'Direct comparison of official U.S. Customs & Border Protection (CBP) pedestrian wait estimates for Paso del Norte (Santa Fe) and Bridge of the Americas (Puente Libre).',
+      tagDirection: 'Juárez → El Paso (Northbound)',
+      tagMode: '🚶 Pedestrian Only',
+      tagLane: 'General / Standard Lane',
+      laneCatNotice: 'General / Standard Lane (excludes Ready Lane)',
+      btnBorderRefresh: 'Refresh Feeds',
+      borderStatusLive: 'Official Feeds Live',
+      borderStatusLoading: 'Updating Feeds...',
+      borderStatusError: 'Feed Outage / Offline',
+      lblBorderFetchedAt: 'Fetched at:',
+      nameCrossingPdn: 'Paso del Norte (Santa Fe)',
+      popCrossingPdn: 'Av. Benito Juárez / Downtown Crossing',
+      nameCrossingBota: 'Bridge of the Americas (BOTA)',
+      popCrossingBota: 'Puente Libre / Chamizal Crossing',
+      freshnessFresh: 'Fresh',
+      freshnessStale: 'Stale',
+      freshnessPending: 'Pending',
+      freshnessUnavailable: 'Unavailable',
+      lblObsTime: 'Source Update Time:',
+      lblProvider: 'Official Provider:',
+      txtSourcePdn: 'View CBP Source (06240202)',
+      txtSourceBota: 'View CBP Source (06240201)',
+      txtComparisonTitle: 'Deterministic Wait Comparison',
+      txtComparisonDisclaimer: 'Official CBP reported wait time is for Standard / General pedestrian queues only (excludes Ready Lane and vehicular traffic) and does not account for travel time between crossings, route conditions, or changing queues.',
+      txtCamerasTitle: 'Official Live Bridge Cameras (Paso del Norte)',
+      txtCamerasVisualNote: 'Visual Reference Only • Does not compute wait estimates',
+      txtCamerasDesc: 'Inspect authentic live camera views of the pedestrian and vehicular approaches to Puente Internacional Paso del Norte, published by binational bridge authorities.',
+      txtCameraChihuahua: 'Chihuahua Bridge Authority Cameras (Puentes Fronterizos)',
+      txtCameraElPaso: 'City of El Paso Bridge Cameras (PDN Uno)',
+      txtShortcutBorder: 'Compare Pedestrian Wait Times',
+      unitMinWait: 'min wait',
+      lanesOpenPrefix: 'Lanes open:',
+      statusNoDelay: 'No Delay',
+      statusDelay: 'Delay',
+      statusLanesClosed: 'Lanes Closed',
+      statusCrossingClosed: 'Crossing Closed',
       badges: {
         infrastructure: 'Border Infrastructure',
         pharmacy: 'Pharmacy',
@@ -382,6 +422,46 @@
       txtTrustBadge: '🛡️ Fundamentado en Snapshot de World Core',
       lblResultQuestion: 'Pregunta Enviada:',
       lblResultRetrievedAt: 'Snapshot Evaluado y Obtenido:',
+
+      // Border Intelligence Translations (Increment 1)
+      borderBadge: 'Inteligencia Fronteriza',
+      borderTitle: 'Tiempos Oficiales de Espera Peatonal (Juárez → El Paso)',
+      borderDesc: 'Comparación directa de estimaciones oficiales de espera peatonal de CBP para Paso del Norte (Santa Fe) y Puente de las Américas (Puente Libre).',
+      tagDirection: 'Juárez → El Paso (Hacia el Norte)',
+      tagMode: '🚶 Solo Peatonal',
+      tagLane: 'Carril General / Estándar',
+      laneCatNotice: 'Carril General / Estándar (excluye Ready Lane)',
+      btnBorderRefresh: 'Actualizar Cruces',
+      borderStatusLive: 'Feeds Oficiales en Vivo',
+      borderStatusLoading: 'Actualizando Cruces...',
+      borderStatusError: 'Falla en Fuentes Oficiales',
+      lblBorderFetchedAt: 'Consultado a las:',
+      nameCrossingPdn: 'Paso del Norte (Santa Fe)',
+      popCrossingPdn: 'Av. Benito Juárez / Cruce Centro',
+      nameCrossingBota: 'Puente de las Américas (BOTA)',
+      popCrossingBota: 'Puente Libre / Cruce Chamizal',
+      freshnessFresh: 'Actualizado',
+      freshnessStale: 'Desactualizado',
+      freshnessPending: 'Pendiente',
+      freshnessUnavailable: 'No Disponible',
+      lblObsTime: 'Hora de Actualización Oficial:',
+      lblProvider: 'Proveedor Oficial:',
+      txtSourcePdn: 'Ver Fuente CBP (06240202)',
+      txtSourceBota: 'Ver Fuente CBP (06240201)',
+      txtComparisonTitle: 'Comparación Determinística de Espera',
+      txtComparisonDisclaimer: 'El tiempo oficial de CBP es únicamente para filas peatonales Estándar / General (excluye Ready Lane y tráfico vehicular) y no contempla el tiempo de traslado entre puentes, condiciones viales ni cambios súbitos en la fila.',
+      txtCamerasTitle: 'Cámaras Oficiales de Puentes en Vivo (Paso del Norte)',
+      txtCamerasVisualNote: 'Solo Referencia Visual • No calcula tiempos de espera',
+      txtCamerasDesc: 'Consulte vistas auténticas en vivo de las filas peatonales y vehiculares hacia el Puente Internacional Paso del Norte, publicadas por autoridades binacionales.',
+      txtCameraChihuahua: 'Cámaras de Puentes Fronterizos de Chihuahua',
+      txtCameraElPaso: 'Cámaras de la Ciudad de El Paso (PDN Uno)',
+      txtShortcutBorder: 'Comparar Tiempos Peatonales',
+      unitMinWait: 'min de espera',
+      lanesOpenPrefix: 'Líneas abiertas:',
+      statusNoDelay: 'Sin Demora',
+      statusDelay: 'Con Demora',
+      statusLanesClosed: 'Líneas Cerradas',
+      statusCrossingClosed: 'Cruce Cerrado',
       badges: {
         infrastructure: 'Infraestructura Fronteriza',
         pharmacy: 'Farmacia',
@@ -764,6 +844,73 @@
     document.getElementById('txt-diagnostics-summary').textContent = t.diagnosticsSummary;
     document.getElementById('txt-footer-note').textContent = t.footerNote;
 
+    // Border Intelligence strings
+    const bBadge = document.getElementById('txt-border-badge');
+    if (bBadge) bBadge.textContent = t.borderBadge;
+    const bTitle = document.getElementById('txt-border-title');
+    if (bTitle) bTitle.textContent = t.borderTitle;
+    const bDesc = document.getElementById('txt-border-desc');
+    if (bDesc) bDesc.textContent = t.borderDesc;
+    const tagDir = document.getElementById('tag-direction');
+    if (tagDir) tagDir.textContent = t.tagDirection;
+    const tagMd = document.getElementById('tag-mode');
+    if (tagMd) tagMd.textContent = t.tagMode;
+    const tagLane = document.getElementById('tag-lane');
+    if (tagLane) tagLane.textContent = t.tagLane;
+
+    const lanePdn = document.getElementById('lane-cat-pdn');
+    if (lanePdn) lanePdn.textContent = t.laneCatNotice;
+    const laneBota = document.getElementById('lane-cat-bota');
+    if (laneBota) laneBota.textContent = t.laneCatNotice;
+
+    const btnBRef = document.getElementById('txt-btn-border-refresh');
+    if (btnBRef) btnBRef.textContent = t.btnBorderRefresh;
+    const lblBFA = document.getElementById('lbl-border-fetched-at');
+    if (lblBFA) lblBFA.textContent = t.lblBorderFetchedAt;
+
+    const nPdn = document.getElementById('name-crossing-pdn');
+    if (nPdn) nPdn.textContent = t.nameCrossingPdn;
+    const pPdn = document.getElementById('pop-crossing-pdn');
+    if (pPdn) pPdn.textContent = t.popCrossingPdn;
+    const nBota = document.getElementById('name-crossing-bota');
+    if (nBota) nBota.textContent = t.nameCrossingBota;
+    const pBota = document.getElementById('pop-crossing-bota');
+    if (pBota) pBota.textContent = t.popCrossingBota;
+
+    const lPdn = document.getElementById('lbl-obs-time-pdn');
+    if (lPdn) lPdn.textContent = t.lblObsTime;
+    const lBota = document.getElementById('lbl-obs-time-bota');
+    if (lBota) lBota.textContent = t.lblObsTime;
+    const prvPdn = document.getElementById('lbl-provider-pdn');
+    if (prvPdn) prvPdn.textContent = t.lblProvider;
+    const prvBota = document.getElementById('lbl-provider-bota');
+    if (prvBota) prvBota.textContent = t.lblProvider;
+
+    const sPdn = document.getElementById('txt-source-pdn');
+    if (sPdn) sPdn.textContent = t.txtSourcePdn;
+    const sBota = document.getElementById('txt-source-bota');
+    if (sBota) sBota.textContent = t.txtSourceBota;
+
+    const compTitle = document.getElementById('txt-comparison-title');
+    if (compTitle) compTitle.textContent = t.txtComparisonTitle;
+    const compDisc = document.getElementById('txt-comparison-disclaimer');
+    if (compDisc) compDisc.textContent = t.txtComparisonDisclaimer;
+
+    const camTitle = document.getElementById('txt-cameras-title');
+    if (camTitle) camTitle.textContent = t.txtCamerasTitle;
+    const camNote = document.getElementById('txt-cameras-visual-note');
+    if (camNote) camNote.textContent = t.txtCamerasVisualNote;
+    const camDesc = document.getElementById('txt-cameras-desc');
+    if (camDesc) camDesc.textContent = t.txtCamerasDesc;
+    const camChih = document.getElementById('txt-camera-chihuahua');
+    if (camChih) camChih.textContent = t.txtCameraChihuahua;
+    const camEP = document.getElementById('txt-camera-elpaso');
+    if (camEP) camEP.textContent = t.txtCameraElPaso;
+
+    const scBrd = document.getElementById('txt-shortcut-border');
+    if (scBrd) scBrd.textContent = t.txtShortcutBorder;
+
+    renderBorderIntelligence();
     renderEntityDetail(selectedEntityId);
     renderSuggestions();
     renderScenarioChips();
@@ -1685,10 +1832,202 @@
     });
   }
 
+  // ============================================================================
+  // Border Intelligence Client State & Rendering (Increment 1)
+  // ============================================================================
+  let currentBorderComparison = null;
+  let isBorderRefreshing = false;
+
+  async function fetchBorderWaitTimes(bypassCache = false) {
+    if (isBorderRefreshing) return;
+    isBorderRefreshing = true;
+
+    const btnRefresh = document.getElementById('btn-border-refresh');
+    const statusDot = document.getElementById('border-status-dot');
+    const statusLabel = document.getElementById('txt-border-status-label');
+    const t = I18N[currentLang];
+
+    if (btnRefresh) {
+      btnRefresh.classList.add('refreshing');
+      btnRefresh.disabled = true;
+    }
+    if (statusDot) {
+      statusDot.className = 'status-dot dot-stale';
+    }
+    if (statusLabel) {
+      statusLabel.textContent = t.borderStatusLoading;
+    }
+
+    try {
+      const url = '/api/border/wait-times' + (bypassCache ? '?refresh=true' : '');
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) {
+        throw new Error(`Border API returned status ${res.status}`);
+      }
+      const data = await res.json();
+      if (data && data.success && data.comparison) {
+        currentBorderComparison = data.comparison;
+        renderBorderIntelligence();
+        if (statusDot) statusDot.className = 'status-dot dot-live';
+        if (statusLabel) statusLabel.textContent = t.borderStatusLive;
+      } else {
+        throw new Error('Malformed border data received');
+      }
+    } catch (err) {
+      console.warn('Border wait time refresh failed:', err);
+      if (statusDot) statusDot.className = 'status-dot dot-error';
+      if (statusLabel) statusLabel.textContent = t.borderStatusError;
+    } finally {
+      isBorderRefreshing = false;
+      if (btnRefresh) {
+        btnRefresh.classList.remove('refreshing');
+        btnRefresh.disabled = false;
+      }
+    }
+  }
+
+  function renderBorderIntelligence() {
+    if (!currentBorderComparison) return;
+    const t = I18N[currentLang];
+    const { observations, comparison, fetchedAt } = currentBorderComparison;
+
+    // Render Fetch Time
+    const valFetchedAt = document.getElementById('val-border-fetched-at');
+    if (valFetchedAt && fetchedAt) {
+      const d = new Date(fetchedAt);
+      valFetchedAt.textContent = isNaN(d.getTime())
+        ? fetchedAt
+        : d.toLocaleTimeString(currentLang === 'es' ? 'es-MX' : 'en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            timeZoneName: 'short',
+          });
+    }
+
+    // Helper for rendering a single crossing card
+    const renderCard = (prefix, obs) => {
+      const waitValEl = document.getElementById(`wait-val-${prefix}`);
+      const waitUnitEl = document.getElementById(`wait-unit-${prefix}`);
+      const freshnessEl = document.getElementById(`freshness-${prefix}`);
+      const opStatusEl = document.getElementById(`op-status-${prefix}`);
+      const lanesEl = document.getElementById(`lanes-${prefix}`);
+      const obsTimeEl = document.getElementById(`val-obs-time-${prefix}`);
+
+      if (obs) {
+        // Lane category notice
+        const laneCatEl = document.getElementById(`lane-cat-${prefix}`);
+        if (laneCatEl) {
+          laneCatEl.textContent = t.laneCatNotice;
+        }
+
+        // Operational status and wait number
+        if (obs.portStatus === 'Closed') {
+          if (waitValEl) waitValEl.textContent = '—';
+          if (waitUnitEl) waitUnitEl.textContent = t.statusCrossingClosed;
+          if (opStatusEl) {
+            opStatusEl.textContent = t.statusLanesClosed;
+            opStatusEl.className = 'operational-badge closed';
+          }
+        } else if (typeof obs.delayMinutes === 'number' && !isNaN(obs.delayMinutes)) {
+          if (waitValEl) waitValEl.textContent = obs.delayMinutes;
+          if (waitUnitEl) waitUnitEl.textContent = t.unitMinWait;
+          if (opStatusEl) {
+            const rawStatus = (obs.operationalStatus || '').toLowerCase();
+            if (rawStatus.includes('no delay')) {
+              opStatusEl.textContent = t.statusNoDelay;
+              opStatusEl.className = 'operational-badge';
+            } else if (rawStatus.includes('delay')) {
+              opStatusEl.textContent = t.statusDelay;
+              opStatusEl.className = 'operational-badge delay';
+            } else {
+              opStatusEl.textContent = obs.operationalStatus || '—';
+              opStatusEl.className = 'operational-badge';
+            }
+          }
+        } else {
+          if (waitValEl) waitValEl.textContent = '—';
+          if (waitUnitEl) {
+            waitUnitEl.textContent =
+              obs.freshness === 'pending'
+                ? t.freshnessPending
+                : t.freshnessUnavailable;
+          }
+          if (opStatusEl) {
+            opStatusEl.textContent =
+              obs.freshness === 'pending'
+                ? t.freshnessPending
+                : t.freshnessUnavailable;
+            opStatusEl.className = 'operational-badge';
+          }
+        }
+
+        // Freshness pill
+        if (freshnessEl) {
+          freshnessEl.className = `freshness-pill ${obs.freshness}`;
+          if (obs.freshness === 'fresh') freshnessEl.textContent = t.freshnessFresh;
+          else if (obs.freshness === 'stale') freshnessEl.textContent = t.freshnessStale;
+          else if (obs.freshness === 'pending') freshnessEl.textContent = t.freshnessPending;
+          else freshnessEl.textContent = t.freshnessUnavailable;
+        }
+
+        // Lanes open
+        if (lanesEl) {
+          const lanesStr = obs.lanesOpen !== null && obs.lanesOpen !== undefined ? obs.lanesOpen : '—';
+          lanesEl.textContent = `${t.lanesOpenPrefix} ${lanesStr}`;
+        }
+
+        // Source update time
+        if (obsTimeEl) {
+          obsTimeEl.textContent = obs.sourceObservationTime || '—';
+        }
+      }
+    };
+
+    if (observations) {
+      renderCard('pdn', observations.pasoDelNorte);
+      renderCard('bota', observations.bridgeOfTheAmericas);
+    }
+
+    // Comparison Statement
+    const statementEl = document.getElementById('txt-comparison-statement');
+    const compIconEl = document.getElementById('comparison-icon');
+    if (statementEl && comparison) {
+      if (comparison.canCompare && comparison.statement) {
+        statementEl.textContent = comparison.statement[currentLang] || comparison.statement.en;
+        if (compIconEl) compIconEl.textContent = '⚖️';
+      } else {
+        const reason = comparison.reasonUnavailable
+          ? ` (${comparison.reasonUnavailable[currentLang] || comparison.reasonUnavailable.en})`
+          : '';
+        statementEl.textContent =
+          (comparison.statement ? comparison.statement[currentLang] || comparison.statement.en : '') + reason;
+        if (compIconEl) compIconEl.textContent = '⚠️';
+      }
+    }
+  }
+
+  // Bind Border Intelligence controls
+  const btnBorderRefresh = document.getElementById('btn-border-refresh');
+  if (btnBorderRefresh) {
+    btnBorderRefresh.addEventListener('click', () => fetchBorderWaitTimes(true));
+  }
+
+  const btnShortcutBorder = document.getElementById('btn-shortcut-border');
+  if (btnShortcutBorder) {
+    btnShortcutBorder.addEventListener('click', () => {
+      const borderSec = document.getElementById('border-section');
+      if (borderSec) {
+        borderSec.scrollIntoView({ behavior: 'smooth' });
+      }
+    });
+  }
+
   // Initialize
   updateLanguage('en');
   updateCharCount();
   setMode('current');
   initMap();
   checkSimulationHealth();
+  fetchBorderWaitTimes();
 })();
