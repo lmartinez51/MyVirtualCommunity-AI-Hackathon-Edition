@@ -1,3 +1,5 @@
+import { BorderCrossingComparison } from '../domain/border-crossing.js';
+import { ConciergeIntent } from '../domain/border-concierge.js';
 import { BusinessSchedule } from '../domain/business-schedule.js';
 import { BusinessOperationalStatus } from '../domain/operational-status.js';
 import { SyntheticWitnessProfile } from '../domain/synthetic-witness.js';
@@ -27,6 +29,20 @@ export interface AssistantPromptContext {
 export interface WitnessPromptContext {
   readonly witness: SyntheticWitnessProfile;
   readonly userMessage: string;
+  readonly language: 'en' | 'es';
+}
+
+/**
+ * Context provided to the Meta Model for Border Concierge guidance.
+ *
+ * Invariant:
+ * The prompt context contains verified, authoritative CBP observation facts and comparison data.
+ * The model has zero authority to invent numbers, change status, or pretend to inspect video feeds.
+ */
+export interface ConciergePromptContext {
+  readonly userMessage: string;
+  readonly intent: ConciergeIntent;
+  readonly comparison: BorderCrossingComparison;
   readonly language: 'en' | 'es';
 }
 
@@ -65,4 +81,9 @@ export interface MetaModelPort {
    * Generates dialogue for a synthetic community witness grounded in their scenario profile.
    */
   generateWitnessResponse?(context: WitnessPromptContext): Promise<MetaModelResponse>;
+
+  /**
+   * Generates natural language guidance for the Border Concierge grounded in official CBP observations.
+   */
+  generateConciergeResponse?(context: ConciergePromptContext): Promise<MetaModelResponse>;
 }

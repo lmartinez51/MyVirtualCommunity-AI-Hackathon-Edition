@@ -168,7 +168,7 @@ Integrates official real-world public border crossing data for northbound pedest
 
 - **Official Data Integration**: Direct read-only integration with U.S. Customs and Border Protection (`https://bwt.cbp.gov/`) for **Paso del Norte (Santa Fe)** (Port `06240202`) and **Bridge of the Americas (BOTA / Puente Libre)** (Port `06240201`).
 - **Explicit Lane Scope**: Evaluates and compares strictly the **General / Standard Pedestrian Lane** (excluding Ready Lane, SENTRI, and vehicular queues) with clear bilingual notices.
-- **Data Freshness & Provenance**: Classifies CBP source reporting timestamp freshness (`fresh` <= 2h, `stale` > 2h, `pending`, `unavailable`) without fabricating missing observations.
+- **Data Freshness & Provenance**: Classifies CBP source reporting timestamp freshness (`fresh` <= 60 min, `stale` > 60 min, `pending`, `unavailable`) without fabricating missing observations.
 - **Deterministic Comparison**: Generates a safe, non-hallucinatory comparison statement only when both crossings report compatible, fresh numeric delays and are officially open.
 - **Verified Official Cameras**: Direct links to authentic live visual feeds from the Chihuahua Bridge Authority and the City of El Paso international bridges camera portal.
 
@@ -198,6 +198,36 @@ Introduces an interactive community of three explicitly synthetic conversational
   - Stateless single-turn dialogue: each query is processed independently against the selected NPC's configured scenario profile without model-level conversation history or session persistence.
   - Scope confined to the pedestrian queue at Paso del Norte (excludes commercial cargo and vehicular lines).
 
+### 4.5 Increment 3: Border Concierge — Grounded Traveler Guidance
+
+Introduces an interactive, bilingual Border Concierge NPC (**Elena Ramos**, `elena-border-concierge`, 🛂) at the simulated Paso del Norte pedestrian crossing:
+
+- **Purpose & Role**: Helps pedestrian travelers understand official border observations, compare Paso del Norte with Bridge of the Americas (BOTA), interpret data freshness and operational status, and find official live camera views without giving the model authority over world state or allowing it to invent official border conditions.
+- **Concierge Capabilities & Supported Inquiries**:
+  - *Reported Wait at Paso del Norte*: Retrieves the official CBP observation for Port `240202` (Standard pedestrian lane) with observation timestamp and fetch time.
+  - *Reported Wait at BOTA*: Retrieves the official CBP observation for Port `240201` (Standard pedestrian lane) with observation timestamp and fetch time.
+  - *Crossing Comparison*: Determines which crossing reports a lower standard pedestrian wait in the available observations, only when both crossings are open, fresh, and numeric.
+  - *Data Freshness & Provenance*: Explains when observations were recorded by CBP versus when they were fetched by the application, clearly distinguishing `fresh`, `stale`, `pending`, and `unavailable`.
+  - *Official Cameras*: Provides direct references to the official Fideicomiso de Puentes Fronterizos de Chihuahua live camera portal and official CBP pedestrian wait pages.
+  - *Traveler Guidance*: Explains why point-in-time snapshots do not guarantee an end-to-end crossing duration, how conditions can fluctuate, and geographic destination differences (Downtown El Paso vs. Chamizal/I-110).
+- **Truth, Freshness, and Comparison Rules**:
+  - *Strict Observation Semantics*: Every factual answer preserves the distinction between the CBP observation timestamp (`sourceObservationTime`, e.g. `10/27/2026 21:45:00`), the application's fetch timestamp (`fetchedAt`, stored as ISO UTC but always localized in user-facing presentation to `America/Ciudad_Juarez` local time), and the freshness rating. The application never substitutes fetch time for observation time.
+  - *Comparison Eligibility Guardrails*: The concierge only compares crossings if both are officially `Open`, both report valid numeric wait times, both are `fresh` (within the canonical 60-minute window), and both share the same Standard / General pedestrian lane. If any condition fails, the concierge refuses the comparison and clearly explains why (stale data, closed port, pending update, or incompatible lanes). The concierge never upgrades stale observations to fresh.
+  - *Closed Crossing Invariant*: A closed port is never represented as a 0-minute wait; its status is reported explicitly as `Closed`.
+  - *Point-in-Time Caveat*: When a valid comparison exists, the concierge explicitly caveats that reported wait times are historic snapshots and conditions can change rapidly before arrival.
+- **Camera References & Video Analysis Boundaries**:
+  - The concierge provides direct, verified links to the official Chihuahua Bridge Authority live camera portal (`https://www.puentesfronterizos.gob.mx/camaras-en-vivo.php`) and CBP wait pages.
+  - The concierge **explicitly disclaims automated video analysis**: camera feeds are linked for human travelers, not visually inspected, computer-vision analyzed, or used to measure queue density.
+- **Meta Muse Spark Integration & Deterministic Fallback**:
+  - Uses Meta Model API (`muse-spark-1.3`) constrained by pure domain prompt boundaries. The model receives only verified CBP observations and static explanatory context; it has zero authority to alter numeric delays, change operational status, or access synthetic witness profiles.
+  - If the Meta API is unavailable or returns an error, the concierge transparently falls back to pure deterministic domain formatting (`formatDeterministicConciergeResponse`), ensuring 100% availability with exact measurements and provenance.
+- **Distinct Tri-Fold Border Experience**:
+  1. *Authoritative Border Intelligence*: Live, normalized CBP cards with minute delays, lane counts, and freshness pills.
+  2. *Synthetic Community Witnesses*: Simulated queue commuters (Mateo, Sofia, Héctor) with personal narratives and clear simulation disclosures.
+  3. *Grounded Border Concierge*: Interactive, grounded guidance (Elena Ramos) explaining observations, comparison rules, and camera resources.
+
+---
+
 The project follows a strict Hexagonal / Clean Architecture pattern:
 
 ```
@@ -209,11 +239,12 @@ src/
 │   ├── operational-status.ts   # Deterministic status derivation (OPEN/CLOSED/etc.)
 │   ├── spatial-corridor.ts     # Authentic spatial corridor & POI definitions (Milestone 3)
 │   ├── border-crossing.ts      # Border crossing contracts & deterministic comparison (Increment 1)
-│   └── synthetic-witness.ts    # Synthetic NPC profiles, boundaries & fallback engine (Increment 2)
+│   ├── synthetic-witness.ts    # Synthetic NPC profiles, boundaries & fallback engine (Increment 2)
+│   └── border-concierge.ts     # Concierge profile, intent classifier & prompt boundaries (Increment 3)
 ├── ports/             # Boundary contracts
 │   ├── world-core-port.ts      # Read-only World Core query interface
 │   ├── border-crossing-port.ts # CBP wait time data provider port
-│   └── meta-model-port.ts      # Meta Model prompt context & response port (assistant + witnesses)
+│   └── meta-model-port.ts      # Meta Model prompt context & response port (assistant + witnesses + concierge)
 ├── adapters/          # Port implementations
 │   ├── in-memory-world-core-adapter.ts # Seeded development fixture
 │   ├── cbp-border-wait-time-adapter.ts # Official CBP REST API adapter with caching
@@ -222,7 +253,8 @@ src/
 ├── application/       # Use case orchestration
 │   ├── answer-business-hours-query.ts  # End-to-end grounded assistant flow
 │   ├── compare-border-wait-times.ts    # Border wait times comparison use case
-│   └── talk-to-synthetic-witness.ts    # Synthetic witness dialogue orchestration
+│   ├── talk-to-synthetic-witness.ts    # Synthetic witness dialogue orchestration
+│   └── ask-border-concierge.ts         # Border Concierge grounded guidance use case
 ├── config/            # Environment parsing & secret masking
 │   └── index.ts
 └── server/            # HTTP transport
@@ -230,7 +262,7 @@ src/
 scripts/
 ├── run-tests.js       # Cross-platform test runner
 └── meta-smoke-test.ts # Dedicated, explicitly invoked live smoke test
-tests/                 # 100% offline test suite (220 tests across 58 suites)
+tests/                 # 100% offline test suite (275 tests across 71 suites)
 docs/
 ├── HACKATHON_SCOPE.md         # Explicit MVP scope and boundaries
 ├── ARCHITECTURE.md            # Complete architecture diagrams and data flows

@@ -27,6 +27,10 @@ import {
   TalkToSyntheticWitnessUseCase,
   UnknownWitnessError,
 } from '../application/talk-to-synthetic-witness.js';
+import {
+  AskBorderConciergeUseCase,
+  InvalidConciergeMessageError,
+} from '../application/ask-border-concierge.js';
 import { BorderCrossingPort } from '../ports/border-crossing-port.js';
 import { MetaModelPort } from '../ports/meta-model-port.js';
 import { WorldCorePort } from '../ports/world-core-port.js';
@@ -37,6 +41,7 @@ export interface AssistantServerOptions {
   readonly metaModel?: MetaModelPort;
   readonly borderCrossingPort?: BorderCrossingPort;
   readonly witnessUseCase?: TalkToSyntheticWitnessUseCase;
+  readonly conciergeUseCase?: AskBorderConciergeUseCase;
   readonly publicDir?: string;
 }
 
@@ -87,6 +92,13 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
   const witnessUseCase =
     options.witnessUseCase ??
     new TalkToSyntheticWitnessUseCase({
+      metaModel,
+    });
+
+  const conciergeUseCase =
+    options.conciergeUseCase ??
+    new AskBorderConciergeUseCase({
+      getBorderWaitTimesUseCase: borderUseCase,
       metaModel,
     });
 
@@ -426,6 +438,70 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
             error: {
               code: 'server-error',
               message: 'Internal server error processing witness conversation.',
+            },
+          });
+          return;
+        }
+      }
+
+      // 9. GET /api/border/concierge (Border Concierge Profile & Suggested Prompts)
+      if (method === 'GET' && pathname === '/api/border/concierge') {
+        const profile = conciergeUseCase.getProfile();
+        sendJson(res, 200, {
+          success: true,
+          concierge: profile,
+        });
+        return;
+      }
+
+      // 10. POST /api/border/concierge/chat (Grounded Traveler Guidance)
+      if (method === 'POST' && pathname === '/api/border/concierge/chat') {
+        let rawBody: any;
+        try {
+          rawBody = await readBody(req);
+        } catch {
+          sendJson(res, 400, {
+            success: false,
+            error: { code: 'invalid-body', message: 'Request body must be valid JSON' },
+          });
+          return;
+        }
+
+        const { message, language } = rawBody ?? {};
+        if (typeof message !== 'string' || message.trim().length === 0) {
+          sendJson(res, 400, {
+            success: false,
+            error: {
+              code: 'invalid-message',
+              message: 'Field "message" must be a non-empty string.',
+            },
+          });
+          return;
+        }
+
+        try {
+          const result = await conciergeUseCase.execute({
+            message,
+            language,
+          });
+          sendJson(res, 200, {
+            success: true,
+            ...result,
+          });
+          return;
+        } catch (conciergeErr) {
+          if (conciergeErr instanceof InvalidConciergeMessageError) {
+            sendJson(res, 400, {
+              success: false,
+              error: { code: 'invalid-message', message: conciergeErr.message },
+            });
+            return;
+          }
+          sendJson(res, 500, {
+            success: false,
+            error: {
+              code: 'server-error',
+              message: 'Internal server error processing concierge inquiry.',
             },
           });
           return;

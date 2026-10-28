@@ -315,3 +315,105 @@ export function comparePedestrianCrossings(
     };
   }
 }
+
+/**
+ * Canonical IANA timezone identifier for Ciudad Juárez and the regional border crossing corridor.
+ */
+export const BORDER_LOCAL_TIMEZONE = 'America/Ciudad_Juarez';
+
+export interface FormatBorderTimeOptions {
+  readonly timeZone?: string;
+  readonly includeDate?: boolean;
+}
+
+/**
+ * Formats an application fetch timestamp into a localized, user-friendly
+ * representation in the local time zone of Ciudad Juárez (America/Ciudad_Juarez).
+ *
+ * Requirements:
+ * - Deterministic conversion using native Intl.DateTimeFormat (zero external dependencies).
+ * - Explicitly targets America/Ciudad_Juarez.
+ * - Handles Daylight Saving Time transitions (MDT UTC-6 vs MST UTC-7) dynamically via IANA DB.
+ * - Never returns raw ISO strings or raw UTC to end-users.
+ * - Localizes for English ("local time (Ciudad Juárez)") and Spanish ("hora local de Ciudad Juárez").
+ * - Missing or invalid timestamps return 'Unavailable' / 'No disponible' without throwing.
+ */
+export function formatBorderFetchTime(
+  timestamp: string | Date | null | undefined,
+  language: 'en' | 'es' = 'en',
+  options: FormatBorderTimeOptions = {}
+): string {
+  const isEs = language === 'es';
+  const unavailableStr = isEs ? 'No disponible' : 'Unavailable';
+
+  if (!timestamp) {
+    return unavailableStr;
+  }
+
+  const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
+  if (isNaN(date.getTime())) {
+    return unavailableStr;
+  }
+
+  const timeZone = options.timeZone || BORDER_LOCAL_TIMEZONE;
+  const locale = isEs ? 'es-MX' : 'en-US';
+
+  const timeFormatter = new Intl.DateTimeFormat(locale, {
+    timeZone,
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+
+  const formattedTime = timeFormatter.format(date);
+  const tzSuffix = isEs ? '(hora local de Ciudad Juárez)' : 'local time (Ciudad Juárez)';
+
+  if (options.includeDate) {
+    const dateFormatter = new Intl.DateTimeFormat(locale, {
+      timeZone,
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+    const formattedDate = dateFormatter.format(date);
+    return `${formattedDate}, ${formattedTime} ${tzSuffix}`;
+  }
+
+  return `${formattedTime} ${tzSuffix}`;
+}
+
+/**
+ * Formats a CBP observation timestamp for user-facing display in local Ciudad Juárez time
+ * while preserving source data and distinct provenance.
+ *
+ * Requirements:
+ * - When CBP observation time is missing or unavailable, returns 'Unavailable' / 'No disponible'.
+ * - NEVER substitutes application fetch time for a missing CBP observation timestamp.
+ * - If an ISO sourceObservationTimestamp is provided, converts it to America/Ciudad_Juarez.
+ * - If a raw formatted sourceObservationTime string exists (e.g. "At 6:00 pm MDT"), preserves it.
+ */
+export function formatCbpObservationTime(
+  sourceTime: string | null | undefined,
+  sourceTimestampIso: string | null | undefined,
+  language: 'en' | 'es' = 'en'
+): string {
+  const isEs = language === 'es';
+  const unavailableStr = isEs ? 'No disponible' : 'Unavailable';
+
+  if (!sourceTime && !sourceTimestampIso) {
+    return unavailableStr;
+  }
+
+  if (sourceTime && sourceTime.trim() !== '') {
+    return sourceTime.trim();
+  }
+
+  if (sourceTimestampIso) {
+    const date = new Date(sourceTimestampIso);
+    if (!isNaN(date.getTime())) {
+      return formatBorderFetchTime(date, language);
+    }
+  }
+
+  return unavailableStr;
+}

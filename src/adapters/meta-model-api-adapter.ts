@@ -1,7 +1,9 @@
 import { MetaConfig } from '../config/index.js';
+import { buildConciergePrompt } from '../domain/border-concierge.js';
 import { buildWitnessPrompt } from '../domain/synthetic-witness.js';
 import {
   AssistantPromptContext,
+  ConciergePromptContext,
   MetaModelPort,
   MetaModelResponse,
   MetaModelUsage,
@@ -392,6 +394,28 @@ export class MetaModelApiAdapter implements MetaModelPort {
         { role: 'user', content: userContent },
       ],
       { temperature: 0.7, reasoningEffort: 'minimal' }
+    );
+  }
+
+  /**
+   * Generates natural language guidance for the Border Concierge grounded in official CBP observations.
+   */
+  public async generateConciergeResponse(
+    context: ConciergePromptContext
+  ): Promise<MetaModelResponse> {
+    const { systemPrompt, userContent } = buildConciergePrompt(
+      context.userMessage,
+      context.intent,
+      context.comparison,
+      context.language
+    );
+
+    return this.executeChatCompletion(
+      [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userContent },
+      ],
+      { temperature: 0.3, reasoningEffort: 'minimal' }
     );
   }
 }

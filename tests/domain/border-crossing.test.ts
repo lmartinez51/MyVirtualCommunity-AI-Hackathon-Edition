@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import {
+  BORDER_LOCAL_TIMEZONE,
   BorderCrossingObservation,
   CANONICAL_CROSSINGS,
   comparePedestrianCrossings,
   evaluateFreshness,
+  formatBorderFetchTime,
+  formatCbpObservationTime,
   FRESHNESS_THRESHOLD_MS,
   OFFICIAL_CAMERA_METADATA,
   STANDARD_PEDESTRIAN_LANE,
@@ -240,6 +243,111 @@ describe('Border Intelligence Domain Models and Comparison Rules', () => {
       );
       assert.ok(OFFICIAL_CAMERA_METADATA.description.en.includes('Visual reference only'));
       assert.ok(OFFICIAL_CAMERA_METADATA.description.es.includes('Referencia visual únicamente'));
+    });
+  });
+
+  describe('5. Localized Ciudad Juárez Border Time Formatting', () => {
+    it('converts UTC timestamps to correct local time in America/Ciudad_Juarez', () => {
+      // 06:18 UTC during MDT (UTC-6) converts to 12:18 AM local time in Ciudad Juárez
+      const formattedMdt = formatBorderFetchTime('2026-10-28T06:18:00.000Z', 'en');
+      assert.ok(formattedMdt.includes('12:18 AM'));
+      assert.ok(formattedMdt.includes('local time (Ciudad Juárez)'));
+
+      // 22:00 UTC during MDT (UTC-6) converts to 4:00 PM local time in Ciudad Juárez
+      const formattedPdn = formatBorderFetchTime('2026-10-27T22:00:00.000Z', 'en');
+      assert.ok(formattedPdn.includes('4:00 PM'));
+      assert.ok(formattedPdn.includes('local time (Ciudad Juárez)'));
+    });
+
+    it('localizes output in natural American English and Spanish with explicit timezone clarification', () => {
+      const utcIso = '2026-10-28T06:18:00.000Z';
+
+      const en = formatBorderFetchTime(utcIso, 'en');
+      assert.ok(en.includes('12:18 AM'));
+      assert.ok(en.includes('local time (Ciudad Juárez)'));
+
+      const es = formatBorderFetchTime(utcIso, 'es');
+      assert.ok(es.includes('12:18'));
+      assert.ok(es.includes('hora local de Ciudad Juárez'));
+
+      // With includeDate
+      const enDate = formatBorderFetchTime(utcIso, 'en', { includeDate: true });
+      assert.ok(enDate.includes('Oct 28, 2026'));
+      assert.ok(enDate.includes('12:18 AM local time (Ciudad Juárez)'));
+
+      const esDate = formatBorderFetchTime(utcIso, 'es', { includeDate: true });
+      assert.ok(esDate.includes('2026'));
+      assert.ok(esDate.includes('12:18'));
+      assert.ok(esDate.includes('hora local de Ciudad Juárez'));
+    });
+
+    it('uses America/Ciudad_Juarez explicitly', () => {
+      assert.strictEqual(BORDER_LOCAL_TIMEZONE, 'America/Ciudad_Juarez');
+
+      // Explicitly verifies that the output matches the Ciudad Juárez timezone conversion
+      const explicitJuarez = formatBorderFetchTime('2026-10-28T06:18:00.000Z', 'en', {
+        timeZone: 'America/Ciudad_Juarez',
+      });
+      const defaultJuarez = formatBorderFetchTime('2026-10-28T06:18:00.000Z', 'en');
+      assert.strictEqual(defaultJuarez, explicitJuarez);
+    });
+
+    it('handles DST transitions dynamically via IANA database rather than a hard-coded UTC offset', () => {
+      // 1. Summer/Autumn (Oct 28, 2026): Northern Mexico observes MDT (UTC-6)
+      const summerUtc = '2026-10-28T06:18:00.000Z';
+      const summerFormatted = formatBorderFetchTime(summerUtc, 'en');
+      assert.ok(summerFormatted.includes('12:18 AM'));
+
+      // 2. Winter (Dec 15, 2026): Northern Mexico observes MST (UTC-7)
+      // 07:18 UTC - 7 hours = 12:18 AM local time (same time of day, different UTC offset)
+      const winterUtc = '2026-12-15T07:18:00.000Z';
+      const winterFormatted = formatBorderFetchTime(winterUtc, 'en');
+      assert.ok(
+        winterFormatted.includes('12:18 AM'),
+        'Must resolve Dec 15 07:18 UTC to 12:18 AM MST via IANA timezone database'
+      );
+
+      // 06:18 UTC in winter (UTC-7) = 11:18 PM on previous calendar day
+      const winter0618Utc = '2026-12-15T06:18:00.000Z';
+      const winter0618Formatted = formatBorderFetchTime(winter0618Utc, 'en');
+      assert.ok(
+        winter0618Formatted.includes('11:18 PM'),
+        '06:18 UTC in winter must resolve to 11:18 PM MST'
+      );
+    });
+
+    it('handles missing, empty, or invalid timestamps safely without throwing', () => {
+      assert.strictEqual(formatBorderFetchTime(null, 'en'), 'Unavailable');
+      assert.strictEqual(formatBorderFetchTime(undefined, 'en'), 'Unavailable');
+      assert.strictEqual(formatBorderFetchTime('', 'en'), 'Unavailable');
+      assert.strictEqual(formatBorderFetchTime('not-a-valid-date', 'en'), 'Unavailable');
+
+      assert.strictEqual(formatBorderFetchTime(null, 'es'), 'No disponible');
+      assert.strictEqual(formatBorderFetchTime(undefined, 'es'), 'No disponible');
+      assert.strictEqual(formatBorderFetchTime('', 'es'), 'No disponible');
+      assert.strictEqual(formatBorderFetchTime('not-a-valid-date', 'es'), 'No disponible');
+    });
+
+    it('formatCbpObservationTime preserves source data and NEVER substitutes application fetch time', () => {
+      // 1. Raw source string preserved
+      const rawCbp = formatCbpObservationTime('At 6:00 pm MDT', '2026-10-27T18:00:00.000Z', 'en');
+      assert.strictEqual(rawCbp, 'At 6:00 pm MDT');
+
+      // 2. If only ISO timestamp is present, converts to local Ciudad Juárez time
+      const isoOnly = formatCbpObservationTime(null, '2026-10-27T22:00:00.000Z', 'en');
+      assert.ok(isoOnly.includes('4:00 PM local time (Ciudad Juárez)'));
+
+      // 3. When missing/unavailable, returns clean indicator
+      assert.strictEqual(formatCbpObservationTime(null, null, 'en'), 'Unavailable');
+      assert.strictEqual(formatCbpObservationTime(undefined, undefined, 'es'), 'No disponible');
+      assert.strictEqual(formatCbpObservationTime('', '', 'en'), 'Unavailable');
+
+      // 4. Critical Invariant: Fetch timestamp must NEVER substitute for missing CBP observation time
+      const fetchTime = '2026-10-28T06:18:00.000Z';
+      const missingCbp = formatCbpObservationTime(null, null, 'en');
+      assert.strictEqual(missingCbp, 'Unavailable');
+      assert.notStrictEqual(missingCbp, fetchTime);
+      assert.notStrictEqual(missingCbp, formatBorderFetchTime(fetchTime, 'en'));
     });
   });
 });

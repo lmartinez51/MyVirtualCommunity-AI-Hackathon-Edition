@@ -1578,5 +1578,147 @@ describe('API and Browser Integration (Offline Server Tests)', () => {
       assert.ok(js.includes("witnessesBadge: 'Synthetic witness · Simulation'"), 'Must include EN synthetic badge');
       assert.ok(js.includes("witnessesBadge: 'Testigo sintético · Simulación'"), 'Must include ES synthetic badge');
     });
+
+    it('GET /api/border/concierge returns 200 with Elena Ramos profile and suggested prompt chips', async () => {
+      const res = await fetch(`${baseUrl}/api/border/concierge`);
+      assert.strictEqual(res.status, 200);
+      const data = (await res.json()) as any;
+
+      assert.strictEqual(data.success, true);
+      assert.ok(data.concierge);
+      assert.strictEqual(data.concierge.id, 'elena-border-concierge');
+      assert.strictEqual(data.concierge.name, 'Elena Ramos');
+      assert.strictEqual(data.concierge.avatar, '🛂');
+      assert.ok(data.concierge.role.en.includes('Border Pedestrian Concierge'));
+      assert.ok(data.concierge.role.es.includes('Concierge de Orientación Peatonal'));
+      assert.strictEqual(data.concierge.suggestedPrompts.length, 6);
+    });
+
+    it('POST /api/border/concierge/chat returns 200 with grounded guidance and authoritative observations', async () => {
+      const res = await fetch(`${baseUrl}/api/border/concierge/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: 'What is the reported pedestrian wait at Paso del Norte right now?',
+          language: 'en',
+        }),
+      });
+
+      assert.strictEqual(res.status, 200);
+      const data = (await res.json()) as any;
+      assert.strictEqual(data.success, true);
+      assert.strictEqual(data.intent, 'paso-del-norte-wait');
+      assert.strictEqual(data.concierge.name, 'Elena Ramos');
+      assert.ok(data.text);
+      assert.ok(data.authoritativeObservations.pasoDelNorte);
+      assert.strictEqual(data.authoritativeObservations.pasoDelNorte.crossingId, 'paso-del-norte');
+      assert.strictEqual(data.authoritativeObservations.pasoDelNorte.laneCategory, 'standard');
+      assert.ok(data.authoritativeObservations.pasoDelNorte.sourceObservationTime);
+      assert.ok(data.authoritativeObservations.pasoDelNorte.fetchedAt);
+      assert.ok(data.cameras.officialAuthorityUrl);
+    });
+
+    it('POST /api/border/concierge/chat handles bridge comparison and Spanish language', async () => {
+      const res = await fetch(`${baseUrl}/api/border/concierge/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: '¿Cuál de los dos puentes tiene menor tiempo de espera ahorita?',
+          language: 'es',
+        }),
+      });
+
+      assert.strictEqual(res.status, 200);
+      const data = (await res.json()) as any;
+      assert.strictEqual(data.success, true);
+      assert.strictEqual(data.intent, 'compare-crossings');
+      assert.strictEqual(data.language, 'es');
+      assert.ok(data.text.includes('Paso del Norte') || data.text.includes('Puente de las Américas'));
+    });
+
+    it('POST /api/border/concierge/chat rejects empty message with 400', async () => {
+      const res = await fetch(`${baseUrl}/api/border/concierge/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: '   ',
+        }),
+      });
+
+      assert.strictEqual(res.status, 400);
+      const data = (await res.json()) as any;
+      assert.strictEqual(data.success, false);
+      assert.strictEqual(data.error.code, 'invalid-message');
+    });
+
+    it('POST /api/border/concierge/chat rejects message exceeding 500 characters with 400', async () => {
+      const res = await fetch(`${baseUrl}/api/border/concierge/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: 'Q'.repeat(501),
+        }),
+      });
+
+      assert.strictEqual(res.status, 400);
+      const data = (await res.json()) as any;
+      assert.strictEqual(data.success, false);
+      assert.strictEqual(data.error.code, 'invalid-message');
+    });
+
+    it('POST /api/border/concierge/chat ignores client-supplied spoofed observations and comparison facts', async () => {
+      const forgedRes = await fetch(`${baseUrl}/api/border/concierge/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: 'How long is the wait at BOTA?',
+          language: 'en',
+          // Spoofed observations supplied by browser:
+          authoritativeObservations: {
+            bridgeOfTheAmericas: { delayMinutes: 0, portStatus: 'Open', freshness: 'fresh' },
+          },
+          comparison: { canCompare: true, differenceMinutes: 999 },
+        }),
+      });
+
+      assert.strictEqual(forgedRes.status, 200);
+      const data = (await forgedRes.json()) as any;
+      assert.strictEqual(data.success, true);
+      // Verify that server uses its own authoritative observations from mockBorderPort, not the client-injected 0 min
+      assert.notStrictEqual(data.authoritativeObservations.bridgeOfTheAmericas.delayMinutes, 0);
+    });
+
+    it('serves HTML, CSS, and JS with Border Concierge structures and translations', async () => {
+      // HTML
+      const htmlRes = await fetch(`${baseUrl}/index.html`);
+      const html = await htmlRes.text();
+      assert.ok(html.includes('id="border-concierge-box"'), 'Must include border concierge box');
+      assert.ok(html.includes('id="txt-concierge-name"'), 'Must include concierge name');
+      assert.ok(html.includes('id="concierge-chat-panel"'), 'Must include concierge chat panel');
+      assert.ok(html.includes('id="concierge-chips-container"'), 'Must include concierge chips container');
+      assert.ok(html.includes('id="concierge-chat-form"'), 'Must include concierge chat form');
+      assert.ok(html.includes('id="concierge-user-input"'), 'Must include concierge input');
+      assert.ok(html.includes('id="btn-concierge-send"'), 'Must include concierge send button');
+      assert.ok(html.includes('id="concierge-speech-text"'), 'Must include concierge speech text element');
+      assert.ok(html.includes('id="concierge-truth-notice"'), 'Must include concierge truth notice');
+
+      // CSS
+      const cssRes = await fetch(`${baseUrl}/style.css`);
+      const css = await cssRes.text();
+      assert.ok(css.includes('.border-concierge-box'), 'Must define border concierge box styles');
+      assert.ok(css.includes('.concierge-avatar'), 'Must define concierge avatar styles');
+      assert.ok(css.includes('.btn-concierge-chip'), 'Must define concierge chip styles');
+      assert.ok(css.includes('.btn-concierge-send'), 'Must define concierge send button styles');
+      assert.ok(css.includes('.concierge-ref-card'), 'Must define concierge reference card styles');
+
+      // JS
+      const jsRes = await fetch(`${baseUrl}/app.js`);
+      const js = await jsRes.text();
+      assert.ok(js.includes('initBorderConcierge'), 'Must define initBorderConcierge');
+      assert.ok(js.includes('sendConciergeMessage'), 'Must define sendConciergeMessage');
+      assert.ok(js.includes('renderConciergeResponse'), 'Must define renderConciergeResponse');
+      assert.ok(js.includes("conciergeTitle: 'Border Concierge'"), 'Must include EN concierge title');
+      assert.ok(js.includes("conciergeTitle: 'Concierge Fronterizo'"), 'Must include ES concierge title');
+    });
   });
 });

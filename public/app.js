@@ -246,6 +246,25 @@
       dialogueTruthNotice: 'ℹ️ Simulated testimony only. For official verified crossing delays, consult the live CBP measurements above.',
       witnessWaitLabel: 'Reported queue time:',
 
+      // Increment 3 — Border Concierge Translations
+      conciergeTitle: 'Border Concierge',
+      conciergeName: 'Elena Ramos',
+      conciergeRole: 'Border Pedestrian Concierge',
+      conciergeBadge: 'Grounded Assistant · Official CBP Guidance',
+      conciergeDesc: 'Stationed at Paso del Norte to guide travelers with verified CBP pedestrian wait observations, bridge comparisons, data freshness, and official live camera sources.',
+      conciergeChipsLabel: 'Suggested Inquiries:',
+      chipPdnWait: 'Paso del Norte wait',
+      chipBotaWait: 'BOTA wait',
+      chipCompare: 'Compare crossings',
+      chipFreshness: 'Data freshness',
+      chipCameras: 'Official live cameras',
+      chipGuidance: 'What to consider?',
+      conciergePlaceholder: 'Ask about wait times, bridge comparisons, data freshness, or cameras...',
+      btnConciergeSend: 'Ask Concierge',
+      conciergeLoading: 'Elena Ramos is analyzing verified CBP data...',
+      conciergeError: 'Unable to retrieve concierge guidance. Please inspect the official board above.',
+      conciergeTruthNotice: 'ℹ️ Guidance is grounded in official CBP data and public camera portals. Reported wait times are point-in-time snapshots and do not guarantee queue velocity.',
+
       badges: {
         infrastructure: 'Border Infrastructure',
         pharmacy: 'Pharmacy',
@@ -487,8 +506,26 @@
       btnWitnessSend: 'Preguntar al Testigo',
       witnessLoading: 'Esperando respuesta del testigo sintético...',
       witnessError: 'No fue posible comunicarse con el testigo. Intenta de nuevo.',
-      dialogueTruthNotice: 'ℹ️ Testimonio simulado únicamente. Para demoras de cruce oficiales y verificadas, consulta las mediciones de CBP arriba.',
       witnessWaitLabel: 'Tiempo en fila declarado:',
+
+      // Increment 3 — Border Concierge Translations
+      conciergeTitle: 'Concierge Fronterizo',
+      conciergeName: 'Elena Ramos',
+      conciergeRole: 'Concierge de Orientación Peatonal',
+      conciergeBadge: 'Asistente Grounded · Orientación Oficial CBP',
+      conciergeDesc: 'En el cruce Paso del Norte para orientar a los viajeros con observaciones verificadas de CBP, comparación entre puentes, frescura de datos y cámaras oficiales.',
+      conciergeChipsLabel: 'Preguntas sugeridas:',
+      chipPdnWait: 'Tiempo Paso del Norte',
+      chipBotaWait: 'Tiempo Puente Libre',
+      chipCompare: 'Comparar ambos puentes',
+      chipFreshness: 'Frescura de datos',
+      chipCameras: 'Cámaras oficiales',
+      chipGuidance: '¿Qué considerar?',
+      conciergePlaceholder: 'Pregunte sobre tiempos de espera, comparación de puentes, frescura o cámaras...',
+      btnConciergeSend: 'Consultar Concierge',
+      conciergeLoading: 'Elena Ramos está analizando los datos verificados de CBP...',
+      conciergeError: 'No se pudo obtener la orientación del concierge. Por favor consulte el tablero oficial superior.',
+      conciergeTruthNotice: 'ℹ️ La orientación está basada en datos oficiales de CBP y cámaras públicas. Los tiempos de espera son instantáneas de momento y no garantizan la velocidad de la fila.',
 
       badges: {
         infrastructure: 'Infraestructura Fronteriza',
@@ -963,6 +1000,40 @@
     if (wDiaTag) wDiaTag.textContent = t.witnessesBadge;
     const wChatBadge = document.getElementById('chat-active-synthetic-badge');
     if (wChatBadge) wChatBadge.textContent = t.witnessesBadge;
+
+    // Border Concierge strings
+    const cName = document.getElementById('txt-concierge-name');
+    if (cName) cName.textContent = t.conciergeName;
+    const cRole = document.getElementById('txt-concierge-role');
+    if (cRole) cRole.textContent = t.conciergeRole;
+    const cBadge = document.getElementById('tag-concierge-badge');
+    if (cBadge) cBadge.textContent = t.conciergeBadge;
+    const cDesc = document.getElementById('txt-concierge-desc');
+    if (cDesc) cDesc.textContent = t.conciergeDesc;
+    const cChipsLbl = document.getElementById('txt-concierge-chips-label');
+    if (cChipsLbl) cChipsLbl.textContent = t.conciergeChipsLabel;
+    const chipPdn = document.getElementById('chip-txt-pdn');
+    if (chipPdn) chipPdn.textContent = t.chipPdnWait;
+    const chipBota = document.getElementById('chip-txt-bota');
+    if (chipBota) chipBota.textContent = t.chipBotaWait;
+    const chipComp = document.getElementById('chip-txt-compare');
+    if (chipComp) chipComp.textContent = t.chipCompare;
+    const chipFresh = document.getElementById('chip-txt-freshness');
+    if (chipFresh) chipFresh.textContent = t.chipFreshness;
+    const chipCams = document.getElementById('chip-txt-cameras');
+    if (chipCams) chipCams.textContent = t.chipCameras;
+    const chipGuid = document.getElementById('chip-txt-guidance');
+    if (chipGuid) chipGuid.textContent = t.chipGuidance;
+    const cInput = document.getElementById('concierge-user-input');
+    if (cInput) cInput.placeholder = t.conciergePlaceholder;
+    const cSend = document.getElementById('txt-btn-concierge-send');
+    if (cSend) cSend.textContent = t.btnConciergeSend;
+    const cLoad = document.getElementById('txt-concierge-loading');
+    if (cLoad) cLoad.textContent = t.conciergeLoading;
+    const cErr = document.getElementById('txt-concierge-error');
+    if (cErr) cErr.textContent = t.conciergeError;
+    const cTruth = document.getElementById('concierge-truth-notice');
+    if (cTruth) cTruth.textContent = t.conciergeTruthNotice;
 
     renderBorderIntelligence();
     renderWitnessCards();
@@ -1942,23 +2013,58 @@
     }
   }
 
+  const BORDER_LOCAL_TIMEZONE = 'America/Ciudad_Juarez';
+
+  function formatBorderFetchTime(timestamp, lang = 'en') {
+    const isEs = lang === 'es';
+    if (!timestamp) return isEs ? 'No disponible' : 'Unavailable';
+    const d = new Date(timestamp);
+    if (isNaN(d.getTime())) return isEs ? 'No disponible' : 'Unavailable';
+
+    const locale = isEs ? 'es-MX' : 'en-US';
+    try {
+      const timeFormatter = new Intl.DateTimeFormat(locale, {
+        timeZone: BORDER_LOCAL_TIMEZONE,
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      });
+      const timeStr = timeFormatter.format(d);
+      return isEs
+        ? `${timeStr} (hora local de Ciudad Juárez)`
+        : `${timeStr} local time (Ciudad Juárez)`;
+    } catch {
+      return isEs ? 'No disponible' : 'Unavailable';
+    }
+  }
+
+  function formatCbpObservationTime(sourceTime, sourceTimestamp, lang = 'en') {
+    const isEs = lang === 'es';
+    const unavailableStr = isEs ? 'No disponible' : 'Unavailable';
+    if (!sourceTime && !sourceTimestamp) {
+      return unavailableStr;
+    }
+    if (sourceTime && String(sourceTime).trim() !== '') {
+      return String(sourceTime).trim();
+    }
+    if (sourceTimestamp) {
+      const d = new Date(sourceTimestamp);
+      if (!isNaN(d.getTime())) {
+        return formatBorderFetchTime(d, lang);
+      }
+    }
+    return unavailableStr;
+  }
+
   function renderBorderIntelligence() {
     if (!currentBorderComparison) return;
     const t = I18N[currentLang];
     const { observations, comparison, fetchedAt } = currentBorderComparison;
 
-    // Render Fetch Time
+    // Render Fetch Time in local Ciudad Juárez time
     const valFetchedAt = document.getElementById('val-border-fetched-at');
     if (valFetchedAt && fetchedAt) {
-      const d = new Date(fetchedAt);
-      valFetchedAt.textContent = isNaN(d.getTime())
-        ? fetchedAt
-        : d.toLocaleTimeString(currentLang === 'es' ? 'es-MX' : 'en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            timeZoneName: 'short',
-          });
+      valFetchedAt.textContent = formatBorderFetchTime(fetchedAt, currentLang);
     }
 
     // Helper for rendering a single crossing card
@@ -2035,7 +2141,7 @@
 
         // Source update time
         if (obsTimeEl) {
-          obsTimeEl.textContent = obs.sourceObservationTime || '—';
+          obsTimeEl.textContent = formatCbpObservationTime(obs.sourceObservationTime, obs.sourceObservationTimestamp, currentLang);
         }
       }
     };
@@ -2295,6 +2401,180 @@
     });
   }
 
+  // ============================================================================
+  // Border Concierge Client State & Logic (Increment 3)
+  // ============================================================================
+  let isConciergeChatLoading = false;
+
+  function initBorderConcierge() {
+    const chips = document.querySelectorAll('.btn-concierge-chip');
+    chips.forEach((chip) => {
+      chip.addEventListener('click', () => {
+        const prompt = currentLang === 'es'
+          ? chip.getAttribute('data-prompt-es')
+          : chip.getAttribute('data-prompt-en');
+        const input = document.getElementById('concierge-user-input');
+        if (input && prompt) {
+          input.value = prompt;
+          sendConciergeMessage(prompt);
+        }
+      });
+    });
+
+    const form = document.getElementById('concierge-chat-form');
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const input = document.getElementById('concierge-user-input');
+        if (input && input.value.trim()) {
+          sendConciergeMessage(input.value.trim());
+        }
+      });
+    }
+  }
+
+  async function sendConciergeMessage(messageText) {
+    if (!messageText || !messageText.trim() || isConciergeChatLoading) return;
+    const cleanMsg = messageText.trim();
+
+    isConciergeChatLoading = true;
+    const loadingEl = document.getElementById('concierge-loading');
+    const errorEl = document.getElementById('concierge-error');
+    const sendBtn = document.getElementById('btn-concierge-send');
+    const inputEl = document.getElementById('concierge-user-input');
+    const t = I18N[currentLang];
+
+    if (loadingEl) loadingEl.hidden = false;
+    if (errorEl) errorEl.hidden = true;
+    if (sendBtn) sendBtn.disabled = true;
+    if (inputEl) inputEl.disabled = true;
+
+    try {
+      const res = await fetch('/api/border/concierge/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: cleanMsg,
+          language: currentLang,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Concierge inquiry returned status ${res.status}`);
+      }
+
+      const data = await res.json();
+      if (data && data.success && data.text) {
+        renderConciergeResponse(data);
+        if (inputEl) inputEl.value = '';
+      } else {
+        throw new Error('Malformed concierge response received');
+      }
+    } catch (err) {
+      console.warn('Concierge consultation failed:', err);
+      if (errorEl) {
+        errorEl.hidden = false;
+        const txtErr = document.getElementById('txt-concierge-error');
+        if (txtErr) txtErr.textContent = t.conciergeError;
+      }
+    } finally {
+      isConciergeChatLoading = false;
+      if (loadingEl) loadingEl.hidden = true;
+      if (sendBtn) sendBtn.disabled = false;
+      if (inputEl) {
+        inputEl.disabled = false;
+        inputEl.focus();
+      }
+    }
+  }
+
+  function renderConciergeResponse(result) {
+    const speechEl = document.getElementById('concierge-speech-text');
+    const tagEl = document.getElementById('concierge-provenance-tag');
+    const cardsEl = document.getElementById('concierge-reference-cards');
+
+    if (speechEl) {
+      speechEl.textContent = result.text;
+    }
+
+    if (tagEl) {
+      tagEl.textContent =
+        result.provider === 'meta-muse-spark-1.3'
+          ? 'Meta Muse Spark 1.3 · Grounded in CBP Records'
+          : 'Deterministic Grounded Guidance · CBP Verified';
+    }
+
+    if (cardsEl && result.authoritativeObservations) {
+      cardsEl.innerHTML = '';
+      const obs = result.authoritativeObservations;
+      const isEs = currentLang === 'es';
+
+      // Card for PDN
+      if (obs.pasoDelNorte) {
+        const pdn = obs.pasoDelNorte;
+        const card = document.createElement('div');
+        card.className = 'concierge-ref-card';
+        card.innerHTML = `
+          <div class="concierge-ref-card-header">
+            <span>Paso del Norte (240202)</span>
+            <span class="concierge-ref-card-badge ${pdn.freshness}">${pdn.freshness}</span>
+          </div>
+          <div class="concierge-ref-card-body">
+            <div>${isEs ? 'Espera' : 'Wait'}: <strong>${pdn.delayMinutes !== null ? `${pdn.delayMinutes} min` : 'N/A'}</strong> (${pdn.portStatus})</div>
+            <div>${isEs ? 'Obs. CBP' : 'CBP Obs'}: ${formatCbpObservationTime(pdn.sourceObservationTime, pdn.sourceObservationTimestamp, currentLang)}</div>
+            <div>${isEs ? 'Consultado' : 'Fetched'}: ${formatBorderFetchTime(pdn.fetchedAt || result.fetchedAt, currentLang)}</div>
+          </div>
+          <a href="${pdn.sourceUrl}" target="_blank" rel="noopener noreferrer" class="concierge-ref-card-link">
+            <span>↗</span> ${isEs ? 'Ver CBP oficial' : 'View official CBP'}
+          </a>
+        `;
+        cardsEl.appendChild(card);
+      }
+
+      // Card for BOTA
+      if (obs.bridgeOfTheAmericas) {
+        const bota = obs.bridgeOfTheAmericas;
+        const card = document.createElement('div');
+        card.className = 'concierge-ref-card';
+        card.innerHTML = `
+          <div class="concierge-ref-card-header">
+            <span>BOTA (240201)</span>
+            <span class="concierge-ref-card-badge ${bota.freshness}">${bota.freshness}</span>
+          </div>
+          <div class="concierge-ref-card-body">
+            <div>${isEs ? 'Espera' : 'Wait'}: <strong>${bota.delayMinutes !== null ? `${bota.delayMinutes} min` : 'N/A'}</strong> (${bota.portStatus})</div>
+            <div>${isEs ? 'Obs. CBP' : 'CBP Obs'}: ${formatCbpObservationTime(bota.sourceObservationTime, bota.sourceObservationTimestamp, currentLang)}</div>
+            <div>${isEs ? 'Consultado' : 'Fetched'}: ${formatBorderFetchTime(bota.fetchedAt || result.fetchedAt, currentLang)}</div>
+          </div>
+          <a href="${bota.sourceUrl}" target="_blank" rel="noopener noreferrer" class="concierge-ref-card-link">
+            <span>↗</span> ${isEs ? 'Ver CBP oficial' : 'View official CBP'}
+          </a>
+        `;
+        cardsEl.appendChild(card);
+      }
+
+      // Card for Cameras
+      if (result.cameras && result.cameras.officialAuthorityUrl) {
+        const card = document.createElement('div');
+        card.className = 'concierge-ref-card';
+        card.innerHTML = `
+          <div class="concierge-ref-card-header">
+            <span>${isEs ? 'Cámaras Oficiales' : 'Official Cameras'}</span>
+            <span class="concierge-ref-card-badge fresh">LIVE</span>
+          </div>
+          <div class="concierge-ref-card-body">
+            <div>${isEs ? 'Fideicomiso Puentes Fronterizos' : 'Chihuahua Bridge Authority'}</div>
+            <div>${isEs ? 'Referencia visual sin cálculo de fila' : 'Visual reference only'}</div>
+          </div>
+          <a href="${result.cameras.officialAuthorityUrl}" target="_blank" rel="noopener noreferrer" class="concierge-ref-card-link">
+            <span>🎥</span> ${isEs ? 'Abrir portal de video' : 'Open live cameras portal'}
+          </a>
+        `;
+        cardsEl.appendChild(card);
+      }
+    }
+  }
+
   // Initialize
   updateLanguage('en');
   updateCharCount();
@@ -2303,4 +2583,5 @@
   checkSimulationHealth();
   fetchBorderWaitTimes();
   fetchSyntheticWitnesses();
+  initBorderConcierge();
 })();

@@ -535,6 +535,102 @@
           </div>
         </div>
       </div>
+
+      <!-- Border Concierge Section (Increment 3: Grounded Traveler Guidance NPC) -->
+      <div class="border-concierge-box" id="border-concierge-box" role="region" aria-label="Border Concierge Guidance">
+        <div class="concierge-header">
+          <div class="concierge-avatar-col">
+            <div class="concierge-avatar" id="concierge-avatar">🛂</div>
+          </div>
+          <div class="concierge-title-group">
+            <div class="concierge-badge-row">
+              <h3 class="concierge-name" id="txt-concierge-name">Elena Ramos</h3>
+              <span class="tag-pill tag-concierge-role" id="txt-concierge-role">Border Pedestrian Concierge</span>
+              <span class="tag-pill tag-concierge-grounded" id="tag-concierge-badge">Grounded Assistant · Official CBP Guidance</span>
+            </div>
+            <p class="concierge-desc" id="txt-concierge-desc">
+              Stationed at Paso del Norte to guide travelers with verified CBP pedestrian wait observations, bridge comparisons, data freshness, and official live camera sources.
+            </p>
+          </div>
+        </div>
+
+        <!-- Concierge Interaction Panel -->
+        <div class="concierge-chat-panel" id="concierge-chat-panel">
+          <!-- Suggested Question Chips -->
+          <div class="concierge-chips-label" id="txt-concierge-chips-label">Suggested Inquiries:</div>
+          <div class="concierge-chips-container" id="concierge-chips-container" role="group" aria-label="Suggested concierge inquiries">
+            <button type="button" class="btn-concierge-chip" data-prompt-en="What is the reported pedestrian wait time at Paso del Norte right now?" data-prompt-es="¿Cuál es el tiempo de espera peatonal reportado en Paso del Norte en este momento?">
+              <span>🚶</span> <span class="chip-label" id="chip-txt-pdn">Paso del Norte wait</span>
+            </button>
+            <button type="button" class="btn-concierge-chip" data-prompt-en="What is the reported pedestrian wait time at Bridge of the Americas (BOTA)?" data-prompt-es="¿Cuál es el tiempo de espera peatonal reportado en el Puente de las Américas (BOTA)?">
+              <span>🌉</span> <span class="chip-label" id="chip-txt-bota">BOTA wait</span>
+            </button>
+            <button type="button" class="btn-concierge-chip" data-prompt-en="Which crossing has the lower reported pedestrian wait time right now?" data-prompt-es="¿Cuál de los dos puentes tiene menor tiempo de espera peatonal reportado ahorita?">
+              <span>⚖️</span> <span class="chip-label" id="chip-txt-compare">Compare crossings</span>
+            </button>
+            <button type="button" class="btn-concierge-chip" data-prompt-en="When was each crossing information last updated by CBP, and is it fresh?" data-prompt-es="¿Cuándo fue la última actualización de CBP para cada puente y qué tan frescos son los datos?">
+              <span>⏱️</span> <span class="chip-label" id="chip-txt-freshness">Data freshness</span>
+            </button>
+            <button type="button" class="btn-concierge-chip" data-prompt-en="Where can I see the official live bridge camera views?" data-prompt-es="¿Dónde puedo ver las cámaras oficiales de video en vivo de los puentes?">
+              <span>🎥</span> <span class="chip-label" id="chip-txt-cameras">Official live cameras</span>
+            </button>
+            <button type="button" class="btn-concierge-chip" data-prompt-en="What should I consider when comparing these pedestrian wait times?" data-prompt-es="¿Qué factores debo considerar al comparar los tiempos de espera peatonales?">
+              <span>🧭</span> <span class="chip-label" id="chip-txt-guidance">What to consider?</span>
+            </button>
+          </div>
+
+          <!-- Chat Form -->
+          <form class="concierge-chat-form" id="concierge-chat-form" aria-label="Ask Border Concierge">
+            <div class="concierge-input-row">
+              <input
+                type="text"
+                id="concierge-user-input"
+                class="concierge-text-input"
+                placeholder="Ask about wait times, bridge comparisons, data freshness, or cameras..."
+                maxlength="500"
+                required
+                aria-label="Message to Border Concierge"
+              />
+              <button type="submit" class="btn-concierge-send" id="btn-concierge-send">
+                <span id="txt-btn-concierge-send">Ask Concierge</span>
+              </button>
+            </div>
+          </form>
+
+          <!-- Response Display Box -->
+          <div class="concierge-response-box" id="concierge-response-box">
+            <!-- Loading indicator -->
+            <div class="concierge-loading" id="concierge-loading" hidden>
+              <span class="concierge-spinner"></span>
+              <span id="txt-concierge-loading">Elena Ramos is analyzing verified CBP data...</span>
+            </div>
+
+            <!-- Error banner -->
+            <div class="concierge-error" id="concierge-error" hidden>
+              <span class="error-icon">⚠️</span>
+              <span id="txt-concierge-error">Unable to retrieve concierge guidance. Please inspect the official board above.</span>
+            </div>
+
+            <!-- Speech Display -->
+            <div class="concierge-dialogue-content" id="concierge-dialogue-content">
+              <div class="dialogue-bubble concierge-speech" id="concierge-speech-bubble">
+                <div class="dialogue-meta">
+                  <span class="dialogue-speaker" id="concierge-speaker-name">Elena Ramos · Border Concierge</span>
+                  <span class="dialogue-provenance-tag" id="concierge-provenance-tag">Grounded in CBP Records</span>
+                </div>
+                <p class="dialogue-text" id="concierge-speech-text">
+                  Hello! I am Elena Ramos, your Border Pedestrian Concierge. I can help you understand reported CBP wait times, compare Paso del Norte with Bridge of the Americas, check observation freshness, and find official bridge cameras. How may I assist you today?
+                </p>
+                <!-- Grounded Observation Reference Cards -->
+                <div class="concierge-reference-cards" id="concierge-reference-cards"></div>
+                <div class="dialogue-truth-notice" id="concierge-truth-notice">
+                  ℹ️ Guidance is grounded in official CBP data and public camera portals. Reported wait times are point-in-time snapshots and do not guarantee queue velocity.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- Main Content Grid -->

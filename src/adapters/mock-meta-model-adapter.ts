@@ -1,6 +1,8 @@
+import { formatDeterministicConciergeResponse } from '../domain/border-concierge.js';
 import { generateDeterministicFallbackResponse } from '../domain/synthetic-witness.js';
 import {
   AssistantPromptContext,
+  ConciergePromptContext,
   MetaModelPort,
   MetaModelResponse,
   WitnessPromptContext,
@@ -12,6 +14,7 @@ export interface MockMetaModelOptions {
   readonly failureError?: Error;
   readonly customResponse?: (context: AssistantPromptContext) => string;
   readonly customWitnessResponse?: (context: WitnessPromptContext) => string;
+  readonly customConciergeResponse?: (context: ConciergePromptContext) => string;
 }
 
 /**
@@ -29,8 +32,10 @@ export class MockMetaModelAdapter implements MetaModelPort {
   private failureError: Error | null;
   private customResponse?: (context: AssistantPromptContext) => string;
   private customWitnessResponse?: (context: WitnessPromptContext) => string;
+  private customConciergeResponse?: (context: ConciergePromptContext) => string;
   public lastContextReceived: AssistantPromptContext | null = null;
   public lastWitnessContextReceived: WitnessPromptContext | null = null;
+  public lastConciergeContextReceived: ConciergePromptContext | null = null;
   public callCount: number = 0;
 
   constructor(options: MockMetaModelOptions = {}) {
@@ -39,6 +44,7 @@ export class MockMetaModelAdapter implements MetaModelPort {
     this.failureError = options.failureError ?? null;
     this.customResponse = options.customResponse;
     this.customWitnessResponse = options.customWitnessResponse;
+    this.customConciergeResponse = options.customConciergeResponse;
   }
 
   public setShouldFail(shouldFail: boolean, error?: Error): void {
@@ -52,6 +58,10 @@ export class MockMetaModelAdapter implements MetaModelPort {
 
   public setCustomWitnessResponse(fn?: (context: WitnessPromptContext) => string): void {
     this.customWitnessResponse = fn;
+  }
+
+  public setCustomConciergeResponse(fn?: (context: ConciergePromptContext) => string): void {
+    this.customConciergeResponse = fn;
   }
 
   public async generateAssistantResponse(
@@ -173,6 +183,38 @@ export class MockMetaModelAdapter implements MetaModelPort {
       text: fallbackText,
       model: this.modelName,
       usage: { promptTokens: 60, completionTokens: 35, totalTokens: 95 },
+    };
+  }
+
+  public async generateConciergeResponse(
+    context: ConciergePromptContext
+  ): Promise<MetaModelResponse> {
+    this.callCount++;
+    this.lastConciergeContextReceived = context;
+
+    if (this.shouldFail) {
+      throw this.failureError ?? new Error('Simulated Meta Model API failure');
+    }
+
+    if (this.customConciergeResponse) {
+      const customText = this.customConciergeResponse(context);
+      return {
+        text: customText,
+        model: this.modelName,
+        usage: { promptTokens: 70, completionTokens: 40, totalTokens: 110 },
+      };
+    }
+
+    const deterministicText = formatDeterministicConciergeResponse(
+      context.intent,
+      context.comparison,
+      context.language
+    );
+
+    return {
+      text: deterministicText,
+      model: this.modelName,
+      usage: { promptTokens: 70, completionTokens: 40, totalTokens: 110 },
     };
   }
 }

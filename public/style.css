@@ -2852,3 +2852,311 @@ textarea {
   padding-top: 0.45rem;
   line-height: 1.35;
 }
+
+/* ==========================================================================
+   Border Concierge Section (Increment 3: Grounded Traveler Guidance NPC)
+   ========================================================================== */
+.border-concierge-box {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  background: rgba(30, 41, 59, 0.65);
+  border: 1px solid rgba(14, 165, 233, 0.35);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+.border-concierge-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, #0ea5e9 0%, #2563eb 100%);
+}
+
+.concierge-header {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 1.15rem;
+}
+
+.concierge-avatar {
+  font-size: 2.2rem;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(14, 165, 233, 0.15);
+  border: 1px solid rgba(14, 165, 233, 0.45);
+  border-radius: var(--radius-md);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.concierge-title-group {
+  flex: 1;
+}
+
+.concierge-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.35rem;
+}
+
+.concierge-name {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #f8fafc;
+  letter-spacing: -0.01em;
+}
+
+.tag-pill.tag-concierge-role {
+  background: rgba(59, 130, 246, 0.18);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  color: #93c5fd;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.18rem 0.55rem;
+  border-radius: var(--radius-full);
+}
+
+.tag-pill.tag-concierge-grounded {
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(16, 185, 129, 0.45);
+  color: #6ee7b7;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.18rem 0.55rem;
+  border-radius: var(--radius-full);
+}
+
+.concierge-desc {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.concierge-chat-panel {
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+}
+
+.concierge-chips-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.5rem;
+}
+
+.concierge-chips-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.95rem;
+}
+
+.btn-concierge-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.75rem;
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(14, 165, 233, 0.3);
+  border-radius: var(--radius-full);
+  color: #e2e8f0;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.btn-concierge-chip:hover {
+  background: rgba(14, 165, 233, 0.25);
+  border-color: #38bdf8;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.concierge-chat-form {
+  margin-bottom: 1rem;
+}
+
+.concierge-input-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.concierge-text-input {
+  flex: 1;
+  padding: 0.55rem 0.85rem;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: var(--radius-sm);
+  color: #ffffff;
+  font-size: 0.85rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.concierge-text-input:focus {
+  outline: none;
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.25);
+}
+
+.btn-concierge-send {
+  padding: 0.55rem 1.15rem;
+  background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-concierge-send:hover {
+  background: linear-gradient(135deg, #0369a1 0%, #1d4ed8 100%);
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.35);
+}
+
+.btn-concierge-send:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.concierge-response-box {
+  position: relative;
+}
+
+.concierge-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.75rem 1rem;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(14, 165, 233, 0.25);
+  border-radius: var(--radius-sm);
+  color: #93c5fd;
+  font-size: 0.82rem;
+  margin-bottom: 0.75rem;
+}
+
+.concierge-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(14, 165, 233, 0.3);
+  border-top-color: #38bdf8;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.concierge-error {
+  padding: 0.65rem 0.85rem;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: var(--radius-sm);
+  color: #fca5a5;
+  font-size: 0.8rem;
+  margin-bottom: 0.75rem;
+}
+
+.dialogue-bubble.concierge-speech {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(14, 165, 233, 0.35);
+  border-radius: var(--radius-md);
+  padding: 0.95rem;
+  position: relative;
+}
+
+.dialogue-provenance-tag {
+  font-size: 0.68rem;
+  color: #38bdf8;
+  font-style: italic;
+  font-weight: 500;
+}
+
+.concierge-reference-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.65rem;
+  margin: 0.75rem 0;
+}
+
+.concierge-ref-card {
+  padding: 0.55rem 0.75rem;
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: var(--radius-sm);
+  font-size: 0.76rem;
+}
+
+.concierge-ref-card-header {
+  font-weight: 700;
+  color: #e2e8f0;
+  margin-bottom: 0.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.concierge-ref-card-badge {
+  font-size: 0.65rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.concierge-ref-card-badge.fresh {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+}
+
+.concierge-ref-card-badge.stale {
+  background: rgba(245, 158, 11, 0.2);
+  color: #fbbf24;
+}
+
+.concierge-ref-card-badge.pending,
+.concierge-ref-card-badge.unavailable {
+  background: rgba(148, 163, 184, 0.2);
+  color: #cbd5e1;
+}
+
+.concierge-ref-card-body {
+  color: var(--text-secondary);
+  line-height: 1.35;
+  margin-bottom: 0.25rem;
+}
+
+.concierge-ref-card-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #38bdf8;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.72rem;
+}
+
+.concierge-ref-card-link:hover {
+  text-decoration: underline;
+  color: #7dd3fc;
+}
