@@ -22,6 +22,11 @@ import { InvalidBusinessIdError, parseBusinessId } from '../domain/business-id.j
 import { PASO_DEL_NORTE_CORRIDOR } from '../domain/spatial-corridor.js';
 import { CbpBorderWaitTimeAdapter } from '../adapters/cbp-border-wait-time-adapter.js';
 import { GetBorderWaitTimesUseCase } from '../application/get-border-wait-times.js';
+import {
+  InvalidWitnessMessageError,
+  TalkToSyntheticWitnessUseCase,
+  UnknownWitnessError,
+} from '../application/talk-to-synthetic-witness.js';
 import { BorderCrossingPort } from '../ports/border-crossing-port.js';
 import { MetaModelPort } from '../ports/meta-model-port.js';
 import { WorldCorePort } from '../ports/world-core-port.js';
@@ -31,6 +36,7 @@ export interface AssistantServerOptions {
   readonly worldCore?: WorldCorePort;
   readonly metaModel?: MetaModelPort;
   readonly borderCrossingPort?: BorderCrossingPort;
+  readonly witnessUseCase?: TalkToSyntheticWitnessUseCase;
   readonly publicDir?: string;
 }
 
@@ -77,6 +83,12 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
   const borderUseCase = new GetBorderWaitTimesUseCase({
     borderCrossingPort,
   });
+
+  const witnessUseCase =
+    options.witnessUseCase ??
+    new TalkToSyntheticWitnessUseCase({
+      metaModel,
+    });
 
   const sendJson = (res: ServerResponse, statusCode: number, payload: unknown) => {
     res.statusCode = statusCode;
@@ -349,6 +361,75 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
           });
         }
         return;
+      }
+
+      // 7. GET /api/border/witnesses (Synthetic Community Witnesses Roster)
+      if (method === 'GET' && pathname === '/api/border/witnesses') {
+        const roster = witnessUseCase.getRoster();
+        sendJson(res, 200, {
+          success: true,
+          ...roster,
+        });
+        return;
+      }
+
+      // 8. POST /api/border/witnesses/chat (Conversations with Synthetic Witnesses)
+      if (method === 'POST' && pathname === '/api/border/witnesses/chat') {
+        let rawBody: any;
+        try {
+          rawBody = await readBody(req);
+        } catch {
+          sendJson(res, 400, {
+            success: false,
+            error: { code: 'invalid-body', message: 'Request body must be valid JSON' },
+          });
+          return;
+        }
+
+        const { npcId, message, language } = rawBody ?? {};
+        if (!npcId || typeof npcId !== 'string') {
+          sendJson(res, 400, {
+            success: false,
+            error: { code: 'missing-witness-id', message: 'Field "npcId" is required.' },
+          });
+          return;
+        }
+
+        try {
+          const chatResult = await witnessUseCase.execute({
+            npcId,
+            message,
+            language,
+          });
+          sendJson(res, 200, {
+            success: true,
+            response: chatResult,
+          });
+          return;
+        } catch (chatErr) {
+          if (chatErr instanceof UnknownWitnessError) {
+            sendJson(res, 404, {
+              success: false,
+              error: { code: 'witness-not-found', message: chatErr.message },
+            });
+            return;
+          }
+          if (chatErr instanceof InvalidWitnessMessageError) {
+            sendJson(res, 400, {
+              success: false,
+              error: { code: 'invalid-message', message: chatErr.message },
+            });
+            return;
+          }
+          sendJson(res, 500, {
+            success: false,
+            error: {
+              code: 'server-error',
+              message: 'Internal server error processing witness conversation.',
+            },
+          });
+          return;
+        }
       }
 
       // 404 Route Not Found

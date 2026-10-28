@@ -1,7 +1,9 @@
+import { generateDeterministicFallbackResponse } from '../domain/synthetic-witness.js';
 import {
   AssistantPromptContext,
   MetaModelPort,
   MetaModelResponse,
+  WitnessPromptContext,
 } from '../ports/meta-model-port.js';
 
 export interface MockMetaModelOptions {
@@ -9,6 +11,7 @@ export interface MockMetaModelOptions {
   readonly shouldFail?: boolean;
   readonly failureError?: Error;
   readonly customResponse?: (context: AssistantPromptContext) => string;
+  readonly customWitnessResponse?: (context: WitnessPromptContext) => string;
 }
 
 /**
@@ -25,7 +28,9 @@ export class MockMetaModelAdapter implements MetaModelPort {
   private shouldFail: boolean;
   private failureError: Error | null;
   private customResponse?: (context: AssistantPromptContext) => string;
+  private customWitnessResponse?: (context: WitnessPromptContext) => string;
   public lastContextReceived: AssistantPromptContext | null = null;
+  public lastWitnessContextReceived: WitnessPromptContext | null = null;
   public callCount: number = 0;
 
   constructor(options: MockMetaModelOptions = {}) {
@@ -33,6 +38,7 @@ export class MockMetaModelAdapter implements MetaModelPort {
     this.shouldFail = options.shouldFail ?? false;
     this.failureError = options.failureError ?? null;
     this.customResponse = options.customResponse;
+    this.customWitnessResponse = options.customWitnessResponse;
   }
 
   public setShouldFail(shouldFail: boolean, error?: Error): void {
@@ -42,6 +48,10 @@ export class MockMetaModelAdapter implements MetaModelPort {
 
   public setCustomResponse(fn?: (context: AssistantPromptContext) => string): void {
     this.customResponse = fn;
+  }
+
+  public setCustomWitnessResponse(fn?: (context: WitnessPromptContext) => string): void {
+    this.customWitnessResponse = fn;
   }
 
   public async generateAssistantResponse(
@@ -131,6 +141,38 @@ export class MockMetaModelAdapter implements MetaModelPort {
       text,
       model: this.modelName,
       usage: { promptTokens: 120, completionTokens: 45, totalTokens: 165 },
+    };
+  }
+
+  public async generateWitnessResponse(
+    context: WitnessPromptContext
+  ): Promise<MetaModelResponse> {
+    this.callCount++;
+    this.lastWitnessContextReceived = context;
+
+    if (this.shouldFail) {
+      throw this.failureError ?? new Error('Simulated Meta Model API failure');
+    }
+
+    if (this.customWitnessResponse) {
+      const customText = this.customWitnessResponse(context);
+      return {
+        text: customText,
+        model: this.modelName,
+        usage: { promptTokens: 60, completionTokens: 35, totalTokens: 95 },
+      };
+    }
+
+    const fallbackText = generateDeterministicFallbackResponse(
+      context.witness,
+      context.userMessage,
+      context.language
+    );
+
+    return {
+      text: fallbackText,
+      model: this.modelName,
+      usage: { promptTokens: 60, completionTokens: 35, totalTokens: 95 },
     };
   }
 }

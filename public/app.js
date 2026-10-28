@@ -232,6 +232,20 @@
       statusDelay: 'Delay',
       statusLanesClosed: 'Lanes Closed',
       statusCrossingClosed: 'Crossing Closed',
+
+      // Increment 2 — Synthetic Community Witnesses Translations
+      witnessesTitle: 'People in the Pedestrian Queue',
+      witnessesBadge: 'Synthetic witness · Simulation',
+      witnessesDesc: 'Simulated conversational witnesses waiting in line at Paso del Norte. Fictional testimony for interactive scenario exploration — distinct from official CBP wait-time observations above.',
+      witnessesDisclaimer: '⚠️ Simulated characters with fictional scenario perspectives. Official CBP bridge wait times are displayed in the panel above.',
+      lblQuickPrompts: 'Ask a question:',
+      witnessPlaceholder: 'Ask about their wait, reason for crossing, or bridge perception...',
+      btnWitnessSend: 'Ask Witness',
+      witnessLoading: 'Waiting for synthetic witness response...',
+      witnessError: 'Unable to communicate with witness. Please try again.',
+      dialogueTruthNotice: 'ℹ️ Simulated testimony only. For official verified crossing delays, consult the live CBP measurements above.',
+      witnessWaitLabel: 'Reported queue time:',
+
       badges: {
         infrastructure: 'Border Infrastructure',
         pharmacy: 'Pharmacy',
@@ -462,6 +476,20 @@
       statusDelay: 'Con Demora',
       statusLanesClosed: 'Líneas Cerradas',
       statusCrossingClosed: 'Cruce Cerrado',
+
+      // Increment 2 — Synthetic Community Witnesses Translations
+      witnessesTitle: 'Personas en la fila peatonal',
+      witnessesBadge: 'Testigo sintético · Simulación',
+      witnessesDesc: 'Testigos conversacionales simulados que esperan en la fila del Puente Paso del Norte. Testimonios de ficción para exploración interactiva de escenarios — completamente separados de las observaciones oficiales de CBP arriba.',
+      witnessesDisclaimer: '⚠️ Personajes simulados con perspectivas de escenarios ficticios. Los tiempos oficiales de cruce de CBP se muestran en el panel superior.',
+      lblQuickPrompts: 'Hacer una pregunta:',
+      witnessPlaceholder: 'Pregunta sobre su tiempo de espera, motivo de cruce o percepción del puente...',
+      btnWitnessSend: 'Preguntar al Testigo',
+      witnessLoading: 'Esperando respuesta del testigo sintético...',
+      witnessError: 'No fue posible comunicarse con el testigo. Intenta de nuevo.',
+      dialogueTruthNotice: 'ℹ️ Testimonio simulado únicamente. Para demoras de cruce oficiales y verificadas, consulta las mediciones de CBP arriba.',
+      witnessWaitLabel: 'Tiempo en fila declarado:',
+
       badges: {
         infrastructure: 'Infraestructura Fronteriza',
         pharmacy: 'Farmacia',
@@ -910,7 +938,35 @@
     const scBrd = document.getElementById('txt-shortcut-border');
     if (scBrd) scBrd.textContent = t.txtShortcutBorder;
 
+    // Synthetic Community Witnesses strings
+    const wTitle = document.getElementById('txt-witnesses-title');
+    if (wTitle) wTitle.textContent = t.witnessesTitle;
+    const wBadge = document.getElementById('tag-synthetic-badge');
+    if (wBadge) wBadge.textContent = t.witnessesBadge;
+    const wDesc = document.getElementById('txt-witnesses-desc');
+    if (wDesc) wDesc.textContent = t.witnessesDesc;
+    const wDisc = document.getElementById('txt-witnesses-disclaimer');
+    if (wDisc) wDisc.textContent = t.witnessesDisclaimer;
+    const wPrompts = document.getElementById('lbl-quick-prompts');
+    if (wPrompts) wPrompts.textContent = t.lblQuickPrompts;
+    const wInput = document.getElementById('witness-user-input');
+    if (wInput) wInput.placeholder = t.witnessPlaceholder;
+    const wSend = document.getElementById('txt-btn-witness-send');
+    if (wSend) wSend.textContent = t.btnWitnessSend;
+    const wLoad = document.getElementById('txt-witness-loading');
+    if (wLoad) wLoad.textContent = t.witnessLoading;
+    const wErr = document.getElementById('txt-witness-error');
+    if (wErr) wErr.textContent = t.witnessError;
+    const wTruth = document.getElementById('dialogue-truth-notice');
+    if (wTruth) wTruth.textContent = t.dialogueTruthNotice;
+    const wDiaTag = document.getElementById('dialogue-synthetic-tag');
+    if (wDiaTag) wDiaTag.textContent = t.witnessesBadge;
+    const wChatBadge = document.getElementById('chat-active-synthetic-badge');
+    if (wChatBadge) wChatBadge.textContent = t.witnessesBadge;
+
     renderBorderIntelligence();
+    renderWitnessCards();
+    updateActiveWitnessDisplay();
     renderEntityDetail(selectedEntityId);
     renderSuggestions();
     renderScenarioChips();
@@ -2023,6 +2079,222 @@
     });
   }
 
+  // ============================================================================
+  // Synthetic Community Witnesses Client State & Logic (Increment 2)
+  // ============================================================================
+  let syntheticWitnesses = [];
+  let activeWitnessId = 'mateo-student';
+  let isWitnessChatLoading = false;
+
+  async function fetchSyntheticWitnesses() {
+    try {
+      const res = await fetch('/api/border/witnesses');
+      if (!res.ok) {
+        throw new Error(`Failed to fetch witnesses: ${res.status}`);
+      }
+      const data = await res.json();
+      if (data && data.success && Array.isArray(data.witnesses)) {
+        syntheticWitnesses = data.witnesses;
+        renderWitnessCards();
+        selectWitness(activeWitnessId);
+      }
+    } catch (err) {
+      console.warn('Could not load synthetic witnesses:', err);
+    }
+  }
+
+  function renderWitnessCards() {
+    const grid = document.getElementById('witnesses-cards-grid');
+    if (!grid || syntheticWitnesses.length === 0) return;
+
+    grid.innerHTML = '';
+    const t = I18N[currentLang];
+
+    syntheticWitnesses.forEach((witness) => {
+      const isSelected = witness.id === activeWitnessId;
+      const card = document.createElement('div');
+      card.className = `witness-card ${isSelected ? 'selected' : ''}`;
+      card.setAttribute('role', 'radio');
+      card.setAttribute('aria-checked', isSelected ? 'true' : 'false');
+      card.setAttribute('tabindex', '0');
+      card.setAttribute('data-npc-id', witness.id);
+
+      const roleText = witness.role ? (witness.role[currentLang] || witness.role.en) : '';
+      const bioText = witness.background ? (witness.background[currentLang] || witness.background.en) : '';
+      const estimatedWait = typeof witness.personalWaitMinutes === 'number' ? witness.personalWaitMinutes : 20;
+
+      card.innerHTML = `
+        <div class="witness-card-header">
+          <span class="witness-avatar">${witness.avatar || '👤'}</span>
+          <div class="witness-header-text">
+            <div class="witness-name">${witness.name}</div>
+            <div class="witness-role">${roleText}</div>
+          </div>
+        </div>
+        <p class="witness-card-body">${bioText}</p>
+        <div class="witness-card-footer">
+          <span class="witness-wait-indicator">⏱️ ~${estimatedWait} min</span>
+          <span class="witness-synthetic-mini-tag">${t.witnessesBadge}</span>
+        </div>
+      `;
+
+      card.addEventListener('click', () => selectWitness(witness.id));
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          selectWitness(witness.id);
+        }
+      });
+
+      grid.appendChild(card);
+    });
+  }
+
+  function selectWitness(npcId) {
+    activeWitnessId = npcId;
+    const witness = syntheticWitnesses.find((w) => w.id === npcId) || syntheticWitnesses[0];
+    if (!witness) return;
+
+    const cards = document.querySelectorAll('.witness-card');
+    cards.forEach((card) => {
+      const isCardSelected = card.getAttribute('data-npc-id') === witness.id;
+      card.classList.toggle('selected', isCardSelected);
+      card.setAttribute('aria-checked', isCardSelected ? 'true' : 'false');
+    });
+
+    updateActiveWitnessDisplay();
+  }
+
+  function updateActiveWitnessDisplay() {
+    const witness = syntheticWitnesses.find((w) => w.id === activeWitnessId);
+    if (!witness) return;
+
+    const t = I18N[currentLang];
+
+    const avatarEl = document.getElementById('chat-active-avatar');
+    if (avatarEl) avatarEl.textContent = witness.avatar || '👤';
+
+    const nameEl = document.getElementById('chat-active-name');
+    if (nameEl) nameEl.textContent = witness.name;
+
+    const roleEl = document.getElementById('chat-active-role');
+    if (roleEl) roleEl.textContent = witness.role ? (witness.role[currentLang] || witness.role.en) : '';
+
+    const badgeEl = document.getElementById('chat-active-synthetic-badge');
+    if (badgeEl) badgeEl.textContent = t.witnessesBadge;
+
+    renderWitnessPrompts(witness);
+  }
+
+  function renderWitnessPrompts(witness) {
+    const container = document.getElementById('witness-chips-container');
+    if (!container) return;
+
+    container.innerHTML = '';
+    const suggested = witness.suggestedPrompts || [];
+
+    suggested.forEach((pObj) => {
+      const pText = pObj.prompt ? (pObj.prompt[currentLang] || pObj.prompt.en) : '';
+      const pLabel = pObj.label ? (pObj.label[currentLang] || pObj.label.en) : pText;
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'chip-btn';
+      chip.textContent = pLabel;
+      chip.title = pText;
+      chip.addEventListener('click', () => {
+        const input = document.getElementById('witness-user-input');
+        if (input) input.value = pText;
+        sendWitnessMessage(pText);
+      });
+      container.appendChild(chip);
+    });
+  }
+
+  async function sendWitnessMessage(messageText) {
+    if (!messageText || !messageText.trim() || isWitnessChatLoading) return;
+    const cleanMsg = messageText.trim();
+
+    isWitnessChatLoading = true;
+    const loadingEl = document.getElementById('witness-loading');
+    const errorEl = document.getElementById('witness-error');
+    const sendBtn = document.getElementById('btn-witness-send');
+    const inputEl = document.getElementById('witness-user-input');
+    const t = I18N[currentLang];
+
+    if (loadingEl) loadingEl.hidden = false;
+    if (errorEl) errorEl.hidden = true;
+    if (sendBtn) sendBtn.disabled = true;
+    if (inputEl) inputEl.disabled = true;
+
+    try {
+      const res = await fetch('/api/border/witnesses/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          npcId: activeWitnessId,
+          message: cleanMsg,
+          language: currentLang,
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Witness chat returned status ${res.status}`);
+      }
+
+      const data = await res.json();
+      if (data && data.success && data.response) {
+        renderWitnessResponse(data.response);
+        if (inputEl) inputEl.value = '';
+      } else {
+        throw new Error('Malformed conversation response received');
+      }
+    } catch (err) {
+      console.warn('Witness conversation failed:', err);
+      if (errorEl) {
+        errorEl.hidden = false;
+        const txtErr = document.getElementById('txt-witness-error');
+        if (txtErr) txtErr.textContent = t.witnessError;
+      }
+    } finally {
+      isWitnessChatLoading = false;
+      if (loadingEl) loadingEl.hidden = true;
+      if (sendBtn) sendBtn.disabled = false;
+      if (inputEl) {
+        inputEl.disabled = false;
+        inputEl.focus();
+      }
+    }
+  }
+
+  function renderWitnessResponse(response) {
+    const speakerEl = document.getElementById('dialogue-speaker-name');
+    const tagEl = document.getElementById('dialogue-synthetic-tag');
+    const textEl = document.getElementById('dialogue-speech-text');
+    const t = I18N[currentLang];
+
+    if (speakerEl) speakerEl.textContent = response.witnessName || response.witnessId;
+    if (tagEl) {
+      tagEl.textContent = response.provenance && response.provenance.marker
+        ? (response.provenance.marker[currentLang] || response.provenance.marker.en)
+        : t.witnessesBadge;
+    }
+    if (textEl) {
+      textEl.textContent = `"${response.text}"`;
+    }
+  }
+
+  // Bind witness chat form
+  const witnessForm = document.getElementById('witness-chat-form');
+  if (witnessForm) {
+    witnessForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = document.getElementById('witness-user-input');
+      if (input) {
+        sendWitnessMessage(input.value);
+      }
+    });
+  }
+
   // Initialize
   updateLanguage('en');
   updateCharCount();
@@ -2030,4 +2302,5 @@
   initMap();
   checkSimulationHealth();
   fetchBorderWaitTimes();
+  fetchSyntheticWitnesses();
 })();

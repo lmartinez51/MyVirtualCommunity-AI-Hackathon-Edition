@@ -436,6 +436,105 @@
           </a>
         </div>
       </div>
+
+      <!-- Synthetic Community Witnesses Section (Increment 2: Simulated Pedestrian Queue NPCs) -->
+      <div class="border-witnesses-box" id="border-witnesses-box" role="region" aria-label="Synthetic Community Witnesses">
+        <div class="witnesses-header">
+          <div class="witnesses-title-row">
+            <span class="witnesses-icon">👥</span>
+            <div class="witnesses-title-group">
+              <div class="witnesses-badge-row">
+                <h3 class="witnesses-title" id="txt-witnesses-title">People in the Pedestrian Queue</h3>
+                <span class="tag-pill tag-synthetic" id="tag-synthetic-badge">Synthetic witness · Simulation</span>
+              </div>
+              <p class="witnesses-desc" id="txt-witnesses-desc">
+                Simulated conversational witnesses waiting in line at Paso del Norte. Fictional testimony for interactive scenario exploration — distinct from official CBP wait-time observations above.
+              </p>
+            </div>
+          </div>
+          <div class="witnesses-disclaimer-pill" id="txt-witnesses-disclaimer">
+            ⚠️ Simulated characters with fictional scenario perspectives. Official CBP bridge wait times are displayed in the panel above.
+          </div>
+        </div>
+
+        <!-- Witnesses Roster Grid (3 NPC Cards) -->
+        <div class="witnesses-cards-grid" id="witnesses-cards-grid" role="radiogroup" aria-label="Select a simulated witness to converse with">
+          <!-- Populated dynamically by app.js from /api/border/witnesses -->
+        </div>
+
+        <!-- Active Conversation & Question Interface -->
+        <div class="witness-chat-panel" id="witness-chat-panel">
+          <div class="chat-active-header" id="chat-active-header">
+            <div class="chat-witness-identity">
+              <span class="chat-witness-avatar" id="chat-active-avatar">🎓</span>
+              <div class="chat-witness-info">
+                <div class="chat-witness-name-row">
+                  <span class="chat-witness-name" id="chat-active-name">Mateo Navarro</span>
+                  <span class="synthetic-indicator-badge" id="chat-active-synthetic-badge">Synthetic witness · Simulation</span>
+                </div>
+                <span class="chat-witness-role" id="chat-active-role">UTEP Engineering Student</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Suggested Quick Prompts -->
+          <div class="witness-quick-prompts" id="witness-quick-prompts" aria-label="Suggested questions">
+            <span class="quick-prompts-label" id="lbl-quick-prompts">Ask a question:</span>
+            <div class="quick-chips-row" id="witness-chips-container">
+              <!-- Chips inserted dynamically -->
+            </div>
+          </div>
+
+          <!-- Custom Message Input Form -->
+          <form class="witness-input-form" id="witness-chat-form" novalidate>
+            <div class="witness-input-row">
+              <input
+                type="text"
+                id="witness-user-input"
+                class="witness-text-input"
+                placeholder="Ask about their wait, reason for crossing, or bridge perception..."
+                maxlength="500"
+                required
+                aria-label="Message to synthetic witness"
+              />
+              <button type="submit" class="btn-witness-send" id="btn-witness-send">
+                <span id="txt-btn-witness-send">Ask Witness</span>
+              </button>
+            </div>
+          </form>
+
+          <!-- Dialogue Transcript Box -->
+          <div class="witness-transcript-box" id="witness-transcript-box">
+            <!-- Loading indicator -->
+            <div class="witness-loading" id="witness-loading" hidden>
+              <span class="witness-spinner"></span>
+              <span id="txt-witness-loading">Waiting for synthetic witness response...</span>
+            </div>
+
+            <!-- Error banner -->
+            <div class="witness-error" id="witness-error" hidden>
+              <span class="error-icon">⚠️</span>
+              <span id="txt-witness-error">Unable to communicate with witness.</span>
+            </div>
+
+            <!-- Dialogue Speech Display -->
+            <div class="witness-dialogue-content" id="witness-dialogue-content">
+              <div class="dialogue-bubble witness-speech" id="dialogue-speech-bubble">
+                <div class="dialogue-meta">
+                  <span class="dialogue-speaker" id="dialogue-speaker-name">Mateo Navarro</span>
+                  <span class="dialogue-synthetic-tag" id="dialogue-synthetic-tag">Synthetic witness · Simulation</span>
+                </div>
+                <p class="dialogue-text" id="dialogue-speech-text">
+                  "I've been in line for about 25 minutes reviewing my class notes. For the official CBP wait time, definitely check the tracker above!"
+                </p>
+                <div class="dialogue-truth-notice" id="dialogue-truth-notice">
+                  ℹ️ Simulated testimony only. For official verified crossing delays, consult the live CBP measurements above.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- Main Content Grid -->

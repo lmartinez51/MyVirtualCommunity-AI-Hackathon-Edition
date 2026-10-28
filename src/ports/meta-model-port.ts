@@ -1,5 +1,6 @@
 import { BusinessSchedule } from '../domain/business-schedule.js';
 import { BusinessOperationalStatus } from '../domain/operational-status.js';
+import { SyntheticWitnessProfile } from '../domain/synthetic-witness.js';
 
 /**
  * Context provided to the Meta Model for grounded, hallucination-free generation.
@@ -14,6 +15,19 @@ export interface AssistantPromptContext {
   readonly verifiedData: BusinessOperationalStatus;
   readonly schedule: BusinessSchedule;
   readonly systemPrompt?: string;
+}
+
+/**
+ * Context provided to the Meta Model for synthetic witness NPC conversations.
+ *
+ * Invariant:
+ * The model is bounded strictly to the character's scenario profile and permitted knowledge.
+ * The model has zero authority over world state, business schedules, or official border metrics.
+ */
+export interface WitnessPromptContext {
+  readonly witness: SyntheticWitnessProfile;
+  readonly userMessage: string;
+  readonly language: 'en' | 'es';
 }
 
 export interface MetaModelUsageDetails {
@@ -46,4 +60,9 @@ export interface MetaModelPort {
    * Generates a natural language response grounded in verified domain facts.
    */
   generateAssistantResponse(context: AssistantPromptContext): Promise<MetaModelResponse>;
+
+  /**
+   * Generates dialogue for a synthetic community witness grounded in their scenario profile.
+   */
+  generateWitnessResponse?(context: WitnessPromptContext): Promise<MetaModelResponse>;
 }

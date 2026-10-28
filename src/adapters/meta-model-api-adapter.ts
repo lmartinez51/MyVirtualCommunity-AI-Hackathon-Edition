@@ -1,10 +1,12 @@
 import { MetaConfig } from '../config/index.js';
+import { buildWitnessPrompt } from '../domain/synthetic-witness.js';
 import {
   AssistantPromptContext,
   MetaModelPort,
   MetaModelResponse,
   MetaModelUsage,
   MetaModelUsageDetails,
+  WitnessPromptContext,
 } from '../ports/meta-model-port.js';
 
 export class MetaApiError extends Error {
@@ -369,6 +371,27 @@ export class MetaModelApiAdapter implements MetaModelPort {
         { role: 'user', content: groundedUserContent },
       ],
       { reasoningEffort: 'minimal' }
+    );
+  }
+
+  /**
+   * Generates dialogue for a synthetic community witness grounded in their scenario profile.
+   */
+  public async generateWitnessResponse(
+    context: WitnessPromptContext
+  ): Promise<MetaModelResponse> {
+    const { systemPrompt, userContent } = buildWitnessPrompt(
+      context.witness,
+      context.userMessage,
+      context.language
+    );
+
+    return this.executeChatCompletion(
+      [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userContent },
+      ],
+      { temperature: 0.7, reasoningEffort: 'minimal' }
     );
   }
 }

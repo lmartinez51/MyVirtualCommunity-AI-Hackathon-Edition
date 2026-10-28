@@ -162,6 +162,42 @@ Milestone 3 implements the first interactive spatial slice for MyVirtualCommunit
   - The map library is purely a visual presentation layer and has zero authority over world state.
   - Spatial corridor entities and bounding geometries are exposed through `GET /api/spatial/corridor` and pure domain models (`src/domain/spatial-corridor.ts`), ensuring future 3D clients (such as Unity or WebGL) can consume identical entity IDs, coordinates, and World Core rules.
 
+### 4.3 Increment 1: Border Intelligence — Official Pedestrian Wait Times & Cameras
+
+Integrates official real-world public border crossing data for northbound pedestrian travelers crossing from Ciudad Juárez into El Paso:
+
+- **Official Data Integration**: Direct read-only integration with U.S. Customs and Border Protection (`https://bwt.cbp.gov/`) for **Paso del Norte (Santa Fe)** (Port `06240202`) and **Bridge of the Americas (BOTA / Puente Libre)** (Port `06240201`).
+- **Explicit Lane Scope**: Evaluates and compares strictly the **General / Standard Pedestrian Lane** (excluding Ready Lane, SENTRI, and vehicular queues) with clear bilingual notices.
+- **Data Freshness & Provenance**: Classifies CBP source reporting timestamp freshness (`fresh` <= 2h, `stale` > 2h, `pending`, `unavailable`) without fabricating missing observations.
+- **Deterministic Comparison**: Generates a safe, non-hallucinatory comparison statement only when both crossings report compatible, fresh numeric delays and are officially open.
+- **Verified Official Cameras**: Direct links to authentic live visual feeds from the Chihuahua Bridge Authority and the City of El Paso international bridges camera portal.
+
+### 4.4 Increment 2: Synthetic Community Witnesses — Simulated Queue NPCs
+
+Introduces an interactive community of three explicitly synthetic conversational NPCs waiting in the simulated pedestrian queue at `infrastructure:puente-paso-del-norte`:
+
+- **Purpose & Scope**: Demonstrates how generative AI can bring a simulated border community to life while maintaining an impenetrable boundary between fictional scenario testimony and authoritative real-world measurements.
+- **Uncompromised Truth Invariant & Synthetic Disclosure**:
+  - Every NPC and response carries explicit synthetic provenance:
+    - English: **`Synthetic witness · Simulation`**
+    - Spanish: **`Testigo sintético · Simulación`**
+  - Prominent UI disclosures inform the player that all three characters are simulated agents with fictional scenario perspectives, distinct from official CBP measurements.
+  - Synthetic testimony is never presented as a real-time measurement or proof of actual traveler delay.
+- **Three Configured Synthetic Witnesses**:
+  1. **Mateo Navarro (`mateo-student`, 🎓, Age 21)**: UTEP engineering student commuting to an evening robotics study group in El Paso. Scenario wait: ~25 minutes. Focused on study materials, pedestrian walking routine, and binational student commute.
+  2. **Sofia Alarcón (`sofia-cross-border-retail`, 💼, Age 34)**: Downtown El Paso apparel store supervisor crossing for an evening inventory shift. Scenario wait: ~40 minutes. Experienced commuter perspective, evaluates bridge movement pace, observes shift worker lines.
+  3. **Héctor Méndez (`hector-artisan`, 👴, Age 67)**: Retired leather artisan visiting his granddaughter for her birthday in Sunset Heights. Scenario wait: ~15 minutes. Patient, conversational demeanor, reminisces about historic downtown bridge crossings over decades.
+- **Bilingual Conversations (EN / ES)**:
+  - Users can select any witness, choose a suggested quick question chip, or type a custom question (up to 500 characters).
+  - Responds in the question's detected language (English or Spanish) or the user's selected UI language.
+  - If asked about current delays or which bridge is faster, the witness speaks only from personal scenario experience and explicitly directs the user to the official CBP Border Intelligence tracker above.
+- **Authority Boundaries & Deterministic Fallback**:
+  - Neither the NPCs nor the language model have authority to change world state, modify business schedules, alter CBP metrics, or invent authoritative facts.
+  - If the Meta Model API is unavailable or returns unusable output, the application falls back to a deterministic domain response engine (`provider: 'deterministic-fallback'`) with zero crashes or error leaks.
+- **Known Limitations**:
+  - Stateless single-turn dialogue: each query is processed independently against the selected NPC's configured scenario profile without model-level conversation history or session persistence.
+  - Scope confined to the pedestrian queue at Paso del Norte (excludes commercial cargo and vehicular lines).
+
 The project follows a strict Hexagonal / Clean Architecture pattern:
 
 ```
@@ -171,16 +207,22 @@ src/
 │   ├── civil-time.ts           # Pure mathematical timezone projection
 │   ├── business-schedule.ts    # Schedule schema and strict validation
 │   ├── operational-status.ts   # Deterministic status derivation (OPEN/CLOSED/etc.)
-│   └── spatial-corridor.ts     # Authentic spatial corridor & POI definitions (Milestone 3)
+│   ├── spatial-corridor.ts     # Authentic spatial corridor & POI definitions (Milestone 3)
+│   ├── border-crossing.ts      # Border crossing contracts & deterministic comparison (Increment 1)
+│   └── synthetic-witness.ts    # Synthetic NPC profiles, boundaries & fallback engine (Increment 2)
 ├── ports/             # Boundary contracts
 │   ├── world-core-port.ts      # Read-only World Core query interface
-│   └── meta-model-port.ts      # Meta Model prompt context & response port
+│   ├── border-crossing-port.ts # CBP wait time data provider port
+│   └── meta-model-port.ts      # Meta Model prompt context & response port (assistant + witnesses)
 ├── adapters/          # Port implementations
 │   ├── in-memory-world-core-adapter.ts # Seeded development fixture
+│   ├── cbp-border-wait-time-adapter.ts # Official CBP REST API adapter with caching
 │   ├── meta-model-api-adapter.ts       # Live Meta Model API adapter (muse-spark-1.3)
 │   └── mock-meta-model-adapter.ts      # Offline deterministic mock adapter
 ├── application/       # Use case orchestration
-│   └── answer-business-hours-query.ts  # End-to-end grounded assistant flow
+│   ├── answer-business-hours-query.ts  # End-to-end grounded assistant flow
+│   ├── compare-border-wait-times.ts    # Border wait times comparison use case
+│   └── talk-to-synthetic-witness.ts    # Synthetic witness dialogue orchestration
 ├── config/            # Environment parsing & secret masking
 │   └── index.ts
 └── server/            # HTTP transport
@@ -188,7 +230,7 @@ src/
 scripts/
 ├── run-tests.js       # Cross-platform test runner
 └── meta-smoke-test.ts # Dedicated, explicitly invoked live smoke test
-tests/                 # 100% offline test suite (41 tests across 7 suites)
+tests/                 # 100% offline test suite (220 tests across 58 suites)
 docs/
 ├── HACKATHON_SCOPE.md         # Explicit MVP scope and boundaries
 ├── ARCHITECTURE.md            # Complete architecture diagrams and data flows

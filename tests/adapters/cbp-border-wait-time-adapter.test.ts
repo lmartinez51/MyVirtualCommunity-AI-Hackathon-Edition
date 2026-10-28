@@ -44,6 +44,26 @@ describe('CbpBorderWaitTimeAdapter (Unit Tests with Mocked HTTP)', () => {
     },
   ];
 
+  function getDynamicFreshCbpTimestamp() {
+    const mdtNow = new Date(Date.now() - 6 * 3600 * 1000 - 10 * 60 * 1000);
+    const month = String(mdtNow.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(mdtNow.getUTCDate()).padStart(2, '0');
+    const year = mdtNow.getUTCFullYear();
+    const date = `${month}/${day}/${year}`;
+
+    let hour = mdtNow.getUTCHours();
+    const min = String(mdtNow.getUTCMinutes()).padStart(2, '0');
+    const sec = String(mdtNow.getUTCSeconds()).padStart(2, '0');
+    const time = `${String(hour).padStart(2, '0')}:${min}:${sec}`;
+
+    const meridiem = hour >= 12 ? 'pm' : 'am';
+    let hour12 = hour % 12;
+    if (hour12 === 0) hour12 = 12;
+    const update_time = `At ${hour12}:${min} ${meridiem} MDT`;
+
+    return { date, time, update_time };
+  }
+
   it('normalizes valid CBP pedestrian wait data for PDN and BOTA', async () => {
     const mockFetch = async () =>
       new Response(JSON.stringify(MOCK_CBP_FEED), {
@@ -126,13 +146,14 @@ describe('CbpBorderWaitTimeAdapter (Unit Tests with Mocked HTTP)', () => {
   });
 
   it('handles pending, unavailable, and non-numeric wait values', async () => {
+    const freshTs = getDynamicFreshCbpTimestamp();
     const pendingFeed = [
       {
         port_number: '240202',
         port_status: 'Open',
         pedestrian_lanes: {
           standard_lanes: {
-            update_time: 'At 6:00 pm MDT',
+            update_time: freshTs.update_time,
             operational_status: 'Update Pending',
             delay_minutes: '',
             lanes_open: '',
@@ -142,11 +163,11 @@ describe('CbpBorderWaitTimeAdapter (Unit Tests with Mocked HTTP)', () => {
       {
         port_number: '240201',
         port_status: 'Closed',
-        date: '10/27/2026',
-        time: '18:02:07',
+        date: freshTs.date,
+        time: freshTs.time,
         pedestrian_lanes: {
           standard_lanes: {
-            update_time: 'At 6:00 pm MDT',
+            update_time: freshTs.update_time,
             operational_status: 'Lanes Closed',
             delay_minutes: '',
           },
@@ -192,14 +213,16 @@ describe('CbpBorderWaitTimeAdapter (Unit Tests with Mocked HTTP)', () => {
   });
 
   it('returns valid observation when one crossing is present and the other is missing', async () => {
+    const freshTs = getDynamicFreshCbpTimestamp();
     const singleFeed = [
       {
         port_number: '240202', // PDN present
-        date: '10/27/2026',
+        date: freshTs.date,
+        time: freshTs.time,
         port_status: 'Open',
         pedestrian_lanes: {
           standard_lanes: {
-            update_time: 'At 6:00 pm MDT',
+            update_time: freshTs.update_time,
             delay_minutes: '3',
             lanes_open: '2',
             operational_status: 'no delay',
