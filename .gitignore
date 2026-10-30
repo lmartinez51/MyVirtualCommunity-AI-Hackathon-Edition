@@ -17,3 +17,22 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+
+# Unity Client Generated Artifacts & Solutions
+unity-client/[Ll]ibrary/
+unity-client/[Tt]emp/
+unity-client/[Oo]bj/
+unity-client/[Bb]uild/
+unity-client/[Bb]uilds/
+unity-client/[Ll]ogs/
+unity-client/[Uu]ser[Ss]ettings/
+unity-client/[Mm]emory[Cc]aptures/
+unity-client/.vs/
+unity-client/.vsconfig
+unity-client/*.csproj
+unity-client/*.unityproj
+unity-client/*.sln
+unity-client/*.slnx
+unity-client/*.userprefs
+unity-client/*.pidb
+unity-client/*.booproj
