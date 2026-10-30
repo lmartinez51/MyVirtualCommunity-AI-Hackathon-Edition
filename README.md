@@ -266,6 +266,112 @@ Introduces interactive virtual storefront attendants stationed at local business
   - Stateless single-turn interaction (no persistent multi-turn conversational memory or session state).
   - Scope confined to the two configured commercial establishments on Avenida Juárez.
 
+### 4.7 Increment 5.1: Unity 3D Foundation & API Handshake
+
+Establishes the new Unity 3D client foundation and non-blocking HTTP integration with the authoritative Node.js server:
+
+- **Project Location**: `unity-client/` (new, clean Unity 6 project created specifically for this hackathon).
+- **Required Unity Editor Version**: **`6000.3.25f1`** (Unity 6 LTS) with Universal Render Pipeline (URP).
+- **Architecture**:
+  - **Unity 3D Client**: Presentation and interaction layer only. Owns camera, ground plane, visual markers, and UI display. Does not evaluate business logic or invent world facts.
+  - **Node.js Assistant Server**: Authoritative backend running on `http://127.0.0.1:3000`. Evaluates operational status, CBP wait-time normalization, and Meta model queries.
+  - **C# ApiClient**: Lightweight, non-blocking HTTP service (`Assets/Scripts/ApiClient.cs`) utilizing `UnityWebRequest` to communicate with the local Node.js endpoints.
+  - **Strongly Typed DTOs**: Compatible C# data transfer objects (`Assets/Scripts/ApiContracts.cs`) matching the TypeScript contracts for `GET /health` and `GET /api/spatial/corridor`.
+- **Foundation Scene (`Assets/Scenes/HandshakeScene.unity`)**:
+  - Ground plane (30m × 30m) with dark asphalt styling.
+  - Directional light and main camera positioned for a clear perspective view.
+  - `HandshakeController` managing immediate-mode UI panel (`OnGUI`) with live status indicators, diagnostic readouts, action buttons, and spatial landmark marker cubes spawned in 3D.
+  - Graceful failure handling: Displays informative troubleshooting guidance when the Node.js server is stopped or unreachable, never crashing or throwing unhandled exceptions.
+- **How to Run the Handshake Demo**:
+  1. **Start the Node.js Server**:
+     ```powershell
+     npm run dev
+     ```
+     Confirms: `[Assistant Server] Running at http://127.0.0.1:3000`.
+  2. **Open the Unity Project**:
+     - Launch **Unity Hub**, click **Add** > **Add project from disk**, and select:
+       `C:\Users\leolm\Desktop\Proyectos_AI\MyVirtualCommunity-AI-Hackathon-Edition\unity-client`
+     - Open the project using Editor **`6000.3.25f1`**.
+  3. **Play the Scene**:
+     - In the Unity Project window, navigate to `Assets/Scenes/` and double-click `HandshakeScene.unity`.
+     - Press the **Play** button in the Unity Editor toolbar.
+     - On startup, the scene automatically queries `/health` and `/api/spatial/corridor`.
+     - The on-screen panel displays `[CONNECTED]`, server health metrics, model information (`muse-spark-1.3`), and 3D colored marker cubes for the corridor landmarks (Puente Paso del Norte, Farmacias Benavides, Óptica Fashion).
+     - Test offline resilience: Stop the Node.js server (`Ctrl+C`) and click **Test Handshake** to observe the graceful `[DISCONNECTED]` state with troubleshooting guidance. Restart the server and click **Test Handshake** to re-establish the connection.
+
+### 4.8 Increment 5.2: Playable 3D Border Corridor
+
+Transforms the foundation into a recognizable, explorable 3D vertical slice of Avenida Benito Juárez leading toward the Paso del Norte / Santa Fe pedestrian border crossing in Ciudad Juárez, following the hackathon principle **"Build for your World."**
+
+- **Primary Scene (`Assets/Scenes/BorderCorridorScene.unity`)**:
+  - Configured at index `0` of `EditorBuildSettings.scenes` as the default launch scene (`HandshakeScene.unity` at index `1`).
+- **Authentic Street & Urban Architecture**:
+  - **Avenida Juárez Corridor**: 80m paved asphalt roadway (14m wide) running South-to-North with white broken centerlines, yellow shoulder lines, pedestrian crosswalks, raised concrete curbs, and wide sidewalks (4m wide each).
+  - **Farmacias Benavides (East side, Av. Juárez 610)**:
+    - Recognizable facade with royal blue canopy fascia, crimson red company accent signage, and illuminated glass display windows.
+    - Located at metric coordinates `(X = +10.5, Z = 0)`.
+  - **Óptica Fashion (West side, Av. Juárez 859)**:
+    - Recognizable storefront with warm cream facade, gold metallic sign banner, and showroom windows across from Farmacias Benavides.
+    - Located at metric coordinates `(X = -10.5, Z = +1.5)`.
+    - **Authentic Avenue Width**: Physical street crossing distance is **21.05m**, closely matching the authoritative metric corridor distance (**21.92m**) defined in `src/domain/spatial-corridor.ts`.
+  - **Surrounding Urban Context**: 4 adjacent mixed-use storefront buildings with authentic northern Mexican stucco tones (warm terracotta, soft ochre, sand, and cream).
+  - **Street Furniture & Infrastructure**: Double-arm highway streetlights with warm point illumination along both sidewalks.
+- **Paso del Norte Border Approach (North End)**:
+  - **Directional Overhead Highway Gantry**: Spans the roadway at `Z = +30` with realistic green overhead highway signage directing travelers:
+    - *"MÉXICO - EL PASO / PUENTE INTERNACIONAL PASO DEL NORTE - PEDESTRIANS & VEHICLES"*.
+  - **Plaza de Cobro C-51 Toll Canopy**: Mexican toll plaza canopy structure (`Z = +45`) with 4 steel support pillars and teal roof canopy ~45m North of the storefronts.
+  - **Pedestrian Staging & Queue Stanchions**: Multi-row queue stanchion barrier poles guiding pedestrians toward the crossing gates.
+  - **Puente Internacional Deck**: Bridge roadway deck elevated over the approach leading across toward Texas.
+
+### 4.9 Increment 5.3: Interactive NPC Conversations & Live Border Intelligence
+
+Connects the 3D playable corridor in Unity to our authoritative Node.js backend, allowing travelers to speak directly with simulated inhabitants and inspect official border wait times in real time:
+
+- **Guiding Principle**: **“Build for Your World.”** Brings the physical urban recreation of Avenida Benito Juárez to life with grounded, bilingual virtual characters and official CBP border observations.
+- **Integrated Server Endpoints & Canonical NPCs**:
+  1. **Storefront Business Attendants (`POST /api/businesses/attendants/chat`)**:
+     - **Carlos Méndez** (`carlos-farmacia-attendant`, 💊) at **Farmacias Benavides** (`Av. Juárez 610`): Answers verified operating schedule (Mon–Sat 07:00–22:00, closed Sun) and store location questions. Guardrails strictly refuse medical diagnoses, prescription advice, and live inventory levels.
+     - **Valeria Domínguez** (`valeria-optica-attendant`, 👓) at **Óptica Fashion** (`Av. Juárez 859`): Answers verified boutique hours (Mon–Sat 09:00–17:00, closed Sun) and location questions. Strictly refuses live frame catalog inventory and eye exam appointment bookings.
+  2. **Synthetic Community Witnesses (`POST /api/border/witnesses/chat`)**:
+     - **Mateo Navarro** (`mateo-student`, 🎒) at Pedestrian Queue Station 1 (`Z = 37.5m`): University student commuting to UTEP in El Paso. Shares his wait experience and daily commuter perspective.
+     - **Sofia Alarcón** (`sofia-cross-border-retail`, 💼) at Pedestrian Queue Station 2 (`Z = 41.5m`): Cross-border retail worker. Shares her observations on queue flow and travel routines.
+     - **Don Héctor Méndez** (`hector-artisan`, 🪵) at Pedestrian Queue Station 3 (`Z = 45.5m`): Long-time artisan selling traditional crafts. Reflects on bridge crossing routines and community memory.
+  3. **Border Concierge & Traveler Guidance (`POST /api/border/concierge/chat`)**:
+     - **Elena Ramos** (`elena-border-concierge`, 🛂) at the **Border Information Kiosk** (`Z = 40m`): Guides travelers on official wait observations, bridge comparisons (Paso del Norte vs. BOTA), operational hours, and bridge camera access.
+  4. **Live Official Border Intelligence (`GET /api/border/wait-times`)**:
+     - Rendered inside Elena's kiosk dialogue window.
+     - Shows real-time pedestrian wait times for **Paso del Norte** (PDN) and **Bridge of the Americas** (BOTA).
+     - Reports port operational status, open lanes, CBP source observation timestamps, and normalized freshness (`🟢 Fresh (<60m)` vs `🟠 Stale`).
+     - Includes official bridge comparison statement and a user-triggered `[🔄 Refresh]` button calling `/api/border/wait-times?refresh=true`.
+     - Preserves data integrity: `null` or missing wait values are honestly displayed as *"Unavailable / Pending"* and are never fabricated as 0 minutes.
+- **In-World Dialogue Panel Features**:
+  - **Thread Isolation**: Conversation histories are stored and indexed by unique `characterId`, ensuring responses from one character are never mixed with another.
+  - **Visual Provenance Badges**:
+    - `🏛️ Official CBP Pedestrian Wait Times (Not AI Generated)`
+    - `🛂 AI Border Concierge · Grounded in official CBP observations`
+    - `🎒 Synthetic Community Witness · Simulated local scenario`
+    - `🏪 AI Storefront Attendant · Grounded in verified World Core snapshot`
+  - **Bilingual Support (`EN` | `ES`)**: One-click language toggle updates UI labels, suggested prompt chips, request payload language (`"language": "en" | "es"`), and server response language.
+  - **Interactive Usability**: Clickable suggested question chips, text input field, `[Send / Enviar]` button, Enter-to-send key handling, in-flight request disabling, and recoverable error state with `[Retry]`.
+- **How to Run & Experience Increment 5.3**:
+  1. Start the backend server:
+     ```powershell
+     npm run dev
+     ```
+     Verifies: `[Assistant Server] Running at http://127.0.0.1:3000`.
+  2. Open the Unity project in Unity Hub with Editor **`6000.3.25f1`**:
+     `MyVirtualCommunity-AI-Hackathon-Edition/unity-client`
+  3. In `Assets/Scenes/`, open `BorderCorridorScene.unity` and press **Play**.
+  4. Explore the 3D corridor:
+     - Approach Farmacias Benavides and press `[E]` to talk with **Carlos Méndez**.
+     - Cross the avenue to Óptica Fashion and press `[E]` to talk with **Valeria Domínguez**.
+     - Walk North toward the international bridge approach to speak with **Mateo**, **Sofia**, or **Don Héctor** in the pedestrian line.
+     - Visit the blue municipal kiosk at the crossing gates and press `[E]` to view live **Official Border Intelligence** and speak with **Elena Ramos**.
+     - Toggle between English and Spanish using the `[EN | ES]` button in the top HUD or dialogue header.
+- **Known Limitations & Scope Boundaries**:
+  - Single-turn conversational memory (server evaluates each inquiry statelessly against authoritative domain rules).
+  - Standee character representations use stylized geometric primitives with distinctive palette styling and highlight rings rather than rigged skeletal animations.
+
 ---
 
 The project follows a strict Hexagonal / Clean Architecture pattern:
@@ -450,3 +556,118 @@ For in-depth details, see:
 - [`docs/ARCHITECTURE.md`](file:///c:/Users/leolm/Desktop/Proyectos_AI/MyVirtualCommunity-AI-Hackathon-Edition/docs/ARCHITECTURE.md)
 - [`docs/REUSE_AND_ATTRIBUTION.md`](file:///c:/Users/leolm/Desktop/Proyectos_AI/MyVirtualCommunity-AI-Hackathon-Edition/docs/REUSE_AND_ATTRIBUTION.md)
 - [`docs/DEMO_PLAN.md`](file:///c:/Users/leolm/Desktop/Proyectos_AI/MyVirtualCommunity-AI-Hackathon-Edition/docs/DEMO_PLAN.md)
+
+---
+
+## 8. Increment 5 — Interactive 3D Border Corridor & Windows Release Candidate
+
+### 8.1 Overview
+The **Unity 3D Client** (`unity-client/`, built with **Unity 6 (6000.3.25f1)** and Universal Render Pipeline) provides a playable first-person 3D slice of Avenida Benito Juárez leading toward the Paso del Norte / Santa Fe international pedestrian bridge in Ciudad Juárez, Mexico.
+
+It connects to the authoritative Node.js backend (`http://127.0.0.1:3000`) to provide live, grounded conversational AI characters and official border intelligence:
+1. **Storefront Business Attendants:**
+   - **Carlos Méndez** (`carlos-farmacia-attendant`, 💊) at Farmacias Benavides (`pharmacy:farmacias-benavides`).
+   - **Valeria Domínguez** (`valeria-optica-attendant`, 👓) at Óptica Fashion (`optical:optica-fashion`).
+2. **Synthetic Community Witnesses (Pedestrian Queue):**
+   - **Mateo Navarro** (`mateo-student`, 🎒), bilingual college commuter.
+   - **Sofía Alarcón** (`sofia-cross-border-retail`, 💼), cross-border retail worker.
+   - **Don Héctor Méndez** (`hector-artisan`, 🪵), historic downtown Juárez artisan.
+3. **Elena Ramos Border Concierge & Official CBP Kiosk:**
+   - **Elena Ramos** (`elena-border-concierge`, 🛂), virtual border concierge.
+   - Real-time CBP pedestrian wait times for **Paso del Norte (Santa Fe)** and **Bridge of the Americas (BOTA)**.
+   - Freshness indicators, port operational status, and on-demand refresh.
+
+### 8.2 Windows Standalone Release Candidate
+A standalone 64-bit Windows binary is packaged at:
+```
+unity-client/Builds/Windows/MyVirtualCommunity.exe
+```
+- **Engine Version:** Unity 6000.3.25f1 StandaloneWindows64
+- **Included Scenes:**
+  - `Assets/Scenes/BorderCorridorScene.unity` (Build Index 0 — Active Gameplay Scene)
+  - `Assets/Scenes/HandshakeScene.unity` (Build Index 1 — Diagnostic Scene)
+- **Standalone Build Command:**
+  ```powershell
+  & "C:\Program Files\Unity\Hub\Editor\6000.3.25f1\Editor\Unity.exe" `
+    -batchmode -quit `
+    -projectPath "unity-client" `
+    -executeMethod MyVirtualCommunity.Editor.WindowsStandaloneBuilder.BuildWindowsExecutable `
+    -logFile "unity-client/Build.log"
+  ```
+
+### 8.3 Character Provenance & Execution Matrix
+
+| Character | Role / Location | API Endpoint | Default Language | Representative Provider | Model vs. Fallback Logic | Data Source |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Carlos Méndez** | Attendant · Farmacias Benavides (Av. Juárez 610) | `POST /api/businesses/attendants/chat` | EN / ES | `meta-muse-spark-1.3` (or `deterministic-fallback`) | General/hours queries use Meta Muse Spark. Inventory/prescription queries route deterministically to safeguard medical boundaries. | Grounded in verified business schedule (Mon–Sat 07:00–22:00). In-memory fixture (`InMemoryWorldCoreAdapter`) or remote World Core. |
+| **Valeria Domínguez** | Attendant · Óptica Fashion (Av. Juárez 859) | `POST /api/businesses/attendants/chat` | ES / EN | `meta-muse-spark-1.3` (or `deterministic-fallback`) | Boutique hours and location queries synthesized by Meta Muse Spark using verified factual constraints. | Grounded in verified boutique schedule (Mon–Sat 09:00–17:00). In-memory fixture (`InMemoryWorldCoreAdapter`) or remote World Core. |
+| **Mateo Navarro** | Student Commuter · Pedestrian Bridge Line | `POST /api/border/witnesses/chat` | EN / ES | `meta-muse-spark-1.3` | Persona-constrained narrative (student carrying backpack/laptop heading to evening classes). | Synthetic witness simulation (`type: "synthetic-witness-simulation"`). Not official CBP data. |
+| **Sofía Alarcón** | Retail Worker · Pedestrian Bridge Line | `POST /api/border/witnesses/chat` | ES / EN | `meta-muse-spark-1.3` | Persona-constrained commuter narrative (retail worker commute routine). | Synthetic witness simulation (`type: "synthetic-witness-simulation"`). Not official CBP data. |
+| **Don Héctor** | Downtown Artisan · Pedestrian Bridge Line | `POST /api/border/witnesses/chat` | ES / EN | `meta-muse-spark-1.3` | Persona-constrained artisan narrative (historic downtown woodcraft artisan). | Synthetic witness simulation (`type: "synthetic-witness-simulation"`). Not official CBP data. |
+| **Elena Ramos** | AI Border Concierge · Official Bridge Kiosk | `POST /api/border/concierge/chat` | EN / ES | `meta-muse-spark-1.3` (with `deterministic-fallback`) | Synthesizes comparative bridge crossing advice strictly from authoritative CBP observations. Deterministic fallback if API offline. | Grounded in official U.S. Customs and Border Protection (CBP) wait times. |
+
+### 8.4 Stateless Conversation Architecture & UI Disclosure
+To maintain strict adherence to authoritative factual constraints without risk of compounding conversational drift:
+- Each character interaction is evaluated **statelessly**. The backend receives the current user message and evaluates it against authoritative facts.
+- The Unity UI explicitly discloses this behavior to users and judges:
+  > *"ℹ️ Each inquiry is processed independently."* / *"ℹ️ Cada consulta se procesa de forma independiente."*
+- Chat history displayed in the UI is tracked locally on the client for user readability but isolated strictly per-character so that threads never cross-contaminate.
+
+### 8.5 Automated Verification Commands
+Two batchmode automated suites validate the client inside Unity without manual GUI interaction:
+
+```powershell
+# 1. Physical Environment, Metrics, and Invariant Verification:
+& "C:\Program Files\Unity\Hub\Editor\6000.3.25f1\Editor\Unity.exe" `
+  -batchmode -quit `
+  -projectPath "unity-client" `
+  -executeMethod MyVirtualCommunity.Editor.CorridorVerificationTest.RunVerification `
+  -logFile -
+
+# 2. End-to-End Live HTTP Integration Suite (Requires Assistant Server on :3000):
+& "C:\Program Files\Unity\Hub\Editor\6000.3.25f1\Editor\Unity.exe" `
+  -batchmode -quit `
+  -projectPath "unity-client" `
+  -executeMethod MyVirtualCommunity.Editor.EndToEndCorridorTest.RunE2EValidation `
+  -logFile -
+```
+
+### 8.6 Concise 90–120 Second Demo Walkthrough Script
+1. **Spawn (0:00–0:15):** Launch `MyVirtualCommunity.exe`. Player spawns on Avenida Benito Juárez facing North toward the border. Notice HUD showing active server connection (`🟢 Server Connected · Meta Muse Spark 1.3`).
+2. **Farmacias Benavides & Carlos Méndez (0:15–0:35):** Walk to the West sidewalk. Approach Carlos (💊). Press `E`. Click quick prompt *"What are your business hours today?"*. Observe grounded answer (07:00–22:00) with `[Meta Muse Spark 1.3]` provenance badge. Ask *"Do you sell antibiotics without prescription?"* and observe the attendant politely enforces safety boundaries. Press `Esc` to close.
+3. **Óptica Fashion & Valeria Domínguez (0:35–0:50):** Cross the 22-meter roadway to the East sidewalk. Approach Valeria (👓). Press `E`. Ask in Spanish *"¿Dónde se encuentra ubicada la óptica?"*. Observe response grounding location on Av. Benito Juárez 859 and closing time of 17:00. Press `Esc`.
+4. **Pedestrian Queue & Mateo Navarro (0:50–1:10):** Walk North toward the Plaza de Cobro canopy. Approach Mateo (🎒) in the pedestrian line. Press `E`. Ask *"How is the line moving today?"*. Observe simulated commuter perspective clearly tagged with `[Synthetic Witness · Simulation]`. Press `Esc`.
+5. **Border Information Kiosk & Elena Ramos (1:10–1:35):** Step forward to the official CBP Kiosk. Approach Elena Ramos (🛂). Press `E`.
+   - Inspect the **Official CBP Wait Times** panel: observe Paso del Norte vs. Bridge of the Americas pedestrian delays, freshness tag (`🟢 Fresh (<60m)`), and observation timestamp.
+   - Click `🔄 Refresh` to execute an on-demand cache-bypassing live update.
+   - Click `[Switch to ES]` to demonstrate full bilingual support.
+   - Ask: *"¿Cuál puente me recomiendas para cruzar a pie?"* to receive grounded comparative advice.
+6. **Wrap-up (1:35–1:50):** Point out provenance badges on every response bubble, showing complete transparency between Meta AI generation, deterministic safety rules, synthetic traveler testimony, and official CBP observations.
+
+---
+
+## 9. Submission Scope, Attribution & Boundaries
+
+### 9.1 Work Newly Authored for This Hackathon
+- **Complete Hexagonal Backend Architecture:** Domain anti-hallucination models, input validators, timezone math (`America/Ciudad_Juarez`), use cases, ports, and adapters.
+- **Meta Model API Integration (`MetaModelApiAdapter`):** Native HTTPS client with strict credential masking, usage parsing, and error-handling guardrails.
+- **CBP Border Intelligence System (`CbpBorderWaitTimeAdapter`):** Live CBP scraper/parser, multi-port comparison logic, zero-delay prevention, and freshness caching.
+- **Storefront Business Attendant System:** Deterministic topic classification, boundary guardrails for medical/inventory refusal, and grounded persona synthesis.
+- **Synthetic Community Witnesses:** Profile system and prompt isolation for simulated border commuters.
+- **Complete Unity 6 3D Client (`unity-client/`):** Procedural 3D scene construction, player controller, raycast proximity HUD, dialogue system, bilingual localization, REST API client, batchmode test suites, and Windows standalone executable.
+
+### 9.2 Attribution & Separation from Pre-Existing Project
+- The pre-existing repository (`MyVirtualCommunity`) served as the conceptual inspiration and world simulation engine (ticks, spatial topology, entity IDs).
+- **The pre-existing repository remains completely untouched.**
+- Zero files or assets were copied or vendored from the pre-existing project. All code in this repository was newly authored for the hackathon.
+
+### 9.3 Asset Attribution & Licensing
+- **3D Geometry:** 100% procedural primitive meshes (cubes, cylinders, planes) constructed via editor scripts.
+- **Materials & Shaders:** Standard Universal Render Pipeline (URP) lit/unlit materials generated programmatically.
+- **Character Standees & Icons:** Unicode emoji glyphs (`💊`, `👓`, `🛂`, `🎒`, `💼`, `🪵`) rendered via standard Unity UI text components.
+- **Zero Third-Party Assets:** No commercial 3D asset packs, textures, or paid audio/character libraries were imported.
+
+### 9.4 Known Limitations
+- **Stateless Dialogues:** Inquiries are processed independently without multi-turn context retention, ensuring strict fact grounding and preventing hallucination drift.
+- **Pedestrian Scope:** Covers General / Standard pedestrian bridge crossings; vehicular, commercial cargo, and SENTRI lanes are excluded.
+- **Read-Only:** The system does not alter real-world business schedules, CBP metrics, or commercial transactions.

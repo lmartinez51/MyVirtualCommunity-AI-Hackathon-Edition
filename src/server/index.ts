@@ -369,7 +369,7 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
 
       // 6. GET /api/border/wait-times (Official Pedestrian Wait Times: PDN vs BOTA)
       if (method === 'GET' && pathname === '/api/border/wait-times') {
-        const refreshParam = parsedUrl.searchParams.get('refresh');
+        const refreshParam = parsedUrl.searchParams.get('refresh') ?? parsedUrl.searchParams.get('bypassCache');
         const bypassCache = refreshParam === 'true' || refreshParam === '1';
         try {
           const comparison = await borderUseCase.execute({ bypassCache });
