@@ -46,6 +46,7 @@ export interface AuthoritativeStorefrontFacts {
   readonly businessId: string;
   readonly address: string;
   readonly status: string;
+  readonly availabilityState?: string;
   readonly isOpen: boolean;
   readonly admissionPermitted: boolean;
   readonly hoursSummary: string;
@@ -56,6 +57,10 @@ export interface AuthoritativeStorefrontFacts {
   readonly evaluatedAtCivil: string;
   readonly evaluatedAtUtc: string;
   readonly unavailableFactsNotice?: string;
+  readonly localizedSummary?: {
+    readonly en: string;
+    readonly es: string;
+  };
 }
 
 export interface TalkToBusinessAttendantResponse {
@@ -200,6 +205,7 @@ export class TalkToBusinessAttendantUseCase {
       businessId: profile.businessId,
       address: profile.verifiedAddress,
       status: status.status,
+      availabilityState: status.availabilityState ?? status.status,
       isOpen: status.isOpen,
       admissionPermitted: status.admissionPermitted,
       hoursSummary,
@@ -210,6 +216,7 @@ export class TalkToBusinessAttendantUseCase {
       evaluatedAtCivil: evalLocalFormatted,
       evaluatedAtUtc: status.evaluatedAtUtc,
       unavailableFactsNotice,
+      localizedSummary: status.localizedSummary,
     };
 
     // 7. Route through deterministic or model path

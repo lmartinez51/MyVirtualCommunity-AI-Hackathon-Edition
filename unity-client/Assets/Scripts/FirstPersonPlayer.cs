@@ -648,7 +648,48 @@ namespace MyVirtualCommunity.Client.World
         private void HandleApiError(string error)
         {
             isRequestPending = false;
-            requestErrorMessage = error ?? "Unknown server communication failure.";
+            bool isEs = currentLanguage == "es";
+
+            if (string.IsNullOrEmpty(error))
+            {
+                requestErrorMessage = isEs
+                    ? "Error de comunicación con el servicio de atención."
+                    : "Attendant service communication error.";
+                return;
+            }
+
+            string lower = error.ToLowerInvariant();
+            if (lower.Contains("502") || lower.Contains("badgateway") || lower.Contains("bad gateway") ||
+                lower.Contains("unavailable") || lower.Contains("business-source-unavailable") || lower.Contains("world-core-unavailable"))
+            {
+                requestErrorMessage = isEs
+                    ? "El servicio de atención está temporalmente no disponible. Por favor, reintenta en un momento."
+                    : "The attendant service is temporarily unavailable. Please try again in a moment.";
+            }
+            else if (lower.Contains("connection failed") || lower.Contains("refused") || lower.Contains("timeout"))
+            {
+                requestErrorMessage = isEs
+                    ? "No se pudo conectar con el servidor local. Verifica que el servidor de IA esté en ejecución."
+                    : "Could not connect to the local server. Ensure the AI backend is running.";
+            }
+            else if (lower.Contains("404") || lower.Contains("not found") || lower.Contains("attendant-not-found"))
+            {
+                requestErrorMessage = isEs
+                    ? "El encargado comercial solicitado no se encuentra registrado."
+                    : "The requested attendant is not registered.";
+            }
+            else if (lower.Contains("400") || lower.Contains("invalid"))
+            {
+                requestErrorMessage = isEs
+                    ? "No se pudo procesar la consulta. Por favor, verifica el mensaje e intenta nuevamente."
+                    : "Unable to process inquiry. Please check your message and try again.";
+            }
+            else
+            {
+                requestErrorMessage = isEs
+                    ? "Error al procesar la consulta con el servidor de atención."
+                    : "Error processing inquiry with the attendant service.";
+            }
         }
 
         public void RetryLastMessage()
@@ -1092,7 +1133,7 @@ namespace MyVirtualCommunity.Client.World
             float y = Screen.height - 105;
 
             Rect rect = new Rect(x, y, width, height);
-            GUI.Box(rect, GUIContent.none);
+            GUI.Box(rect, GUIContent.none, GetOpaquePromptStyle());
 
             GUILayout.BeginArea(new Rect(x + 12, y + 8, width - 24, height - 16));
             GUILayout.BeginHorizontal();
@@ -1134,7 +1175,7 @@ namespace MyVirtualCommunity.Client.World
             float y = (Screen.height - height) * 0.5f;
 
             Rect modalRect = new Rect(x, y, width, height);
-            GUI.Box(modalRect, GUIContent.none);
+            GUI.Box(modalRect, GUIContent.none, GetOpaqueCardStyle());
 
             GUILayout.BeginArea(new Rect(x + 24, y + 20, width - 48, height - 40));
 
@@ -1187,7 +1228,7 @@ namespace MyVirtualCommunity.Client.World
             float y = (Screen.height - height) * 0.5f;
 
             Rect cardRect = new Rect(x, y, width, height);
-            GUI.Box(cardRect, GUIContent.none);
+            GUI.Box(cardRect, GUIContent.none, GetOpaqueCardStyle());
 
             GUILayout.BeginArea(new Rect(x + 18, y + 14, width - 36, height - 28));
 
@@ -1273,15 +1314,19 @@ namespace MyVirtualCommunity.Client.World
                 }
             }
 
-            const float width = 720;
-            const float height = 580;
+            float width = 740f;
+            float height = (point.category == InteractionCategory.BorderConcierge) ? 655f : 600f;
+            if (height > Screen.height - 30f)
+            {
+                height = Screen.height - 30f;
+            }
             float x = (Screen.width - width) * 0.5f;
             float y = (Screen.height - height) * 0.5f;
 
             Rect modalRect = new Rect(x, y, width, height);
-            GUI.Box(modalRect, GUIContent.none);
+            GUI.Box(modalRect, GUIContent.none, GetOpaqueCardStyle());
 
-            GUILayout.BeginArea(new Rect(x + 16, y + 14, width - 32, height - 28));
+            GUILayout.BeginArea(new Rect(x + 16, y + 12, width - 32, height - 22));
 
             // 1. Dialogue Header
             GUILayout.BeginHorizontal();
@@ -1337,7 +1382,7 @@ namespace MyVirtualCommunity.Client.World
             }
 
             // 4. Conversation History Area (Scrollable)
-            float chatBoxHeight = (point.category == InteractionCategory.BorderConcierge) ? 190 : 280;
+            float chatBoxHeight = (point.category == InteractionCategory.BorderConcierge) ? 150 : 240;
             dialogueScrollPosition = GUILayout.BeginScrollView(dialogueScrollPosition, GUILayout.Height(chatBoxHeight));
 
             string charKey = point.characterId;
@@ -1543,29 +1588,100 @@ namespace MyVirtualCommunity.Client.World
             string[] prompts = (currentLanguage == "es") ? point.suggestedPromptsEs : point.suggestedPromptsEn;
             if (prompts == null || prompts.Length == 0) return;
 
-            GUILayout.BeginHorizontal();
-            GUILayout.Label((currentLanguage == "es") ? "Preguntas sugeridas:" : "Quick prompts:", GetMutedStyle(), GUILayout.Width(110));
+            bool isEs = currentLanguage == "es";
+            GUILayout.BeginVertical();
+            GUILayout.Label(isEs ? "💡 Preguntas sugeridas (haz clic para consultar):" : "💡 Quick prompts (click to ask):", GetMutedStyle());
 
-            foreach (var prompt in prompts)
+            // Multi-row adaptive flow layout (2 columns per row)
+            // Dialogue inner width is 688px, so 338px per button fits cleanly across resolutions without clipping
+            for (int i = 0; i < prompts.Length; i += 2)
             {
-                if (GUILayout.Button(prompt, GUILayout.Height(22)))
+                GUILayout.BeginHorizontal();
+                for (int j = i; j < Mathf.Min(i + 2, prompts.Length); j++)
                 {
-                    currentInputText = prompt;
-                    if (!isRequestPending)
+                    string promptText = prompts[j];
+                    if (GUILayout.Button(promptText, GUILayout.Height(24), GUILayout.MaxWidth(345)))
                     {
-                        SendUserMessage();
+                        currentInputText = promptText;
+                        if (!isRequestPending)
+                        {
+                            SendUserMessage();
+                        }
+                    }
+                    if (j == i && j + 1 < prompts.Length)
+                    {
+                        GUILayout.Space(8);
                     }
                 }
-                GUILayout.Space(4);
+                GUILayout.FlexibleSpace();
+                GUILayout.EndHorizontal();
+                if (i + 2 < prompts.Length)
+                {
+                    GUILayout.Space(4);
+                }
             }
-
-            GUILayout.FlexibleSpace();
-            GUILayout.EndHorizontal();
+            GUILayout.EndVertical();
         }
 
         #endregion
 
         #region GUI Styles Cache
+
+        private static Texture2D opaqueDarkBackgroundTex;
+        private static Texture2D opaquePromptBackgroundTex;
+        private GUIStyle opaqueCardStyle;
+        private GUIStyle opaquePromptStyle;
+
+        private GUIStyle GetOpaqueCardStyle()
+        {
+            if (opaqueCardStyle == null)
+            {
+                opaqueCardStyle = new GUIStyle(GUI.skin.box);
+                if (opaqueDarkBackgroundTex == null)
+                {
+                    opaqueDarkBackgroundTex = CreateBorderedTexture(16, 16,
+                        new Color(0.07f, 0.09f, 0.13f, 0.94f),
+                        new Color(0.20f, 0.28f, 0.38f, 0.95f)
+                    );
+                }
+                opaqueCardStyle.normal.background = opaqueDarkBackgroundTex;
+                opaqueCardStyle.border = new RectOffset(2, 2, 2, 2);
+            }
+            return opaqueCardStyle;
+        }
+
+        private GUIStyle GetOpaquePromptStyle()
+        {
+            if (opaquePromptStyle == null)
+            {
+                opaquePromptStyle = new GUIStyle(GUI.skin.box);
+                if (opaquePromptBackgroundTex == null)
+                {
+                    opaquePromptBackgroundTex = CreateBorderedTexture(16, 16,
+                        new Color(0.06f, 0.08f, 0.12f, 0.94f),
+                        new Color(0.95f, 0.80f, 0.20f, 0.85f)
+                    );
+                }
+                opaquePromptStyle.normal.background = opaquePromptBackgroundTex;
+                opaquePromptStyle.border = new RectOffset(2, 2, 2, 2);
+            }
+            return opaquePromptStyle;
+        }
+
+        private static Texture2D CreateBorderedTexture(int width, int height, Color fillColor, Color borderColor)
+        {
+            Texture2D tex = new Texture2D(width, height, TextureFormat.RGBA32, false);
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    bool isBorder = (x == 0 || x == width - 1 || y == 0 || y == height - 1);
+                    tex.SetPixel(x, y, isBorder ? borderColor : fillColor);
+                }
+            }
+            tex.Apply();
+            return tex;
+        }
 
         private GUIStyle locationHeaderStyle;
         private GUIStyle GetLocationHeaderStyle()

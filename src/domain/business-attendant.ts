@@ -327,15 +327,30 @@ export function getDeterministicAttendantResponse(
 
   switch (topic) {
     case 'status': {
-      if (status.status === 'OPEN') {
+      if (status.status === 'OPEN' || status.availabilityState === 'OPEN') {
         return isEs
           ? `¡Hola! Soy ${attendantName}, encargado virtual de ${businessName}. En este momento (${evalLocalTime}), el establecimiento se encuentra ABIERTO y recibiendo clientes. Hoy atendemos hasta las ${status.closeTimeCivil} (${status.timeZone}).`
           : `Hello! I'm ${attendantName}, virtual attendant for ${businessName}. As of our current verification (${evalLocalTime}), the business is OPEN and admitting customers. Today's service runs until ${status.closeTimeCivil} (${status.timeZone}).`;
       }
-      if (status.status === 'CLOSING_SOON') {
+      if (status.status === 'CLOSING_SOON' || status.availabilityState === 'CLOSING_SOON') {
         return isEs
           ? `Atención: Soy ${attendantName} de ${businessName}. El local se encuentra POR CERRAR. Cierra a las ${status.closeTimeCivil} (${status.timeZone}) y ya no se admiten nuevos ingresos.`
           : `Notice: I'm ${attendantName} from ${businessName}. The business is currently CLOSING SOON. Doors close at ${status.closeTimeCivil} (${status.timeZone}), and new customer admissions are closed.`;
+      }
+      if (status.availabilityState === 'CLOSED_TODAY') {
+        return isEs
+          ? `Hola, soy ${attendantName}, encargado virtual de ${businessName}. En este momento (${evalLocalTime}), el establecimiento se encuentra CERRADO HOY. ${status.localizedSummary?.es ?? status.summaryMessage} Nuestro horario oficial es: ${hoursDesc}`
+          : `Hello, I'm ${attendantName}, virtual attendant for ${businessName}. As of ${evalLocalTime}, the business is CLOSED TODAY. ${status.localizedSummary?.en ?? status.summaryMessage} Regular operating hours are: ${hoursDesc}`;
+      }
+      if (status.availabilityState === 'OUTSIDE_BUSINESS_HOURS') {
+        return isEs
+          ? `Hola, soy ${attendantName}, encargado virtual de ${businessName}. En este momento (${evalLocalTime}), el establecimiento se encuentra FUERA DE SU HORARIO DE ATENCIÓN. ${status.localizedSummary?.es ?? status.summaryMessage} Nuestro horario oficial es: ${hoursDesc}`
+          : `Hello, I'm ${attendantName}, virtual attendant for ${businessName}. As of ${evalLocalTime}, the business is currently OUTSIDE OPERATING HOURS. ${status.localizedSummary?.en ?? status.summaryMessage} Regular operating hours are: ${hoursDesc}`;
+      }
+      if (status.availabilityState === 'UPSTREAM_UNAVAILABLE' || status.status === 'UPSTREAM_UNAVAILABLE') {
+        return isEs
+          ? `Hola, soy ${attendantName}, encargado virtual de ${businessName}. En este momento el sistema central de World Core no está disponible para verificar el estado en vivo. Sin embargo, nuestro horario oficial registrado es: ${hoursDesc}`
+          : `Hello, I'm ${attendantName}, virtual attendant for ${businessName}. Live schedule verification from World Core is currently unavailable. However, our confirmed regular hours are: ${hoursDesc}`;
       }
       return isEs
         ? `Hola, soy ${attendantName}, encargado virtual de ${businessName}. En este momento (${evalLocalTime}), el establecimiento se encuentra CERRADO. ${status.summaryMessage} Nuestro horario oficial es: ${hoursDesc}`
@@ -453,7 +468,7 @@ CRITICAL TRUTH INVARIANTS:
     `Virtual Disclosure: ${profile.virtualMarker[language]}`,
     `Physical Address: ${profile.verifiedAddress}`,
     `Evaluated Time: ${evalLocalTime}`,
-    `Current Operating Status: ${status.status} (isOpen: ${status.isOpen ? 'YES' : 'NO'}, admissionPermitted: ${status.admissionPermitted ? 'YES' : 'NO'})`,
+    `Current Operating Status: ${status.status} (${status.availabilityState ?? status.status}, isOpen: ${status.isOpen ? 'YES' : 'NO'}, admissionPermitted: ${status.admissionPermitted ? 'YES' : 'NO'})`,
     `Today's Schedule: Open ${status.openTimeCivil} to ${status.closeTimeCivil} (${status.timeZone})`,
     `Last Entry Cutoff: ${status.cutoffTimeCivil}`,
     `Weekly Operating Days: ${hoursDesc}`,

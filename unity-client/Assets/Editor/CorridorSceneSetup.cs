@@ -441,25 +441,121 @@ namespace MyVirtualCommunity.Editor
             kioskGo.transform.SetParent(borderRoot.transform);
             kioskGo.transform.position = new Vector3(4.5f, 0.1f, 40f);
 
-            // Kiosk Desk / Booth
+            // Kiosk Desk / Reception Counter (Sleek front service counter)
             GameObject kioskDesk = GameObject.CreatePrimitive(PrimitiveType.Cube);
             kioskDesk.name = "Kiosk_Desk";
             kioskDesk.transform.SetParent(kioskGo.transform);
-            kioskDesk.transform.localPosition = new Vector3(0f, 0.6f, 0f);
-            kioskDesk.transform.localScale = new Vector3(2.5f, 1.2f, 1.5f);
-            SetMaterial(kioskDesk, CreateOrGetMaterial("Assets/Settings/KioskBlue.mat", new Color(0.12f, 0.35f, 0.75f), 0.3f));
+            kioskDesk.transform.localPosition = new Vector3(0f, 0.50f, -0.25f);
+            kioskDesk.transform.localScale = new Vector3(2.4f, 1.00f, 0.6f);
+            Material kioskBlueMat = CreateOrGetMaterial("Assets/Settings/KioskBlue.mat", new Color(0.12f, 0.35f, 0.75f), 0.3f);
+            SetMaterial(kioskDesk, kioskBlueMat);
+
+            // Countertop Surface Ledge
+            GameObject kioskCountertop = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            kioskCountertop.name = "Kiosk_Countertop";
+            kioskCountertop.transform.SetParent(kioskGo.transform);
+            kioskCountertop.transform.localPosition = new Vector3(0f, 1.025f, -0.25f);
+            kioskCountertop.transform.localScale = new Vector3(2.55f, 0.05f, 0.75f);
+            SetMaterial(kioskCountertop, CreateOrGetMaterial("Assets/Settings/CountertopMat.mat", new Color(0.94f, 0.95f, 0.96f), 0.5f));
+
+            // Attendant station & platform built in EnsureKioskAttendant()
 
             // Kiosk Roof Canopy
             GameObject kioskRoof = GameObject.CreatePrimitive(PrimitiveType.Cube);
             kioskRoof.name = "Kiosk_Roof";
             kioskRoof.transform.SetParent(kioskGo.transform);
-            kioskRoof.transform.localPosition = new Vector3(0f, 2.7f, 0f);
-            kioskRoof.transform.localScale = new Vector3(3.0f, 0.15f, 2.2f);
+            kioskRoof.transform.localPosition = new Vector3(0f, 2.7f, 0.2f);
+            kioskRoof.transform.localScale = new Vector3(3.0f, 0.15f, 2.4f);
             SetMaterial(kioskRoof, bridgeTurquoiseMat);
 
             // Kiosk Posts
             CreateCylinderPost("Kiosk_Pillar_1", new Vector3(3.3f, 1.35f, 39.2f), 2.7f, 0.1f, kioskGo, bridgeSteelMat);
             CreateCylinderPost("Kiosk_Pillar_2", new Vector3(5.7f, 1.35f, 39.2f), 2.7f, 0.1f, kioskGo, bridgeSteelMat);
+            CreateCylinderPost("Kiosk_Pillar_3", new Vector3(3.3f, 1.35f, 41.2f), 2.7f, 0.1f, kioskGo, bridgeSteelMat);
+            CreateCylinderPost("Kiosk_Pillar_4", new Vector3(5.7f, 1.35f, 41.2f), 2.7f, 0.1f, kioskGo, bridgeSteelMat);
+
+            // Kiosk Front Fascia Sign Backing Plate
+            GameObject fasciaBacking = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            fasciaBacking.name = "Kiosk_Front_Fascia_Backing";
+            fasciaBacking.transform.SetParent(kioskGo.transform);
+            fasciaBacking.transform.localPosition = new Vector3(0f, 2.7f, -1.02f);
+            fasciaBacking.transform.localScale = new Vector3(2.8f, 0.38f, 0.04f);
+            SetMaterial(fasciaBacking, bridgeTurquoiseMat);
+            UnityEngine.Object.DestroyImmediate(fasciaBacking.GetComponent<Collider>());
+
+            // Front Sign Face (Quad facing South toward oncoming pedestrians)
+            GameObject fasciaSign = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            fasciaSign.name = "Kiosk_Front_Fascia_Sign";
+            fasciaSign.transform.SetParent(kioskGo.transform);
+            fasciaSign.transform.localPosition = new Vector3(0f, 2.7f, -1.045f);
+            fasciaSign.transform.localRotation = Quaternion.identity; // Unity Quad normal points -Z (South) unmirrored
+            fasciaSign.transform.localScale = new Vector3(2.76f, 0.36f, 1.0f);
+            Material fasciaMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Characters/Kiosk_Sign.mat");
+            if (fasciaMat == null)
+            {
+                Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+                fasciaMat = new Material(shader);
+                var signTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/Environment/T_Kiosk_FasciaSign.png");
+                if (signTex != null) fasciaMat.SetTexture("_BaseMap", signTex);
+                fasciaMat.SetColor("_BaseColor", Color.white);
+                fasciaMat.SetColor("_EmissionColor", new Color(0.2f, 0.2f, 0.25f));
+                fasciaMat.EnableKeyword("_EMISSION");
+                AssetDatabase.CreateAsset(fasciaMat, "Assets/Materials/Characters/Kiosk_Sign.mat");
+            }
+            else
+            {
+                var signTex = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Textures/Environment/T_Kiosk_FasciaSign.png");
+                if (signTex != null) fasciaMat.SetTexture("_BaseMap", signTex);
+            }
+            SetMaterial(fasciaSign, fasciaMat);
+            UnityEngine.Object.DestroyImmediate(fasciaSign.GetComponent<Collider>());
+
+            // Canopy Interior Warm Spotlight (3000K, soft illumination for Elena, counter, and approach)
+            GameObject kioskLightGo = new GameObject("Kiosk_Interior_Spotlight");
+            kioskLightGo.transform.SetParent(kioskGo.transform);
+            kioskLightGo.transform.localPosition = new Vector3(0f, 2.45f, 0.0f);
+            kioskLightGo.transform.localRotation = Quaternion.Euler(75f, 0f, 0f);
+            Light kioskSpot = kioskLightGo.AddComponent<Light>();
+            kioskSpot.type = LightType.Spot;
+            kioskSpot.color = new Color(1.0f, 0.94f, 0.85f);
+            kioskSpot.intensity = 15f;
+            kioskSpot.range = 5.0f;
+            kioskSpot.spotAngle = 80f;
+            kioskSpot.innerSpotAngle = 45f;
+
+            // Canopy Interior Fill Light
+            GameObject kioskFillGo = new GameObject("Kiosk_Interior_FillLight");
+            kioskFillGo.transform.SetParent(kioskGo.transform);
+            kioskFillGo.transform.localPosition = new Vector3(0f, 2.35f, 0.5f);
+            Light kioskFill = kioskFillGo.AddComponent<Light>();
+            kioskFill.type = LightType.Point;
+            kioskFill.color = new Color(1.0f, 0.94f, 0.88f);
+            kioskFill.intensity = 8f;
+            kioskFill.range = 3.5f;
+
+            // Countertop Terminal Display (Angled desktop terminal with neutral illustrative traveler UI)
+            GameObject terminalStand = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            terminalStand.name = "Counter_Terminal_Stand";
+            terminalStand.transform.SetParent(kioskGo.transform);
+            terminalStand.transform.localPosition = new Vector3(0.55f, 1.10f, -0.22f);
+            terminalStand.transform.localRotation = Quaternion.Euler(20f, 195f, 0f);
+            terminalStand.transform.localScale = new Vector3(0.24f, 0.16f, 0.02f);
+            Material tabletScreenMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Characters/Elena_TabletScreen.mat");
+            if (tabletScreenMat != null) SetMaterial(terminalStand, tabletScreenMat);
+            UnityEngine.Object.DestroyImmediate(terminalStand.GetComponent<Collider>());
+
+            // Countertop Brochure Holder
+            GameObject brochureStand = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            brochureStand.name = "Counter_Brochure_Stand";
+            brochureStand.transform.SetParent(kioskGo.transform);
+            brochureStand.transform.localPosition = new Vector3(-0.65f, 1.10f, -0.22f);
+            brochureStand.transform.localRotation = Quaternion.Euler(15f, 170f, 0f);
+            brochureStand.transform.localScale = new Vector3(0.20f, 0.15f, 0.08f);
+            SetMaterial(brochureStand, CreateOrGetMaterial("Assets/Settings/BrochureMat.mat", new Color(0.85f, 0.20f, 0.20f), 0.2f));
+            UnityEngine.Object.DestroyImmediate(brochureStand.GetComponent<Collider>());
+
+            // Elena Ramos Attendant Instance (Increment 5.8.4: Bobblehead with 0.38m platform, fallback to Humanoid)
+            EnsureKioskAttendant(kioskGo);
 
             // Kiosk Interaction Point (Elena Ramos)
             var kioskInteract = kioskGo.AddComponent<InteractionPoint>();
@@ -765,6 +861,43 @@ namespace MyVirtualCommunity.Editor
             lamp.transform.position = pos + new Vector3(pos.x > 0 ? -1.5f : 1.5f, 4.7f, 0f);
             lamp.transform.localScale = new Vector3(0.5f, 0.2f, 0.3f);
             SetMaterial(lamp, mat);
+        }
+
+        private static void EnsureKioskAttendant(GameObject kioskGo)
+        {
+            // Attendant Platform / Riser: 0.38m high brings Elena's feet to World Y = 0.48m.
+            // This perfectly aligns her hands, chest, and gold "ELENA" name badge over the 1.15m countertop.
+            GameObject attendantPlatform = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            attendantPlatform.name = "Attendant_Platform";
+            attendantPlatform.transform.SetParent(kioskGo.transform);
+            attendantPlatform.transform.localPosition = new Vector3(0f, 0.19f, 0.35f);
+            attendantPlatform.transform.localScale = new Vector3(1.4f, 0.38f, 0.9f);
+            SetMaterial(attendantPlatform, CreateOrGetMaterial("Assets/Settings/AttendantMat.mat", new Color(0.15f, 0.15f, 0.17f), 0.1f));
+            UnityEngine.Object.DestroyImmediate(attendantPlatform.GetComponent<Collider>());
+
+            // Production Bobblehead Elena (Increment 5.8.5)
+            string bobbleheadPrefabPath = "Assets/Prefabs/Characters/NPCs/ElenaRamos_Bobblehead.prefab";
+
+            GameObject selectedPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(bobbleheadPrefabPath);
+            if (selectedPrefab == null)
+            {
+                Debug.LogError($"[CorridorSceneSetup] CRITICAL: Production Elena Bobblehead prefab not found at '{bobbleheadPrefabPath}'! Legacy Humanoid fallback has been removed.");
+                return;
+            }
+
+            GameObject elenaInstance = (GameObject)PrefabUtility.InstantiatePrefab(selectedPrefab, kioskGo.transform);
+            elenaInstance.name = "ElenaRamos_Attendant";
+
+            // Foot elevation: 0.38m for Bobblehead to rest flush on the 0.38m platform (World Y = 0.48m)
+            elenaInstance.transform.localPosition = new Vector3(0f, 0.38f, 0.35f);
+            elenaInstance.transform.localRotation = Quaternion.Euler(0f, 180f, 0f); // Faces South toward approaching player
+
+            var anim = elenaInstance.GetComponent<MyVirtualCommunity.Character.BobbleheadAnimator>();
+            if (anim != null)
+            {
+                anim.SetAttendantMode(true);
+                anim.CacheInitialPoses();
+            }
         }
 
         #endregion

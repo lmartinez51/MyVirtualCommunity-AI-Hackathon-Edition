@@ -2,12 +2,32 @@ import { BusinessId } from './business-id.js';
 import { BusinessSchedule } from './business-schedule.js';
 import { CivilTime, deriveCivilTime } from './civil-time.js';
 
-export type BusinessStatus = 'OPEN' | 'CLOSING_SOON' | 'CLOSED' | 'SPECIAL_CLOSURE';
+export type BusinessAvailabilityState =
+  | 'OPEN'
+  | 'CLOSING_SOON'
+  | 'CLOSED_TODAY'
+  | 'OUTSIDE_BUSINESS_HOURS'
+  | 'SPECIAL_CLOSURE'
+  | 'SCHEDULE_UNKNOWN'
+  | 'UPSTREAM_UNAVAILABLE'
+  | 'INTERNAL_ERROR';
+
+export type BusinessStatus =
+  | 'OPEN'
+  | 'CLOSING_SOON'
+  | 'CLOSED'
+  | 'CLOSED_TODAY'
+  | 'OUTSIDE_BUSINESS_HOURS'
+  | 'SPECIAL_CLOSURE'
+  | 'SCHEDULE_UNKNOWN'
+  | 'UPSTREAM_UNAVAILABLE'
+  | 'INTERNAL_ERROR';
 
 export interface BusinessOperationalStatus {
   readonly businessId: BusinessId;
   readonly businessName: string;
   readonly status: BusinessStatus;
+  readonly availabilityState?: BusinessAvailabilityState;
   readonly isOpen: boolean;
   readonly admissionPermitted: boolean;
   readonly evaluatedAtUtc: string;
@@ -17,6 +37,10 @@ export interface BusinessOperationalStatus {
   readonly cutoffTimeCivil: string;
   readonly timeZone: string;
   readonly summaryMessage: string;
+  readonly localizedSummary?: {
+    readonly en: string;
+    readonly es: string;
+  };
 }
 
 const DAY_NAMES = [
@@ -28,6 +52,16 @@ const DAY_NAMES = [
   'Friday',
   'Saturday',
 ] as const;
+
+const DAY_NAMES_ES: Record<number, string> = {
+  0: 'domingos',
+  1: 'lunes',
+  2: 'martes',
+  3: 'miércoles',
+  4: 'jueves',
+  5: 'viernes',
+  6: 'sábados',
+};
 
 /**
  * Pure, deterministic evaluation of business operational availability and admission status.
@@ -61,6 +95,7 @@ export function evaluateBusinessOperationalStatus(
   const cutoffTimeCivil = `${pad2(cutoffHour)}:${pad2(cutoffMinute)}`;
 
   const dayName = DAY_NAMES[civil.dayOfWeek] ?? 'Unknown';
+  const dayNameEs = DAY_NAMES_ES[civil.dayOfWeek] ?? 'este día';
   const civilDateStr = `${civil.year}-${pad2(civil.month)}-${pad2(civil.day)}`;
 
   // Evaluate instant as UTC ISO string for provenance
@@ -78,6 +113,7 @@ export function evaluateBusinessOperationalStatus(
       businessId: schedule.businessId,
       businessName: schedule.name,
       status: 'SPECIAL_CLOSURE',
+      availabilityState: 'SPECIAL_CLOSURE',
       isOpen: false,
       admissionPermitted: false,
       evaluatedAtUtc,
@@ -87,6 +123,10 @@ export function evaluateBusinessOperationalStatus(
       cutoffTimeCivil,
       timeZone: schedule.timeZone,
       summaryMessage: `${schedule.name} is closed today (${civilDateStr}) for a scheduled closure/holiday.`,
+      localizedSummary: Object.freeze({
+        en: `${schedule.name} is closed today (${civilDateStr}) for a scheduled closure/holiday.`,
+        es: `${schedule.name} se encuentra cerrado hoy (${civilDateStr}) por cierre programado o día festivo.`,
+      }),
     });
   }
 
@@ -96,6 +136,7 @@ export function evaluateBusinessOperationalStatus(
       businessId: schedule.businessId,
       businessName: schedule.name,
       status: 'CLOSED',
+      availabilityState: 'CLOSED_TODAY',
       isOpen: false,
       admissionPermitted: false,
       evaluatedAtUtc,
@@ -105,6 +146,10 @@ export function evaluateBusinessOperationalStatus(
       cutoffTimeCivil,
       timeZone: schedule.timeZone,
       summaryMessage: `${schedule.name} is closed on ${dayName}s.`,
+      localizedSummary: Object.freeze({
+        en: `${schedule.name} is closed on ${dayName}s. Please check its regular opening hours before visiting.`,
+        es: `${schedule.name} permanece cerrado los ${dayNameEs}. Consulta su horario habitual para planificar tu visita.`,
+      }),
     });
   }
 
@@ -116,6 +161,7 @@ export function evaluateBusinessOperationalStatus(
       businessId: schedule.businessId,
       businessName: schedule.name,
       status: 'CLOSED',
+      availabilityState: 'OUTSIDE_BUSINESS_HOURS',
       isOpen: false,
       admissionPermitted: false,
       evaluatedAtUtc,
@@ -125,6 +171,10 @@ export function evaluateBusinessOperationalStatus(
       cutoffTimeCivil,
       timeZone: schedule.timeZone,
       summaryMessage: `${schedule.name} is currently closed. Opens today at ${openTimeCivil} ${schedule.timeZone}.`,
+      localizedSummary: Object.freeze({
+        en: `${schedule.name} is currently outside its operating hours. Opens today at ${openTimeCivil} ${schedule.timeZone}.`,
+        es: `El establecimiento está fuera de su horario de atención. Abre hoy a las ${openTimeCivil} (${schedule.timeZone}).`,
+      }),
     });
   }
 
@@ -133,6 +183,7 @@ export function evaluateBusinessOperationalStatus(
       businessId: schedule.businessId,
       businessName: schedule.name,
       status: 'CLOSED',
+      availabilityState: 'OUTSIDE_BUSINESS_HOURS',
       isOpen: false,
       admissionPermitted: false,
       evaluatedAtUtc,
@@ -142,6 +193,10 @@ export function evaluateBusinessOperationalStatus(
       cutoffTimeCivil,
       timeZone: schedule.timeZone,
       summaryMessage: `${schedule.name} is closed for the day. Closed at ${closeTimeCivil} ${schedule.timeZone}.`,
+      localizedSummary: Object.freeze({
+        en: `${schedule.name} is closed for the day. Its recorded opening hours are ${openTimeCivil} to ${closeTimeCivil}.`,
+        es: `El establecimiento concluyó su jornada por hoy. Su horario registrado es de ${openTimeCivil} a ${closeTimeCivil}.`,
+      }),
     });
   }
 
@@ -150,6 +205,7 @@ export function evaluateBusinessOperationalStatus(
       businessId: schedule.businessId,
       businessName: schedule.name,
       status: 'CLOSING_SOON',
+      availabilityState: 'CLOSING_SOON',
       isOpen: true,
       admissionPermitted: false,
       evaluatedAtUtc,
@@ -159,6 +215,10 @@ export function evaluateBusinessOperationalStatus(
       cutoffTimeCivil,
       timeZone: schedule.timeZone,
       summaryMessage: `${schedule.name} is closing soon at ${closeTimeCivil}. Last entry was at ${cutoffTimeCivil}; no new customer admissions are permitted.`,
+      localizedSummary: Object.freeze({
+        en: `${schedule.name} is closing soon at ${closeTimeCivil}. Last entry was at ${cutoffTimeCivil}; no new customer admissions are permitted.`,
+        es: `${schedule.name} está por cerrar a las ${closeTimeCivil}. El último ingreso fue a las ${cutoffTimeCivil}; ya no se admiten nuevos clientes.`,
+      }),
     });
   }
 
@@ -166,6 +226,7 @@ export function evaluateBusinessOperationalStatus(
     businessId: schedule.businessId,
     businessName: schedule.name,
     status: 'OPEN',
+    availabilityState: 'OPEN',
     isOpen: true,
     admissionPermitted: true,
     evaluatedAtUtc,
@@ -175,5 +236,9 @@ export function evaluateBusinessOperationalStatus(
     cutoffTimeCivil,
     timeZone: schedule.timeZone,
     summaryMessage: `${schedule.name} is open until ${closeTimeCivil} ${schedule.timeZone}. New admissions are permitted until ${cutoffTimeCivil}.`,
+    localizedSummary: Object.freeze({
+      en: `${schedule.name} is open until ${closeTimeCivil} ${schedule.timeZone}. New admissions are permitted until ${cutoffTimeCivil}.`,
+      es: `${schedule.name} está abierto hasta las ${closeTimeCivil} (${schedule.timeZone}). Se permite el ingreso hasta las ${cutoffTimeCivil}.`,
+    }),
   });
 }

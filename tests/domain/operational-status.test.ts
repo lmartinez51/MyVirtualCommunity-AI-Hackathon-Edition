@@ -93,9 +93,25 @@ describe('Deterministic Operational Status Evaluation', () => {
     // 14:00 local = 20:00 UTC
     const status = evaluateBusinessOperationalStatus(wingSpotSchedule, '2026-10-25T20:00:00.000Z');
     assert.equal(status.status, 'CLOSED');
+    assert.equal(status.availabilityState, 'CLOSED_TODAY');
     assert.equal(status.isOpen, false);
     assert.equal(status.admissionPermitted, false);
     assert.match(status.summaryMessage, /closed on Sundays/);
+    assert.match(status.localizedSummary?.es ?? '', /permanece cerrado los domingos/);
+    assert.match(status.localizedSummary?.en ?? '', /closed on Sundays/);
+  });
+
+  it('evaluates status outside business hours as OUTSIDE_BUSINESS_HOURS', () => {
+    // Monday at 08:00 (before 09:00 opening)
+    const statusBefore = evaluateBusinessOperationalStatus(wingSpotSchedule, '2026-10-26T14:00:00.000Z');
+    assert.equal(statusBefore.status, 'CLOSED');
+    assert.equal(statusBefore.availabilityState, 'OUTSIDE_BUSINESS_HOURS');
+    assert.match(statusBefore.localizedSummary?.es ?? '', /fuera de su horario/);
+
+    // Monday at 21:00 (after 18:00 close)
+    const statusAfter = evaluateBusinessOperationalStatus(wingSpotSchedule, '2026-10-27T03:00:00.000Z');
+    assert.equal(statusAfter.status, 'CLOSED');
+    assert.equal(statusAfter.availabilityState, 'OUTSIDE_BUSINESS_HOURS');
   });
 
   it('evaluates status on scheduled holiday / closure override', () => {
@@ -103,6 +119,7 @@ describe('Deterministic Operational Status Evaluation', () => {
     // 11:00 local Ciudad Juárez (in Dec: UTC-07:00 MST = 18:00 UTC)
     const status = evaluateBusinessOperationalStatus(wingSpotSchedule, '2026-12-25T18:00:00.000Z');
     assert.equal(status.status, 'SPECIAL_CLOSURE');
+    assert.equal(status.availabilityState, 'SPECIAL_CLOSURE');
     assert.equal(status.isOpen, false);
     assert.equal(status.admissionPermitted, false);
     assert.match(status.summaryMessage, /scheduled closure\/holiday/);

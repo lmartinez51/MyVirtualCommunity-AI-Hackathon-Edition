@@ -564,16 +564,18 @@ For in-depth details, see:
 ### 8.1 Overview
 The **Unity 3D Client** (`unity-client/`, built with **Unity 6 (6000.3.25f1)** and Universal Render Pipeline) provides a playable first-person 3D slice of Avenida Benito Juárez leading toward the Paso del Norte / Santa Fe international pedestrian bridge in Ciudad Juárez, Mexico.
 
+The corridor is populated with **six fully procedural Bobblehead humanoid characters**, featuring distinguishable heads, torsos, articulated limbs, distinctive professional attire, accessories, and procedural animations (`BobbleheadAnimator.cs` with idle sway, walk cycles, and attentive attendant counter postures).
+
 It connects to the authoritative Node.js backend (`http://127.0.0.1:3000`) to provide live, grounded conversational AI characters and official border intelligence:
 1. **Storefront Business Attendants:**
-   - **Carlos Méndez** (`carlos-farmacia-attendant`, 💊) at Farmacias Benavides (`pharmacy:farmacias-benavides`).
-   - **Valeria Domínguez** (`valeria-optica-attendant`, 👓) at Óptica Fashion (`optical:optica-fashion`).
+   - **Carlos Méndez** (`carlos-farmacia-attendant`, 💊) at Farmacias Benavides (`pharmacy:farmacias-benavides`), wearing a white pharmacist lab coat with green trim and teal tie.
+   - **Valeria Domínguez** (`valeria-optica-attendant`, 👓) at Óptica Fashion (`optical:optica-fashion`), wearing a magenta boutique blazer and designer eyeglasses.
 2. **Synthetic Community Witnesses (Pedestrian Queue):**
-   - **Mateo Navarro** (`mateo-student`, 🎒), bilingual college commuter.
-   - **Sofía Alarcón** (`sofia-cross-border-retail`, 💼), cross-border retail worker.
-   - **Don Héctor Méndez** (`hector-artisan`, 🪵), historic downtown Juárez artisan.
+   - **Mateo Navarro** (`mateo-student`, 🎒), bilingual college commuter with casual collegiate jacket and backpack.
+   - **Sofía Alarcón** (`sofia-cross-border-retail`, 💼), cross-border retail worker in formal commuter attire.
+   - **Don Héctor Méndez** (`hector-artisan`, 🪵), historic downtown Juárez woodcraft artisan in workshop apron.
 3. **Elena Ramos Border Concierge & Official CBP Kiosk:**
-   - **Elena Ramos** (`elena-border-concierge`, 🛂), virtual border concierge.
+   - **Elena Ramos** (`elena-border-concierge`, 🛂), virtual border concierge in navy blazer with gold CBP badge and hair bun.
    - Real-time CBP pedestrian wait times for **Paso del Norte (Santa Fe)** and **Bridge of the Americas (BOTA)**.
    - Freshness indicators, port operational status, and on-demand refresh.
 
@@ -662,10 +664,10 @@ Two batchmode automated suites validate the client inside Unity without manual G
 - Zero files or assets were copied or vendored from the pre-existing project. All code in this repository was newly authored for the hackathon.
 
 ### 9.3 Asset Attribution & Licensing
-- **3D Geometry:** 100% procedural primitive meshes (cubes, cylinders, planes) constructed via editor scripts.
-- **Materials & Shaders:** Standard Universal Render Pipeline (URP) lit/unlit materials generated programmatically.
-- **Character Standees & Icons:** Unicode emoji glyphs (`💊`, `👓`, `🛂`, `🎒`, `💼`, `🪵`) rendered via standard Unity UI text components.
-- **Zero Third-Party Assets:** No commercial 3D asset packs, textures, or paid audio/character libraries were imported.
+- **3D Geometry & Bobblehead Characters:** 100% procedural primitive meshes (cubes, cylinders, spheres, pyramids) synthesized programmatically via `BobbleheadGeometry.cs` and baked into native Unity mesh assets.
+- **Materials & Shaders:** Standard Universal Render Pipeline (URP) lit materials generated programmatically for each character identity, attire palette, and kiosk fixture.
+- **UI & Presentation:** High-contrast bordered dark card styling (0.94 alpha) exceeding WCAG AAA (14.2:1 contrast ratio) with dynamic multi-row prompt chip wrapping and category-aware modal sizing.
+- **Zero Third-Party Commercial Character Packs:** No paid external 3D models, rigs, or commercial character assets were imported. All humanoid figures are built entirely on procedural primitives.
 
 ### 9.4 Known Limitations
 - **Stateless Dialogues:** Inquiries are processed independently without multi-turn context retention, ensuring strict fact grounding and preventing hallucination drift.
