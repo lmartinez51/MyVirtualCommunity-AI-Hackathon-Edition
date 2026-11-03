@@ -1,10 +1,22 @@
+import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync } from 'node:fs';
+import { dirname } from 'node:path';
 import { BusinessId, createBusinessId } from '../domain/business-id.js';
 import { BusinessSchedule, validateBusinessSchedule } from '../domain/business-schedule.js';
 import {
   BusinessOperationalStatus,
   evaluateBusinessOperationalStatus,
 } from '../domain/operational-status.js';
+import {
+  CitizenReportRecord,
+  normalizeCitizenReportRecord,
+} from '../domain/citizen-report.js';
 import { WorldCorePort, BusinessScheduleSnapshot } from '../ports/world-core-port.js';
+
+export interface InMemoryWorldCoreOptions {
+  readonly initialSchedules?: readonly BusinessSchedule[];
+  readonly persistenceFilePath?: string | null;
+  readonly persistencePath?: string | null;
+}
 
 /**
  * Clearly labeled Development Fixture & In-Memory Adapter for the World Core.
@@ -22,14 +34,63 @@ export class InMemoryWorldCoreAdapter implements WorldCorePort {
   public readonly mode = 'in-memory' as const;
   private schedules: Map<string, BusinessSchedule> = new Map();
   private simulatedWorldTime: string | null = null;
+  private citizenReports: Map<string, CitizenReportRecord> = new Map();
+  private persistenceFilePath: string | null = null;
 
-  constructor(initialSchedules?: readonly BusinessSchedule[]) {
-    if (initialSchedules && initialSchedules.length > 0) {
-      for (const s of initialSchedules) {
+  constructor(optionsOrSchedules?: readonly BusinessSchedule[] | InMemoryWorldCoreOptions) {
+    let schedules: readonly BusinessSchedule[] | undefined;
+    if (Array.isArray(optionsOrSchedules)) {
+      schedules = optionsOrSchedules;
+    } else if (optionsOrSchedules && typeof optionsOrSchedules === 'object') {
+      const opts = optionsOrSchedules as InMemoryWorldCoreOptions;
+      schedules = opts.initialSchedules;
+      this.persistenceFilePath = opts.persistenceFilePath ?? opts.persistencePath ?? null;
+    }
+
+    if (schedules && schedules.length > 0) {
+      for (const s of schedules) {
         this.schedules.set(s.businessId, s);
       }
     } else {
       this.resetToDefaults();
+    }
+
+    this.loadReportsFromDisk();
+  }
+
+  private loadReportsFromDisk(): void {
+    if (!this.persistenceFilePath) return;
+    try {
+      if (existsSync(this.persistenceFilePath)) {
+        const raw = readFileSync(this.persistenceFilePath, 'utf-8');
+        const list = JSON.parse(raw);
+        if (Array.isArray(list)) {
+          for (const item of list) {
+            if (item && typeof item.reportId === 'string') {
+              const normalized = normalizeCitizenReportRecord(item);
+              this.citizenReports.set(normalized.reportId, normalized);
+            }
+          }
+        }
+      }
+    } catch {
+      // Graceful fallback to memory on read error
+    }
+  }
+
+  private saveReportsToDisk(): void {
+    if (!this.persistenceFilePath) return;
+    try {
+      const dir = dirname(this.persistenceFilePath);
+      if (!existsSync(dir)) {
+        mkdirSync(dir, { recursive: true });
+      }
+      const data = JSON.stringify(Array.from(this.citizenReports.values()), null, 2);
+      const tempPath = `${this.persistenceFilePath}.tmp.${Date.now()}`;
+      writeFileSync(tempPath, data, 'utf-8');
+      renameSync(tempPath, this.persistenceFilePath);
+    } catch {
+      // Gracefully ignore write errors
     }
   }
 
@@ -175,5 +236,25 @@ export class InMemoryWorldCoreAdapter implements WorldCorePort {
       schedule,
       operationalStatus,
     });
+  }
+
+  public async registerCitizenReport(report: CitizenReportRecord): Promise<CitizenReportRecord> {
+    const normalized = normalizeCitizenReportRecord(report);
+    this.citizenReports.set(normalized.reportId, normalized);
+    this.saveReportsToDisk();
+    return normalized;
+  }
+
+  public async getCitizenReport(reportId: string): Promise<CitizenReportRecord | null> {
+    return this.citizenReports.get(reportId) ?? null;
+  }
+
+  public async listCitizenReports(filter?: { limit?: number; offset?: number }): Promise<readonly CitizenReportRecord[]> {
+    const all = Array.from(this.citizenReports.values()).sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+    const offset = filter?.offset ?? 0;
+    const limit = filter?.limit ?? 50;
+    return all.slice(offset, offset + limit);
   }
 }

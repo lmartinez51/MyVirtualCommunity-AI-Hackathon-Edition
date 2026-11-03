@@ -7,3 +7,5 @@ export * from './border-crossing.js';
 export * from './synthetic-witness.js';
 export * from './border-concierge.js';
 export * from './business-attendant.js';
+export * from './citizen-report.js';
+export * from './sam-mask-overlay.js';

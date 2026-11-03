@@ -159,6 +159,48 @@ namespace MyVirtualCommunity.Client.Api
 
         #endregion
 
+        #region Citizen Reporting Endpoints (Increment 5.11)
+
+        /// <summary>
+        /// Calls GET /api/citizen-reports/representative to retrieve Patricia Morales profile & prompts.
+        /// </summary>
+        public void GetCitizenRepresentative(Action<CitizenRepresentativeResponseDto> onSuccess, Action<string> onError)
+        {
+            StartCoroutine(SendGetRequest<CitizenRepresentativeResponseDto>(
+                "/api/citizen-reports/representative",
+                onSuccess,
+                onError
+            ));
+        }
+
+        /// <summary>
+        /// Calls POST /api/citizen-reports/draft to analyze evidence via SAM 3.1 & Muse Spark 1.3.
+        /// </summary>
+        public void DraftCitizenReport(CitizenReportDraftRequestDto request, Action<CitizenReportDraftResponseDto> onSuccess, Action<string> onError)
+        {
+            StartCoroutine(SendPostRequest<CitizenReportDraftRequestDto, CitizenReportDraftResponseDto>(
+                "/api/citizen-reports/draft",
+                request,
+                onSuccess,
+                onError
+            ));
+        }
+
+        /// <summary>
+        /// Calls POST /api/citizen-reports/submit to register the authoritative report into World Core.
+        /// </summary>
+        public void SubmitCitizenReport(CitizenReportSubmitRequestDto request, Action<CitizenReportSubmitResponseDto> onSuccess, Action<string> onError)
+        {
+            StartCoroutine(SendPostRequest<CitizenReportSubmitRequestDto, CitizenReportSubmitResponseDto>(
+                "/api/citizen-reports/submit",
+                request,
+                onSuccess,
+                onError
+            ));
+        }
+
+        #endregion
+
         #region HTTP Request Pipeline
 
         private IEnumerator SendGetRequest<T>(
@@ -190,6 +232,13 @@ namespace MyVirtualCommunity.Client.Api
         {
             string url = $"{BaseUrl}{endpoint}";
             string jsonBody = JsonUtility.ToJson(requestPayload);
+            if (requestPayload is CitizenReportDraftRequestDto draftReq && draftReq.image == null)
+            {
+                // JsonUtility instantiates default instances for null nested Serializable classes.
+                // Normalize empty dummy image block to explicit null on the wire.
+                jsonBody = jsonBody.Replace("\"image\":{\"fileName\":\"\",\"mimeType\":\"\",\"base64\":\"\"}", "\"image\":null");
+                jsonBody = jsonBody.Replace("\"image\":{\"base64\":\"\",\"fileName\":\"\",\"mimeType\":\"\"}", "\"image\":null");
+            }
             byte[] bodyBytes = Encoding.UTF8.GetBytes(jsonBody);
 
             using (UnityWebRequest request = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPOST))

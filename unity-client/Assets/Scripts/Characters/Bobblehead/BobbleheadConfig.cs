@@ -375,6 +375,42 @@ namespace MyVirtualCommunity.Character
             };
         }
 
+        public static BobbleheadConfig CreatePatriciaMoralesConfig()
+        {
+            return new BobbleheadConfig
+            {
+                archetypeId = ArchetypeIdentifier,
+                characterName = "Lic. Patricia Morales",
+                totalHeight = 1.68f,
+                headScale = 0.98f,
+                faceShape = BobbleheadFaceShape.Oval,
+                facialHair = BobbleheadFacialHair.None,
+                bodyPresentation = BobbleheadBodyPresentation.Feminine,
+                skinColor = new Color(0.85f, 0.69f, 0.58f),
+                eyeColor = new Color(0.24f, 0.16f, 0.11f),
+                pupilColor = new Color(0.04f, 0.04f, 0.05f),
+                hairColor = new Color(0.12f, 0.10f, 0.08f),
+                eyebrowColor = new Color(0.15f, 0.12f, 0.10f),
+                lipColor = new Color(0.72f, 0.42f, 0.45f),
+                blushColor = new Color(0.88f, 0.55f, 0.50f, 0.35f),
+                hairStyle = BobbleheadHairType.AttendantBun,
+                headwear = BobbleheadHeadwearType.None,
+                outfitType = BobbleheadOutfitType.BorderConcierge,
+                outerwearColor = new Color(0.48f, 0.14f, 0.18f),
+                innerwearColor = new Color(0.96f, 0.96f, 0.98f),
+                pantsColor = new Color(0.18f, 0.20f, 0.24f),
+                shoeBaseColor = new Color(0.12f, 0.12f, 0.14f),
+                shoeAccentColor = new Color(0.22f, 0.22f, 0.25f),
+                hasNameBadge = true,
+                badgeText = "ATENCIÓN",
+                hasGlasses = true,
+                glassesColor = new Color(0.25f, 0.25f, 0.28f),
+                hasBackpack = false,
+                hasSatchel = true,
+                satchelColor = new Color(0.35f, 0.22f, 0.16f)
+            };
+        }
+
         /// <summary>
         /// Creates a deep copy of this BobbleheadConfig instance.
         /// </summary>

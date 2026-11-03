@@ -1,6 +1,7 @@
 import { BusinessId } from '../domain/business-id.js';
 import { BusinessSchedule } from '../domain/business-schedule.js';
 import { BusinessOperationalStatus } from '../domain/operational-status.js';
+import { CitizenReportRecord } from '../domain/citizen-report.js';
 
 /**
  * A coherent point-in-time snapshot of business operational data from the World Core.
@@ -54,4 +55,19 @@ export interface WorldCorePort {
     businessId: BusinessId,
     evaluatedAt?: Date | string | number
   ): Promise<BusinessScheduleSnapshot | null>;
+
+  /**
+   * Authoritatively registers a confirmed citizen issue report in the World Core.
+   */
+  registerCitizenReport?(report: CitizenReportRecord): Promise<CitizenReportRecord>;
+
+  /**
+   * Retrieves a registered citizen issue report by its canonical identifier.
+   */
+  getCitizenReport?(reportId: string): Promise<CitizenReportRecord | null>;
+
+  /**
+   * Lists all registered citizen issue reports.
+   */
+  listCitizenReports?(filter?: { limit?: number; offset?: number }): Promise<readonly CitizenReportRecord[]>;
 }

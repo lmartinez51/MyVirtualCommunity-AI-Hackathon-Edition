@@ -9,6 +9,7 @@ import {
   BusinessOperationalStatus,
   BusinessStatus,
 } from '../domain/operational-status.js';
+import { CitizenReportRecord } from '../domain/citizen-report.js';
 import { WorldCorePort, BusinessScheduleSnapshot } from '../ports/world-core-port.js';
 
 export class WorldCoreConnectionError extends Error {
@@ -359,5 +360,25 @@ export class RemoteWorldCoreAdapter implements WorldCorePort {
   ): Promise<BusinessOperationalStatus | null> {
     const snapshot = await this.getBusinessScheduleSnapshot(businessId, evaluatedAt);
     return snapshot ? snapshot.operationalStatus : null;
+  }
+
+  private citizenReports: Map<string, CitizenReportRecord> = new Map();
+
+  public async registerCitizenReport(report: CitizenReportRecord): Promise<CitizenReportRecord> {
+    this.citizenReports.set(report.reportId, report);
+    return report;
+  }
+
+  public async getCitizenReport(reportId: string): Promise<CitizenReportRecord | null> {
+    return this.citizenReports.get(reportId) ?? null;
+  }
+
+  public async listCitizenReports(filter?: { limit?: number; offset?: number }): Promise<readonly CitizenReportRecord[]> {
+    const all = Array.from(this.citizenReports.values()).sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+    const offset = filter?.offset ?? 0;
+    const limit = filter?.limit ?? 50;
+    return all.slice(offset, offset + limit);
   }
 }

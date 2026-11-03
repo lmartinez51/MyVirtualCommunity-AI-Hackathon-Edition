@@ -8,7 +8,8 @@ namespace MyVirtualCommunity.Client.World
         StorefrontAttendant,
         BorderConcierge,
         SyntheticWitness,
-        Informational
+        Informational,
+        CitizenService
     }
 
     /// <summary>

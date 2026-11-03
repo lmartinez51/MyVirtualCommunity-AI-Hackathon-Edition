@@ -37,6 +37,21 @@ import {
   TalkToBusinessAttendantUseCase,
   UnknownBusinessAttendantError,
 } from '../application/talk-to-business-attendant.js';
+import {
+  CITIZEN_REPRESENTATIVE_PROFILE,
+  ISSUE_CATEGORY_CATALOG,
+} from '../domain/citizen-report.js';
+import {
+  CreateCitizenReportDraftUseCase,
+  InvalidImageEvidenceError,
+  InvalidReportDescriptionError,
+} from '../application/create-citizen-report-draft.js';
+import {
+  DraftNotFoundError,
+  PlayerConfirmationRequiredError,
+  SubmitCitizenReportUseCase,
+} from '../application/submit-citizen-report.js';
+import { GetCitizenReportUseCase } from '../application/get-citizen-report.js';
 import { BorderCrossingPort } from '../ports/border-crossing-port.js';
 import { MetaModelPort } from '../ports/meta-model-port.js';
 import { WorldCorePort } from '../ports/world-core-port.js';
@@ -49,6 +64,9 @@ export interface AssistantServerOptions {
   readonly witnessUseCase?: TalkToSyntheticWitnessUseCase;
   readonly conciergeUseCase?: AskBorderConciergeUseCase;
   readonly businessAttendantUseCase?: TalkToBusinessAttendantUseCase;
+  readonly createDraftUseCase?: CreateCitizenReportDraftUseCase;
+  readonly submitReportUseCase?: SubmitCitizenReportUseCase;
+  readonly getReportUseCase?: GetCitizenReportUseCase;
   readonly publicDir?: string;
 }
 
@@ -66,7 +84,8 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
     worldCore = new RemoteWorldCoreAdapter({ baseURL: config.worldCore.baseURL });
     isExplicitRemoteWorldCore = true;
   } else {
-    worldCore = new InMemoryWorldCoreAdapter();
+    const defaultReportsPath = resolve(process.cwd(), '.runtime', 'citizen-reports.json');
+    worldCore = new InMemoryWorldCoreAdapter({ persistenceFilePath: defaultReportsPath });
     isExplicitRemoteWorldCore = false;
   }
 
@@ -116,19 +135,37 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
       metaModel,
     });
 
+  const createDraftUseCase =
+    options.createDraftUseCase ??
+    new CreateCitizenReportDraftUseCase({
+      metaModel,
+    });
+
+  const submitReportUseCase =
+    options.submitReportUseCase ??
+    new SubmitCitizenReportUseCase({
+      worldCore,
+    });
+
+  const getReportUseCase =
+    options.getReportUseCase ??
+    new GetCitizenReportUseCase({
+      worldCore,
+    });
+
   const sendJson = (res: ServerResponse, statusCode: number, payload: unknown) => {
     res.statusCode = statusCode;
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.end(JSON.stringify(payload, null, 2));
   };
 
-  const readBody = async (req: IncomingMessage): Promise<any> => {
+  const readBody = async (req: IncomingMessage, maxBytes: number = 64 * 1024): Promise<any> => {
     return new Promise((resolveBody, rejectBody) => {
       let body = '';
       req.on('data', (chunk) => {
         body += chunk;
-        if (body.length > 64 * 1024) {
-          rejectBody(new Error('Request body exceeded 64KB limit'));
+        if (body.length > maxBytes) {
+          rejectBody(new Error(`Request body exceeded ${maxBytes} bytes limit`));
         }
       });
       req.on('end', () => {
@@ -646,6 +683,174 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
           });
           return;
         }
+      }
+
+      // 13. GET /api/citizen-reports/representative (Enlace de Atención Ciudadana Profile)
+      if (
+        method === 'GET' &&
+        (pathname === '/api/citizen-reports/representative' ||
+          pathname === '/api/citizen-report/representative')
+      ) {
+        sendJson(res, 200, {
+          success: true,
+          representative: CITIZEN_REPRESENTATIVE_PROFILE,
+        });
+        return;
+      }
+
+      // 13b. GET /api/citizen-reports/categories (Municipal Issue Categories Catalog)
+      if (
+        method === 'GET' &&
+        (pathname === '/api/citizen-reports/categories' ||
+          pathname === '/api/citizen-report/categories')
+      ) {
+        sendJson(res, 200, {
+          success: true,
+          categories: ISSUE_CATEGORY_CATALOG,
+        });
+        return;
+      }
+
+      // 14. POST /api/citizen-reports/draft (Draft Preparation with SAM 3.1 & Muse Spark)
+      if (
+        method === 'POST' &&
+        (pathname === '/api/citizen-reports/draft' || pathname === '/api/citizen-report/draft')
+      ) {
+        let rawBody: any;
+        try {
+          // Allow up to 10MB payload to accommodate photographic evidence base64 data
+          rawBody = await readBody(req, 10 * 1024 * 1024);
+        } catch (bodyErr) {
+          sendJson(res, 400, {
+            success: false,
+            error: {
+              code: 'invalid-body',
+              message: bodyErr instanceof Error ? bodyErr.message : 'Invalid request body or size exceeded',
+            },
+          });
+          return;
+        }
+
+        try {
+          const draftResult = await createDraftUseCase.execute(rawBody);
+          sendJson(res, 200, {
+            success: true,
+            draft: draftResult,
+          });
+          return;
+        } catch (draftErr) {
+          if (draftErr instanceof InvalidReportDescriptionError) {
+            sendJson(res, 400, {
+              success: false,
+              error: { code: 'invalid-description', message: draftErr.message },
+            });
+            return;
+          }
+          if (draftErr instanceof InvalidImageEvidenceError) {
+            sendJson(res, 400, {
+              success: false,
+              error: { code: 'invalid-image-evidence', message: draftErr.message },
+            });
+            return;
+          }
+          sendJson(res, 500, {
+            success: false,
+            error: {
+              code: 'server-error',
+              message: 'Internal server error preparing citizen report draft.',
+            },
+          });
+          return;
+        }
+      }
+
+      // 15. POST /api/citizen-reports/submit (Authoritative World Core Report Registration)
+      if (
+        method === 'POST' &&
+        (pathname === '/api/citizen-reports/submit' || pathname === '/api/citizen-report/submit')
+      ) {
+        let rawBody: any;
+        try {
+          rawBody = await readBody(req, 10 * 1024 * 1024);
+        } catch (bodyErr) {
+          sendJson(res, 400, {
+            success: false,
+            error: {
+              code: 'invalid-body',
+              message: bodyErr instanceof Error ? bodyErr.message : 'Invalid request body',
+            },
+          });
+          return;
+        }
+
+        try {
+          const submitResult = await submitReportUseCase.execute(rawBody);
+          sendJson(res, 201, submitResult);
+          return;
+        } catch (submitErr) {
+          if (submitErr instanceof PlayerConfirmationRequiredError) {
+            sendJson(res, 400, {
+              success: false,
+              error: { code: 'confirmation-required', message: submitErr.message },
+            });
+            return;
+          }
+          if (submitErr instanceof DraftNotFoundError) {
+            sendJson(res, 404, {
+              success: false,
+              error: { code: 'draft-not-found', message: submitErr.message },
+            });
+            return;
+          }
+          sendJson(res, 500, {
+            success: false,
+            error: {
+              code: 'server-error',
+              message: 'Internal server error registering citizen report in World Core.',
+            },
+          });
+          return;
+        }
+      }
+
+      // 16. GET /api/citizen-reports/:id (Get Report by ID)
+      if (
+        method === 'GET' &&
+        pathname.startsWith('/api/citizen-reports/') &&
+        pathname !== '/api/citizen-reports/representative' &&
+        pathname !== '/api/citizen-reports/categories' &&
+        pathname !== '/api/citizen-reports/draft' &&
+        pathname !== '/api/citizen-reports/submit'
+      ) {
+        const parts = pathname.split('/');
+        const reportId = decodeURIComponent(parts[3] ?? '').trim();
+        const report = await getReportUseCase.getById(reportId);
+        if (!report) {
+          sendJson(res, 404, {
+            success: false,
+            error: { code: 'report-not-found', message: `Citizen report "${reportId}" not found.` },
+          });
+          return;
+        }
+        sendJson(res, 200, {
+          success: true,
+          report,
+        });
+        return;
+      }
+
+      // 17. GET /api/citizen-reports (List Reports)
+      if (
+        method === 'GET' &&
+        (pathname === '/api/citizen-reports' || pathname === '/api/citizen-reports/')
+      ) {
+        const reports = await getReportUseCase.list();
+        sendJson(res, 200, {
+          success: true,
+          count: reports.length,
+          reports,
+        });
+        return;
       }
 
       // 404 Route Not Found

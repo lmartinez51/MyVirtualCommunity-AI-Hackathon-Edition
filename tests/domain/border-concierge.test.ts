@@ -118,7 +118,7 @@ describe('Border Concierge Domain Models & Logic (Increment 3)', () => {
       assert.ok(BORDER_CONCIERGE_PROFILE.badge.es.includes('Asistente Grounded'));
       assert.ok(BORDER_CONCIERGE_PROFILE.description.en.includes('Paso del Norte'));
       assert.ok(Array.isArray(BORDER_CONCIERGE_PROFILE.suggestedPrompts));
-      assert.strictEqual(BORDER_CONCIERGE_PROFILE.suggestedPrompts.length, 6);
+      assert.strictEqual(BORDER_CONCIERGE_PROFILE.suggestedPrompts.length, 7);
     });
   });
 

@@ -329,4 +329,247 @@ namespace MyVirtualCommunity.Client.Api
     }
 
     #endregion
+
+    #region Citizen Reporting (Increment 5.11)
+
+    [Serializable]
+    public class CitizenRepresentativeProfileDto
+    {
+        public string id;
+        public string name;
+        public string role;
+        public string roleEn;
+        public string avatar;
+        public string destination;
+        public string simulationNotice;
+        public string[] suggestedPromptsEn;
+        public string[] suggestedPromptsEs;
+    }
+
+    [Serializable]
+    public class CitizenRepresentativeResponseDto
+    {
+        public bool success;
+        public CitizenRepresentativeProfileDto representative;
+        public ApiErrorDto error;
+    }
+
+    [Serializable]
+    public class BoundingBoxDto
+    {
+        public float ymin;
+        public float xmin;
+        public float ymax;
+        public float xmax;
+        public string label;
+        public float confidence;
+    }
+
+    [Serializable]
+    public class SamDetectedObjectDto
+    {
+        public string objectId;
+        public string label;
+        public float confidence;
+        public BoundingBoxDto box;
+        public string colorHex;
+    }
+
+    [Serializable]
+    public class SamAnalysisDto
+    {
+        public string model;
+        public string status;
+        public string detectedConcept;
+        public BoundingBoxDto[] boxes;
+        public string maskReference;
+        public string maskSummary;
+        public float confidence;
+        public string objectId;
+        public string[] diagnostics;
+        public string analyzedAt;
+        public string provider;
+        public string disclaimer;
+        public SamDetectedObjectDto[] objects;
+        public string overlayPngBase64;
+        public bool hasAuthenticMasks;
+    }
+
+    [Serializable]
+    public class StructuredReportDto
+    {
+        public string model;
+        public string summary;
+        public string category;
+        public string locationDescription;
+        public string[] additionalDetails;
+        public string[] missingInformation;
+        public string suggestedDepartment;
+        public string clarificationQuestion;
+        public string interpretedAt;
+        public string provider;
+    }
+
+    [Serializable]
+    public class ImageEvidenceDto
+    {
+        public string evidenceId;
+        public string fileName;
+        public int fileSizeBytes;
+        public string mimeType;
+        public string sha256;
+        public string storagePath;
+        public string uploadedAt;
+    }
+
+    [Serializable]
+    public class ReportLocationDto
+    {
+        public string corridorEntityId;
+        public string description;
+        public bool isApproximate;
+        public string coverageStatus;
+    }
+
+    [Serializable]
+    public class ReportingRepresentativeRefDto
+    {
+        public string id;
+        public string name;
+        public string role;
+        public string sector;
+    }
+
+    [Serializable]
+    public class NonEmergencyAssessmentDto
+    {
+        public bool isEmergency;
+        public string emergencyNoticeEs;
+        public string emergencyNoticeEn;
+    }
+
+    [Serializable]
+    public class CitizenCategoryItemDto
+    {
+        public string id;
+        public string canonicalId;
+        public string nameEs;
+        public string nameEn;
+        public string descriptionEs;
+        public string descriptionEn;
+        public string simulatedDepartmentEs;
+        public string simulatedDepartmentEn;
+        public string defaultSamVisualTarget;
+    }
+
+    [Serializable]
+    public class CitizenCategoriesResponseDto
+    {
+        public bool success;
+        public CitizenCategoryItemDto[] categories;
+        public ApiErrorDto error;
+    }
+
+    [Serializable]
+    public class CitizenReportDraftDataDto
+    {
+        public string draftId;
+        public string citizenDescription;
+        public string language;
+        public ReportLocationDto location;
+        public ImageEvidenceDto evidence;
+        public SamAnalysisDto visualAnalysis;
+        public StructuredReportDto structuredInterpretation;
+        public string simulatedDestination;
+        public string simulationNotice;
+        public bool confirmationRequired;
+        public string confirmedCategory;
+        public ReportingRepresentativeRefDto reportingRepresentative;
+        public NonEmergencyAssessmentDto nonEmergencyAssessment;
+        public bool externalAiProcessingConsent;
+    }
+
+    [Serializable]
+    public class CitizenReportImageUploadDto
+    {
+        public string fileName;
+        public string mimeType;
+        public string base64;
+    }
+
+    [Serializable]
+    public class CitizenReportDraftRequestDto
+    {
+        public string citizenDescription;
+        public string locationDescription;
+        public string corridorEntityId;
+        public string language;
+        public string category;
+        public string representativeId;
+        public bool externalAiProcessingConsent;
+        public CitizenReportImageUploadDto image;
+    }
+
+    [Serializable]
+    public class CitizenReportDraftResponseDto
+    {
+        public bool success;
+        public CitizenReportDraftDataDto draft;
+        public ApiErrorDto error;
+    }
+
+    [Serializable]
+    public class CitizenReportSubmitRequestDto
+    {
+        public string draftId;
+        public bool confirmedByPlayer;
+        public string confirmedCategory;
+    }
+
+    [Serializable]
+    public class CitizenReportReceiptDto
+    {
+        public string reportId;
+        public string category;
+        public string location;
+        public string locationCoverage;
+        public string representative;
+        public string evidenceStatus;
+        public string visualAnalysisStatus;
+        public string simulatedDestination;
+        public string lifecycleState;
+        public string createdAt;
+    }
+
+    [Serializable]
+    public class CitizenReportRecordDto
+    {
+        public string reportId;
+        public string citizenDescription;
+        public string language;
+        public ReportLocationDto location;
+        public ImageEvidenceDto evidence;
+        public SamAnalysisDto visualAnalysis;
+        public StructuredReportDto structuredInterpretation;
+        public string lifecycleState;
+        public string simulatedDestination;
+        public string simulationNotice;
+        public string confirmedCategory;
+        public ReportingRepresentativeRefDto reportingRepresentative;
+        public bool externalAiProcessingConsent;
+        public string createdAt;
+        public string updatedAt;
+    }
+
+    [Serializable]
+    public class CitizenReportSubmitResponseDto
+    {
+        public bool success;
+        public CitizenReportRecordDto report;
+        public CitizenReportReceiptDto receipt;
+        public string simulationNotice;
+        public ApiErrorDto error;
+    }
+
+    #endregion
 }

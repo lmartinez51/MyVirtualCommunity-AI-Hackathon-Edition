@@ -4,6 +4,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using MyVirtualCommunity.Character;
+using MyVirtualCommunity.Client.World;
 
 namespace MyVirtualCommunity.Editor
 {
@@ -20,6 +21,7 @@ namespace MyVirtualCommunity.Editor
         public const string MateoPrefabPath = "Assets/Prefabs/Characters/NPCs/MateoNavarro_Bobblehead.prefab";
         public const string SofiaPrefabPath = "Assets/Prefabs/Characters/NPCs/SofiaAlarcon_Bobblehead.prefab";
         public const string HectorPrefabPath = "Assets/Prefabs/Characters/NPCs/DonHectorMendez_Bobblehead.prefab";
+        public const string PatriciaPrefabPath = "Assets/Prefabs/Characters/NPCs/PatriciaMorales_Bobblehead.prefab";
 
         [MenuItem("MyVirtualCommunity/Bake All Corridor NPC Prefabs (5.9)")]
         public static void BakeAllCorridorNpcPrefabs()
@@ -55,6 +57,9 @@ namespace MyVirtualCommunity.Editor
 
             // 5. Don Héctor Méndez (Artisan Witness)
             BakeSingleNpc("Hector", BobbleheadConfig.CreateDonHectorMendezConfig(), HectorPrefabPath, isAttendant: false, urpLitShader);
+
+            // 6. Lic. Patricia Morales (Citizen Service Representative - Increment 5.11)
+            BakeSingleNpc("Patricia", BobbleheadConfig.CreatePatriciaMoralesConfig(), PatriciaPrefabPath, isAttendant: true, urpLitShader);
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -334,9 +339,107 @@ namespace MyVirtualCommunity.Editor
             // 5. Don Héctor Méndez in Queue
             UpdateQueueWitnessVisual("Witness_DonHector", HectorPrefabPath, "DonHectorMendez_Visual");
 
+            // 6. Lic. Patricia Morales @ Citizen Service Desk (Increment 5.11)
+            UpdateCitizenServiceDesk();
+
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene, ScenePath);
-            Debug.Log($"[BobbleheadPrefabBaker] Production scene {ScenePath} successfully saved with all 6 Bobblehead NPCs!");
+            Debug.Log($"[BobbleheadPrefabBaker] Production scene {ScenePath} successfully saved with all 7 Bobblehead NPCs!");
+        }
+
+        private static void UpdateCitizenServiceDesk()
+        {
+            var deskRoot = GameObject.Find("CitizenServiceDesk");
+            if (deskRoot == null)
+            {
+                deskRoot = new GameObject("CitizenServiceDesk");
+                deskRoot.transform.position = new Vector3(-8.5f, 0.0f, 18.0f);
+                deskRoot.transform.rotation = Quaternion.Euler(0f, 180f, 0f); // Face South toward approaching players
+            }
+
+            // Create or update desk geometry
+            var counterTop = deskRoot.transform.Find("Desk_CounterTop");
+            if (counterTop == null)
+            {
+                var topGo = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                topGo.name = "Desk_CounterTop";
+                topGo.transform.SetParent(deskRoot.transform, false);
+                topGo.transform.localPosition = new Vector3(0f, 0.72f, 0f);
+                topGo.transform.localScale = new Vector3(1.6f, 0.08f, 0.7f);
+            }
+
+            var counterBase = deskRoot.transform.Find("Desk_CounterBase");
+            if (counterBase == null)
+            {
+                var baseGo = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                baseGo.name = "Desk_CounterBase";
+                baseGo.transform.SetParent(deskRoot.transform, false);
+                baseGo.transform.localPosition = new Vector3(0f, 0.35f, 0f);
+                baseGo.transform.localScale = new Vector3(1.5f, 0.7f, 0.65f);
+            }
+
+            var canopySign = deskRoot.transform.Find("Desk_Sign");
+            if (canopySign == null)
+            {
+                var signGo = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                signGo.name = "Desk_Sign";
+                signGo.transform.SetParent(deskRoot.transform, false);
+                signGo.transform.localPosition = new Vector3(0f, 0.72f, -0.36f);
+                signGo.transform.localScale = new Vector3(1.4f, 0.22f, 0.04f);
+            }
+
+            // Instantiate or update Patricia Bobblehead
+            var oldPatricia = deskRoot.transform.Find("PatriciaMorales_Attendant");
+            if (oldPatricia != null) Object.DestroyImmediate(oldPatricia.gameObject);
+
+            var patriciaPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PatriciaPrefabPath);
+            if (patriciaPrefab != null)
+            {
+                var patriciaInstance = (GameObject)PrefabUtility.InstantiatePrefab(patriciaPrefab, deskRoot.transform);
+                patriciaInstance.name = "PatriciaMorales_Attendant";
+                patriciaInstance.transform.localPosition = new Vector3(0f, 0.1f, 0.35f);
+                patriciaInstance.transform.localRotation = Quaternion.Euler(0f, 180f, 0f); // Face forward across counter
+
+                var anim = patriciaInstance.GetComponent<BobbleheadAnimator>();
+                if (anim != null)
+                {
+                    anim.SetAttendantMode(true);
+                    anim.CacheInitialPoses();
+                }
+            }
+
+            // Ensure InteractionPoint
+            var point = deskRoot.GetComponent<InteractionPoint>();
+            if (point == null)
+            {
+                point = deskRoot.AddComponent<InteractionPoint>();
+            }
+
+            point.category = InteractionCategory.CitizenService;
+            point.characterId = "patricia-citizen-rep";
+            point.characterName = "Lic. Patricia Morales";
+            point.characterRole = "Enlace de Atención Ciudadana";
+            point.avatar = "📋";
+            point.suggestedPromptsEn = new string[]
+            {
+                "I found a pothole on Avenida Juárez near the crossing.",
+                "How does simulated citizen issue reporting work?",
+                "What areas along the corridor can I report?"
+            };
+            point.suggestedPromptsEs = new string[]
+            {
+                "Encontré un bache en Avenida Juárez cerca del cruce.",
+                "¿Cómo funciona el reporte ciudadano simulado?",
+                "¿Qué zonas del corredor puedo reportar?"
+            };
+            point.landmarkId = "civic:atencion-ciudadana";
+            point.title = "Lic. Patricia Morales";
+            point.subtitle = "Enlace de Atención Ciudadana (Servicio Municipal Simulado)";
+            point.address = "Avenida Benito Juárez (Acera Poniente)";
+            point.description = "Módulo de atención ciudadana para canalizar reportes viales e incidencias urbanas en el corredor virtual con análisis visual SAM 3.1 y estructuración Muse Spark 1.3.";
+            point.interactionRadius = 3.5f;
+
+            Debug.Log("[BobbleheadPrefabBaker] Integrated Lic. Patricia Morales at CitizenServiceDesk.");
         }
 
         private static void UpdateQueueWitnessVisual(string witnessRootName, string prefabPath, string visualName)

@@ -1591,7 +1591,7 @@ describe('API and Browser Integration (Offline Server Tests)', () => {
       assert.strictEqual(data.concierge.avatar, '🛂');
       assert.ok(data.concierge.role.en.includes('Border Pedestrian Concierge'));
       assert.ok(data.concierge.role.es.includes('Concierge de Orientación Peatonal'));
-      assert.strictEqual(data.concierge.suggestedPrompts.length, 6);
+      assert.strictEqual(data.concierge.suggestedPrompts.length, 7);
     });
 
     it('POST /api/border/concierge/chat returns 200 with grounded guidance and authoritative observations', async () => {

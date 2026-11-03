@@ -10,6 +10,8 @@ import {
   ConciergeIntent,
   ConciergeProfile,
   formatDeterministicConciergeResponse,
+  isFactualBorderIntent,
+  validateConciergeFactualIntegrity,
 } from '../domain/border-concierge.js';
 import { detectLanguage, OFFICIAL_DATA_NOTICE } from '../domain/synthetic-witness.js';
 import { MetaModelPort } from '../ports/meta-model-port.js';
@@ -112,7 +114,14 @@ export class AskBorderConciergeUseCase {
     let provider: 'meta-muse-spark-1.3' | 'deterministic-fallback' | 'mock-meta' =
       'deterministic-fallback';
 
-    if (this.metaModel && typeof this.metaModel.generateConciergeResponse === 'function') {
+    // Authoritative Deterministic Routing for Live CBP Measurements & Comparisons:
+    // When an inquiry requests current wait times, comparative status, or observation freshness,
+    // the authoritative BorderCrossingComparison is the sole source of truth.
+    // Routing is handled deterministically without delegating factual conclusions to model generation.
+    if (isFactualBorderIntent(intent)) {
+      text = formatDeterministicConciergeResponse(intent, comparisonData, language);
+      provider = 'deterministic-fallback';
+    } else if (this.metaModel && typeof this.metaModel.generateConciergeResponse === 'function') {
       try {
         const modelRes = await this.metaModel.generateConciergeResponse({
           userMessage: trimmed,
@@ -122,11 +131,17 @@ export class AskBorderConciergeUseCase {
         });
 
         if (modelRes && typeof modelRes.text === 'string' && modelRes.text.trim().length > 0) {
-          text = modelRes.text.trim();
-          provider =
-            (this.metaModel as any).mode === 'local-mock'
-              ? 'mock-meta'
-              : 'meta-muse-spark-1.3';
+          const candidateText = modelRes.text.trim();
+          if (validateConciergeFactualIntegrity(candidateText, comparisonData, intent)) {
+            text = candidateText;
+            provider =
+              (this.metaModel as any).mode === 'local-mock'
+                ? 'mock-meta'
+                : 'meta-muse-spark-1.3';
+          } else {
+            // Model introduced ungrounded numbers or unsupported comparative claims! Fall back to deterministic engine.
+            text = null;
+          }
         }
       } catch {
         // Fall back gracefully to deterministic domain generator on model error/timeout

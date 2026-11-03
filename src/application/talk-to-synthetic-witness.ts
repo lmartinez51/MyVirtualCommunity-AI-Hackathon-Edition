@@ -2,6 +2,7 @@ import {
   BilingualText,
   classifyWitnessSafetyIntent,
   detectLanguage,
+  FICTIONAL_WITNESS_PERSPECTIVE_NOTICE,
   generateDeterministicFallbackResponse,
   getDeterministicBoundaryResponse,
   OFFICIAL_DATA_NOTICE,
@@ -195,6 +196,7 @@ export class TalkToSyntheticWitnessUseCase {
         locationId: 'infrastructure:puente-paso-del-norte',
         provider,
         officialDataNotice: OFFICIAL_DATA_NOTICE,
+        fictionalPerspectiveNotice: FICTIONAL_WITNESS_PERSPECTIVE_NOTICE,
       },
     };
   }

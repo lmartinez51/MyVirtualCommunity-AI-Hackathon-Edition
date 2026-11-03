@@ -16,6 +16,7 @@ export type ConciergeIntent =
   | 'freshness-and-updates'
   | 'camera-reference'
   | 'traveler-guidance'
+  | 'witness-perspectives'
   | 'general-orientation';
 
 export interface ConciergeProfile {
@@ -104,6 +105,15 @@ export const BORDER_CONCIERGE_PROFILE: ConciergeProfile = {
         es: '¿Qué factores debo considerar al comparar los tiempos de espera peatonales?',
       },
     },
+    {
+      id: 'witness-views',
+      intent: 'witness-perspectives',
+      label: { en: 'Queue witness perspectives', es: 'Opinión de la fila' },
+      prompt: {
+        en: 'What do simulated queue witnesses like Mateo or Sofia think about the crossings?',
+        es: '¿Qué opinan testigos simulados en la fila como Mateo o Sofía sobre los cruces?',
+      },
+    },
   ],
 };
 
@@ -112,6 +122,24 @@ export const BORDER_CONCIERGE_PROFILE: ConciergeProfile = {
  */
 export function classifyConciergeIntent(message: string): ConciergeIntent {
   const clean = message.trim().toLowerCase();
+
+  // 0. Witness perspectives query (Mateo, Sofia, queue experiences)
+  if (
+    clean.includes('mateo') ||
+    clean.includes('sofia') ||
+    clean.includes('sofía') ||
+    clean.includes('witness') ||
+    clean.includes('testigo') ||
+    clean.includes('opinión de la fila') ||
+    clean.includes('opinion de la fila') ||
+    clean.includes('opinión de los que están en la fila') ||
+    clean.includes('gente en la fila') ||
+    clean.includes('viajeros en la fila') ||
+    clean.includes('estudiante en la fila') ||
+    clean.includes('queue witness')
+  ) {
+    return 'witness-perspectives';
+  }
 
   // 1. Camera queries
   if (
@@ -220,6 +248,21 @@ export function classifyConciergeIntent(message: string): ConciergeIntent {
   }
 
   return 'general-orientation';
+}
+
+/**
+ * Determines whether an inquiry intent is strictly data-bearing (reporting live CBP measurements,
+ * bridge comparisons, or observation freshness).
+ * These intents are determined solely by authoritative BorderCrossingComparison records
+ * and must never be delegated to language model generation.
+ */
+export function isFactualBorderIntent(intent: ConciergeIntent): boolean {
+  return (
+    intent === 'paso-del-norte-wait' ||
+    intent === 'bota-wait' ||
+    intent === 'compare-crossings' ||
+    intent === 'freshness-and-updates'
+  );
 }
 
 function formatObservationDetail(
@@ -350,6 +393,24 @@ export function formatDeterministicConciergeResponse(
             `4. Visual Verification: You can always verify approach queues via the official Chihuahua Bridge Authority cameras (${OFFICIAL_CAMERA_METADATA.officialAuthorityUrl}) before departing.`;
     }
 
+    case 'witness-perspectives': {
+      const disclaimer = isEs
+        ? 'Perspectiva de testigo simulado ficticio — no es una medición oficial.'
+        : 'Fictional simulated witness perspective — not an official measurement.';
+
+      return isEs
+        ? `[${disclaimer}]\n` +
+            `En la fila peatonal contigua se encuentran Mateo Navarro (estudiante de UTEP) y Sofía Alarcón (supervisora comercial):\n` +
+            `• Mateo cruza a pie por Paso del Norte porque desemboca directo al centro de El Paso para tomar la Ruta 10 de Sun Metro a UTEP; no caminaría por BOTA sin vehículo.\n` +
+            `• Sofía cruza por Paso del Norte debido a la cercanía con su lugar de trabajo, aunque considera BOTA cuando le ofrecen transporte en automóvil.\n\n` +
+            `Aviso: Sus testimonios son experiencias subjetivas simuladas y no constituyen mediciones oficiales ni en tiempo real. Para tomar su decisión, básese en los tiempos oficiales de CBP reportados arriba.`
+        : `[${disclaimer}]\n` +
+            `Stationed in the adjacent pedestrian queue are Mateo Navarro (UTEP student) and Sofia Alarcón (retail supervisor):\n` +
+            `• Mateo crosses on foot at Paso del Norte because it connects straight to Downtown El Paso for the Sun Metro Route 10 bus to UTEP; he would not walk BOTA without a vehicle.\n` +
+            `• Sofia crosses at Paso del Norte due to proximity to her job, though she considers BOTA when a carpool is available.\n\n` +
+            `Notice: Their statements are simulated fictional perspectives, not official or live measurements. For your crossing decision, rely on the official CBP wait times reported above.`;
+    }
+
     case 'general-orientation':
     default: {
       const pdnWait = pasoDelNorte.delayMinutes !== null ? `${pasoDelNorte.delayMinutes} min` : 'N/A';
@@ -419,4 +480,316 @@ STRICT AUTHORITY BOUNDARIES:
   ].join('\n');
 
   return { systemPrompt, userContent };
+}
+
+/**
+ * Validates that an AI-generated model response does not introduce fabricated
+ * numeric wait measurements or unsupported comparison conclusions.
+ *
+ * Enforces:
+ * 1. Any numeric minute claim (\d+ min / \d+ minutes) must match either:
+ *    - pasoDelNorte.delayMinutes
+ *    - bridgeOfTheAmericas.delayMinutes
+ *    - comparison.differenceMinutes
+ *    - 60 (freshness threshold 60 min)
+ * 2. If comparison.canCompare is false, the model must NOT claim that one crossing is faster.
+ * 3. If a port is closed, the model must NOT claim 0 minutes wait.
+ */
+// Written-out duration words mapped to minutes
+const WRITTEN_NUMBER_MINUTES: Record<string, number> = {
+  one: 1, uno: 1, una: 1,
+  two: 2, dos: 2,
+  three: 3, tres: 3,
+  four: 4, cuatro: 4,
+  five: 5, cinco: 5,
+  six: 6, seis: 6,
+  seven: 7, siete: 7,
+  eight: 8, ocho: 8,
+  nine: 9, nueve: 9,
+  ten: 10, diez: 10,
+  eleven: 11, once: 11,
+  twelve: 12, doce: 12,
+  thirteen: 13, trece: 13,
+  fourteen: 14, catorce: 14,
+  fifteen: 15, quince: 15,
+  twenty: 20, veinte: 20,
+  'twenty-five': 25, veinticinco: 25,
+  thirty: 30, treinta: 30,
+  'thirty-five': 35, 'treinta y cinco': 35,
+  forty: 40, cuarenta: 40,
+  'forty-five': 45, 'cuarenta y cinco': 45,
+  fifty: 50, cincuenta: 50,
+  'fifty-five': 55, 'cincuenta y cinco': 55,
+  sixty: 60, sesenta: 60,
+};
+
+/**
+ * Factual Integrity Guard for Border Concierge.
+ *
+ * Verifies that candidate natural language output strictly respects:
+ * 1. Eligibility constraints: If comparison.canCompare is false, no comparative speed,
+ *    wait, congestion, or preference claims may be made.
+ * 2. Directional correctness: If comparison.canCompare is true, candidate cannot contradict
+ *    the authoritative lowerWaitCrossingId.
+ * 3. Data Association: Values for Paso del Norte and BOTA cannot be cross-swapped.
+ * 4. Grounded numerical metrics: Numeric wait values, unitless durations in wait contexts,
+ *    hour-based assertions, written-out numbers, and ranges must strictly match
+ *    the authoritative values (pasoDelNorte.delayMinutes, bridgeOfTheAmericas.delayMinutes,
+ *    comparison.differenceMinutes, or 60m freshness policy).
+ * 5. Closed port semantics: A closed port can NEVER be claimed as 0 minutes wait.
+ * 6. Synthetic witness boundaries: Model cannot introduce non-canonical simulated witnesses.
+ */
+export function validateConciergeFactualIntegrity(
+  text: string,
+  comparison: BorderCrossingComparison,
+  intent?: ConciergeIntent
+): boolean {
+  if (!text || typeof text !== 'string') return false;
+
+  const { pasoDelNorte, bridgeOfTheAmericas } = comparison.observations;
+  const comp = comparison.comparison;
+
+  // 1. Ineligible Comparison Checks (canCompare === false)
+  if (!comp.canCompare) {
+    const lower = text.toLowerCase();
+    const forbiddenClaims = [
+      // Speed & wait comparisons
+      'es más rápido',
+      'es mas rapido',
+      'is faster',
+      'faster crossing',
+      'has a shorter wait',
+      'shorter wait',
+      'tiene menor espera',
+      'menor espera',
+      'menos espera',
+      'menor tiempo de espera',
+      'menos tiempo',
+      'tarda menos',
+      'tardarás menos',
+      'tardaras menos',
+      'is slower',
+      'es más lento',
+      'es mas lento',
+      'más lento',
+      'mas lento',
+      'más tardado',
+      'mas tardado',
+      'longer wait',
+      'more wait',
+      'mayor espera',
+      // Congestion comparisons
+      'less congested',
+      'more congested',
+      'menos congestionado',
+      'más congestionado',
+      'mas congestionado',
+      'más despejado',
+      'mas despejado',
+      'menos fila',
+      'más fila',
+      'mas fila',
+      // Preference & recommendation
+      'better option',
+      'mejor opción',
+      'mejor opcion',
+      'preferable',
+      'preferible',
+      'conviene más',
+      'conviene mas',
+      'conviene cruzar',
+      'recomiendo cruzar',
+      'recommend crossing',
+      'better to cross',
+    ];
+    for (const claim of forbiddenClaims) {
+      if (lower.includes(claim)) {
+        return false;
+      }
+    }
+  }
+
+  // 2. Contradictory Comparative Claim when canCompare === true
+  if (comp.canCompare && comp.lowerWaitCrossingId) {
+    const lower = text.toLowerCase();
+    if (comp.lowerWaitCrossingId === 'paso-del-norte') {
+      // PDN is faster/lower; BOTA cannot be claimed faster/lower
+      const botaClaims = [
+        'bota es más rápido',
+        'bota es mas rapido',
+        'bota is faster',
+        'puente libre es más rápido',
+        'puente de las américas es más rápido',
+        'bridge of the americas is faster',
+        'bota has a shorter wait',
+        'bota tiene menor espera',
+        'conviene más cruzar por bota',
+        'recomiendo bota',
+      ];
+      for (const claim of botaClaims) {
+        if (lower.includes(claim)) return false;
+      }
+    } else if (comp.lowerWaitCrossingId === 'bridge-of-the-americas') {
+      // BOTA is faster/lower; PDN cannot be claimed faster/lower
+      const pdnClaims = [
+        'paso del norte es más rápido',
+        'paso del norte es mas rapido',
+        'paso del norte is faster',
+        'santa fe es más rápido',
+        'santa fe is faster',
+        'paso del norte has a shorter wait',
+        'paso del norte tiene menor espera',
+        'conviene más cruzar por paso del norte',
+        'recomiendo paso del norte',
+      ];
+      for (const claim of pdnClaims) {
+        if (lower.includes(claim)) return false;
+      }
+    }
+  }
+
+  // 3. Check 0-min Claim for Closed Ports or Missing Observations
+  if (pasoDelNorte.portStatus === 'Closed' || bridgeOfTheAmericas.portStatus === 'Closed') {
+    const lower = text.toLowerCase();
+    if (
+      lower.includes('0 min') ||
+      lower.includes('cero min') ||
+      lower.includes('zero min') ||
+      lower.includes('0 minutos') ||
+      lower.includes('zero minutes') ||
+      lower.includes('cero minutos')
+    ) {
+      return false;
+    }
+    if (/\b(?:wait(?:\s+time)?|delay|demora|espera)\s+(?:is|of|de|es)?\s*(?:0|zero|cero)\b/i.test(text)) {
+      return false;
+    }
+  }
+
+  // 4. Data Association: Association between Crossing and Observed Delay
+  if (
+    pasoDelNorte.delayMinutes !== null &&
+    bridgeOfTheAmericas.delayMinutes !== null &&
+    pasoDelNorte.delayMinutes !== bridgeOfTheAmericas.delayMinutes
+  ) {
+    const pdnDelay = pasoDelNorte.delayMinutes;
+    const botaDelay = bridgeOfTheAmericas.delayMinutes;
+
+    // Split text into clauses / sub-sentences to isolate subject-predicate associations
+    const clauses = text.split(/(?:[.!?;:\n]|(?:,\s*)?\b(?:while|mientras\s+que|mientras|pero|but|whereas)\b)/i);
+    for (const rawClause of clauses) {
+      const clause = rawClause.trim();
+      if (!clause) continue;
+
+      const mentionsPdn = /\b(?:paso\s+del\s+norte|santa\s+fe|pdn)\b/i.test(clause);
+      const mentionsBota = /\b(?:bridge\s+of\s+the\s+americas|bota|puente\s+libre|c[oó]rdova|cordova)\b/i.test(clause);
+
+      // Clause specifically discusses PDN without BOTA
+      if (mentionsPdn && !mentionsBota) {
+        const assertsBotaDelay =
+          new RegExp(`\\b${botaDelay}\\s*(?:minutos?|minutes?|mins?|min)?\\b`, 'i').test(clause) &&
+          /\b(?:wait|delay|espera|tarda|taking|takes|report|demora|is|es|de)\b/i.test(clause);
+        const assertsPdnDelay =
+          new RegExp(`\\b${pdnDelay}\\s*(?:minutos?|minutes?|mins?|min)?\\b`, 'i').test(clause);
+
+        if (assertsBotaDelay && !assertsPdnDelay) {
+          // Erroneously attributed BOTA's delay to Paso del Norte!
+          return false;
+        }
+      }
+
+      // Clause specifically discusses BOTA without PDN
+      if (mentionsBota && !mentionsPdn) {
+        const assertsPdnDelay =
+          new RegExp(`\\b${pdnDelay}\\s*(?:minutos?|minutes?|mins?|min)?\\b`, 'i').test(clause) &&
+          /\b(?:wait|delay|espera|tarda|taking|takes|report|demora|is|es|de)\b/i.test(clause);
+        const assertsBotaDelay =
+          new RegExp(`\\b${botaDelay}\\s*(?:minutos?|minutes?|mins?|min)?\\b`, 'i').test(clause);
+
+        if (assertsPdnDelay && !assertsBotaDelay) {
+          // Erroneously attributed Paso del Norte's delay to BOTA!
+          return false;
+        }
+      }
+    }
+  }
+
+  // 5. Numerical and Duration Verification
+  const validMinutes = new Set<number>();
+  if (pasoDelNorte.delayMinutes !== null) validMinutes.add(pasoDelNorte.delayMinutes);
+  if (bridgeOfTheAmericas.delayMinutes !== null) validMinutes.add(bridgeOfTheAmericas.delayMinutes);
+  if (comp.differenceMinutes !== null) validMinutes.add(comp.differenceMinutes);
+  validMinutes.add(60); // Permitted freshness policy window ("< 60 minutes")
+
+  // 5a. Ranges or approximate durations (CBP reports exact snapshots, never ranges)
+  if (
+    /\b\d+\s*(?:-|to|a)\s*\d+\s*(?:minutos?|minutes?|mins?|min)\b/i.test(text) ||
+    /\b(?:between|entre)\s+\d+\s+(?:and|y)\s+\d+\s*(?:minutos?|minutes?|mins?|min)\b/i.test(text)
+  ) {
+    return false;
+  }
+
+  // 5b. Hour-based duration assertions in wait/crossing contexts
+  const hourWaitPattern = /\b(?:wait(?:\s+time)?|delay|demora|espera|tarda(?:r[aá])?|taking|takes)\b[^\n.]{0,35}\b(\d+(?:\.\d+)?)\s*(?:hours?|horas?|hrs?)\b/i;
+  const waitHourPattern = /\b(\d+(?:\.\d+)?)\s*(?:hours?|horas?|hrs?)\s*(?:of\s+wait|de\s+espera|delay|demora)\b/i;
+  if (hourWaitPattern.test(text) || waitHourPattern.test(text)) {
+    return false;
+  }
+
+  // 5c. Written-out duration words
+  const writtenPattern = /\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|twenty(?:-five)?|thirty(?:-five)?|forty(?:-five)?|fifty(?:-five)?|sixty|uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce|trece|catorce|quince|veinte|veinticinco|treinta(?: y cinco)?|cuarenta(?: y cinco)?|cincuenta(?: y cinco)?|sesenta)\s+(minutes?|minutos?|hours?|horas?)\b/gi;
+  let writtenMatch: RegExpExecArray | null;
+  while ((writtenMatch = writtenPattern.exec(text)) !== null) {
+    if (writtenMatch[1] && writtenMatch[2]) {
+      const word = writtenMatch[1].toLowerCase();
+      const unit = writtenMatch[2].toLowerCase();
+      if (unit.startsWith('hour') || unit.startsWith('hora')) {
+        return false;
+      }
+      const mapped = WRITTEN_NUMBER_MINUTES[word];
+      if (mapped !== undefined && !validMinutes.has(mapped)) {
+        return false;
+      }
+    }
+  }
+
+  // 5d. Explicit numeric minute assertions
+  const minutePattern = /\b(\d+)\s*(?:minutos?|minutes?|mins?|min)\b/gi;
+  let match: RegExpExecArray | null;
+  while ((match = minutePattern.exec(text)) !== null) {
+    if (match[1]) {
+      const num = parseInt(match[1], 10);
+      if (!validMinutes.has(num)) {
+        return false;
+      }
+    }
+  }
+
+  // 5e. Unitless numbers directly following wait/delay assertions
+  const unitlessWaitPattern = /\b(?:wait(?:\s+time)?|delay|queue|demora|espera|tarda(?:r[aá])?|taking|takes|report(?:s|a)?)\s+(?:of|is|at|de|es(?:\s+de)?|alrededor\s+de|aproximadamente)?\s*(\d+)\b/gi;
+  let unitlessMatch: RegExpExecArray | null;
+  while ((unitlessMatch = unitlessWaitPattern.exec(text)) !== null) {
+    if (unitlessMatch[1]) {
+      const num = parseInt(unitlessMatch[1], 10);
+      if (!validMinutes.has(num)) {
+        return false;
+      }
+    }
+  }
+
+  // 6. Synthetic Witness Canonical Boundaries
+  if (intent === 'witness-perspectives' || /\b(?:testigo|witness)\b/i.test(text)) {
+    // Detect fabricated witness names introduced as queue witnesses
+    const uncanonicalWitnessPattern = /\b(?:testigo|witness|viajero simulado|simulated traveler)\s+([A-ZÁÉÍÓÚ][a-záéíóú]+)\b/g;
+    let witnessMatch: RegExpExecArray | null;
+    while ((witnessMatch = uncanonicalWitnessPattern.exec(text)) !== null) {
+      const name = witnessMatch[1];
+      const canonicalNames = ['Mateo', 'Sofia', 'Sofía', 'Héctor', 'Hector', 'Don'];
+      if (name && !canonicalNames.includes(name)) {
+        return false;
+      }
+    }
+  }
+
+  return true;
 }

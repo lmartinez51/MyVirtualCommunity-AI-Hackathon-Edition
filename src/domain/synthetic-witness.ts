@@ -25,6 +25,7 @@ export interface SyntheticProvenance {
   readonly locationId: string;
   readonly provider: 'meta-muse-spark-1.3' | 'deterministic-fallback' | 'mock-meta';
   readonly officialDataNotice: BilingualText;
+  readonly fictionalPerspectiveNotice: BilingualText;
 }
 
 export interface SyntheticWitnessProfile {
@@ -64,6 +65,11 @@ export const SYNTHETIC_DISCLOSURE: BilingualText = {
 export const OFFICIAL_DATA_NOTICE: BilingualText = {
   en: 'Simulated witness perspective only. For verified real-time bridge wait times, consult the official CBP measurements displayed above.',
   es: 'Perspectiva de testigo simulado únicamente. Para tiempos de espera oficiales y verificados, consulte las mediciones de CBP mostradas arriba.',
+};
+
+export const FICTIONAL_WITNESS_PERSPECTIVE_NOTICE: BilingualText = {
+  en: 'Fictional simulated witness perspective — not an official measurement.',
+  es: 'Perspectiva de testigo simulado ficticio — no es una medición oficial.',
 };
 
 /**

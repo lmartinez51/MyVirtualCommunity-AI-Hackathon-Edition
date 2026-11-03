@@ -4,6 +4,10 @@ import { BusinessSchedule } from '../domain/business-schedule.js';
 import { BusinessOperationalStatus } from '../domain/operational-status.js';
 import { SyntheticWitnessProfile } from '../domain/synthetic-witness.js';
 import { BusinessAttendantProfile } from '../domain/business-attendant.js';
+import {
+  MuseSparkInterpretation,
+  SamSegmentationResult,
+} from '../domain/citizen-report.js';
 
 /**
  * Context provided to the Meta Model for grounded, hallucination-free generation.
@@ -62,6 +66,28 @@ export interface BusinessAttendantPromptContext {
   readonly language: 'en' | 'es';
 }
 
+/**
+ * Options provided to SAM 3.1 for visual segmentation of urban issues.
+ */
+export interface SamSegmentOptions {
+  readonly imageBase64: string;
+  readonly mimeType: 'image/jpeg' | 'image/png';
+  readonly promptText?: string;
+  readonly timeoutMs?: number;
+  readonly imageDimensions?: { readonly width: number; readonly height: number };
+}
+
+/**
+ * Options provided to Muse Spark 1.3 for structuring citizen reports.
+ */
+export interface InterpretReportOptions {
+  readonly citizenDescription: string;
+  readonly locationDescription?: string;
+  readonly language?: 'en' | 'es';
+  readonly visualAnalysis?: SamSegmentationResult;
+  readonly timeoutMs?: number;
+}
+
 export interface MetaModelUsageDetails {
   readonly reasoningTokens?: number;
   readonly acceptedPredictionTokens?: number;
@@ -107,4 +133,14 @@ export interface MetaModelPort {
    * Generates grounded dialogue for a storefront business attendant.
    */
   generateBusinessAttendantResponse?(context: BusinessAttendantPromptContext): Promise<MetaModelResponse>;
+
+  /**
+   * Performs visual segmentation on photographic evidence using SAM 3.1.
+   */
+  segmentImage?(options: SamSegmentOptions): Promise<SamSegmentationResult>;
+
+  /**
+   * Interprets and structures a citizen issue report using Muse Spark 1.3.
+   */
+  interpretCitizenReport?(options: InterpretReportOptions): Promise<MuseSparkInterpretation>;
 }

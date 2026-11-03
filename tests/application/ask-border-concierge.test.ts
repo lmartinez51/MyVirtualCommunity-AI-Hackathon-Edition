@@ -86,7 +86,7 @@ class MockBorderCrossingPort implements BorderCrossingPort {
 
 describe('AskBorderConciergeUseCase (Application Tests)', () => {
   describe('1. Profile and Suggested Inquiries', () => {
-    it('returns Elena Ramos concierge profile with 6 structured suggested prompt chips', () => {
+    it('returns Elena Ramos concierge profile with 7 structured suggested prompt chips', () => {
       const mockPort = new MockBorderCrossingPort();
       const borderUseCase = new GetBorderWaitTimesUseCase({ borderCrossingPort: mockPort });
       const conciergeUseCase = new AskBorderConciergeUseCase({ getBorderWaitTimesUseCase: borderUseCase });
@@ -94,7 +94,7 @@ describe('AskBorderConciergeUseCase (Application Tests)', () => {
       const profile = conciergeUseCase.getProfile();
       assert.strictEqual(profile.id, 'elena-border-concierge');
       assert.strictEqual(profile.name, 'Elena Ramos');
-      assert.strictEqual(profile.suggestedPrompts.length, 6);
+      assert.strictEqual(profile.suggestedPrompts.length, 7);
     });
   });
 
@@ -128,7 +128,28 @@ describe('AskBorderConciergeUseCase (Application Tests)', () => {
       );
       assert.strictEqual(result.authoritativeObservations.pasoDelNorte.portStatus, 'Open');
       assert.strictEqual(result.authoritativeObservations.pasoDelNorte.freshness, 'fresh');
+      // Model generation is avoided for purely factual wait-time queries; routed deterministically
+      assert.strictEqual(result.provider, 'deterministic-fallback');
+      assert.strictEqual(mockMeta.callCount, 0);
+    });
+
+    it('invokes model adapter for conversational non-factual inquiry with grounded validation', async () => {
+      const mockPort = new MockBorderCrossingPort();
+      const borderUseCase = new GetBorderWaitTimesUseCase({ borderCrossingPort: mockPort });
+      const mockMeta = new MockMetaModelAdapter();
+      const conciergeUseCase = new AskBorderConciergeUseCase({
+        getBorderWaitTimesUseCase: borderUseCase,
+        metaModel: mockMeta,
+      });
+
+      const result = await conciergeUseCase.execute({
+        message: 'Hello Elena, who are you and what do you do?',
+        language: 'en',
+      });
+
+      assert.strictEqual(result.intent, 'general-orientation');
       assert.strictEqual(result.provider, 'mock-meta');
+      assert.strictEqual(mockMeta.callCount, 1);
     });
 
     it('answers question about BOTA wait returning observation facts and timestamps', async () => {

@@ -643,6 +643,8 @@ Two batchmode automated suites validate the client inside Unity without manual G
    - Inspect the **Official CBP Wait Times** panel: observe Paso del Norte vs. Bridge of the Americas pedestrian delays, freshness tag (`🟢 Fresh (<60m)`), and observation timestamp.
    - Click `🔄 Refresh` to execute an on-demand cache-bypassing live update.
    - Click `[Switch to ES]` to demonstrate full bilingual support.
+   - Click the 7th suggested prompt chip: *"¿Qué opinan Mateo o Sofía (testigos en la fila)?"* to see how Elena synthesizes fictional simulated witness perspectives with clear non-official disclosures.
+   - Test the **Player Crossing Intent** controls: click *"Optar por Paso del Norte (Centro)"* or *"Optar por Puente de las Américas (BOTA)"* to register a crossing choice. Observe the prominent disclaimer confirming that this intent is strictly local to the game session, does not initiate a real trip, create reservations, or mutate persistent World Core state.
    - Ask: *"¿Cuál puente me recomiendas para cruzar a pie?"* to receive grounded comparative advice.
 6. **Wrap-up (1:35–1:50):** Point out provenance badges on every response bubble, showing complete transparency between Meta AI generation, deterministic safety rules, synthetic traveler testimony, and official CBP observations.
 
