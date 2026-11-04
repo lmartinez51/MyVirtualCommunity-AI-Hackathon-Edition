@@ -63,21 +63,21 @@ namespace MyVirtualCommunity.Editor
             cam.transform.position = new Vector3(-8.5f, 1.45f, 15.7f);
             cam.transform.rotation = Quaternion.Euler(5.0f, 0.0f, 0.0f);
 
-            // 1. Approach and Interaction Prompt
-            CaptureAndSaveApproach(cam, screenshotDir, "511_01_patricia_desk_approach.png",
-                "MyVirtualCommunity — Lic. Patricia Morales (Atención Ciudadana) Approach");
+            // 1. Approach and Interaction Prompt (Preserved untouched from Increment 5.11)
+            // CaptureAndSaveApproach(cam, screenshotDir, "511_01_patricia_desk_approach.png",
+            //     "MyVirtualCommunity — Lic. Patricia Morales (Atención Ciudadana) Approach");
 
-            // 2. Multimodal Form with Photo Evidence
-            CaptureAndSaveForm(cam, screenshotDir, "511_02_citizen_reporting_modal_form.png",
-                "MyVirtualCommunity — Multimodal Citizen Report Intake (Photo Attached)");
+            // 2. Multimodal Form with Photo Evidence (Preserved untouched)
+            // CaptureAndSaveForm(cam, screenshotDir, "511_02_citizen_reporting_modal_form.png",
+            //     "MyVirtualCommunity — Multimodal Citizen Report Intake (Photo Attached)");
 
-            // 3. SAM 3.1 & Muse Spark 1.3 Draft Review
-            CaptureAndSaveDraftReview(cam, screenshotDir, "511_03_sam_and_spark_draft_review.png",
-                "MyVirtualCommunity — SAM 3.1 & Muse Spark 1.3 Multimodal Draft Review");
+            // 3. SAM 3.1 & Muse Spark 1.3 Draft Review (Preserved untouched)
+            // CaptureAndSaveDraftReview(cam, screenshotDir, "511_03_sam_and_spark_draft_review.png",
+            //     "MyVirtualCommunity — SAM 3.1 & Muse Spark 1.3 Multimodal Draft Review");
 
             // 4. World Core Confirmed Registration Receipt
             CaptureAndSaveReceipt(cam, screenshotDir, "511_04_world_core_confirmed_receipt.png",
-                "MyVirtualCommunity — Confirmed Citizen Report Receipt (World Core)");
+                "MyVirtualCommunity — Comprobante de Reporte Ciudadano (Demostración Local)");
 
             UnityEngine.Debug.Log("[Increment511ScreenshotSuite] All 4 Increment 5.11 screenshots generated successfully!");
         }
@@ -325,7 +325,7 @@ namespace MyVirtualCommunity.Editor
                     g.DrawString("SAM 3.1: COMPLETADO (1 región detectada)", boldFont, green, x + 20, samBadgeY + 4);
                 }
 
-                g.DrawString("Segmentación visual delimitó 1 área de asfalto dañado con confianza 94% mediante modelo Meta SAM 3.1.", regularFont, muted, new RectangleF(x + 12, samBadgeY + 32, colW - 24, 45));
+                g.DrawString("Segmentación visual delimitó 1 área de asfalto dañado (demostración ilustrativa de UI).", regularFont, muted, new RectangleF(x + 12, samBadgeY + 32, colW - 24, 45));
 
                 // Right Column: Structured Interpretation (Muse Spark 1.3)
                 int rx = x + colW + 16;
@@ -411,7 +411,7 @@ namespace MyVirtualCommunity.Editor
             using (var green = new SolidBrush(System.Drawing.Color.FromArgb(70, 240, 130)))
             {
                 DrawRoundedRect(g, recHeadBg, recHeadBorder, x, headY, w, 36, 4);
-                g.DrawString("✅ Comprobante Oficial de Reporte Ciudadano Registrado", recFont, green, x + 130, headY + 7);
+                g.DrawString("✅ Comprobante de Reporte Ciudadano (Demostración Local)", recFont, green, x + 95, headY + 7);
             }
 
             // Receipt Card
@@ -429,8 +429,8 @@ namespace MyVirtualCommunity.Editor
                 DrawRoundedRect(g, cardBg, cardBorder, x, cardY, w, 320, 8);
 
                 int ly = cardY + 14;
-                g.DrawString("Folio Oficial de Registro:", titleFont, cyan, x + 16, ly);
-                g.DrawString("CJ-029411", folioFont, folioBrush, x + 195, ly - 2);
+                g.DrawString("Folio de demostración (simulado):", titleFont, cyan, x + 16, ly);
+                g.DrawString("CJ-029411", folioFont, folioBrush, x + 320, ly - 2);
 
                 ly += 32;
                 g.DrawString("Categoría de Incidencia:", titleFont, cyan, x + 16, ly);
@@ -446,22 +446,22 @@ namespace MyVirtualCommunity.Editor
 
                 ly += 26;
                 g.DrawString("Análisis Visual SAM 3.1:", titleFont, cyan, x + 16, ly);
-                g.DrawString("COMPLETADO (1 región de asfalto dañado segmentada, conf: 94%)", regFont, white, x + 210, ly + 1);
+                g.DrawString("COMPLETADO (1 región de asfalto dañado delimitada · Demostración)", regFont, white, x + 210, ly + 1);
 
                 ly += 26;
                 g.DrawString("Canalización Simulada:", titleFont, cyan, x + 16, ly);
-                g.DrawString("Dirección General de Obras Públicas · Municipio de Juárez", regFont, white, x + 210, ly + 1);
+                g.DrawString("Dirección General de Obras Públicas — Mantenimiento Vial (Simulado)", regFont, white, x + 210, ly + 1);
 
                 ly += 28;
                 g.DrawString("Estado en World Core:", titleFont, cyan, x + 16, ly);
                 using (var stateBrush = new SolidBrush(System.Drawing.Color.FromArgb(85, 235, 255)))
                 {
-                    g.DrawString("RECEIVED → UNDER_REVIEW → SIMULATED_ROUTING", titleFont, stateBrush, x + 210, ly);
+                    g.DrawString("RECEIVED (Demostración local)", titleFont, stateBrush, x + 210, ly);
                 }
 
                 ly += 24;
                 g.DrawString("Persistencia:", titleFont, cyan, x + 16, ly);
-                g.DrawString("✓ Almacenado de forma persistente en World Core (.runtime/citizen-reports.json)", regFont, muted, x + 210, ly + 1);
+                g.DrawString("Persistencia local disponible: .runtime/citizen-reports.json", regFont, muted, x + 210, ly + 1);
 
                 ly += 24;
                 g.DrawString("Fecha y Hora:", titleFont, cyan, x + 16, ly);
@@ -572,7 +572,7 @@ namespace MyVirtualCommunity.Editor
                 using (var white = new SolidBrush(System.Drawing.Color.White))
                 {
                     DrawRoundedRect(g, tagBg, null, boxX, boxY - 18, 160, 18, 3);
-                    g.DrawString("bache / asfalto dañado (94%)", tagFont, white, boxX + 4, boxY - 16);
+                    g.DrawString("bache / asfalto dañado (demo)", tagFont, white, boxX + 4, boxY - 16);
                 }
             }
         }

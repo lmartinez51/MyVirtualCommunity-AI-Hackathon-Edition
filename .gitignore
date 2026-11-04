@@ -40,3 +40,6 @@ unity-client/*.booproj
 # Runtime Evidence & Ephemeral Storage (Increment 5.11)
 .runtime/
 data/evidence/
+
+# Root-level local scratch and diagnostics
+/scratch/

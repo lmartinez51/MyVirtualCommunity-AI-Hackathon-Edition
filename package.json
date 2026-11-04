@@ -7,9 +7,14 @@
     "build": "tsc --noEmit",
     "test": "node scripts/run-tests.js",
     "dev": "tsx src/server/index.ts",
+    "demo": "powershell -ExecutionPolicy Bypass -File scripts/launch-demo.ps1",
+    "package:release": "powershell -ExecutionPolicy Bypass -File scripts/package-release.ps1",
     "test:meta-smoke": "tsx scripts/meta-smoke-test.ts",
     "test:integration": "tsx scripts/verify-world-core-integration.ts",
-    "verify:live-assistant": "tsx scripts/verify-live-assistant.ts"
+    "verify:live-assistant": "tsx scripts/verify-live-assistant.ts",
+    "test:launcher": "powershell -ExecutionPolicy Bypass -File scripts/test-launcher-compatibility.ps1",
+    "verify:npcs": "tsx scripts/verify-npc-dialogue.ts",
+    "verify:recovery": "tsx scripts/verify-persistence-recovery.ts"
   },
   "devDependencies": {
     "@types/node": "^20.17.24",
