@@ -421,10 +421,10 @@ namespace MyVirtualCommunity.Client.World
                 if (cam != null) playerCamera = cam.transform;
             }
 
-            // Always enforce head-anchor on player camera to prevent desync from editor screenshot runs
+            // Always enforce adult standing eye-level height (1.60m) on player camera
             if (playerCamera != null)
             {
-                playerCamera.localPosition = new Vector3(0f, 0.65f, 0f);
+                playerCamera.localPosition = new Vector3(0f, 1.60f, 0f);
                 playerCamera.localRotation = Quaternion.identity;
             }
         }

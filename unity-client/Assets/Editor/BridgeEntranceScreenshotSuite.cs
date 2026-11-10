@@ -140,10 +140,10 @@ namespace MyVirtualCommunity.Editor
             if (p1 != null) p1.transform.localRotation = Quaternion.Euler(0f, 0f, 85f);
             if (p4 != null) p4.transform.localRotation = Quaternion.Euler(0f, 0f, 85f);
 
-            // Restore PlayerCamera back to head height
+            // Restore PlayerCamera back to head height (1.60m)
             if (camGo != null && camGo.name == "PlayerCamera")
             {
-                camGo.transform.localPosition = new Vector3(0f, 0.65f, 0f);
+                camGo.transform.localPosition = new Vector3(0f, 1.60f, 0f);
                 camGo.transform.localRotation = Quaternion.identity;
             }
 

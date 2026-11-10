@@ -47,8 +47,8 @@ namespace MyVirtualCommunity.Editor
                 return;
             }
 
-            // Force localPosition to (0, 0.65, 0) and rotation to identity
-            camGo.transform.localPosition = new Vector3(0f, 0.65f, 0f);
+            // Force localPosition to (0, 1.60, 0) and rotation to identity
+            camGo.transform.localPosition = new Vector3(0f, 1.60f, 0f);
             camGo.transform.localRotation = Quaternion.identity;
 
             Camera cam = camGo.GetComponent<Camera>();
@@ -152,8 +152,8 @@ namespace MyVirtualCommunity.Editor
             CaptureAndCopy(cam, screenshotsDir, artifactsDir, "restored_05_bridge_entrance_plumas_and_camera.png",
                 "MyVirtualCommunity — Bridge Entrance: 4 Plumas, Blue Numbers 1-4, Camera, Diagonal Barricades");
 
-            // Restore camera to exact player local head anchor before final exit
-            camGo.transform.localPosition = new Vector3(0f, 0.65f, 0f);
+            // Restore camera to exact player local head anchor (1.60m) before final exit
+            camGo.transform.localPosition = new Vector3(0f, 1.60f, 0f);
             camGo.transform.localRotation = Quaternion.identity;
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene, ScenePath);
