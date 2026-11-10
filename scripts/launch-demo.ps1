@@ -8,6 +8,7 @@ param(
     [string]$HostAddress = "127.0.0.1",
     [int]$StartupTimeoutSec = 20,
     [switch]$BackendOnly,
+    [switch]$ForceBuild,
     [int]$DurationSec = 0,
     [string]$CustomExePath = ""
 )
@@ -20,12 +21,24 @@ function Stop-ProcessTree([int]$parentPid) {
         $children = Get-CimInstance Win32_Process -Filter "ParentProcessId = $parentPid" -ErrorAction SilentlyContinue
         foreach ($child in $children) {
             Stop-ProcessTree -parentPid $child.ProcessId
-            Stop-Process -Id $child.ProcessId -Force -ErrorAction SilentlyContinue
+            try {
+                $cProc = Get-Process -Id $child.ProcessId -ErrorAction SilentlyContinue
+                if ($cProc -and -not $cProc.HasExited) {
+                    $cProc.Kill()
+                    $cProc.WaitForExit(1500)
+                }
+            } catch { }
         }
     } catch {
         # Ignore errors querying CIM
     }
-    Stop-Process -Id $parentPid -Force -ErrorAction SilentlyContinue
+    try {
+        $pProc = Get-Process -Id $parentPid -ErrorAction SilentlyContinue
+        if ($pProc -and -not $pProc.HasExited) {
+            $pProc.Kill()
+            $pProc.WaitForExit(1500)
+        }
+    } catch { }
 }
 
 # 1. Resolve paths relative to script location
@@ -87,32 +100,109 @@ if (-not (Test-Path $tsxCli)) {
 }
 Write-Host "  Dependencies and backend files verified." -ForegroundColor Green
 
-# 4. Check port availability & pre-existing backend check
-Write-Host "`n[3/5] Checking port $Port availability..." -ForegroundColor Cyan
+# 4. Verify Windows Standalone Client Build Freshness (Safety: must succeed before starting backend!)
+$targetExe = $null
+if (-not $BackendOnly) {
+    Write-Host "`n[3/6] Verifying Windows Standalone client build freshness..." -ForegroundColor Cyan
+    if (-not [string]::IsNullOrWhiteSpace($CustomExePath)) {
+        if (-not (Test-Path $CustomExePath)) {
+            Write-Host "  ERROR: Custom executable path not found: $CustomExePath" -ForegroundColor Red
+            exit 1
+        }
+        $targetExe = (Resolve-Path $CustomExePath).Path
+        Write-Host "  Using Custom Executable: $targetExe (Build freshness check bypassed for custom path)" -ForegroundColor Yellow
+    } else {
+        $buildScript = Join-Path $scriptDir "build-standalone.ps1"
+        $buildArgs = @()
+        if ($ForceBuild) { $buildArgs += "-Force" }
+
+        & powershell -ExecutionPolicy Bypass -File $buildScript @buildArgs
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "`n  FATAL: Standalone client build failed or could not be verified." -ForegroundColor Red
+            Write-Host "  The launcher will NOT start the backend or execute an unverified executable." -ForegroundColor Red
+            exit 1
+        }
+
+        $canonicalExe = Join-Path $repoRoot "unity-client\Builds\Windows\MyVirtualCommunity.exe"
+        if (-not (Test-Path $canonicalExe)) {
+            Write-Host "`n  FATAL: Canonical executable not found at $canonicalExe." -ForegroundColor Red
+            exit 1
+        }
+        $targetExe = $canonicalExe
+    }
+}
+
+# 5. Check port availability & pre-existing backend check
+Write-Host "`n[4/6] Checking port $Port availability..." -ForegroundColor Cyan
 $existingBackendPid = $null
 $reusingExistingBackend = $false
 
-$tcpConnections = Get-NetTCPConnection -LocalPort $Port -ErrorAction SilentlyContinue
+# Give lingering TIME_WAIT / CLOSE_WAIT sockets or a terminating process up to 3 seconds to clear
+$tcpConnections = $null
+$portCheckStart = Get-Date
+while ((Get-Date) - $portCheckStart -lt [TimeSpan]::FromSeconds(3)) {
+    $listening = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
+    if (-not $listening) {
+        # Check if non-listening sockets (e.g. TIME_WAIT) exist
+        $nonListen = Get-NetTCPConnection -LocalPort $Port -ErrorAction SilentlyContinue
+        if (-not $nonListen) {
+            break
+        }
+        Start-Sleep -Milliseconds 400
+        continue
+    }
+    $tcpConnections = $listening
+    break
+}
+
+if (-not $tcpConnections) {
+    # Final check for an active listener
+    $tcpConnections = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
+}
+
 if ($tcpConnections) {
     $occupyingPid = $tcpConnections[0].OwningProcess
     Write-Host "  Port $Port is currently in use by process PID: $occupyingPid." -ForegroundColor Yellow
     
+    # If the process is already dead or terminating, wait briefly for port release
+    $procCheck = Get-Process -Id $occupyingPid -ErrorAction SilentlyContinue
+    if (-not $procCheck) {
+        Start-Sleep -Milliseconds 800
+    }
+
     # Probe health to see if it belongs to MyVirtualCommunity
-    try {
-        $existingHealth = Invoke-RestMethod -Uri "http://${HostAddress}:${Port}/health" -Method Get -TimeoutSec 2 -ErrorAction Stop
-        if ($existingHealth -and $existingHealth.service -eq "MyVirtualCommunity AI Hackathon Assistant") {
-            Write-Host "  Detected existing MyVirtualCommunity backend running on port $Port!" -ForegroundColor Green
-            Write-Host "  Service: $($existingHealth.service)" -ForegroundColor Gray
-            Write-Host "  World Core: $($existingHealth.worldCore.mode) | Meta: $($existingHealth.metaProvider)" -ForegroundColor Gray
-            $reusingExistingBackend = $true
-            $existingBackendPid = $occupyingPid
-        } else {
-            Write-Host "  ERROR: Port $Port is occupied by an external service (PID: $occupyingPid)." -ForegroundColor Red
-            Write-Host "  The launcher will NOT terminate unrelated processes on your machine." -ForegroundColor Red
-            Write-Host "  Please stop the process using port $Port or set another port, e.g.: .\scripts\launch-demo.ps1 -Port 3005" -ForegroundColor Yellow
-            exit 1
+    $probedHealth = $false
+    $healthAttempts = 0
+    while ($healthAttempts -lt 3 -and -not $probedHealth) {
+        $healthAttempts++
+        try {
+            $existingHealth = Invoke-RestMethod -Uri "http://${HostAddress}:${Port}/health" -Method Get -TimeoutSec 2 -ErrorAction Stop
+            if ($existingHealth -and $existingHealth.service -eq "MyVirtualCommunity AI Hackathon Assistant") {
+                Write-Host "  Detected existing MyVirtualCommunity backend running on port $Port!" -ForegroundColor Green
+                Write-Host "  Service: $($existingHealth.service)" -ForegroundColor Gray
+                Write-Host "  World Core: $($existingHealth.worldCore.mode) | Meta: $($existingHealth.metaProvider)" -ForegroundColor Gray
+                $reusingExistingBackend = $true
+                $existingBackendPid = $occupyingPid
+                $probedHealth = $true
+                break
+            } else {
+                Write-Host "  ERROR: Port $Port is occupied by an external service (PID: $occupyingPid)." -ForegroundColor Red
+                Write-Host "  The launcher will NOT terminate unrelated processes on your machine." -ForegroundColor Red
+                Write-Host "  Please stop the process using port $Port or set another port, e.g.: .\scripts\launch-demo.ps1 -Port 3005" -ForegroundColor Yellow
+                exit 1
+            }
+        } catch {
+            # Check if listener has vanished (port just cleared)
+            $stillListening = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
+            if (-not $stillListening) {
+                Write-Host "  Port $Port was freed." -ForegroundColor Green
+                break
+            }
+            Start-Sleep -Milliseconds 600
         }
-    } catch {
+    }
+
+    if (-not $reusingExistingBackend -and (Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue)) {
         Write-Host "  ERROR: Port $Port is occupied by an unresponsive or external service (PID: $occupyingPid)." -ForegroundColor Red
         Write-Host "  The launcher will NOT terminate unrelated processes on your machine." -ForegroundColor Red
         Write-Host "  Please free port $Port and try again." -ForegroundColor Yellow
@@ -202,58 +292,18 @@ try {
         return
     }
 
-    # 7. Locate Unity Standalone Executable
-    Write-Host "`n[4/5] Locating Windows Standalone client executable..." -ForegroundColor Cyan
-    $candidateExePaths = @()
-    if (-not [string]::IsNullOrWhiteSpace($CustomExePath)) {
-        $candidateExePaths += $CustomExePath
-    }
-    $candidateExePaths += Join-Path $repoRoot "unity-client\Builds\Windows\MyVirtualCommunity.exe"
-    $candidateExePaths += Join-Path $repoRoot "Builds\Release\MyVirtualCommunity-Windows-x64\MyVirtualCommunity.exe"
-    $candidateExePaths += Join-Path $repoRoot "Builds\Windows\MyVirtualCommunity.exe"
-    $candidateExePaths += Join-Path $repoRoot "Builds\MyVirtualCommunity.exe"
-
-    $foundExe = $null
-    foreach ($cand in $candidateExePaths) {
-        if (Test-Path $cand) {
-            $foundExe = (Resolve-Path $cand).Path
-            break
-        }
-    }
-
-    if (-not $foundExe) {
-        Write-Host "  WARNING: Standalone executable not found in default build paths." -ForegroundColor Yellow
-        $releaseZip = Join-Path $repoRoot "Builds\Release\MyVirtualCommunity-Windows-x64.zip"
-        if (Test-Path $releaseZip) {
-            Write-Host "  Found release archive at: $releaseZip" -ForegroundColor Cyan
-            Write-Host "  Extracting release package to unity-client\Builds\Windows\..." -ForegroundColor Cyan
-            $extractTarget = Join-Path $repoRoot "unity-client\Builds\Windows"
-            if (-not (Test-Path $extractTarget)) {
-                New-Item -ItemType Directory -Path $extractTarget -Force | Out-Null
-            }
-            Expand-Archive -Path $releaseZip -DestinationPath $extractTarget -Force
-            $foundExe = Join-Path $extractTarget "MyVirtualCommunity.exe"
-        }
-    }
-
-    if (-not $foundExe -or -not (Test-Path $foundExe)) {
-        Write-Host "  ERROR: Could not locate MyVirtualCommunity.exe." -ForegroundColor Red
-        Write-Host "  Please either:" -ForegroundColor Yellow
-        Write-Host "    1. Extract MyVirtualCommunity-Windows-x64.zip into unity-client\Builds\Windows\" -ForegroundColor Yellow
-        Write-Host "    2. Or provide the path with -CustomExePath <path_to_exe>" -ForegroundColor Yellow
-        Write-Host "  Note: The backend remains reachable at http://${HostAddress}:${Port}" -ForegroundColor Gray
+    # 7. Launch Validated Unity Client
+    if (-not $targetExe -or -not (Test-Path $targetExe)) {
+        Write-Host "  ERROR: No validated Standalone executable available to launch." -ForegroundColor Red
         exit 1
     }
 
-    $exeDir = Split-Path -Parent $foundExe
-    Write-Host "  Found Standalone Executable: $foundExe" -ForegroundColor Green
-
-    # 8. Launch Unity Game
-    Write-Host "`n[5/5] Launching Unity 6 Client..." -ForegroundColor Cyan
-    Write-Host "  Executing: $foundExe" -ForegroundColor Gray
+    $exeDir = Split-Path -Parent $targetExe
+    Write-Host "`n[6/6] Launching Validated Unity 6 Client..." -ForegroundColor Cyan
+    Write-Host "  Executing:         $targetExe" -ForegroundColor Gray
     Write-Host "  Working Directory: $exeDir" -ForegroundColor Gray
 
-    $unityProcess = Start-Process -FilePath $foundExe -WorkingDirectory $exeDir -PassThru
+    $unityProcess = Start-Process -FilePath $targetExe -WorkingDirectory $exeDir -PassThru
 
     if (-not $unityProcess -or $unityProcess.HasExited) {
         Write-Host "  ERROR: Unity client failed to start or exited immediately." -ForegroundColor Red
@@ -267,7 +317,17 @@ try {
     Write-Host "=================================================================" -ForegroundColor Green
 
     # 9. Wait for Unity client exit
-    $unityProcess.WaitForExit()
+    if ($DurationSec -gt 0) {
+        Write-Host "Monitoring client for bounded smoke test duration ($DurationSec seconds)..." -ForegroundColor Yellow
+        $exited = $unityProcess.WaitForExit($DurationSec * 1000)
+        if (-not $exited) {
+            Write-Host "Duration ($DurationSec s) reached. Stopping Unity client..." -ForegroundColor Yellow
+            Stop-Process -Id $unityProcess.Id -Force -ErrorAction SilentlyContinue
+            $unityProcess.WaitForExit(5000)
+        }
+    } else {
+        $unityProcess.WaitForExit()
+    }
     Write-Host "`nUnity Client exited with code $($unityProcess.ExitCode)." -ForegroundColor Yellow
 }
 finally {
@@ -275,10 +335,18 @@ finally {
     if ($startedBackend -and $backendProcess) {
         Write-Host "`nCleaning up local backend process tree (PID: $($backendProcess.Id))..." -ForegroundColor Cyan
         try {
-            if (-not $backendProcess.HasExited) {
-                Stop-ProcessTree -parentPid $backendProcess.Id
-                Write-Host "  Backend process tree (PID: $($backendProcess.Id)) stopped cleanly." -ForegroundColor Green
+            # Note: Do not gate Stop-ProcessTree behind -not $backendProcess.HasExited because
+            # tsx wrapper might have terminated while the actual server child is still active!
+            Stop-ProcessTree -parentPid $backendProcess.Id
+            
+            # Wait briefly for OS socket teardown on $Port so immediate re-runs find a clean port
+            $drainWait = Get-Date
+            while ((Get-Date) - $drainWait -lt [TimeSpan]::FromSeconds(3)) {
+                $listening = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
+                if (-not $listening) { break }
+                Start-Sleep -Milliseconds 200
             }
+            Write-Host "  Backend process tree stopped and port $Port released cleanly." -ForegroundColor Green
         } catch {
             Write-Host "  Notice: Backend process was already terminated." -ForegroundColor Gray
         }

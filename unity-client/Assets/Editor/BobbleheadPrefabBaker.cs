@@ -347,48 +347,147 @@ namespace MyVirtualCommunity.Editor
             Debug.Log($"[BobbleheadPrefabBaker] Production scene {ScenePath} successfully saved with all 7 Bobblehead NPCs!");
         }
 
+        [MenuItem("MyVirtualCommunity/Update Citizen Service Desk Only")]
+        public static void UpdateCitizenServiceDeskOnly()
+        {
+            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            if (!scene.IsValid())
+            {
+                Debug.LogError($"[BobbleheadPrefabBaker] Failed to open scene: {ScenePath}");
+                EditorApplication.Exit(1);
+                return;
+            }
+
+            UpdateCitizenServiceDesk();
+
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene, ScenePath);
+            Debug.Log($"[BobbleheadPrefabBaker] Successfully updated CitizenServiceDesk in {ScenePath}!");
+            EditorApplication.Exit(0);
+        }
+
         private static void UpdateCitizenServiceDesk()
         {
             var deskRoot = GameObject.Find("CitizenServiceDesk");
             if (deskRoot == null)
             {
                 deskRoot = new GameObject("CitizenServiceDesk");
-                deskRoot.transform.position = new Vector3(-8.5f, 0.0f, 18.0f);
-                deskRoot.transform.rotation = Quaternion.Euler(0f, 180f, 0f); // Face South toward approaching players
             }
 
-            // Create or update desk geometry
-            var counterTop = deskRoot.transform.Find("Desk_CounterTop");
-            if (counterTop == null)
+            // Target location: close to west wall, near south corner of UrbanBuilding_West_North
+            deskRoot.transform.position = new Vector3(-10.8f, 0.0f, 12.8f);
+            // Target orientation: facing outward towards the street (East, +X)
+            deskRoot.transform.rotation = Quaternion.Euler(0f, 90f, 0f);
+
+            // Clean up any legacy children to avoid duplicate or misaligned geometry
+            string[] legacyNames = new string[] {
+                "Desk_CounterTop", "Desk_CounterBase", "Desk_Sign",
+                "Kiosk_Desk", "Kiosk_Countertop", "Kiosk_Roof",
+                "Kiosk_Pillar_1", "Kiosk_Pillar_2", "Kiosk_Pillar_3", "Kiosk_Pillar_4",
+                "Kiosk_Front_Fascia_Backing", "Kiosk_Front_Fascia_Sign",
+                "Attendant_Platform", "Kiosk_Interior_Spotlight"
+            };
+            foreach (var legName in legacyNames)
             {
-                var topGo = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                topGo.name = "Desk_CounterTop";
-                topGo.transform.SetParent(deskRoot.transform, false);
-                topGo.transform.localPosition = new Vector3(0f, 0.72f, 0f);
-                topGo.transform.localScale = new Vector3(1.6f, 0.08f, 0.7f);
+                var child = deskRoot.transform.Find(legName);
+                if (child != null) Object.DestroyImmediate(child.gameObject);
             }
 
-            var counterBase = deskRoot.transform.Find("Desk_CounterBase");
-            if (counterBase == null)
+            // Load Materials
+            var kioskBlueMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Settings/KioskBlue.mat");
+            var countertopMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Settings/CountertopMat.mat");
+            var canopyRoofMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Settings/CanopyRoof.mat");
+            var attendantMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Settings/AttendantMat.mat");
+            var signMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Characters/CitizenService_Sign.mat");
+
+            // 1. Counter Base
+            var baseGo = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            baseGo.name = "Kiosk_Desk";
+            baseGo.transform.SetParent(deskRoot.transform, false);
+            baseGo.transform.localPosition = new Vector3(0f, 0.45f, 0.25f);
+            baseGo.transform.localRotation = Quaternion.identity;
+            baseGo.transform.localScale = new Vector3(2.2f, 0.9f, 0.55f);
+            if (kioskBlueMat != null) baseGo.GetComponent<Renderer>().sharedMaterial = kioskBlueMat;
+
+            // 2. Counter Top
+            var topGo = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            topGo.name = "Kiosk_Countertop";
+            topGo.transform.SetParent(deskRoot.transform, false);
+            topGo.transform.localPosition = new Vector3(0f, 0.93f, 0.25f);
+            topGo.transform.localRotation = Quaternion.identity;
+            topGo.transform.localScale = new Vector3(2.4f, 0.06f, 0.7f);
+            if (countertopMat != null) topGo.GetComponent<Renderer>().sharedMaterial = countertopMat;
+
+            // 3. Canopy Roof
+            var roofGo = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            roofGo.name = "Kiosk_Roof";
+            roofGo.transform.SetParent(deskRoot.transform, false);
+            roofGo.transform.localPosition = new Vector3(0f, 2.70f, 0.0f);
+            roofGo.transform.localRotation = Quaternion.identity;
+            roofGo.transform.localScale = new Vector3(2.8f, 0.15f, 2.2f);
+            if (canopyRoofMat != null) roofGo.GetComponent<Renderer>().sharedMaterial = canopyRoofMat;
+
+            // 4. Pillars (4 corner posts supporting roof)
+            Vector3[] pillarPositions = new Vector3[]
             {
-                var baseGo = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                baseGo.name = "Desk_CounterBase";
-                baseGo.transform.SetParent(deskRoot.transform, false);
-                baseGo.transform.localPosition = new Vector3(0f, 0.35f, 0f);
-                baseGo.transform.localScale = new Vector3(1.5f, 0.7f, 0.65f);
-            }
-
-            var canopySign = deskRoot.transform.Find("Desk_Sign");
-            if (canopySign == null)
+                new Vector3(-1.15f, 1.35f, 0.85f),  // Front Left
+                new Vector3(1.15f, 1.35f, 0.85f),   // Front Right
+                new Vector3(-1.15f, 1.35f, -0.85f), // Back Left
+                new Vector3(1.15f, 1.35f, -0.85f)   // Back Right
+            };
+            for (int i = 0; i < pillarPositions.Length; i++)
             {
-                var signGo = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                signGo.name = "Desk_Sign";
-                signGo.transform.SetParent(deskRoot.transform, false);
-                signGo.transform.localPosition = new Vector3(0f, 0.72f, -0.36f);
-                signGo.transform.localScale = new Vector3(1.4f, 0.22f, 0.04f);
+                var pillarGo = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                pillarGo.name = $"Kiosk_Pillar_{i + 1}";
+                pillarGo.transform.SetParent(deskRoot.transform, false);
+                pillarGo.transform.localPosition = pillarPositions[i];
+                pillarGo.transform.localRotation = Quaternion.identity;
+                pillarGo.transform.localScale = new Vector3(0.12f, 2.6f, 0.12f);
+                if (kioskBlueMat != null) pillarGo.GetComponent<Renderer>().sharedMaterial = kioskBlueMat;
             }
 
-            // Instantiate or update Patricia Bobblehead
+            // 5. Upper Fascia Sign Backing (mounted on front edge of canopy roof)
+            var fasciaBackingGo = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            fasciaBackingGo.name = "Kiosk_Front_Fascia_Backing";
+            fasciaBackingGo.transform.SetParent(deskRoot.transform, false);
+            fasciaBackingGo.transform.localPosition = new Vector3(0f, 2.70f, 1.12f);
+            fasciaBackingGo.transform.localRotation = Quaternion.identity;
+            fasciaBackingGo.transform.localScale = new Vector3(2.8f, 0.40f, 0.04f);
+            if (kioskBlueMat != null) fasciaBackingGo.GetComponent<Renderer>().sharedMaterial = kioskBlueMat;
+
+            // 6. Upper Fascia Sign (Quad with T_CitizenService_FasciaSign texture, mounted in front of backing)
+            var fasciaSignGo = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            fasciaSignGo.name = "Kiosk_Front_Fascia_Sign";
+            fasciaSignGo.transform.SetParent(deskRoot.transform, false);
+            fasciaSignGo.transform.localPosition = new Vector3(0f, 2.70f, 1.145f);
+            fasciaSignGo.transform.localRotation = Quaternion.Euler(0f, 180f, 0f); // Face East (+Z local = World East)
+            fasciaSignGo.transform.localScale = new Vector3(2.76f, 0.36f, 1.0f);
+            var quadCollider = fasciaSignGo.GetComponent<Collider>();
+            if (quadCollider != null) Object.DestroyImmediate(quadCollider);
+            if (signMat != null) fasciaSignGo.GetComponent<Renderer>().sharedMaterial = signMat;
+
+            // 7. Attendant Platform / Mat
+            var platformGo = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            platformGo.name = "Attendant_Platform";
+            platformGo.transform.SetParent(deskRoot.transform, false);
+            platformGo.transform.localPosition = new Vector3(0f, 0.19f, -0.45f);
+            platformGo.transform.localRotation = Quaternion.identity;
+            platformGo.transform.localScale = new Vector3(1.4f, 0.38f, 0.85f);
+            if (attendantMat != null) platformGo.GetComponent<Renderer>().sharedMaterial = attendantMat;
+
+            // 8. Interior Warm Spotlight
+            var lightGo = new GameObject("Kiosk_Interior_Spotlight");
+            lightGo.transform.SetParent(deskRoot.transform, false);
+            lightGo.transform.localPosition = new Vector3(0f, 2.5f, 0f);
+            lightGo.transform.localRotation = Quaternion.Euler(90f, 0f, 0f); // Point downward
+            var light = lightGo.AddComponent<Light>();
+            light.type = LightType.Spot;
+            light.color = new Color(1f, 0.94f, 0.85f);
+            light.intensity = 15f;
+            light.range = 5f;
+            light.spotAngle = 80f;
+
+            // 9. Instantiate or update Patricia Bobblehead Attendant
             var oldPatricia = deskRoot.transform.Find("PatriciaMorales_Attendant");
             if (oldPatricia != null) Object.DestroyImmediate(oldPatricia.gameObject);
 
@@ -397,8 +496,8 @@ namespace MyVirtualCommunity.Editor
             {
                 var patriciaInstance = (GameObject)PrefabUtility.InstantiatePrefab(patriciaPrefab, deskRoot.transform);
                 patriciaInstance.name = "PatriciaMorales_Attendant";
-                patriciaInstance.transform.localPosition = new Vector3(0f, 0.1f, 0.35f);
-                patriciaInstance.transform.localRotation = Quaternion.Euler(0f, 180f, 0f); // Face forward across counter
+                patriciaInstance.transform.localPosition = new Vector3(0f, 0.38f, -0.45f);
+                patriciaInstance.transform.localRotation = Quaternion.identity; // Face forward (+Z local = World East) across counter
 
                 var anim = patriciaInstance.GetComponent<BobbleheadAnimator>();
                 if (anim != null)
@@ -408,7 +507,7 @@ namespace MyVirtualCommunity.Editor
                 }
             }
 
-            // Ensure InteractionPoint
+            // 10. Ensure InteractionPoint
             var point = deskRoot.GetComponent<InteractionPoint>();
             if (point == null)
             {
@@ -439,7 +538,7 @@ namespace MyVirtualCommunity.Editor
             point.description = "Módulo de atención ciudadana para canalizar reportes viales e incidencias urbanas en el corredor virtual con análisis visual SAM 3.1 y estructuración Muse Spark 1.3.";
             point.interactionRadius = 3.5f;
 
-            Debug.Log("[BobbleheadPrefabBaker] Integrated Lic. Patricia Morales at CitizenServiceDesk.");
+            Debug.Log("[BobbleheadPrefabBaker] Integrated Lic. Patricia Morales at CitizenServiceDesk facing East with upper fascia sign.");
         }
 
         private static void UpdateQueueWitnessVisual(string witnessRootName, string prefabPath, string visualName)

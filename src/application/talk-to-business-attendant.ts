@@ -158,11 +158,18 @@ export class TalkToBusinessAttendantUseCase {
     let schedule: BusinessSchedule;
     let status: BusinessOperationalStatus;
 
+    const cleanEvaluationTime =
+      request.evaluationTime !== undefined &&
+      request.evaluationTime !== null &&
+      String(request.evaluationTime).trim() !== ''
+        ? request.evaluationTime
+        : undefined;
+
     try {
       if (typeof this.worldCore.getBusinessScheduleSnapshot === 'function') {
         const snapshot = await this.worldCore.getBusinessScheduleSnapshot(
           profile.businessId,
-          request.evaluationTime
+          cleanEvaluationTime
         );
         if (!snapshot) {
           throw new BusinessSnapshotUnavailableError(profile.businessId);
@@ -175,7 +182,7 @@ export class TalkToBusinessAttendantUseCase {
           throw new BusinessSnapshotUnavailableError(profile.businessId);
         }
         schedule = sched;
-        const evalTime = request.evaluationTime ?? (await this.worldCore.getCurrentWorldTime());
+        const evalTime = cleanEvaluationTime ?? (await this.worldCore.getCurrentWorldTime());
         status = evaluateBusinessOperationalStatus(schedule, evalTime);
       }
     } catch (coreErr) {

@@ -41,5 +41,6 @@ unity-client/*.booproj
 .runtime/
 data/evidence/
 
-# Root-level local scratch and diagnostics
+# Root-level and client-level local scratch and diagnostics
 /scratch/
+unity-client/scratch/

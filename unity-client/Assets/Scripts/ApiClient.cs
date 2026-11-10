@@ -199,6 +199,103 @@ namespace MyVirtualCommunity.Client.Api
             ));
         }
 
+        /// <summary>
+        /// Retrieves the authoritative activity state of an individual NPC.
+        /// </summary>
+        public void GetNpcActivity(string npcId, Action<NpcActivityResponseDto> onSuccess, Action<string> onError)
+        {
+            string endpoint = $"/api/world/npcs/{Uri.EscapeDataString(npcId)}/activity";
+            StartCoroutine(SendGetRequest<NpcActivityResponseDto>(endpoint, onSuccess, onError));
+        }
+
+        /// <summary>
+        /// Retrieves the authoritative activity roster summary and snapshot for all corridor NPCs.
+        /// </summary>
+        public void GetNpcRosterActivity(Action<NpcRosterActivityResponseDto> onSuccess, Action<string> onError)
+        {
+            StartCoroutine(SendGetRequest<NpcRosterActivityResponseDto>("/api/world/npcs/activity", onSuccess, onError));
+        }
+
+        /// <summary>
+        /// Retrieves the authoritative time-of-day environmental lighting snapshot.
+        /// </summary>
+        public void GetWorldEnvironment(Action<WorldEnvironmentResponseDto> onSuccess, Action<string> onError)
+        {
+            StartCoroutine(SendGetRequest<WorldEnvironmentResponseDto>("/api/world/environment", onSuccess, onError));
+        }
+
+        /// <summary>
+        /// Retrieves authoritative spatial waypoint movement state for a specific NPC.
+        /// </summary>
+        public void GetNpcMovement(string npcId, Action<NpcMovementResponseDto> onSuccess, Action<string> onError)
+        {
+            if (string.IsNullOrEmpty(npcId))
+            {
+                onError?.Invoke("npcId cannot be empty");
+                return;
+            }
+            StartCoroutine(SendGetRequest<NpcMovementResponseDto>($"/api/world/npcs/{Uri.EscapeDataString(npcId)}/movement", onSuccess, onError));
+        }
+
+        /// <summary>
+        /// Retrieves authoritative spatial waypoint movement roster for all corridor NPCs.
+        /// </summary>
+        public void GetNpcRosterMovement(Action<NpcRosterMovementResponseDto> onSuccess, Action<string> onError)
+        {
+            StartCoroutine(SendGetRequest<NpcRosterMovementResponseDto>("/api/world/npcs/movement", onSuccess, onError));
+        }
+
+        /// <summary>
+        /// Retrieves authoritative interaction context and spatial demeanor for a specific NPC (Increment 5.17.0).
+        /// </summary>
+        public void GetNpcInteractionContext(string npcId, Action<NpcInteractionContextResponseDto> onSuccess, Action<string> onError)
+        {
+            if (string.IsNullOrEmpty(npcId))
+            {
+                onError?.Invoke("npcId cannot be empty");
+                return;
+            }
+            StartCoroutine(SendGetRequest<NpcInteractionContextResponseDto>($"/api/world/npcs/{Uri.EscapeDataString(npcId)}/interaction-context", onSuccess, onError));
+        }
+
+        /// <summary>
+        /// Retrieves authoritative interaction context roster across all corridor NPCs (Increment 5.17.0).
+        /// </summary>
+        public void GetNpcRosterInteractionContext(Action<NpcRosterInteractionContextResponseDto> onSuccess, Action<string> onError)
+        {
+            StartCoroutine(SendGetRequest<NpcRosterInteractionContextResponseDto>("/api/world/npcs/interaction-context", onSuccess, onError));
+        }
+
+        /// <summary>
+        /// Retrieves the authoritative physical barrier status (open/closed) for the 4 bridge toll lanes.
+        /// </summary>
+        public void GetBorderLaneBarriers(Action<BorderLaneBarriersResponseDto> onSuccess, Action<string> onError)
+        {
+            StartCoroutine(SendGetRequest<BorderLaneBarriersResponseDto>("/api/border/lane-barriers", onSuccess, onError));
+        }
+
+        /// <summary>
+        /// Updates the physical barrier status (open/closed) for a specific bridge toll lane.
+        /// </summary>
+        public void SetBorderLaneBarrierStatus(string laneId, string status, string reason, Action<BorderLaneBarrierMutationResponseDto> onSuccess, Action<string> onError)
+        {
+            if (string.IsNullOrEmpty(laneId))
+            {
+                onError?.Invoke("laneId cannot be empty");
+                return;
+            }
+            var payload = new BorderLaneBarrierMutationRequestDto
+            {
+                status = status,
+                reason = reason
+            };
+            StartCoroutine(SendPostRequest<BorderLaneBarrierMutationRequestDto, BorderLaneBarrierMutationResponseDto>(
+                $"/api/border/lane-barriers/{Uri.EscapeDataString(laneId)}",
+                payload,
+                onSuccess,
+                onError));
+        }
+
         #endregion
 
         #region HTTP Request Pipeline

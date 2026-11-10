@@ -572,4 +572,298 @@ namespace MyVirtualCommunity.Client.Api
     }
 
     #endregion
+
+    #region NPC Activity & Daily Routines DTOs
+
+    [Serializable]
+    public class NpcActivitySnapshotDto
+    {
+        public string npcId;
+        public string canonicalName;
+        public string state; // "available" | "busy" | "off_duty" | "unavailable"
+        public BilingualTextDto activityTitle;
+        public BilingualTextDto activityDescription;
+        public string currentLocation;
+        public BilingualTextDto locationName;
+        public bool canInteract;
+        public BilingualTextDto interactionNotice;
+        public string evaluatedAt;
+        public string timeZone;
+        public string localCivilTime;
+        public int dayOfWeek;
+        public string dayName;
+        public string nextTransitionTime;
+        public bool isDemonstrationSchedule;
+        public BilingualTextDto demonstrationNotice;
+    }
+
+    [Serializable]
+    public class NpcActivityResponseDto
+    {
+        public bool success;
+        public NpcActivitySnapshotDto activity;
+        public ApiErrorDto error;
+    }
+
+    [Serializable]
+    public class NpcRosterSummaryDto
+    {
+        public int availableCount;
+        public int busyCount;
+        public int offDutyCount;
+        public int unavailableCount;
+        public int totalCount;
+    }
+
+    [Serializable]
+    public class NpcRosterActivityResponseDto
+    {
+        public bool success;
+        public string evaluatedAt;
+        public string timeZone;
+        public string localCivilTime;
+        public NpcRosterSummaryDto summary;
+        public bool isDemonstrationSchedule;
+        public BilingualTextDto demonstrationNotice;
+        public ApiErrorDto error;
+    }
+
+    #endregion
+
+    #region Environmental Presentation & World Time DTOs (Increment 5.15.0)
+
+    [Serializable]
+    public class CivilTimeDto
+    {
+        public int year;
+        public int month;
+        public int day;
+        public int hour;
+        public int minute;
+        public int second;
+        public int dayOfWeek;
+    }
+
+    [Serializable]
+    public class EnvironmentalLightingDto
+    {
+        public string phase;
+        public BilingualTextDto phaseTitle;
+        public float phaseProgress;
+        public bool isNight;
+        public float sunPitchDegrees;
+        public float sunYawDegrees;
+        public float sunIntensity;
+        public string sunColorHex;
+        public float ambientIntensity;
+        public string ambientSkyHex;
+        public string ambientEquatorHex;
+        public string ambientGroundHex;
+        public bool streetlightsActive;
+        public float streetlightsIntensity;
+        public float skyboxExposure;
+        public string fogColorHex;
+    }
+
+    [Serializable]
+    public class WorldEnvironmentResponseDto
+    {
+        public bool success;
+        public string evaluatedAt;
+        public string timeZone;
+        public string localCivilTime;
+        public CivilTimeDto civilTime;
+        public EnvironmentalLightingDto environment;
+        public bool isDemonstrationPresentation;
+        public BilingualTextDto demonstrationNotice;
+        public ApiErrorDto error;
+    }
+
+    #endregion
+
+    #region NPC Waypoint Movement & Spatial Presence DTOs (Increment 5.16.0)
+
+    [Serializable]
+    public class Vector3Dto
+    {
+        public float x;
+        public float y;
+        public float z;
+    }
+
+    [Serializable]
+    public class HeadingDto
+    {
+        public float x;
+        public float z;
+    }
+
+    [Serializable]
+    public class NpcMovementSnapshotDto
+    {
+        public string npcId;
+        public string canonicalName;
+        public string movementState; // "stationary" | "moving" | "arrived" | "waiting"
+        public string currentWaypointId;
+        public string destinationWaypointId;
+        public string activeRouteId;
+        public Vector3Dto position;
+        public HeadingDto forwardHeading;
+        public float progression;
+        public string movementStartTime;
+        public float expectedDurationSeconds;
+        public string associatedPlaceId;
+        public string activityState;
+        public BilingualTextDto activityTitle;
+        public string evaluatedAt;
+        public string timeZone;
+        public string localCivilTime;
+        public bool isDemonstrationMovement;
+        public BilingualTextDto demonstrationNotice;
+    }
+
+    [Serializable]
+    public class NpcMovementResponseDto
+    {
+        public bool success;
+        public NpcMovementSnapshotDto movement;
+        public ApiErrorDto error;
+    }
+
+    [Serializable]
+    public class NpcMovementSummaryDto
+    {
+        public int stationaryCount;
+        public int movingCount;
+        public int arrivedCount;
+        public int waitingCount;
+        public int totalCount;
+    }
+
+    [Serializable]
+    public class NpcRosterMovementResponseDto
+    {
+        public bool success;
+        public string evaluatedAt;
+        public string timeZone;
+        public string localCivilTime;
+        public NpcMovementSummaryDto summary;
+        public NpcMovementSnapshotDto[] npcsList;
+        public bool isDemonstrationMovement;
+        public BilingualTextDto demonstrationNotice;
+        public ApiErrorDto error;
+    }
+
+    #endregion
+
+    #region NPC Interaction Context & Spatial Demeanor DTOs (Increment 5.17.0)
+
+    [Serializable]
+    public class NpcInteractionContextDto
+    {
+        public string npcId;
+        public string canonicalName;
+        public BilingualTextDto role;
+        public string activityState;
+        public BilingualTextDto activityTitle;
+        public BilingualTextDto activityDescription;
+        public string interactionAvailability; // available_normal | available_in_transit | available_contextual | busy | off_duty | unavailable
+        public string interactionMode;         // normal_service | in_transit | break_or_dwell | busy_priority | off_duty_courtesy | closed
+        public bool canInitiateConversation;
+        public bool isAvailableForNormalService;
+        public bool isMoving;
+        public string movementState;
+        public string currentWaypointId;
+        public BilingualTextDto currentWaypointLabel;
+        public string associatedPlaceId;
+        public string destinationWaypointId;
+        public BilingualTextDto destinationWaypointLabel;
+        public string activeRouteId;
+        public float progression;
+        public BilingualTextDto decisionReason;
+        public BilingualTextDto dialogueGuidance;
+        public BilingualTextDto contextualGreeting;
+        public string evaluatedAt;
+        public string timeZone;
+        public string localCivilTime;
+        public bool isDemonstrationContext;
+        public BilingualTextDto demonstrationNotice;
+    }
+
+    [Serializable]
+    public class NpcInteractionContextResponseDto
+    {
+        public bool success;
+        public NpcInteractionContextDto context;
+        public NpcInteractionContextDto interactionContext;
+        public ApiErrorDto error;
+    }
+
+    [Serializable]
+    public class NpcInteractionSummaryDto
+    {
+        public int availableNormalCount;
+        public int inTransitCount;
+        public int contextualCount;
+        public int busyCount;
+        public int offDutyCount;
+        public int unavailableCount;
+        public int totalCount;
+    }
+
+    [Serializable]
+    public class NpcRosterInteractionContextResponseDto
+    {
+        public bool success;
+        public string evaluatedAt;
+        public string timeZone;
+        public string localCivilTime;
+        public NpcInteractionSummaryDto summary;
+        public NpcInteractionContextDto[] npcsList;
+        public bool isDemonstrationContext;
+        public BilingualTextDto demonstrationNotice;
+        public ApiErrorDto error;
+    }
+
+    #endregion
+
+    #region Border Lane Toll Barriers DTOs
+
+    [Serializable]
+    public class BorderLaneBarrierDto
+    {
+        public string laneId;
+        public int archNumber;
+        public string name;
+        public string status; // "open" | "closed"
+        public float angleDegrees;
+        public string reason;
+        public string updatedAt;
+    }
+
+    [Serializable]
+    public class BorderLaneBarriersResponseDto
+    {
+        public bool success;
+        public string worldTime;
+        public BorderLaneBarrierDto[] lanesList;
+        public ApiErrorDto error;
+    }
+
+    [Serializable]
+    public class BorderLaneBarrierMutationRequestDto
+    {
+        public string status; // "open" | "closed"
+        public string reason;
+    }
+
+    [Serializable]
+    public class BorderLaneBarrierMutationResponseDto
+    {
+        public bool success;
+        public BorderLaneBarrierDto lane;
+        public ApiErrorDto error;
+    }
+
+    #endregion
 }

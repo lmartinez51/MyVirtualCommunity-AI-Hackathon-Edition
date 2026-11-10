@@ -2,6 +2,16 @@ import { BusinessId } from '../domain/business-id.js';
 import { BusinessSchedule } from '../domain/business-schedule.js';
 import { BusinessOperationalStatus } from '../domain/operational-status.js';
 import { CitizenReportRecord } from '../domain/citizen-report.js';
+import { NpcActivitySnapshot, NpcRosterActivitySnapshot } from '../domain/npc-activity.js';
+import { WorldEnvironmentSnapshot } from '../domain/time-of-day.js';
+import { NpcMovementSnapshot, NpcRosterMovementSnapshot } from '../domain/npc-waypoint-movement.js';
+import { NpcInteractionContext, NpcRosterInteractionContext } from '../domain/npc-interaction-context.js';
+import {
+  BorderLaneBarriersRoster,
+  BorderLaneBarrierSnapshot,
+  LaneBarrierId,
+  BarrierPhysicalState,
+} from '../domain/border-lane-barriers.js';
 
 /**
  * A coherent point-in-time snapshot of business operational data from the World Core.
@@ -70,4 +80,75 @@ export interface WorldCorePort {
    * Lists all registered citizen issue reports.
    */
   listCitizenReports?(filter?: { limit?: number; offset?: number }): Promise<readonly CitizenReportRecord[]>;
+
+  /**
+   * Evaluates the authoritative activity state of an NPC at a specified world time.
+   * Returns null if the NPC is not recognized.
+   */
+  getNpcActivity?(
+    npcId: string,
+    evaluatedAt?: Date | string | number
+  ): Promise<NpcActivitySnapshot | null>;
+
+  /**
+   * Evaluates the authoritative activity roster of all corridor NPCs at a specified world time.
+   */
+  getNpcRosterActivity?(
+    evaluatedAt?: Date | string | number
+  ): Promise<NpcRosterActivitySnapshot>;
+
+  /**
+   * Evaluates the authoritative environmental lighting and time-of-day presentation state.
+   */
+  getWorldEnvironment?(
+    evaluatedAt?: Date | string | number
+  ): Promise<WorldEnvironmentSnapshot>;
+
+  /**
+   * Evaluates the authoritative spatial waypoint movement state of an NPC at a specified world time.
+   * Returns null if the NPC is not recognized.
+   */
+  getNpcMovement?(
+    npcId: string,
+    evaluatedAt?: Date | string | number
+  ): Promise<NpcMovementSnapshot | null>;
+
+  /**
+   * Evaluates the authoritative spatial movement state for all corridor NPCs in a single coherent snapshot.
+   */
+  getNpcRosterMovement?(
+    evaluatedAt?: Date | string | number
+  ): Promise<NpcRosterMovementSnapshot>;
+
+  /**
+   * Evaluates the authoritative interaction context for a canonical NPC at a specified world time.
+   * Returns null if the NPC is not recognized.
+   */
+  getNpcInteractionContext?(
+    npcId: string,
+    evaluatedAt?: Date | string | number
+  ): Promise<NpcInteractionContext | null>;
+
+  /**
+   * Evaluates the authoritative interaction context for all corridor NPCs in a single coherent snapshot.
+   */
+  getNpcRosterInteractionContext?(
+    evaluatedAt?: Date | string | number
+  ): Promise<NpcRosterInteractionContext>;
+
+  /**
+   * Retrieves the authoritative status of all 4 vehicular toll barrier gates at the Paso del Norte bridge entrance.
+   */
+  getBorderLaneBarriers?(
+    evaluatedAt?: Date | string | number
+  ): Promise<BorderLaneBarriersRoster>;
+
+  /**
+   * Updates the authoritative physical barrier status (open/closed) of a specific vehicular lane.
+   */
+  setBorderLaneBarrierStatus?(
+    laneId: LaneBarrierId,
+    status: BarrierPhysicalState,
+    reason?: string
+  ): Promise<BorderLaneBarrierSnapshot>;
 }

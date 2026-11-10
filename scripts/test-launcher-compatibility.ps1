@@ -156,6 +156,19 @@ try {
     $listener.Stop()
 }
 
+# ------------------------------------------------------------------------------
+# TEST 8: Standalone Build Freshness & Lifecycle Invariants
+# ------------------------------------------------------------------------------
+Write-Host "`nTest Suite 8: Standalone Build Freshness & Lifecycle Invariants" -ForegroundColor Cyan
+$freshnessScript = Join-Path $PSScriptRoot "test-build-freshness.ps1"
+if (Test-Path $freshnessScript) {
+    & powershell -ExecutionPolicy Bypass -File $freshnessScript
+    $freshnessOk = ($LASTEXITCODE -eq 0)
+    Assert-Test "All 13 build freshness and lifecycle invariants passed" $freshnessOk "Exit Code: $LASTEXITCODE"
+} else {
+    Assert-Test "Build freshness test script found" $false "Missing $freshnessScript"
+}
+
 Write-Host "`n=================================================================" -ForegroundColor Cyan
 Write-Host " Results: $passCount Passed, $failCount Failed (Total: $testCount)" -ForegroundColor $(if ($failCount -eq 0) { "Green" } else { "Red" })
 Write-Host "=================================================================" -ForegroundColor Cyan

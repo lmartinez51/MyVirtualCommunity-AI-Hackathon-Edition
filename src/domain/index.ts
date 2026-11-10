@@ -9,3 +9,8 @@ export * from './border-concierge.js';
 export * from './business-attendant.js';
 export * from './citizen-report.js';
 export * from './sam-mask-overlay.js';
+export * from './npc-activity.js';
+export * from './time-of-day.js';
+export * from './npc-waypoint-movement.js';
+export * from './npc-interaction-context.js';
+export * from './border-lane-barriers.js';

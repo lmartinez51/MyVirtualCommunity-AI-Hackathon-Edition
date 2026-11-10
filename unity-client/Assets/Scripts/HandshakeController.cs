@@ -42,6 +42,8 @@ namespace MyVirtualCommunity.Client.Api
 
         private void Awake()
         {
+            QualitySettings.vSyncCount = 1;
+            Application.targetFrameRate = 60;
             apiClient = GetComponent<ApiClient>();
         }
 

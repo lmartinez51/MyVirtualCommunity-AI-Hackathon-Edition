@@ -4,6 +4,8 @@ An authoritative, grounded multimodal AI foundation and interactive 3D simulatio
 
 Built with **Meta Muse Spark 1.3**, **Meta Segment Anything 3.1 (SAM 3.1)**, **Unity 6**, and an authoritative **Node.js/TypeScript World Core**.
 
+![MyVirtualCommunity AI Hackathon Edition Overview](docs/assets/myvirtualcommunity-hackathon-overview.jpg)
+
 ---
 
 ## 1. Project Overview & Problem Statement
@@ -27,8 +29,12 @@ In conversational AI applications for local civic environments and international
 
 The simulation reproduces the binational urban environment of **Avenida Benito Juárez** in historic downtown Ciudad Juárez, extending north toward the **Puente Internacional Paso del Norte / Santa Fe Street Bridge** crossing into El Paso, Texas:
 
-- **Spatial Slice:** 10 registered commercial and civic landmarks along the corridor (including Farmacias Benavides, Óptica Fashion, Pastelerías La Tía Lupe, Wing Spot Gómez Morín, and municipal intake checkpoints).
-- **Urban Life:** Active pedestrian sidewalks, street furniture, bilingual signage, and commercial facades reconstructed with accurate geometry and sidewalk clearance.
+- **Photographic Architectural Grounding:** Authentic reconstruction grounded in official photographic survey:
+  - **East Sidewalk Commercial Block:** Farmacias Benavides, Consultorio Médico, Comercial Uno, Joyería Minerva, Curiosidades Azteca, La Michoacana, and Atención Dental.
+  - **West Sidewalk Commercial Block:** Joyería Internacional, Farmacia San Martín, Óptica Fashion, Bar La Cucaracha, Taquería El Trompo, and Dental Jarquín.
+- **Calle Gardenias Intersection:** Full civil engineering intersection featuring continuous asphalt roadway, 4 curved corner fillet radii (1.80 m), ADA-compliant yellow tactile curb ramps, zebra crosswalks, designated taxi parking stalls, and dual street nomenclature signposts.
+- **Puente Internacional Paso del Norte (PC-51):** Monumental arched concrete canopy, 3D relief blue lane identifiers (1, 2, 3, 4) on toll booth pillars, Fideicomiso surveillance camera easter egg, diagonal barricades to Pillar 4, and open pedestrian concourse with Elena Ramos' information kiosk.
+- **Dynamic Toll Barrier Gates (Plumas de Peaje):** 4 electromechanical toll barrier units across Arcos 1–4 with animated red/white hazard striped arms, physical collision synchronization, dual-aspect traffic signals (green/red), and live backend World Core control.
 - **Binational Context:** Real-time port-of-entry dynamics where thousands of students, retail workers, and daily commuters cross between Mexico and the United States.
 
 ---
@@ -37,12 +43,13 @@ The simulation reproduces the binational urban environment of **Avenida Benito J
 
 The project delivers a fully interactive first-person experience built in **Unity 6**:
 
-- **First-Person Corridor Navigation:** Smooth keyboard/mouse movement (`W/A/S/D` to walk, `Shift` to sprint, `Mouse` to look, `Space` to jump).
-- **Proximity & Raycast Interaction:** Aim at any interactive NPC or service desk and press `E` to initiate a dialogue or service flow.
+- **First-Person Corridor Navigation:** Smooth keyboard/mouse movement (`W/A/S/D` to walk, `Shift` to sprint, `Mouse` to look, `Space` to jump) with auto-anchored head camera.
+- **Proximity & Raycast Interaction:** Aim at any interactive NPC, service desk, or landmark and press `E` to initiate a dialogue or service flow.
 - **HUD Modal & Inspector System:** Dark-mode glassmorphic HUD supporting bilingual display (American English and Latin American Spanish) with `ESC` hotkey dismissal.
 - **Interactive NPC Dialogue Trees:** Grounded question chips, custom query text input, and authoritative responses with latency and model badges.
 - **Multimodal Citizen Reporting Desk:** Complete intake modal for reporting municipal issues with optional photo attachment, client-side metadata sanitization, SAM 3.1 segmentation preview, and World Core registration.
 - **Visual Evidence Inspection Viewer:** Modal inspection tool allowing users to examine original photographs, extracted SAM 3.1 segmentation masks, and blended visual overlays.
+- **Dynamic Border Lane Barrier Control:** Real-time synchronization between the Unity client and World Core REST API (`GET /api/border/lane-barriers` & `POST /api/border/lane-barriers/:laneId`), with in-game Settings drawer debug toggles.
 
 ---
 

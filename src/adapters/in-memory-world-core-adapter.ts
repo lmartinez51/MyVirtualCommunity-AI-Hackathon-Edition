@@ -10,6 +10,40 @@ import {
   CitizenReportRecord,
   normalizeCitizenReportRecord,
 } from '../domain/citizen-report.js';
+import {
+  NPC_SCHEDULE_ROSTER,
+  evaluateNpcActivity,
+  evaluateRosterActivity,
+  NpcActivitySnapshot,
+  NpcRosterActivitySnapshot,
+} from '../domain/npc-activity.js';
+import {
+  WorldEnvironmentSnapshot,
+  evaluateWorldEnvironment,
+} from '../domain/time-of-day.js';
+import {
+  NPC_MOVEMENT_PROFILES,
+  evaluateNpcMovement,
+  evaluateRosterMovement,
+  NpcMovementSnapshot,
+  NpcRosterMovementSnapshot,
+} from '../domain/npc-waypoint-movement.js';
+import {
+  evaluateNpcInteractionContext,
+  evaluateRosterInteractionContext,
+  NpcInteractionContext,
+  NpcRosterInteractionContext,
+} from '../domain/npc-interaction-context.js';
+import {
+  BorderLaneBarriersRoster,
+  BorderLaneBarrierSnapshot,
+  LaneBarrierId,
+  BarrierPhysicalState,
+  createDefaultBorderLaneBarriers,
+  updateLaneBarrierStatus,
+  isValidLaneId,
+  isValidBarrierState,
+} from '../domain/border-lane-barriers.js';
 import { WorldCorePort, BusinessScheduleSnapshot } from '../ports/world-core-port.js';
 
 export interface InMemoryWorldCoreOptions {
@@ -36,6 +70,7 @@ export class InMemoryWorldCoreAdapter implements WorldCorePort {
   private simulatedWorldTime: string | null = null;
   private citizenReports: Map<string, CitizenReportRecord> = new Map();
   private persistenceFilePath: string | null = null;
+  private laneBarriers: BorderLaneBarriersRoster = createDefaultBorderLaneBarriers();
 
   constructor(optionsOrSchedules?: readonly BusinessSchedule[] | InMemoryWorldCoreOptions) {
     let schedules: readonly BusinessSchedule[] | undefined;
@@ -221,10 +256,17 @@ export class InMemoryWorldCoreAdapter implements WorldCorePort {
       return null;
     }
 
-    const effectiveTime =
-      evaluatedAt !== undefined
-        ? new Date(evaluatedAt).toISOString()
-        : await this.getCurrentWorldTime();
+    let effectiveTime: string;
+    if (evaluatedAt !== undefined && evaluatedAt !== null && String(evaluatedAt).trim() !== '') {
+      const parsedDate = new Date(evaluatedAt);
+      if (!Number.isNaN(parsedDate.getTime())) {
+        effectiveTime = parsedDate.toISOString();
+      } else {
+        effectiveTime = await this.getCurrentWorldTime();
+      }
+    } else {
+      effectiveTime = await this.getCurrentWorldTime();
+    }
 
     const operationalStatus = evaluateBusinessOperationalStatus(schedule, effectiveTime);
 
@@ -256,5 +298,128 @@ export class InMemoryWorldCoreAdapter implements WorldCorePort {
     const offset = filter?.offset ?? 0;
     const limit = filter?.limit ?? 50;
     return all.slice(offset, offset + limit);
+  }
+
+  public async getNpcActivity(
+    npcId: string,
+    evaluatedAt?: Date | string | number
+  ): Promise<NpcActivitySnapshot | null> {
+    const profile = NPC_SCHEDULE_ROSTER[npcId];
+    if (!profile) return null;
+    const effectiveTime =
+      evaluatedAt !== undefined
+        ? typeof evaluatedAt === 'string'
+          ? evaluatedAt
+          : new Date(evaluatedAt).toISOString()
+        : await this.getCurrentWorldTime();
+    return evaluateNpcActivity(profile, effectiveTime);
+  }
+
+  public async getNpcRosterActivity(
+    evaluatedAt?: Date | string | number
+  ): Promise<NpcRosterActivitySnapshot> {
+    const effectiveTime =
+      evaluatedAt !== undefined
+        ? typeof evaluatedAt === 'string'
+          ? evaluatedAt
+          : new Date(evaluatedAt).toISOString()
+        : await this.getCurrentWorldTime();
+    return evaluateRosterActivity(NPC_SCHEDULE_ROSTER, effectiveTime);
+  }
+
+  public async getWorldEnvironment(
+    evaluatedAt?: Date | string | number
+  ): Promise<WorldEnvironmentSnapshot> {
+    const effectiveTime =
+      evaluatedAt !== undefined
+        ? typeof evaluatedAt === 'string'
+          ? evaluatedAt
+          : new Date(evaluatedAt).toISOString()
+        : await this.getCurrentWorldTime();
+    return evaluateWorldEnvironment(effectiveTime);
+  }
+
+  public async getNpcMovement(
+    npcId: string,
+    evaluatedAt?: Date | string | number
+  ): Promise<NpcMovementSnapshot | null> {
+    const profile = NPC_MOVEMENT_PROFILES[npcId];
+    if (!profile) return null;
+    const effectiveTime =
+      evaluatedAt !== undefined
+        ? typeof evaluatedAt === 'string'
+          ? evaluatedAt
+          : new Date(evaluatedAt).toISOString()
+        : await this.getCurrentWorldTime();
+    return evaluateNpcMovement(profile, effectiveTime);
+  }
+
+  public async getNpcRosterMovement(
+    evaluatedAt?: Date | string | number
+  ): Promise<NpcRosterMovementSnapshot> {
+    const effectiveTime =
+      evaluatedAt !== undefined
+        ? typeof evaluatedAt === 'string'
+          ? evaluatedAt
+          : new Date(evaluatedAt).toISOString()
+        : await this.getCurrentWorldTime();
+    return evaluateRosterMovement(NPC_MOVEMENT_PROFILES, effectiveTime);
+  }
+
+  public async getNpcInteractionContext(
+    npcId: string,
+    evaluatedAt?: Date | string | number
+  ): Promise<NpcInteractionContext | null> {
+    const effectiveTime =
+      evaluatedAt !== undefined
+        ? typeof evaluatedAt === 'string'
+          ? evaluatedAt
+          : new Date(evaluatedAt).toISOString()
+        : await this.getCurrentWorldTime();
+    return evaluateNpcInteractionContext(npcId, effectiveTime);
+  }
+
+  public async getNpcRosterInteractionContext(
+    evaluatedAt?: Date | string | number
+  ): Promise<NpcRosterInteractionContext> {
+    const effectiveTime =
+      evaluatedAt !== undefined
+        ? typeof evaluatedAt === 'string'
+          ? evaluatedAt
+          : new Date(evaluatedAt).toISOString()
+        : await this.getCurrentWorldTime();
+    return evaluateRosterInteractionContext(effectiveTime);
+  }
+
+  public async getBorderLaneBarriers(
+    evaluatedAt?: Date | string | number
+  ): Promise<BorderLaneBarriersRoster> {
+    const effectiveTime =
+      evaluatedAt !== undefined
+        ? typeof evaluatedAt === 'string'
+          ? evaluatedAt
+          : new Date(evaluatedAt).toISOString()
+        : await this.getCurrentWorldTime();
+
+    return {
+      ...this.laneBarriers,
+      worldTime: effectiveTime,
+    };
+  }
+
+  public async setBorderLaneBarrierStatus(
+    laneId: LaneBarrierId,
+    status: BarrierPhysicalState,
+    reason?: string
+  ): Promise<BorderLaneBarrierSnapshot> {
+    if (!isValidLaneId(laneId)) {
+      throw new Error(`Invalid lane identifier: ${String(laneId)}`);
+    }
+    if (!isValidBarrierState(status)) {
+      throw new Error(`Invalid barrier status: ${String(status)}`);
+    }
+    const worldTime = await this.getCurrentWorldTime();
+    this.laneBarriers = updateLaneBarrierStatus(this.laneBarriers, laneId, status, reason, worldTime);
+    return this.laneBarriers.lanes[laneId];
   }
 }

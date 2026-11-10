@@ -69,35 +69,8 @@ namespace MyVirtualCommunity.Editor
             road.transform.localScale = new Vector3(14f, 0.1f, 90f);
             SetMaterial(road, asphaltMat);
 
-            // 2. Road Markings: Double Yellow Centerline & White Shoulder Lines
-            GameObject centerLine1 = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            centerLine1.name = "Stripe_Yellow_Center_1";
-            centerLine1.transform.SetParent(envRoot.transform);
-            centerLine1.transform.position = new Vector3(-0.15f, 0.01f, 20f);
-            centerLine1.transform.localScale = new Vector3(0.12f, 0.01f, 90f);
-            SetMaterial(centerLine1, stripeMat);
-            UnityEngine.Object.DestroyImmediate(centerLine1.GetComponent<Collider>());
-
-            GameObject centerLine2 = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            centerLine2.name = "Stripe_Yellow_Center_2";
-            centerLine2.transform.SetParent(envRoot.transform);
-            centerLine2.transform.position = new Vector3(0.15f, 0.01f, 20f);
-            centerLine2.transform.localScale = new Vector3(0.12f, 0.01f, 90f);
-            SetMaterial(centerLine2, stripeMat);
-            UnityEngine.Object.DestroyImmediate(centerLine2.GetComponent<Collider>());
-
-            // Pedestrian Crosswalk near storefronts (Z = -15m)
-            for (int i = -6; i <= 6; i++)
-            {
-                if (i == 0) continue;
-                GameObject crossStripe = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                crossStripe.name = $"Crosswalk_Stripe_{i}";
-                crossStripe.transform.SetParent(envRoot.transform);
-                crossStripe.transform.position = new Vector3(i * 1.0f, 0.01f, -15f);
-                crossStripe.transform.localScale = new Vector3(0.5f, 0.01f, 3.5f);
-                SetMaterial(crossStripe, whiteStripeMat);
-                UnityEngine.Object.DestroyImmediate(crossStripe.GetComponent<Collider>());
-            }
+            // 2. Road Markings: Av. Benito Juárez operates with two wide circulation lanes and parallel parking on the East curb.
+            // Centerline yellow stripes and legacy south crosswalk removed per real-world reference.
 
             // 3. Sidewalks & Curbs
             // East Sidewalk (Positive X: X = 7.0 to 12.0)
@@ -307,37 +280,7 @@ namespace MyVirtualCommunity.Editor
             CreateUrbanBuilding("UrbanBuilding_West_South", new Vector3(-18.3f, 4.0f, -16f), new Vector3(12f, 8f, 16f), buildingsRoot, CreateOrGetMaterial("Assets/Settings/StuccoSand.mat", new Color(0.80f, 0.75f, 0.68f), 0.1f));
             CreateUrbanBuilding("UrbanBuilding_West_North", new Vector3(-18.3f, 4.5f, 18.5f), new Vector3(12f, 9f, 15f), buildingsRoot, CreateOrGetMaterial("Assets/Settings/StuccoTerracotta.mat", new Color(0.75f, 0.45f, 0.35f), 0.1f));
 
-            // 7. Directional Highway Gantry Spanning Roadway (Z = +28m)
-            GameObject gantryRoot = new GameObject("Overhead_Highway_Gantry");
-            gantryRoot.transform.SetParent(envRoot.transform);
-
-            // Left Post
-            CreateCylinderPost("Gantry_Post_West", new Vector3(-7.5f, 3.5f, 28f), 7f, 0.35f, gantryRoot, bridgeSteelMat);
-            // Right Post
-            CreateCylinderPost("Gantry_Post_East", new Vector3(7.5f, 3.5f, 28f), 7f, 0.35f, gantryRoot, bridgeSteelMat);
-
-            // Overhead Cross Beam
-            GameObject gantryBeam = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            gantryBeam.name = "Gantry_Beam";
-            gantryBeam.transform.SetParent(gantryRoot.transform);
-            gantryBeam.transform.position = new Vector3(0f, 6.8f, 28f);
-            gantryBeam.transform.localScale = new Vector3(15.5f, 0.6f, 0.6f);
-            SetMaterial(gantryBeam, bridgeSteelMat);
-
-            // Directional Signs on Gantry
-            GameObject signPDN = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            signPDN.name = "Sign_PasoDelNorte";
-            signPDN.transform.SetParent(gantryRoot.transform);
-            signPDN.transform.position = new Vector3(-3.5f, 5.5f, 28.1f);
-            signPDN.transform.localScale = new Vector3(6.5f, 1.8f, 0.1f);
-            SetMaterial(signPDN, greenSignMat);
-
-            GameObject signPed = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            signPed.name = "Sign_PedestrianElPaso";
-            signPed.transform.SetParent(gantryRoot.transform);
-            signPed.transform.position = new Vector3(3.5f, 5.5f, 28.1f);
-            signPed.transform.localScale = new Vector3(6.5f, 1.8f, 0.1f);
-            SetMaterial(signPed, greenSignMat);
+            // 7. Directional Highway Gantry (Z = +28m) - REMOVED: Fictional portal arch does not exist in real world.
 
             // 8. Northern Border Approach: Plaza de Cobro C-51 & Bridge Canopy (Z = +45m)
             GameObject borderRoot = new GameObject("Border_Crossing_Plaza");

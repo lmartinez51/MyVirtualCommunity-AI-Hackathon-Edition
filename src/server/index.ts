@@ -52,6 +52,13 @@ import {
   SubmitCitizenReportUseCase,
 } from '../application/submit-citizen-report.js';
 import { GetCitizenReportUseCase } from '../application/get-citizen-report.js';
+import {
+  isValidLaneId,
+  isValidBarrierState,
+  LaneBarrierId,
+  BarrierPhysicalState,
+  createDefaultBorderLaneBarriers,
+} from '../domain/border-lane-barriers.js';
 import { BorderCrossingPort } from '../ports/border-crossing-port.js';
 import { MetaModelPort } from '../ports/meta-model-port.js';
 import { WorldCorePort } from '../ports/world-core-port.js';
@@ -347,6 +354,169 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
         return;
       }
 
+      // 4b. GET /api/world/npcs/activity (Authoritative Roster NPC Activity)
+      if (method === 'GET' && (pathname === '/api/world/npcs/activity' || pathname === '/api/npcs/activity')) {
+        const atParam = parsedUrl.searchParams.get('at');
+        if ('getNpcRosterActivity' in worldCore && typeof worldCore.getNpcRosterActivity === 'function') {
+          const rosterActivity = await worldCore.getNpcRosterActivity(atParam ?? undefined);
+          sendJson(res, 200, {
+            success: true,
+            ...rosterActivity,
+          });
+        } else {
+          sendJson(res, 501, {
+            success: false,
+            error: { code: 'not-supported', message: 'World Core does not implement getNpcRosterActivity' },
+          });
+        }
+        return;
+      }
+
+      // 4c. GET /api/world/npcs/:id/activity (Individual NPC Authoritative Activity)
+      const npcActivityMatch = pathname.match(/^\/api\/(?:world\/)?npcs\/([a-zA-Z0-9_-]+)\/activity$/);
+      if (method === 'GET' && npcActivityMatch && npcActivityMatch[1]) {
+        const npcId = npcActivityMatch[1];
+        const atParam = parsedUrl.searchParams.get('at');
+        if ('getNpcActivity' in worldCore && typeof worldCore.getNpcActivity === 'function') {
+          const activity = await worldCore.getNpcActivity(npcId, atParam ?? undefined);
+          if (!activity) {
+            sendJson(res, 404, {
+              success: false,
+              error: { code: 'npc-not-found', message: `NPC "${npcId}" not found in authoritative roster.` },
+            });
+            return;
+          }
+          sendJson(res, 200, {
+            success: true,
+            activity,
+          });
+        } else {
+          sendJson(res, 501, {
+            success: false,
+            error: { code: 'not-supported', message: 'World Core does not implement getNpcActivity' },
+          });
+        }
+        return;
+      }
+
+      // 4d. GET /api/world/environment (Authoritative Environmental Lighting & World Time)
+      if (
+        method === 'GET' &&
+        (pathname === '/api/world/environment' ||
+          pathname === '/api/environment' ||
+          pathname === '/api/world/time' ||
+          pathname === '/api/time')
+      ) {
+        const atParam = parsedUrl.searchParams.get('at');
+        if ('getWorldEnvironment' in worldCore && typeof worldCore.getWorldEnvironment === 'function') {
+          const envSnapshot = await worldCore.getWorldEnvironment(atParam ?? undefined);
+          sendJson(res, 200, {
+            success: true,
+            ...envSnapshot,
+          });
+        } else {
+          sendJson(res, 501, {
+            success: false,
+            error: { code: 'not-supported', message: 'World Core does not implement getWorldEnvironment' },
+          });
+        }
+        return;
+      }
+
+      // 4e. GET /api/world/npcs/movement (Authoritative Roster NPC Waypoint Movement)
+      if (method === 'GET' && (pathname === '/api/world/npcs/movement' || pathname === '/api/npcs/movement')) {
+        const atParam = parsedUrl.searchParams.get('at');
+        if ('getNpcRosterMovement' in worldCore && typeof worldCore.getNpcRosterMovement === 'function') {
+          const rosterMovement = await worldCore.getNpcRosterMovement(atParam ?? undefined);
+          sendJson(res, 200, {
+            success: true,
+            ...rosterMovement,
+          });
+        } else {
+          sendJson(res, 501, {
+            success: false,
+            error: { code: 'not-supported', message: 'World Core does not implement getNpcRosterMovement' },
+          });
+        }
+        return;
+      }
+
+      // 4f. GET /api/world/npcs/:id/movement (Individual NPC Authoritative Waypoint Movement)
+      const npcMovementMatch = pathname.match(/^\/api\/(?:world\/)?npcs\/([a-zA-Z0-9_-]+)\/movement$/);
+      if (method === 'GET' && npcMovementMatch && npcMovementMatch[1]) {
+        const npcId = npcMovementMatch[1];
+        const atParam = parsedUrl.searchParams.get('at');
+        if ('getNpcMovement' in worldCore && typeof worldCore.getNpcMovement === 'function') {
+          const movement = await worldCore.getNpcMovement(npcId, atParam ?? undefined);
+          if (!movement) {
+            sendJson(res, 404, {
+              success: false,
+              error: { code: 'npc-not-found', message: `NPC "${npcId}" not found in authoritative movement roster.` },
+            });
+            return;
+          }
+          sendJson(res, 200, {
+            success: true,
+            movement,
+          });
+        } else {
+          sendJson(res, 501, {
+            success: false,
+            error: { code: 'not-supported', message: 'World Core does not implement getNpcMovement' },
+          });
+        }
+        return;
+      }
+
+      // 4g. GET /api/world/npcs/interaction-context (Authoritative Roster NPC Interaction Context)
+      if (
+        method === 'GET' &&
+        (pathname === '/api/world/npcs/interaction-context' || pathname === '/api/npcs/interaction-context')
+      ) {
+        const atParam = parsedUrl.searchParams.get('at');
+        if ('getNpcRosterInteractionContext' in worldCore && typeof worldCore.getNpcRosterInteractionContext === 'function') {
+          const rosterContext = await worldCore.getNpcRosterInteractionContext(atParam ?? undefined);
+          sendJson(res, 200, {
+            success: true,
+            ...rosterContext,
+          });
+        } else {
+          sendJson(res, 501, {
+            success: false,
+            error: { code: 'not-supported', message: 'World Core does not implement getNpcRosterInteractionContext' },
+          });
+        }
+        return;
+      }
+
+      // 4h. GET /api/world/npcs/:id/interaction-context (Individual NPC Authoritative Interaction Context)
+      const npcInteractionContextMatch = pathname.match(/^\/api\/(?:world\/)?npcs\/([a-zA-Z0-9_-]+)\/interaction-context$/);
+      if (method === 'GET' && npcInteractionContextMatch && npcInteractionContextMatch[1]) {
+        const npcId = npcInteractionContextMatch[1];
+        const atParam = parsedUrl.searchParams.get('at');
+        if ('getNpcInteractionContext' in worldCore && typeof worldCore.getNpcInteractionContext === 'function') {
+          const context = await worldCore.getNpcInteractionContext(npcId, atParam ?? undefined);
+          if (!context) {
+            sendJson(res, 404, {
+              success: false,
+              error: { code: 'npc-not-found', message: `NPC "${npcId}" not found in authoritative interaction roster.` },
+            });
+            return;
+          }
+          sendJson(res, 200, {
+            success: true,
+            context,
+            interactionContext: context,
+          });
+        } else {
+          sendJson(res, 501, {
+            success: false,
+            error: { code: 'not-supported', message: 'World Core does not implement getNpcInteractionContext' },
+          });
+        }
+        return;
+      }
+
       // 5. POST /api/assistant/query
       if (method === 'POST' && pathname === '/api/assistant/query') {
         const body = await readBody(req);
@@ -423,6 +593,67 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
             },
           });
         }
+        return;
+      }
+
+      // 6B. GET /api/border/lane-barriers (Authoritative 4-Lane Toll Barriers Status)
+      if (method === 'GET' && pathname === '/api/border/lane-barriers') {
+        const barriers =
+          'getBorderLaneBarriers' in worldCore && typeof worldCore.getBorderLaneBarriers === 'function'
+            ? await worldCore.getBorderLaneBarriers()
+            : createDefaultBorderLaneBarriers();
+
+        sendJson(res, 200, {
+          success: true,
+          worldTime: barriers.worldTime,
+          lanes: barriers.lanes,
+          lanesList: Object.values(barriers.lanes),
+        });
+        return;
+      }
+
+      // 6C. POST /api/border/lane-barriers/:laneId (Update physical barrier status: open / closed)
+      const laneBarrierMatch = pathname.match(/^\/api\/border\/lane-barriers\/(lane-[1-4])$/);
+      if (method === 'POST' && laneBarrierMatch && laneBarrierMatch[1]) {
+        const laneId = laneBarrierMatch[1] as LaneBarrierId;
+        let rawBody: any;
+        try {
+          rawBody = await readBody(req);
+        } catch {
+          sendJson(res, 400, {
+            success: false,
+            error: { code: 'invalid-json-body', message: 'Request body must be valid JSON.' },
+          });
+          return;
+        }
+
+        const requestedStatus = rawBody?.status;
+        if (!isValidBarrierState(requestedStatus)) {
+          sendJson(res, 400, {
+            success: false,
+            error: {
+              code: 'invalid-barrier-status',
+              message: `Barrier status must be either 'open' or 'closed'. Received: ${String(requestedStatus)}`,
+            },
+          });
+          return;
+        }
+
+        const reason = typeof rawBody?.reason === 'string' ? rawBody.reason.trim() : undefined;
+
+        if ('setBorderLaneBarrierStatus' in worldCore && typeof worldCore.setBorderLaneBarrierStatus === 'function') {
+          const updatedLane = await worldCore.setBorderLaneBarrierStatus(laneId, requestedStatus, reason);
+          sendJson(res, 200, {
+            success: true,
+            lane: updatedLane,
+          });
+          return;
+        }
+
+        sendJson(res, 501, {
+          success: false,
+          error: { code: 'not-implemented', message: 'World Core does not support barrier mutation.' },
+        });
         return;
       }
 
@@ -637,12 +868,19 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
           return;
         }
 
+        const cleanEvalTime =
+          evaluationTime !== undefined &&
+          evaluationTime !== null &&
+          String(evaluationTime).trim() !== ''
+            ? evaluationTime
+            : undefined;
+
         try {
           const result = await businessAttendantUseCase.execute({
             attendantId,
             message,
             language,
-            evaluationTime,
+            evaluationTime: cleanEvalTime,
           });
           sendJson(res, 200, {
             success: true,

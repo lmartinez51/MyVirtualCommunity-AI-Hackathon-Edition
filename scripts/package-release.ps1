@@ -36,6 +36,17 @@ if (-not (Test-Path $SourceDir)) {
 }
 $sourcePath = (Resolve-Path -Path $SourceDir).Path
 
+# Verify build freshness using canonical build-standalone script
+$buildScript = Join-Path $scriptDir "build-standalone.ps1"
+if (Test-Path $buildScript) {
+    Write-Host "Validating build freshness against current Unity sources..." -ForegroundColor Cyan
+    & powershell -ExecutionPolicy Bypass -File $buildScript -CheckOnly
+    if ($LASTEXITCODE -ne 0 -and -not $Force) {
+        Write-Error "The build in $sourcePath is STALE or unverified against current project sources.`nRun .\scripts\build-standalone.ps1 to rebuild before packaging, or use -Force to bypass."
+        exit 1
+    }
+}
+
 # Verify essential files exist
 $exePath = Join-Path $sourcePath "MyVirtualCommunity.exe"
 $playerDll = Join-Path $sourcePath "UnityPlayer.dll"

@@ -381,5 +381,51 @@ describe('Storefront Business Attendants API Integration Tests', () => {
       await serverInstance.stop();
     }
   });
+
+  it('13. POST /api/businesses/attendants/chat safely handles empty string or null evaluationTime without throwing 502', async () => {
+    const worldCore = new InMemoryWorldCoreAdapter();
+    const metaModel = new MockMetaModelAdapter();
+    const serverInstance = createAssistantServer({ worldCore, metaModel });
+
+    await serverInstance.start(0, '127.0.0.1');
+    const addr = serverInstance.server.address() as any;
+    const url = `http://127.0.0.1:${addr.port}`;
+
+    try {
+      // Test empty string (as serialized by Unity JsonUtility when unassigned)
+      const resValeria = await fetch(`${url}/api/businesses/attendants/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          attendantId: 'valeria-optica-attendant',
+          message: 'What are your hours today?',
+          evaluationTime: '',
+        }),
+      });
+
+      assert.strictEqual(resValeria.status, 200);
+      const dataValeria = (await resValeria.json()) as any;
+      assert.strictEqual(dataValeria.success, true);
+      assert.strictEqual(dataValeria.response.attendantId, 'valeria-optica-attendant');
+
+      // Test null evaluationTime
+      const resCarlos = await fetch(`${url}/api/businesses/attendants/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          attendantId: 'carlos-farmacia-attendant',
+          message: 'Are you open?',
+          evaluationTime: null,
+        }),
+      });
+
+      assert.strictEqual(resCarlos.status, 200);
+      const dataCarlos = (await resCarlos.json()) as any;
+      assert.strictEqual(dataCarlos.success, true);
+      assert.strictEqual(dataCarlos.response.attendantId, 'carlos-farmacia-attendant');
+    } finally {
+      await serverInstance.stop();
+    }
+  });
 });
 
