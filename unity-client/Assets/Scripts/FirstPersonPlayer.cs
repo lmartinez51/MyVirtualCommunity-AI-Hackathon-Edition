@@ -79,6 +79,14 @@ namespace MyVirtualCommunity.Client.World
         private PrimaryUIState currentState = PrimaryUIState.ControlsGuide; // Active on first launch
         private PrimaryUIState controlsGuideOrigin = PrimaryUIState.Exploration;
 
+        // Dynamic Modal Auto-Height & Scroll State
+        private float dynamicControlsHeight = 520f;
+        private Vector2 controlsGuideScrollPos = Vector2.zero;
+        private float dynamicPauseMenuHeight = 420f;
+        private Vector2 pauseMenuScrollPos = Vector2.zero;
+        private float dynamicSettingsHeight = 650f;
+        private Vector2 settingsDrawerScrollPos = Vector2.zero;
+
         // Backend Diagnostics
         private string serverStatusText = "Checking server...";
         private Color serverStatusColor = Color.yellow;
@@ -1939,7 +1947,10 @@ namespace MyVirtualCommunity.Client.World
         {
             bool isEs = currentLanguage == "es";
             const float width = 460;
-            const float height = 410;
+            float maxHeight = Mathf.Max(300f, Screen.height - 40f);
+            float desiredHeight = (dynamicPauseMenuHeight > 0f) ? dynamicPauseMenuHeight : 420f;
+            float height = Mathf.Min(desiredHeight, maxHeight);
+
             float x = (Screen.width - width) * 0.5f;
             float y = (Screen.height - height) * 0.5f;
 
@@ -1947,6 +1958,13 @@ namespace MyVirtualCommunity.Client.World
             GUI.Box(modalRect, GUIContent.none, GetOpaqueCardStyle());
 
             GUILayout.BeginArea(new Rect(x + 24, y + 20, width - 48, height - 40));
+            GUILayout.BeginVertical();
+
+            bool needsScroll = desiredHeight > maxHeight;
+            if (needsScroll)
+            {
+                pauseMenuScrollPos = GUILayout.BeginScrollView(pauseMenuScrollPos, false, false);
+            }
 
             GUILayout.Label(isEs ? "[Pausa] Menú de Pausa" : "[Pause] Pause Menu", GetModalTitleStyle());
             GUILayout.Label(isEs ? "Avenida Benito Juárez • Paso del Norte" : "Avenida Benito Juárez • Paso del Norte Corridor", GetModalSubtitleStyle());
@@ -1989,8 +2007,28 @@ namespace MyVirtualCommunity.Client.World
             }
             GUI.color = prevColor;
 
-            GUILayout.FlexibleSpace();
+            GUILayout.Space(10);
             GUILayout.Label(isEs ? "Presiona Esc para reanudar el juego" : "Press Escape to resume gameplay", GetMutedStyle());
+
+            if (needsScroll)
+            {
+                GUILayout.EndScrollView();
+            }
+
+            GUILayout.EndVertical();
+
+            if (Event.current.type == EventType.Repaint)
+            {
+                float measured = GUILayoutUtility.GetLastRect().height;
+                if (measured > 50f)
+                {
+                    float totalNeeded = measured + 48f;
+                    if (Mathf.Abs(totalNeeded - dynamicPauseMenuHeight) > 2f)
+                    {
+                        dynamicPauseMenuHeight = totalNeeded;
+                    }
+                }
+            }
 
             GUILayout.EndArea();
         }
@@ -1999,7 +2037,10 @@ namespace MyVirtualCommunity.Client.World
         {
             bool isEs = currentLanguage == "es";
             const float width = 560;
-            const float height = 650;
+            float maxHeight = Mathf.Max(300f, Screen.height - 40f);
+            float desiredHeight = (dynamicSettingsHeight > 0f) ? dynamicSettingsHeight : 650f;
+            float height = Mathf.Min(desiredHeight, maxHeight);
+
             float x = (Screen.width - width) * 0.5f;
             float y = (Screen.height - height) * 0.5f;
 
@@ -2007,6 +2048,13 @@ namespace MyVirtualCommunity.Client.World
             GUI.Box(modalRect, GUIContent.none, GetOpaqueCardStyle());
 
             GUILayout.BeginArea(new Rect(x + 24, y + 18, width - 48, height - 36));
+            GUILayout.BeginVertical();
+
+            bool needsScroll = desiredHeight > maxHeight;
+            if (needsScroll)
+            {
+                settingsDrawerScrollPos = GUILayout.BeginScrollView(settingsDrawerScrollPos, false, false);
+            }
 
             // Header
             GUILayout.BeginHorizontal();
@@ -2147,12 +2195,32 @@ namespace MyVirtualCommunity.Client.World
                 GUILayout.Label(isEs ? "Controlador de plumas disponible en escena." : "Barrier controller active in scene.", GetMutedStyle());
             }
 
-            GUILayout.FlexibleSpace();
+            GUILayout.Space(10);
 
             // Bottom Return Button
             if (GUILayout.Button(isEs ? "<- Volver al Menú de Pausa [Esc]" : "<- Back to Pause Menu [Esc]", GUILayout.Height(34)))
             {
                 isSettingsDrawerOpen = false;
+            }
+
+            if (needsScroll)
+            {
+                GUILayout.EndScrollView();
+            }
+
+            GUILayout.EndVertical();
+
+            if (Event.current.type == EventType.Repaint)
+            {
+                float measured = GUILayoutUtility.GetLastRect().height;
+                if (measured > 50f)
+                {
+                    float totalNeeded = measured + 44f;
+                    if (Mathf.Abs(totalNeeded - dynamicSettingsHeight) > 2f)
+                    {
+                        dynamicSettingsHeight = totalNeeded;
+                    }
+                }
             }
 
             GUILayout.EndArea();
@@ -2493,7 +2561,9 @@ namespace MyVirtualCommunity.Client.World
         {
             bool isEs = currentLanguage == "es";
             const float width = 540;
-            const float height = 430;
+            float maxHeight = Mathf.Max(300f, Screen.height - 40f);
+            float desiredHeight = (dynamicControlsHeight > 0f) ? dynamicControlsHeight : 520f;
+            float height = Mathf.Min(desiredHeight, maxHeight);
             float x = (Screen.width - width) * 0.5f;
             float y = (Screen.height - height) * 0.5f;
 
@@ -2501,6 +2571,13 @@ namespace MyVirtualCommunity.Client.World
             GUI.Box(cardRect, GUIContent.none, GetOpaqueCardStyle());
 
             GUILayout.BeginArea(new Rect(x + 18, y + 14, width - 36, height - 28));
+            GUILayout.BeginVertical();
+
+            bool needsScroll = desiredHeight > maxHeight;
+            if (needsScroll)
+            {
+                controlsGuideScrollPos = GUILayout.BeginScrollView(controlsGuideScrollPos, false, false);
+            }
 
             GUILayout.BeginHorizontal();
             GUIStyle titleStyle = new GUIStyle(GUI.skin.label)
@@ -2552,7 +2629,7 @@ namespace MyVirtualCommunity.Client.World
             GUILayout.Label(isEs ? "• [Testigos] Mateo, Sofía, Héctor (Fila peatonal al puente)" : "• [Witnesses] Mateo, Sofia, Hector (Pedestrian queue to bridge)", GetMutedStyle());
             GUILayout.Label(isEs ? "• [CBP] Elena Ramos (Kiosco oficial de información CBP)" : "• [CBP] Elena Ramos (Official CBP Border Concierge Kiosk)", GetMutedStyle());
 
-            GUILayout.FlexibleSpace();
+            GUILayout.Space(10);
 
             // Clear bottom navigation button
             if (controlsGuideOrigin == PrimaryUIState.PauseMenu)
@@ -2567,6 +2644,26 @@ namespace MyVirtualCommunity.Client.World
                 if (GUILayout.Button(isEs ? "> Reanudar Exploración [Esc/F1]" : "> Resume Exploration [Esc/F1]", GUILayout.Height(34)))
                 {
                     CloseControlsGuide();
+                }
+            }
+
+            if (needsScroll)
+            {
+                GUILayout.EndScrollView();
+            }
+
+            GUILayout.EndVertical();
+
+            if (Event.current.type == EventType.Repaint)
+            {
+                float measured = GUILayoutUtility.GetLastRect().height;
+                if (measured > 50f)
+                {
+                    float totalNeeded = measured + 36f;
+                    if (Mathf.Abs(totalNeeded - dynamicControlsHeight) > 2f)
+                    {
+                        dynamicControlsHeight = totalNeeded;
+                    }
                 }
             }
 

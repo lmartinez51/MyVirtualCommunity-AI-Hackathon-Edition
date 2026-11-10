@@ -53,10 +53,8 @@ import {
 } from '../application/submit-citizen-report.js';
 import { GetCitizenReportUseCase } from '../application/get-citizen-report.js';
 import {
-  isValidLaneId,
   isValidBarrierState,
   LaneBarrierId,
-  BarrierPhysicalState,
   createDefaultBorderLaneBarriers,
 } from '../domain/border-lane-barriers.js';
 import { BorderCrossingPort } from '../ports/border-crossing-port.js';

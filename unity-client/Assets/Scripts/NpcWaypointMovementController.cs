@@ -133,13 +133,19 @@ namespace MyVirtualCommunity.Client.World
                 if (target == null || target.point == null || !target.hasValidTarget) continue;
 
                 Transform t = target.point.transform;
-                bool isFixedKioskStructure = (t.gameObject.name == "Border_Information_Kiosk");
+                bool isFixedBorderKiosk = (t.gameObject.name == "Border_Information_Kiosk");
+                bool isFixedCitizenKiosk = (t.gameObject.name == "CitizenServiceDesk");
 
                 // Position interpolation (keep fixed physical kiosk booth anchored at its plaza foundation)
-                if (isFixedKioskStructure)
+                if (isFixedBorderKiosk)
                 {
                     t.position = new Vector3(19.20f, 0.20f, 39.50f);
                     t.rotation = Quaternion.Euler(0f, 0f, 0f);
+                }
+                else if (isFixedCitizenKiosk && target.movementState != "moving")
+                {
+                    t.position = new Vector3(-10.80f, 0.0f, 18.55f);
+                    t.rotation = Quaternion.Euler(0f, 90f, 0f);
                 }
                 else
                 {

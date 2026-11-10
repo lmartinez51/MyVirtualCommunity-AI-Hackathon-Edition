@@ -50,17 +50,17 @@ namespace MyVirtualCommunity.Editor
             cam.farClipPlane = 200f;
 
             // Shot 1: Frontal view looking West directly at Patricia's Kiosk and Upper Sign
-            cam.transform.position = new Vector3(-6.2f, 1.65f, 12.8f);
+            cam.transform.position = new Vector3(-6.2f, 1.65f, 18.55f);
             cam.transform.rotation = Quaternion.Euler(2f, -90f, 0f); // Looking West (-X)
             CaptureRender(cam, 1920, 1080, Path.Combine(outputDir, "citizen_kiosk_frontal.png"));
 
             // Shot 2: Perspective view looking Northwest from South sidewalk / street
-            cam.transform.position = new Vector3(-6.8f, 1.7f, 6.5f);
-            cam.transform.LookAt(new Vector3(-10.8f, 1.6f, 12.8f));
+            cam.transform.position = new Vector3(-6.8f, 1.7f, 12.0f);
+            cam.transform.LookAt(new Vector3(-10.8f, 1.6f, 18.55f));
             CaptureRender(cam, 1920, 1080, Path.Combine(outputDir, "citizen_kiosk_perspective.png"));
 
             // Shot 3: Close-up on the Upper Fascia Sign and Patricia
-            cam.transform.position = new Vector3(-7.8f, 2.05f, 12.8f);
+            cam.transform.position = new Vector3(-7.8f, 2.05f, 18.55f);
             cam.transform.rotation = Quaternion.Euler(6f, -90f, 0f); // Looking West (-X) slightly upward
             CaptureRender(cam, 1920, 1080, Path.Combine(outputDir, "citizen_kiosk_sign_closeup.png"));
 

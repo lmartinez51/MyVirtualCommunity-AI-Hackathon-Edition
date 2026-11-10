@@ -306,7 +306,7 @@ export const CORRIDOR_WAYPOINTS: Readonly<Record<string, Waypoint>> = Object.fre
   wp_patricia_desk: Object.freeze({
     id: 'wp_patricia_desk',
     associatedPlaceId: 'desk:patricia-citizen-rep',
-    position: Object.freeze({ x: -10.8, y: 0.0, z: 12.8 }),
+    position: Object.freeze({ x: -10.8, y: 0.0, z: 18.55 }),
     label: Object.freeze({
       en: 'Municipal Citizen Issue Reporting Desk',
       es: 'Módulo Municipal de Atención Ciudadana',

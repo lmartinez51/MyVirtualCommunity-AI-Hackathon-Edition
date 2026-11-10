@@ -28,7 +28,6 @@ import {
 } from './npc-activity.js';
 import {
   CORRIDOR_WAYPOINTS,
-  CORRIDOR_ROUTES,
   NPC_MOVEMENT_PROFILES,
   NpcMovementState,
   NpcMovementSnapshot,
@@ -188,8 +187,8 @@ export function evaluateNpcInteractionContext(
     canInitiateConversation = true;
     isAvailableForNormalService = false;
     decisionReason = Object.freeze({
-      en: `The facility/business is closed today (${civil.dayName}). ${scheduleProfile.canonicalName} is not on scheduled duty.`,
-      es: `El establecimiento está cerrado hoy (${civil.dayName}). ${scheduleProfile.canonicalName} no tiene turno programado.`,
+      en: `The facility/business is closed today (${activitySnap.dayName}). ${scheduleProfile.canonicalName} is not on scheduled duty.`,
+      es: `El establecimiento está cerrado hoy (${activitySnap.dayName}). ${scheduleProfile.canonicalName} no tiene turno programado.`,
     });
     dialogueGuidance = Object.freeze({
       en: 'NPC indicates the location is closed today and refers the player to weekly operating days.',
@@ -493,7 +492,7 @@ function getContextualDwellGreeting(npcId: string, locationLabel: BilingualText,
   }
 }
 
-function getBusyGreeting(npcId: string, activityTitle: BilingualText): BilingualText {
+function getBusyGreeting(_npcId: string, activityTitle: BilingualText): BilingualText {
   return Object.freeze({
     en: `Hello. I am in the middle of ${activityTitle.en} right now, but please ask your question and I will assist you.`,
     es: `Hola. Me encuentro en medio de ${activityTitle.es} en este momento, pero con gusto dígame su consulta y le oriento.`,
@@ -525,7 +524,7 @@ function getOffDutyGreeting(npcId: string): BilingualText {
   }
 }
 
-function getClosedGreeting(npcId: string): BilingualText {
+function getClosedGreeting(_npcId: string): BilingualText {
   return Object.freeze({
     en: 'Good day. We are closed today according to the weekly schedule. Please visit during our normal operating days.',
     es: 'Buen día. Nos encontramos cerrados hoy según el horario semanal. Le invitamos a visitarnos en nuestros días de apertura.',

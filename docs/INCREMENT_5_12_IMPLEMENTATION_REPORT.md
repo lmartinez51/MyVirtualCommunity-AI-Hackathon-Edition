@@ -88,7 +88,7 @@ The evaluator launcher [`scripts/launch-demo.ps1`](file:///c:/Users/leolm/Deskto
 ### Quickstart (3 Simple Commands)
 ```powershell
 # 1. Clone repository
-git clone https://github.com/leolopezm/MyVirtualCommunity-AI-Hackathon-Edition.git
+git clone https://github.com/lmartinez51/MyVirtualCommunity-AI-Hackathon-Edition.git
 cd MyVirtualCommunity-AI-Hackathon-Edition
 
 # 2. Install dependencies
