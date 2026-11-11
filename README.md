@@ -55,6 +55,31 @@ The project delivers a fully interactive first-person experience built in **Unit
 - **Interactive NPC Dialogue Trees:** Grounded question chips, custom query text input, and authoritative responses with latency and model badges.
 - **Multimodal Citizen Reporting Desk:** Complete intake modal for reporting municipal issues with optional photo attachment, client-side metadata sanitization, SAM 3.1 segmentation preview, and World Core registration.
 - **Visual Evidence Inspection Viewer:** Modal inspection tool allowing users to examine original photographs, extracted SAM 3.1 segmentation masks, and blended visual overlays in 3 distinct viewing modes.
+- **Dual Aerial Inspection System (3D Free Drone & Google Maps Satellite View):** Full aerial 6-DOF drone flight (`V`) and Google Maps/Earth-style top-down & oblique satellite inspection (`G`), complete with 90° nadir tilt toggles (`R`), 3rd-person quadcopter visualization (`F`), ground player teleportation (`T`), sector quick-jumps (`1`–`5`), and live overhead mini-preview HUD layer switcher card.
+
+### Dual Aerial Inspection System (3D Free-Flight Drone & Google Maps Satellite View)
+
+The corridor features a fully integrated aerial inspection engine rendered in runtime without modifying static scene assets:
+
+1. **Modalidad 1: Dron Libre 3D (`Tecla [V]`):**
+   - **6-DOF Flight:** Horizontal flight with `W/A/S/D`, vertical lift with `Space` / `E`, descent with `Q`, `C`, or `Ctrl`. Hold `Shift` for Sport Mode ($15\text{ m/s} \rightarrow 34\text{ m/s}$).
+   - **Full Gimbal Range:** $-40^\circ$ (skyward) to $+89.5^\circ$ (**true sky-to-ground perpendicular nadir view**).
+   - **Instant Nadir Toggle (`[R]`):** Flip instantly between $34^\circ$ oblique and $89.5^\circ$ pure top-down to inspect street surfaces, lane dividers, and curbs.
+   - **3rd-Person Quadcopter View (`[F]`):** Toggle between 1st-person FPV and an external chase camera viewing a procedural 3D quadcopter model with 4 spinning rotors, aerodynamic velocity tilting, and telemetry LEDs.
+   - **Optical Zoom:** Mouse scroll wheel scales camera FOV between $22^\circ$ (telephoto) and $78^\circ$ (wide angle).
+   - **Instant Ground Teleport (`[T]`):** Drop the first-person player immediately to ground level at the current drone coordinates.
+   - **Corridor Sector Hotkeys (`[1]`–`[5]`):** Quick auto-pilot to South Entry (`1`), Calle Gardenias (`2`), Toll Plaza (`3`), Bridge Deck (`4`), and Río Bravo / Loop 375 (`5`).
+
+2. **Modalidad 2: Satélite estilo Google Maps / Google Earth (`Tecla [G]`):**
+   - **Interactive Cursor Navigation:** Unlocked mouse cursor; click and drag to pan across the corridor smoothly.
+   - **Altitude Zoom:** Mouse scroll wheel scales altitude continuously from $12\text{ m}$ (street close-up) to $240\text{ m}$ (panoramic regional view).
+   - **Bearing & Compass:** Right-click drag or `Q`/`E` rotates compass heading; press `N` to snap back to true North ($0^\circ$).
+   - **2D Nadir vs. 3D Oblique Relief (`[R]`):** Switch between $90^\circ$ orthogonal-like nadir and Google Earth-style $58^\circ$ 3D relief with focal-point compensation.
+   - **Hybrid Real-Time 3D Pins:** Projected in-world labels for player location (*"🧍 TÚ (JUGADOR)"*), key municipal infrastructure, and dynamic walking NPCs.
+   - **Ground Teleport (`[T]`):** Teleports player to ground level centered at the current map view.
+
+3. **HUD Google Maps Layer Switcher Card:**
+   - Floating card at bottom-left corner with a live overhead satellite thumbnail ($58\text{ m}$ altitude) rendering in real time with player position and quick-access buttons (`[🛰️ Satélite]` and `[🚁 Dron Libre]`).
 
 ---
 

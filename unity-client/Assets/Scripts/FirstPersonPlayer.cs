@@ -181,6 +181,48 @@ namespace MyVirtualCommunity.Client.World
         private GameObject playerSelfCctvProxy = null;
         private Rect fideicomisoPipWindowRect = new Rect(0, 0, 540, 368);
 
+        // Dual Aerial Inspection System: Modalidad 1 (3D Free Drone) & Modalidad 2 (Google Maps Satellite View)
+        public enum AerialViewMode
+        {
+            GroundFirstPerson = 0,
+            DroneFreeFlight = 1,
+            SatelliteTopDown = 2
+        }
+
+        private AerialViewMode currentAerialMode = AerialViewMode.GroundFirstPerson;
+        public AerialViewMode CurrentAerialMode => currentAerialMode;
+        private Camera aerialCamera = null;
+        private RenderTexture miniSatellitePreviewRT = null;
+        private float lastMiniPreviewRenderTime = -999f;
+        private Rect googleMapsLauncherRect = new Rect(0, 0, 114, 128);
+        private Rect minimapCardRect = new Rect(0, 0, 160, 266);
+
+        // Modalidad 1: 3D Free-Flying Drone State
+        private Vector3 dronePosition = new Vector3(0f, 20f, -8f);
+        private Vector3 droneVelocity = Vector3.zero;
+        private float droneVerticalVelocity = 0f;
+        private float droneYaw = 0f;
+        private float dronePitch = 24f; // Positive pitch looks downward (89.9 = 90 deg sky-to-ground)
+        private float droneCurrentFov = 60f;
+        private float droneTargetFov = 60f;
+        private bool droneThirdPersonChaseView = false;
+        private bool droneShowWorldMarkers = true;
+        private GameObject droneVisualModel = null;
+        private Transform[] droneRotorTransforms = null;
+        private Vector3? droneAutoTargetPosition = null;
+
+        // Modalidad 2: Google Maps / Earth Satellite View State
+        private Vector2 satelliteFocusXZ = new Vector2(0f, 20f);
+        private Vector2 satelliteTargetFocusXZ = new Vector2(0f, 20f);
+        private float satelliteHeight = 68f;
+        private float satelliteTargetHeight = 68f;
+        private float satelliteYaw = 0f;
+        private float satelliteTargetYaw = 0f;
+        private bool satellite3DObliqueTilt = false;
+        private bool satelliteShowHybridLabels = true;
+        private bool isSatelliteDragging = false;
+        private Vector2 satelliteDragLastMousePos = Vector2.zero;
+
         private static readonly string[] CategoryIds = new string[]
         {
             "road-surface-damage",
@@ -349,9 +391,20 @@ namespace MyVirtualCommunity.Client.World
 
         private string GetDynamicLocationContext(bool isEs)
         {
-            Vector3 pos = transform.position;
+            Vector3 pos = (currentAerialMode == AerialViewMode.DroneFreeFlight)
+                ? dronePosition
+                : (currentAerialMode == AerialViewMode.SatelliteTopDown ? new Vector3(satelliteFocusXZ.x, satelliteHeight, satelliteFocusXZ.y) : transform.position);
+
             string sidewalk;
-            if (pos.x < -4.5f)
+            if (currentAerialMode == AerialViewMode.DroneFreeFlight)
+            {
+                sidewalk = isEs ? $"Dron Aéreo ({pos.y:F0}m)" : $"Aerial Drone ({pos.y:F0}m)";
+            }
+            else if (currentAerialMode == AerialViewMode.SatelliteTopDown)
+            {
+                sidewalk = isEs ? $"Satélite ({pos.y:F0}m)" : $"Satellite ({pos.y:F0}m)";
+            }
+            else if (pos.x < -4.5f)
             {
                 sidewalk = isEs ? "Acera Poniente (Oeste)" : "West Sidewalk";
             }
@@ -365,7 +418,11 @@ namespace MyVirtualCommunity.Client.World
             }
 
             string zone;
-            if (pos.z > 30f)
+            if (pos.z > 69f)
+            {
+                zone = isEs ? "Río Bravo • Ferrocarril • Loop 375" : "Rio Grande • Railway • Loop 375";
+            }
+            else if (pos.z > 30f)
             {
                 zone = isEs ? "Puente Internacional Paso del Norte (Kiosco CBP)" : "Paso del Norte Bridge Entrance (CBP)";
             }
@@ -386,7 +443,19 @@ namespace MyVirtualCommunity.Client.World
         }
         public float GetPlayerHeading()
         {
-            float y = playerCamera != null ? playerCamera.eulerAngles.y : transform.eulerAngles.y;
+            float y;
+            if (currentAerialMode == AerialViewMode.DroneFreeFlight)
+            {
+                y = droneYaw;
+            }
+            else if (currentAerialMode == AerialViewMode.SatelliteTopDown)
+            {
+                y = satelliteYaw;
+            }
+            else
+            {
+                y = playerCamera != null ? playerCamera.eulerAngles.y : transform.eulerAngles.y;
+            }
             return (y % 360f + 360f) % 360f;
         }
 
@@ -537,6 +606,11 @@ namespace MyVirtualCommunity.Client.World
                 default:
                     if (WasEscapePressed())
                     {
+                        if (currentAerialMode != AerialViewMode.GroundFirstPerson)
+                        {
+                            SetAerialViewMode(AerialViewMode.GroundFirstPerson);
+                            return;
+                        }
                         if (isFideicomisoCameraPipOpen)
                         {
                             CloseFideicomisoCameraEasterEgg();
@@ -550,9 +624,55 @@ namespace MyVirtualCommunity.Client.World
                         OpenControlsGuide(PrimaryUIState.Exploration);
                         return;
                     }
+                    if (WasDroneKeyPressed())
+                    {
+                        if (currentAerialMode == AerialViewMode.DroneFreeFlight)
+                        {
+                            SetAerialViewMode(AerialViewMode.GroundFirstPerson);
+                        }
+                        else
+                        {
+                            SetAerialViewMode(AerialViewMode.DroneFreeFlight);
+                        }
+                        return;
+                    }
+                    if (WasSatelliteKeyPressed())
+                    {
+                        if (currentAerialMode == AerialViewMode.SatelliteTopDown)
+                        {
+                            SetAerialViewMode(AerialViewMode.GroundFirstPerson);
+                        }
+                        else
+                        {
+                            SetAerialViewMode(AerialViewMode.SatelliteTopDown);
+                        }
+                        return;
+                    }
+
+                    // Modalidad 1: 3D Free-Flying Drone Update
+                    if (currentAerialMode == AerialViewMode.DroneFreeFlight)
+                    {
+                        HandleDroneFreeFlightUpdate();
+                        UpdateFideicomisoPlayerSelfAvatarProxy();
+                        return;
+                    }
+
+                    // Modalidad 2: Google Maps Satellite Top-Down Update
+                    if (currentAerialMode == AerialViewMode.SatelliteTopDown)
+                    {
+                        HandleSatelliteTopDownUpdate();
+                        UpdateFideicomisoPlayerSelfAvatarProxy();
+                        return;
+                    }
+
                     if (WasToggleMapPressed())
                     {
                         ShowMinimap = !showMinimap;
+                    }
+
+                    if (WasTogglePipCursorKeyPressed())
+                    {
+                        LockCursor(!isCursorLocked);
                     }
 
                     // Secret Easter Egg: clicking on Bridge_Fideicomiso_Camera_VistaSur opens the live CCTV / YouTube PiP monitor
@@ -565,22 +685,23 @@ namespace MyVirtualCommunity.Client.World
 
                         if (!isCursorLocked)
                         {
-                            // Keep cursor unlocked if the player clicked inside the open CCTV PiP window
-                            if (!isFideicomisoCameraPipOpen || !IsMouseInsideFideicomisoPipWindow())
+                            // Keep cursor unlocked if the player clicked inside the open CCTV PiP window, Google Maps Launcher card, or Minimap card
+                            bool clickedInteractiveHud =
+                                (isFideicomisoCameraPipOpen && IsMouseInsideFideicomisoPipWindow()) ||
+                                IsMouseInsideGoogleMapsLauncherCard() ||
+                                (showMinimap && IsMouseInsideMinimapCard());
+
+                            if (!clickedInteractiveHud)
                             {
                                 LockCursor(true);
                             }
                         }
                     }
 
-                    if (isFideicomisoCameraPipOpen && WasTogglePipCursorKeyPressed())
-                    {
-                        LockCursor(!isCursorLocked);
-                    }
-
                     HandleLook();
                     HandleMovement();
                     UpdateFideicomisoPlayerSelfAvatarProxy();
+                    UpdateMiniSatellitePreviewRender();
                     HandleInteractionProximity();
 
                     if (currentNearbyPoint != null && WasInteractPressed())
@@ -1426,7 +1547,7 @@ namespace MyVirtualCommunity.Client.World
         {
             isSettingsDrawerOpen = false;
             currentState = PrimaryUIState.Exploration;
-            LockCursor(true);
+            LockCursor(currentAerialMode != AerialViewMode.SatelliteTopDown);
         }
 
         public void OpenControlsGuide(PrimaryUIState origin)
@@ -1447,7 +1568,7 @@ namespace MyVirtualCommunity.Client.World
             else
             {
                 currentState = PrimaryUIState.Exploration;
-                LockCursor(true);
+                LockCursor(currentAerialMode != AerialViewMode.SatelliteTopDown);
             }
         }
 
@@ -1659,11 +1780,26 @@ namespace MyVirtualCommunity.Client.World
 
                 case PrimaryUIState.Exploration:
                 default:
+                    if (currentAerialMode == AerialViewMode.DroneFreeFlight)
+                    {
+                        DrawHUD();
+                        if (showCompass) DrawCompassStrip();
+                        DrawDroneFlightHUD();
+                        break;
+                    }
+                    if (currentAerialMode == AerialViewMode.SatelliteTopDown)
+                    {
+                        DrawHUD();
+                        DrawSatelliteMapHUD();
+                        break;
+                    }
+
                     DrawReticle();
                     DrawHUD();
                     if (showCompass) DrawCompassStrip();
                     if (showLandmarkHUD) DrawNearbyLandmarksHUD();
                     if (showMinimap) DrawCorridorMinimap();
+                    DrawGoogleMapsLayerSwitcherCard();
                     DrawWorldSpaceNPCNameplates();
                     if (currentNearbyPoint != null && isCursorLocked)
                     {
@@ -1719,6 +1855,38 @@ namespace MyVirtualCommunity.Client.World
 
             GUILayout.FlexibleSpace();
 
+            // Quick Top-Bar Aerial Mode Toggles (Drone 3D [V] & Satellite [G])
+            if (currentState == PrimaryUIState.Exploration)
+            {
+                Color prevBg = GUI.backgroundColor;
+
+                if (currentAerialMode == AerialViewMode.DroneFreeFlight)
+                {
+                    GUI.backgroundColor = new Color(0.25f, 0.95f, 0.65f);
+                }
+                string droneBtnLabel = isEs ? "Dron 3D [V]" : "3D Drone [V]";
+                if (GUILayout.Button(droneBtnLabel, GUILayout.Width(90), GUILayout.Height(24)))
+                {
+                    SetAerialViewMode(currentAerialMode == AerialViewMode.DroneFreeFlight ? AerialViewMode.GroundFirstPerson : AerialViewMode.DroneFreeFlight);
+                }
+                GUI.backgroundColor = prevBg;
+
+                GUILayout.Space(4);
+
+                if (currentAerialMode == AerialViewMode.SatelliteTopDown)
+                {
+                    GUI.backgroundColor = new Color(0.35f, 0.85f, 1f);
+                }
+                string satBtnLabel = isEs ? "Satélite [G]" : "Satellite [G]";
+                if (GUILayout.Button(satBtnLabel, GUILayout.Width(92), GUILayout.Height(24)))
+                {
+                    SetAerialViewMode(currentAerialMode == AerialViewMode.SatelliteTopDown ? AerialViewMode.GroundFirstPerson : AerialViewMode.SatelliteTopDown);
+                }
+                GUI.backgroundColor = prevBg;
+
+                GUILayout.Space(6);
+            }
+
             // Help [F1] Toggle in HUD (hidden during dialogue to prevent interruption)
             if (currentState != PrimaryUIState.Dialogue)
             {
@@ -1772,13 +1940,13 @@ namespace MyVirtualCommunity.Client.World
             GUILayout.EndHorizontal();
             GUILayout.EndArea();
 
-            // Bottom-Left Navigation Hints (Exploration only)
-            if (currentState == PrimaryUIState.Exploration && isCursorLocked)
+            // Bottom-Left Navigation Hints (Ground Exploration only)
+            if (currentState == PrimaryUIState.Exploration && currentAerialMode == AerialViewMode.GroundFirstPerson && isCursorLocked)
             {
-                Rect hintsRect = new Rect(15, Screen.height - 40, 680, 30);
+                Rect hintsRect = new Rect(15, Screen.height - 34, 860, 26);
                 string hints = isEs
-                    ? "WASD: Moverse | Shift: Correr | E: Hablar | M: Minimapa | Esc: Pausa y Ajustes | F1: Guía"
-                    : "WASD: Move | Shift: Sprint | E: Interact | M: Minimap | Esc: Pause & Settings | F1: Guide";
+                    ? "WASD: Caminar | Shift: Correr | E: Hablar | V: Dron 3D | G: Vista Satelital | M: Minimapa | Tab: Ratón | F1: Guía"
+                    : "WASD: Walk | Shift: Sprint | E: Talk | V: 3D Drone | G: Satellite View | M: Minimap | Tab: Cursor | F1: Guide";
                 GUI.Label(hintsRect, hints, GetMutedStyle());
             }
         }
@@ -2228,7 +2396,7 @@ namespace MyVirtualCommunity.Client.World
 
         private void DrawCompassStrip()
         {
-            if (currentState != PrimaryUIState.Exploration || !isCursorLocked) return;
+            if (currentState != PrimaryUIState.Exploration) return;
 
             bool isEs = currentLanguage == "es";
             float heading = GetPlayerHeading(); // 0 to 359 degrees
@@ -2300,7 +2468,7 @@ namespace MyVirtualCommunity.Client.World
 
         private void DrawNearbyLandmarksHUD()
         {
-            if (currentState != PrimaryUIState.Exploration || !isCursorLocked) return;
+            if (currentState != PrimaryUIState.Exploration) return;
 
             bool isEs = currentLanguage == "es";
             InteractionPoint[] points = (cachedInteractionPoints != null && cachedInteractionPoints.Length > 0)
@@ -2423,16 +2591,17 @@ namespace MyVirtualCommunity.Client.World
 
         private void DrawCorridorMinimap()
         {
-            if (currentState != PrimaryUIState.Exploration || !isCursorLocked) return;
+            if (currentState != PrimaryUIState.Exploration) return;
 
             bool isEs = currentLanguage == "es";
 
             const float cardW = 160f;
-            const float cardH = 230f;
+            const float cardH = 262f;
             float cardX = Screen.width - cardW - 14f;
             float cardY = 44f;
+            minimapCardRect = new Rect(cardX, cardY, cardW, cardH);
 
-            GUI.Box(new Rect(cardX, cardY, cardW, cardH), GUIContent.none, GetNavCardStyle());
+            GUI.Box(minimapCardRect, GUIContent.none, GetNavCardStyle());
 
             GUIStyle titleStyle = new GUIStyle(GUI.skin.label)
             {
@@ -2554,7 +2723,23 @@ namespace MyVirtualCommunity.Client.World
                 alignment = TextAnchor.MiddleCenter,
                 normal = { textColor = new Color(0.7f, 0.7f, 0.7f) }
             };
-            GUI.Label(new Rect(cardX, mapY + mapH + 4, cardW, 16), isEs ? "● Tú  ● CBP  ● Muni  ● Tienda" : "● You ● CBP ● Muni ● Store", legendStyle);
+            GUI.Label(new Rect(cardX, mapY + mapH + 3, cardW, 15), isEs ? "● Tú  ● CBP  ● Muni  ● Tienda" : "● You ● CBP ● Muni ● Store", legendStyle);
+
+            // Quick Aerial Mode Buttons inside Minimap Footer
+            GUIStyle miniBtnStyle = new GUIStyle(GUI.skin.button)
+            {
+                fontSize = 9,
+                fontStyle = FontStyle.Bold,
+                normal = { textColor = new Color(0.88f, 0.96f, 1f) }
+            };
+            if (GUI.Button(new Rect(cardX + 8f, mapY + mapH + 20f, 70f, 20f), isEs ? "Satélite [G]" : "Sat [G]", miniBtnStyle))
+            {
+                SetAerialViewMode(AerialViewMode.SatelliteTopDown);
+            }
+            if (GUI.Button(new Rect(cardX + 82f, mapY + mapH + 20f, 70f, 20f), isEs ? "Dron 3D [V]" : "Drone [V]", miniBtnStyle))
+            {
+                SetAerialViewMode(AerialViewMode.DroneFreeFlight);
+            }
         }
 
         private void DrawControlsOverlay()
@@ -2612,6 +2797,7 @@ namespace MyVirtualCommunity.Client.World
             GUILayout.Label(isEs ? "Movimiento y Navegación:" : "Movement & Navigation:", sectionStyle);
             GUILayout.Label(isEs ? "• WASD / Flechas: Caminar por la avenida" : "• WASD / Arrow Keys: Walk along the avenue", GetMutedStyle());
             GUILayout.Label(isEs ? "• Shift: Correr (Sprint) | Ratón: Mirar alrededor" : "• Shift: Sprint | Mouse: Look around", GetMutedStyle());
+            GUILayout.Label(isEs ? "• V: Pilotar Dron Aéreo 3D | G: Vista Satelital estilo Google Maps" : "• V: Fly 3D Aerial Drone | G: Google Maps Satellite View", GetMutedStyle());
             GUILayout.Label(isEs ? "• M: Mostrar / ocultar minimapa 2D del corredor" : "• M: Toggle 2D corridor minimap", GetMutedStyle());
             GUILayout.Label(isEs ? "• Clic en la ventana: Capturar ratón para explorar" : "• Click in window: Capture mouse for first-person exploration", GetMutedStyle());
 
@@ -4879,6 +5065,7 @@ namespace MyVirtualCommunity.Client.World
                 navCardTex = null;
             }
             CleanupFideicomisoCameraEasterEggResources();
+            CleanupAerialCameraResources();
         }
 
         #region Secret Fideicomiso Surveillance Camera Easter Egg (Paso del Norte - Vista Sur -> YouTube Live)
@@ -5045,66 +5232,79 @@ namespace MyVirtualCommunity.Client.World
             }
             fideicomisoCctvCamera.enabled = true;
 
-            // Create a visible player avatar proxy so the player can see themselves walking on the CCTV monitor!
-            if (playerSelfCctvProxy == null)
-            {
-                playerSelfCctvProxy = new GameObject("Player_CCTV_SelfAvatar_Proxy");
-                Shader litShader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-
-                // Torso / Jacket (Cyan/Blue traveler jacket)
-                GameObject body = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-                body.name = "Avatar_Torso";
-                body.transform.SetParent(playerSelfCctvProxy.transform);
-                body.transform.localPosition = new Vector3(0f, 0.92f, 0f);
-                body.transform.localScale = new Vector3(0.52f, 0.58f, 0.42f);
-                Destroy(body.GetComponent<Collider>());
-                if (litShader != null)
-                {
-                    Material torsoMat = new Material(litShader) { color = new Color(0.12f, 0.52f, 0.88f) };
-                    body.GetComponent<Renderer>().sharedMaterial = torsoMat;
-                }
-
-                // Head
-                GameObject head = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                head.name = "Avatar_Head";
-                head.transform.SetParent(playerSelfCctvProxy.transform);
-                head.transform.localPosition = new Vector3(0f, 1.65f, 0f);
-                head.transform.localScale = new Vector3(0.36f, 0.36f, 0.36f);
-                Destroy(head.GetComponent<Collider>());
-                if (litShader != null)
-                {
-                    Material headMat = new Material(litShader) { color = new Color(0.92f, 0.76f, 0.62f) };
-                    head.GetComponent<Renderer>().sharedMaterial = headMat;
-                }
-
-                // Cap / Hair
-                GameObject cap = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                cap.name = "Avatar_Cap";
-                cap.transform.SetParent(playerSelfCctvProxy.transform);
-                cap.transform.localPosition = new Vector3(0f, 1.80f, 0.03f);
-                cap.transform.localScale = new Vector3(0.38f, 0.05f, 0.42f);
-                Destroy(cap.GetComponent<Collider>());
-                if (litShader != null)
-                {
-                    Material capMat = new Material(litShader) { color = new Color(0.15f, 0.18f, 0.24f) };
-                    cap.GetComponent<Renderer>().sharedMaterial = capMat;
-                }
-            }
+            // Create a visible player avatar proxy so the player can see themselves walking on the CCTV monitor or from aerial view!
+            EnsurePlayerSelfAvatarProxy();
             UpdateFideicomisoPlayerSelfAvatarProxy();
+        }
+
+        private void EnsurePlayerSelfAvatarProxy()
+        {
+            if (playerSelfCctvProxy != null) return;
+
+            playerSelfCctvProxy = new GameObject("Player_CCTV_SelfAvatar_Proxy");
+            Shader litShader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+
+            // Torso / Jacket (Cyan/Blue traveler jacket)
+            GameObject body = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            body.name = "Avatar_Torso";
+            body.transform.SetParent(playerSelfCctvProxy.transform);
+            body.transform.localPosition = new Vector3(0f, 0.92f, 0f);
+            body.transform.localScale = new Vector3(0.52f, 0.58f, 0.42f);
+            Destroy(body.GetComponent<Collider>());
+            if (litShader != null)
+            {
+                Material torsoMat = new Material(litShader) { color = new Color(0.12f, 0.52f, 0.88f) };
+                body.GetComponent<Renderer>().sharedMaterial = torsoMat;
+            }
+
+            // Head
+            GameObject head = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            head.name = "Avatar_Head";
+            head.transform.SetParent(playerSelfCctvProxy.transform);
+            head.transform.localPosition = new Vector3(0f, 1.65f, 0f);
+            head.transform.localScale = new Vector3(0.36f, 0.36f, 0.36f);
+            Destroy(head.GetComponent<Collider>());
+            if (litShader != null)
+            {
+                Material headMat = new Material(litShader) { color = new Color(0.92f, 0.76f, 0.62f) };
+                head.GetComponent<Renderer>().sharedMaterial = headMat;
+            }
+
+            // Cap / Hair
+            GameObject cap = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            cap.name = "Avatar_Cap";
+            cap.transform.SetParent(playerSelfCctvProxy.transform);
+            cap.transform.localPosition = new Vector3(0f, 1.80f, 0.03f);
+            cap.transform.localScale = new Vector3(0.38f, 0.05f, 0.42f);
+            Destroy(cap.GetComponent<Collider>());
+            if (litShader != null)
+            {
+                Material capMat = new Material(litShader) { color = new Color(0.15f, 0.18f, 0.24f) };
+                cap.GetComponent<Renderer>().sharedMaterial = capMat;
+            }
         }
 
         private void UpdateFideicomisoPlayerSelfAvatarProxy()
         {
             if (playerSelfCctvProxy == null) return;
-            if (!isFideicomisoCameraPipOpen)
+            bool shouldShowAvatar = isFideicomisoCameraPipOpen || currentAerialMode != AerialViewMode.GroundFirstPerson;
+            if (!shouldShowAvatar)
             {
                 if (playerSelfCctvProxy.activeSelf) playerSelfCctvProxy.SetActive(false);
                 return;
             }
 
-            // Place the avatar slightly behind the first-person camera along horizontal forward so it never clips the player's own view
-            Vector3 flatForward = new Vector3(transform.forward.x, 0f, transform.forward.z).normalized;
-            playerSelfCctvProxy.transform.position = transform.position - (flatForward * 0.42f);
+            if (currentAerialMode != AerialViewMode.GroundFirstPerson)
+            {
+                // In aerial drone or satellite mode, place the avatar directly at the player's ground position
+                playerSelfCctvProxy.transform.position = new Vector3(transform.position.x, 0f, transform.position.z);
+            }
+            else
+            {
+                // Place the avatar slightly behind the first-person camera along horizontal forward so it never clips the player's own view
+                Vector3 flatForward = new Vector3(transform.forward.x, 0f, transform.forward.z).normalized;
+                playerSelfCctvProxy.transform.position = transform.position - (flatForward * 0.42f);
+            }
             playerSelfCctvProxy.transform.rotation = Quaternion.Euler(0f, transform.eulerAngles.y, 0f);
             if (!playerSelfCctvProxy.activeSelf) playerSelfCctvProxy.SetActive(true);
         }
@@ -5391,6 +5591,1378 @@ namespace MyVirtualCommunity.Client.World
         }
 
         #endregion
+        #endregion
+
+        #region Aerial Drone 3D & Google Maps Satellite View System
+
+        private bool WasDroneKeyPressed()
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (Keyboard.current != null && Keyboard.current.vKey.wasPressedThisFrame) return true;
+#endif
+#if ENABLE_LEGACY_INPUT_MANAGER
+            try
+            {
+                if (Input.GetKeyDown(KeyCode.V)) return true;
+            }
+            catch { }
+#endif
+            return false;
+        }
+
+        private bool WasSatelliteKeyPressed()
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (Keyboard.current != null && Keyboard.current.gKey.wasPressedThisFrame) return true;
+#endif
+#if ENABLE_LEGACY_INPUT_MANAGER
+            try
+            {
+                if (Input.GetKeyDown(KeyCode.G)) return true;
+            }
+            catch { }
+#endif
+            return false;
+        }
+
+        private bool WasTabKeyPressed()
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (Keyboard.current != null && (Keyboard.current.tabKey.wasPressedThisFrame || Keyboard.current.cKey.wasPressedThisFrame)) return true;
+#endif
+#if ENABLE_LEGACY_INPUT_MANAGER
+            try
+            {
+                if (Input.GetKeyDown(KeyCode.Tab) || Input.GetKeyDown(KeyCode.C)) return true;
+            }
+            catch { }
+#endif
+            return false;
+        }
+
+        private bool WasKeyPressed(KeyCode legacyKey)
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (Keyboard.current != null)
+            {
+                switch (legacyKey)
+                {
+                    case KeyCode.R: if (Keyboard.current.rKey.wasPressedThisFrame) return true; break;
+                    case KeyCode.F: if (Keyboard.current.fKey.wasPressedThisFrame) return true; break;
+                    case KeyCode.T: if (Keyboard.current.tKey.wasPressedThisFrame) return true; break;
+                    case KeyCode.N: if (Keyboard.current.nKey.wasPressedThisFrame) return true; break;
+                    case KeyCode.Alpha1: if (Keyboard.current.digit1Key.wasPressedThisFrame) return true; break;
+                    case KeyCode.Alpha2: if (Keyboard.current.digit2Key.wasPressedThisFrame) return true; break;
+                    case KeyCode.Alpha3: if (Keyboard.current.digit3Key.wasPressedThisFrame) return true; break;
+                    case KeyCode.Alpha4: if (Keyboard.current.digit4Key.wasPressedThisFrame) return true; break;
+                    case KeyCode.Alpha5: if (Keyboard.current.digit5Key.wasPressedThisFrame) return true; break;
+                }
+            }
+#endif
+#if ENABLE_LEGACY_INPUT_MANAGER
+            try
+            {
+                if (Input.GetKeyDown(legacyKey)) return true;
+            }
+            catch { }
+#endif
+            return false;
+        }
+
+        private bool IsKeyHeld(KeyCode legacyKey)
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (Keyboard.current != null)
+            {
+                switch (legacyKey)
+                {
+                    case KeyCode.Space: if (Keyboard.current.spaceKey.isPressed) return true; break;
+                    case KeyCode.E: if (Keyboard.current.eKey.isPressed) return true; break;
+                    case KeyCode.Q: if (Keyboard.current.qKey.isPressed) return true; break;
+                    case KeyCode.C: if (Keyboard.current.cKey.isPressed) return true; break;
+                    case KeyCode.LeftControl: if (Keyboard.current.leftCtrlKey.isPressed || Keyboard.current.rightCtrlKey.isPressed) return true; break;
+                    case KeyCode.LeftShift: if (Keyboard.current.leftShiftKey.isPressed || Keyboard.current.rightShiftKey.isPressed) return true; break;
+                }
+            }
+#endif
+#if ENABLE_LEGACY_INPUT_MANAGER
+            try
+            {
+                if (Input.GetKey(legacyKey)) return true;
+            }
+            catch { }
+#endif
+            return false;
+        }
+
+        private bool IsMouseButtonDown(int button)
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (Mouse.current != null)
+            {
+                if (button == 0 && Mouse.current.leftButton.wasPressedThisFrame) return true;
+                if (button == 1 && Mouse.current.rightButton.wasPressedThisFrame) return true;
+            }
+#endif
+#if ENABLE_LEGACY_INPUT_MANAGER
+            try { if (Input.GetMouseButtonDown(button)) return true; } catch { }
+#endif
+            return false;
+        }
+
+        private bool IsMouseButtonUp(int button)
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (Mouse.current != null)
+            {
+                if (button == 0 && Mouse.current.leftButton.wasReleasedThisFrame) return true;
+                if (button == 1 && Mouse.current.rightButton.wasReleasedThisFrame) return true;
+            }
+#endif
+#if ENABLE_LEGACY_INPUT_MANAGER
+            try { if (Input.GetMouseButtonUp(button)) return true; } catch { }
+#endif
+            return false;
+        }
+
+        private bool IsMouseButtonHeld(int button)
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (Mouse.current != null)
+            {
+                if (button == 0 && Mouse.current.leftButton.isPressed) return true;
+                if (button == 1 && Mouse.current.rightButton.isPressed) return true;
+            }
+#endif
+#if ENABLE_LEGACY_INPUT_MANAGER
+            try { if (Input.GetMouseButton(button)) return true; } catch { }
+#endif
+            return false;
+        }
+
+        private Vector2 GetCurrentMousePosition()
+        {
+            Vector2 mousePos = Vector2.zero;
+#if ENABLE_INPUT_SYSTEM
+            if (Mouse.current != null) mousePos = Mouse.current.position.ReadValue();
+#endif
+#if ENABLE_LEGACY_INPUT_MANAGER
+            if (mousePos == Vector2.zero)
+            {
+                try { mousePos = Input.mousePosition; } catch { }
+            }
+#endif
+            return mousePos;
+        }
+
+        private float GetScrollWheelDelta()
+        {
+            float scroll = 0f;
+#if ENABLE_INPUT_SYSTEM
+            if (Mouse.current != null)
+            {
+                scroll = Mouse.current.scroll.ReadValue().y * 0.01f;
+                return scroll;
+            }
+#endif
+#if ENABLE_LEGACY_INPUT_MANAGER
+            try
+            {
+                scroll = Input.mouseScrollDelta.y * 0.15f;
+            }
+            catch { }
+#endif
+            return scroll;
+        }
+
+        private bool IsMouseInsideGoogleMapsLauncherCard()
+        {
+            Vector2 mousePos = GetCurrentMousePosition();
+            Vector2 guiMouse = new Vector2(mousePos.x, Screen.height - mousePos.y);
+            return googleMapsLauncherRect.width > 1f && googleMapsLauncherRect.Contains(guiMouse);
+        }
+
+        private bool IsMouseInsideMinimapCard()
+        {
+            Vector2 mousePos = GetCurrentMousePosition();
+            Vector2 guiMouse = new Vector2(mousePos.x, Screen.height - mousePos.y);
+            Rect mapRect = new Rect(Screen.width - 156f, 44f, 144f, 206f);
+            return mapRect.Contains(guiMouse);
+        }
+
+        public void SetAerialViewMode(AerialViewMode newMode)
+        {
+            if (currentAerialMode == newMode) return;
+
+            EnsureAerialCameraAndResources();
+            EnsurePlayerSelfAvatarProxy();
+
+            AerialViewMode prevMode = currentAerialMode;
+            currentAerialMode = newMode;
+
+            if (newMode == AerialViewMode.GroundFirstPerson)
+            {
+                if (aerialCamera != null)
+                {
+                    aerialCamera.targetTexture = null;
+                    aerialCamera.enabled = false;
+                }
+                if (droneVisualModel != null && droneVisualModel.activeSelf)
+                {
+                    droneVisualModel.SetActive(false);
+                }
+
+                // Restore cursor lock if CCTV PiP cursor isn't unlocked
+                LockCursor(!isFideicomisoCameraPipOpen);
+                UpdateFideicomisoPlayerSelfAvatarProxy();
+                return;
+            }
+
+            if (newMode == AerialViewMode.DroneFreeFlight)
+            {
+                // Initialize Drone position smoothly from either Satellite view or above player
+                if (prevMode == AerialViewMode.SatelliteTopDown)
+                {
+                    dronePosition = new Vector3(satelliteFocusXZ.x, Mathf.Clamp(satelliteHeight * 0.55f, 18f, 65f), satelliteFocusXZ.y);
+                    droneYaw = satelliteYaw;
+                    dronePitch = 42f;
+                }
+                else
+                {
+                    Vector3 flatFwd = new Vector3(transform.forward.x, 0f, transform.forward.z).normalized;
+                    dronePosition = transform.position + new Vector3(0f, 24f, 0f) - (flatFwd * 8f);
+                    droneYaw = transform.eulerAngles.y;
+                    dronePitch = 36f;
+                }
+                droneVelocity = Vector3.zero;
+                droneVerticalVelocity = 0f;
+                droneTargetFov = 60f;
+                droneCurrentFov = 60f;
+                droneAutoTargetPosition = null;
+
+                if (aerialCamera != null)
+                {
+                    aerialCamera.targetTexture = null;
+                    aerialCamera.depth = 25f;
+                    aerialCamera.fieldOfView = droneCurrentFov;
+                    aerialCamera.transform.position = dronePosition;
+                    aerialCamera.transform.rotation = Quaternion.Euler(dronePitch, droneYaw, 0f);
+                    aerialCamera.enabled = true;
+                }
+
+                EnsureDrone3DVisualModel();
+                if (droneVisualModel != null)
+                {
+                    droneVisualModel.SetActive(droneThirdPersonChaseView);
+                }
+
+                LockCursor(true);
+                UpdateFideicomisoPlayerSelfAvatarProxy();
+            }
+            else if (newMode == AerialViewMode.SatelliteTopDown)
+            {
+                // Initialize Satellite view from either Drone position or directly above player
+                if (prevMode == AerialViewMode.DroneFreeFlight)
+                {
+                    satelliteFocusXZ = new Vector2(dronePosition.x, dronePosition.z);
+                    satelliteTargetFocusXZ = satelliteFocusXZ;
+                    satelliteHeight = Mathf.Clamp(dronePosition.y * 1.45f, 38f, 165f);
+                    satelliteTargetHeight = satelliteHeight;
+                    satelliteYaw = droneYaw;
+                    satelliteTargetYaw = droneYaw;
+                }
+                else
+                {
+                    satelliteFocusXZ = new Vector2(transform.position.x, Mathf.Clamp(transform.position.z + 12f, -35f, 200f));
+                    satelliteTargetFocusXZ = satelliteFocusXZ;
+                    satelliteHeight = 68f;
+                    satelliteTargetHeight = 68f;
+                    satelliteYaw = 0f; // North-Up default like Google Maps!
+                    satelliteTargetYaw = 0f;
+                }
+                isSatelliteDragging = false;
+
+                if (droneVisualModel != null && droneVisualModel.activeSelf)
+                {
+                    droneVisualModel.SetActive(false);
+                }
+
+                if (aerialCamera != null)
+                {
+                    aerialCamera.targetTexture = null;
+                    aerialCamera.depth = 25f;
+                    aerialCamera.fieldOfView = 50f;
+                    UpdateSatelliteCameraTransformImmediate();
+                    aerialCamera.enabled = true;
+                }
+
+                // Unlock mouse cursor for Google Maps click-and-drag panning, zooming, and clicking markers!
+                LockCursor(false);
+                UpdateFideicomisoPlayerSelfAvatarProxy();
+            }
+        }
+
+        private void EnsureAerialCameraAndResources()
+        {
+            if (aerialCamera == null)
+            {
+                GameObject camGo = new GameObject("Aerial_Drone_Satellite_Camera");
+                aerialCamera = camGo.AddComponent<Camera>();
+                aerialCamera.nearClipPlane = 0.3f;
+                aerialCamera.farClipPlane = 550f;
+                aerialCamera.fieldOfView = 60f;
+                aerialCamera.depth = 25f; // Renders above main first-person camera when enabled
+
+                Camera mainCam = (playerCamera != null) ? playerCamera.GetComponent<Camera>() : null;
+                if (mainCam == null) mainCam = Camera.main;
+                if (mainCam != null)
+                {
+                    aerialCamera.clearFlags = mainCam.clearFlags;
+                    aerialCamera.backgroundColor = mainCam.backgroundColor;
+                }
+                else
+                {
+                    aerialCamera.clearFlags = CameraClearFlags.SolidColor;
+                    aerialCamera.backgroundColor = new Color(0.45f, 0.68f, 0.92f, 1f);
+                }
+                aerialCamera.enabled = false;
+            }
+
+            if (miniSatellitePreviewRT == null)
+            {
+                miniSatellitePreviewRT = new RenderTexture(192, 192, 16, RenderTextureFormat.ARGB32);
+                miniSatellitePreviewRT.name = "GoogleMaps_MiniPreview_RT";
+                miniSatellitePreviewRT.Create();
+            }
+        }
+
+        private void EnsureDrone3DVisualModel()
+        {
+            if (droneVisualModel != null) return;
+
+            droneVisualModel = new GameObject("Player_Quadcopter_Drone_3D");
+            Shader litShader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+
+            Material bodyMat = litShader != null ? new Material(litShader) { color = new Color(0.16f, 0.19f, 0.24f) } : null;
+            Material accentCyanMat = litShader != null ? new Material(litShader) { color = new Color(0.08f, 0.85f, 0.98f) } : null;
+            Material armMat = litShader != null ? new Material(litShader) { color = new Color(0.26f, 0.30f, 0.36f) } : null;
+            Material rotorMat = litShader != null ? new Material(litShader) { color = new Color(0.08f, 0.09f, 0.11f) } : null;
+            Material gimbalLensMat = litShader != null ? new Material(litShader) { color = new Color(0.95f, 0.25f, 0.22f) } : null;
+
+            // Central fuselage
+            GameObject core = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            core.name = "Drone_Fuselage";
+            core.transform.SetParent(droneVisualModel.transform);
+            core.transform.localPosition = Vector3.zero;
+            core.transform.localScale = new Vector3(0.46f, 0.16f, 0.68f);
+            Destroy(core.GetComponent<Collider>());
+            if (bodyMat != null) core.GetComponent<Renderer>().sharedMaterial = bodyMat;
+
+            // Top glowing telemetry canopy stripe
+            GameObject canopy = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            canopy.name = "Drone_Canopy_LED";
+            canopy.transform.SetParent(droneVisualModel.transform);
+            canopy.transform.localPosition = new Vector3(0f, 0.09f, 0.02f);
+            canopy.transform.localScale = new Vector3(0.28f, 0.04f, 0.48f);
+            Destroy(canopy.GetComponent<Collider>());
+            if (accentCyanMat != null) canopy.GetComponent<Renderer>().sharedMaterial = accentCyanMat;
+
+            // Underslung 4K Gimbal Camera sphere
+            GameObject gimbal = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            gimbal.name = "Drone_4K_Gimbal";
+            gimbal.transform.SetParent(droneVisualModel.transform);
+            gimbal.transform.localPosition = new Vector3(0f, -0.14f, 0.24f);
+            gimbal.transform.localScale = new Vector3(0.20f, 0.20f, 0.20f);
+            Destroy(gimbal.GetComponent<Collider>());
+            if (gimbalLensMat != null) gimbal.GetComponent<Renderer>().sharedMaterial = gimbalLensMat;
+
+            // 4 Diagonal Quadcopter Arms + Spinning Rotors
+            droneRotorTransforms = new Transform[4];
+            Vector3[] motorOffsets = new Vector3[]
+            {
+                new Vector3(-0.48f, 0.04f,  0.48f), // Front-Left
+                new Vector3( 0.48f, 0.04f,  0.48f), // Front-Right
+                new Vector3(-0.48f, 0.04f, -0.48f), // Rear-Left
+                new Vector3( 0.48f, 0.04f, -0.48f)  // Rear-Right
+            };
+
+            for (int i = 0; i < 4; i++)
+            {
+                Vector3 mPos = motorOffsets[i];
+                GameObject arm = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                arm.name = $"Drone_Arm_{i}";
+                arm.transform.SetParent(droneVisualModel.transform);
+                arm.transform.localPosition = mPos * 0.5f;
+                float angleY = Mathf.Atan2(mPos.x, mPos.z) * Mathf.Rad2Deg;
+                arm.transform.localRotation = Quaternion.Euler(0f, angleY, 0f);
+                arm.transform.localScale = new Vector3(0.07f, 0.05f, 0.68f);
+                Destroy(arm.GetComponent<Collider>());
+                if (armMat != null) arm.GetComponent<Renderer>().sharedMaterial = armMat;
+
+                // Motor pod
+                GameObject pod = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                pod.name = $"Drone_Motor_{i}";
+                pod.transform.SetParent(droneVisualModel.transform);
+                pod.transform.localPosition = mPos;
+                pod.transform.localScale = new Vector3(0.14f, 0.06f, 0.14f);
+                Destroy(pod.GetComponent<Collider>());
+                if (accentCyanMat != null) pod.GetComponent<Renderer>().sharedMaterial = accentCyanMat;
+
+                // Spinning Propeller Blade
+                GameObject rotorHub = new GameObject($"Drone_RotorHub_{i}");
+                rotorHub.transform.SetParent(droneVisualModel.transform);
+                rotorHub.transform.localPosition = mPos + new Vector3(0f, 0.07f, 0f);
+
+                GameObject blade1 = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                blade1.transform.SetParent(rotorHub.transform);
+                blade1.transform.localPosition = Vector3.zero;
+                blade1.transform.localScale = new Vector3(0.46f, 0.012f, 0.045f);
+                Destroy(blade1.GetComponent<Collider>());
+                if (rotorMat != null) blade1.GetComponent<Renderer>().sharedMaterial = rotorMat;
+
+                GameObject blade2 = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                blade2.transform.SetParent(rotorHub.transform);
+                blade2.transform.localPosition = Vector3.zero;
+                blade2.transform.localRotation = Quaternion.Euler(0f, 90f, 0f);
+                blade2.transform.localScale = new Vector3(0.46f, 0.012f, 0.045f);
+                Destroy(blade2.GetComponent<Collider>());
+                if (rotorMat != null) blade2.GetComponent<Renderer>().sharedMaterial = rotorMat;
+
+                droneRotorTransforms[i] = rotorHub.transform;
+            }
+
+            droneVisualModel.SetActive(false);
+        }
+
+        private void UpdateMiniSatellitePreviewRender()
+        {
+            EnsureAerialCameraAndResources();
+            EnsurePlayerSelfAvatarProxy();
+            UpdateFideicomisoPlayerSelfAvatarProxy();
+
+            if (Time.unscaledTime - lastMiniPreviewRenderTime < 0.28f) return;
+            lastMiniPreviewRenderTime = Time.unscaledTime;
+
+            if (aerialCamera == null || miniSatellitePreviewRT == null) return;
+
+            bool prevEnabled = aerialCamera.enabled;
+            RenderTexture prevRT = aerialCamera.targetTexture;
+            Vector3 prevPos = aerialCamera.transform.position;
+            Quaternion prevRot = aerialCamera.transform.rotation;
+            float prevFov = aerialCamera.fieldOfView;
+
+            // Position overhead at 58m above the player looking straight down (North-Up) for the live Google Maps square preview!
+            aerialCamera.enabled = false;
+            aerialCamera.targetTexture = miniSatellitePreviewRT;
+            aerialCamera.fieldOfView = 52f;
+            aerialCamera.transform.position = new Vector3(transform.position.x, 58f, transform.position.z);
+            aerialCamera.transform.rotation = Quaternion.Euler(89.9f, 0f, 0f);
+            aerialCamera.Render();
+
+            aerialCamera.targetTexture = prevRT;
+            aerialCamera.transform.position = prevPos;
+            aerialCamera.transform.rotation = prevRot;
+            aerialCamera.fieldOfView = prevFov;
+            aerialCamera.enabled = prevEnabled;
+        }
+
+        private void HandleDroneFreeFlightUpdate()
+        {
+            EnsureAerialCameraAndResources();
+            EnsureDrone3DVisualModel();
+            UpdateFideicomisoPlayerSelfAvatarProxy();
+
+            float dt = Mathf.Clamp(Time.unscaledDeltaTime, 0.001f, 0.05f);
+
+            // Toggle cursor lock with Tab or right-click if player wants to click HUD buttons
+            if (WasTabKeyPressed())
+            {
+                LockCursor(!isCursorLocked);
+            }
+
+            // 1. Quick Gimbal 90-degree Top-Down Nadir toggle [R]
+            if (WasKeyPressed(KeyCode.R))
+            {
+                if (dronePitch < 82f)
+                {
+                    dronePitch = 89.5f; // True Sky-to-Ground Nadir view!
+                }
+                else
+                {
+                    dronePitch = 34f; // Cinematic oblique forward view
+                }
+            }
+
+            // 2. Toggle 1st-Person FPV vs 3rd-Person Quadcopter Chase View [F]
+            if (WasKeyPressed(KeyCode.F))
+            {
+                droneThirdPersonChaseView = !droneThirdPersonChaseView;
+                if (droneVisualModel != null)
+                {
+                    droneVisualModel.SetActive(droneThirdPersonChaseView);
+                }
+            }
+
+            // 3. Quick Teleport Player to ground below Drone [T]
+            if (WasKeyPressed(KeyCode.T))
+            {
+                TeleportPlayerToGroundPosition(dronePosition.x, dronePosition.z);
+                return;
+            }
+
+            // 4. Quick Sector Hotkeys [1..5] for fast corridor inspection
+            CheckAerialSectorHotkeys(isDrone: true);
+
+            // 5. Mouse Look (when cursor is locked or right mouse button held)
+            if (isCursorLocked || IsMouseButtonHeld(1))
+            {
+                Vector2 lookDelta = GetLookInput() * mouseSensitivity;
+                droneYaw += lookDelta.x;
+                dronePitch = Mathf.Clamp(dronePitch - lookDelta.y, -40f, 89.8f);
+            }
+
+            // 6. Scroll Wheel Optical Zoom (FOV 22° telephoto to 78° wide angle)
+            float scroll = GetScrollWheelDelta();
+            if (Mathf.Abs(scroll) > 0.001f)
+            {
+                droneTargetFov = Mathf.Clamp(droneTargetFov - scroll * 14f, 22f, 78f);
+            }
+            droneCurrentFov = Mathf.Lerp(droneCurrentFov, droneTargetFov, dt * 10f);
+
+            // 7. 6-DOF Drone Flight Movement (Horizontal WASD + Vertical Space/E Up, Q/C/Ctrl Down)
+            Vector2 moveInput = GetMovementInput();
+            float verticalInput = 0f;
+            if (IsKeyHeld(KeyCode.Space) || IsKeyHeld(KeyCode.E)) verticalInput += 1f;
+            if (IsKeyHeld(KeyCode.Q) || IsKeyHeld(KeyCode.C) || IsKeyHeld(KeyCode.LeftControl)) verticalInput -= 1f;
+
+            // Cancel auto-fly if user manually pilots
+            if (moveInput.sqrMagnitude > 0.01f || Mathf.Abs(verticalInput) > 0.01f)
+            {
+                droneAutoTargetPosition = null;
+            }
+
+            bool isSportTurbo = IsKeyHeld(KeyCode.LeftShift) || IsSprintPressed();
+            float maxHorizSpeed = isSportTurbo ? 34f : 15f;
+            float maxVertSpeed = isSportTurbo ? 20f : 10f;
+
+            if (droneAutoTargetPosition.HasValue)
+            {
+                Vector3 toTarget = droneAutoTargetPosition.Value - dronePosition;
+                if (toTarget.magnitude < 1.2f)
+                {
+                    droneAutoTargetPosition = null;
+                    droneVelocity = Vector3.zero;
+                    droneVerticalVelocity = 0f;
+                }
+                else
+                {
+                    dronePosition = Vector3.Lerp(dronePosition, droneAutoTargetPosition.Value, dt * 4.2f);
+                    droneVelocity = toTarget * 2.5f;
+                }
+            }
+            else
+            {
+                Quaternion flatYawRot = Quaternion.Euler(0f, droneYaw, 0f);
+                Vector3 desiredHorizVel = (flatYawRot * new Vector3(moveInput.x, 0f, moveInput.y)) * maxHorizSpeed;
+                droneVelocity = Vector3.Lerp(droneVelocity, desiredHorizVel, dt * 7.5f);
+                droneVerticalVelocity = Mathf.Lerp(droneVerticalVelocity, verticalInput * maxVertSpeed, dt * 7.5f);
+
+                dronePosition += new Vector3(droneVelocity.x, droneVerticalVelocity, droneVelocity.z) * dt;
+            }
+
+            // Clamp within expanded Paso del Norte & Stage 2 Rio Bravo / Loop 375 airspace
+            dronePosition.x = Mathf.Clamp(dronePosition.x, -160f, 160f);
+            dronePosition.y = Mathf.Clamp(dronePosition.y, 1.5f, 240f);
+            dronePosition.z = Mathf.Clamp(dronePosition.z, -75f, 260f);
+
+            // Update 3D Quadcopter visual model & rotor spin
+            if (droneVisualModel != null)
+            {
+                if (droneVisualModel.activeSelf != droneThirdPersonChaseView)
+                {
+                    droneVisualModel.SetActive(droneThirdPersonChaseView);
+                }
+
+                if (droneThirdPersonChaseView)
+                {
+                    // Tilt quadcopter body slightly with velocity for realistic aerodynamics!
+                    Vector3 localVel = Quaternion.Inverse(Quaternion.Euler(0f, droneYaw, 0f)) * droneVelocity;
+                    float tiltPitch = Mathf.Clamp(localVel.z * 0.65f, -18f, 18f);
+                    float tiltRoll = Mathf.Clamp(-localVel.x * 0.65f, -18f, 18f);
+                    droneVisualModel.transform.position = dronePosition;
+                    droneVisualModel.transform.rotation = Quaternion.Euler(tiltPitch, droneYaw, tiltRoll);
+
+                    if (droneRotorTransforms != null)
+                    {
+                        float spinSpeed = isSportTurbo ? 2600f : 1650f;
+                        for (int i = 0; i < droneRotorTransforms.Length; i++)
+                        {
+                            if (droneRotorTransforms[i] != null)
+                            {
+                                droneRotorTransforms[i].Rotate(0f, spinSpeed * dt * ((i % 2 == 0) ? 1f : -1f), 0f, Space.Self);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Position aerial camera (either 1st-person gimbal or 3rd-person chase behind quadcopter)
+            if (aerialCamera != null)
+            {
+                aerialCamera.enabled = true;
+                aerialCamera.fieldOfView = droneCurrentFov;
+                Quaternion camRot = Quaternion.Euler(dronePitch, droneYaw, 0f);
+                if (droneThirdPersonChaseView)
+                {
+                    Vector3 chaseOffset = camRot * new Vector3(0f, 0.65f, -3.2f);
+                    aerialCamera.transform.position = dronePosition + chaseOffset;
+                    aerialCamera.transform.rotation = camRot;
+                }
+                else
+                {
+                    aerialCamera.transform.position = dronePosition;
+                    aerialCamera.transform.rotation = camRot;
+                }
+            }
+        }
+
+        private void HandleSatelliteTopDownUpdate()
+        {
+            EnsureAerialCameraAndResources();
+            UpdateFideicomisoPlayerSelfAvatarProxy();
+
+            // Always keep cursor unlocked in Google Maps Satellite mode so user can click, drag, and interact
+            if (isCursorLocked)
+            {
+                LockCursor(false);
+            }
+
+            float dt = Mathf.Clamp(Time.unscaledDeltaTime, 0.001f, 0.05f);
+
+            // 1. Toggle 90° True Satellite Ortho-like Nadir vs 58° Google Earth 3D Oblique tilt [R]
+            if (WasKeyPressed(KeyCode.R))
+            {
+                satellite3DObliqueTilt = !satellite3DObliqueTilt;
+            }
+
+            // 2. Reset Compass North-Up [N]
+            if (WasKeyPressed(KeyCode.N))
+            {
+                satelliteTargetYaw = 0f;
+            }
+
+            // 3. Teleport Player to ground at current Satellite Center [T]
+            if (WasKeyPressed(KeyCode.T))
+            {
+                TeleportPlayerToGroundPosition(satelliteFocusXZ.x, satelliteFocusXZ.y);
+                return;
+            }
+
+            // 4. Quick Sector Hotkeys [1..5]
+            CheckAerialSectorHotkeys(isDrone: false);
+
+            // 5. Scroll Wheel Altitude Zoom (12m Street-level close-up to 240m full-corridor overview)
+            float scroll = GetScrollWheelDelta();
+            if (Mathf.Abs(scroll) > 0.001f)
+            {
+                float zoomStep = Mathf.Max(4.5f, satelliteTargetHeight * 0.18f);
+                satelliteTargetHeight = Mathf.Clamp(satelliteTargetHeight - scroll * zoomStep * 2.2f, 12f, 240f);
+            }
+
+            // 6. Left-Click & Drag Map Panning (like Google Maps!)
+            Vector2 mousePos = GetCurrentMousePosition();
+            bool overUI = IsMouseOverSatelliteHUDRects(mousePos);
+
+            if (IsMouseButtonDown(0) && !overUI)
+            {
+                isSatelliteDragging = true;
+                satelliteDragLastMousePos = mousePos;
+            }
+            else if (IsMouseButtonUp(0))
+            {
+                isSatelliteDragging = false;
+            }
+
+            if (isSatelliteDragging && IsMouseButtonHeld(0))
+            {
+                Vector2 mouseDelta = mousePos - satelliteDragLastMousePos;
+                satelliteDragLastMousePos = mousePos;
+
+                // Scale pan speed proportionally to camera altitude so ground sticks under the cursor!
+                float panUnitsPerPixel = (satelliteHeight / Mathf.Max(360f, (float)Screen.height)) * 1.18f;
+                Quaternion yawRot = Quaternion.Euler(0f, satelliteYaw, 0f);
+                Vector3 worldPan = yawRot * new Vector3(-mouseDelta.x * panUnitsPerPixel, 0f, -mouseDelta.y * panUnitsPerPixel);
+                satelliteTargetFocusXZ += new Vector2(worldPan.x, worldPan.z);
+            }
+
+            // 7. Right-Click Drag or Q/E Keys to rotate compass bearing
+            if (IsMouseButtonHeld(1))
+            {
+                Vector2 lookDelta = GetLookInput();
+                satelliteTargetYaw += lookDelta.x * 0.35f;
+            }
+            if (IsKeyHeld(KeyCode.Q)) satelliteTargetYaw -= 65f * dt;
+            if (IsKeyHeld(KeyCode.E)) satelliteTargetYaw += 65f * dt;
+
+            // 8. Smooth WASD / Arrow Keys Panning
+            Vector2 moveInput = GetMovementInput();
+            if (moveInput.sqrMagnitude > 0.01f)
+            {
+                bool fastPan = IsKeyHeld(KeyCode.LeftShift) || IsSprintPressed();
+                float panSpeed = Mathf.Clamp(satelliteHeight * 0.85f, 18f, 95f) * (fastPan ? 1.85f : 1.0f);
+                Quaternion yawRot = Quaternion.Euler(0f, satelliteYaw, 0f);
+                Vector3 step = (yawRot * new Vector3(moveInput.x, 0f, moveInput.y)) * (panSpeed * dt);
+                satelliteTargetFocusXZ += new Vector2(step.x, step.z);
+            }
+
+            // Clamp focus within expanded corridor + Stage 2 North bounds
+            satelliteTargetFocusXZ.x = Mathf.Clamp(satelliteTargetFocusXZ.x, -150f, 150f);
+            satelliteTargetFocusXZ.y = Mathf.Clamp(satelliteTargetFocusXZ.y, -70f, 255f);
+
+            // Smooth interpolation
+            satelliteFocusXZ = Vector2.Lerp(satelliteFocusXZ, satelliteTargetFocusXZ, dt * 11f);
+            satelliteHeight = Mathf.Lerp(satelliteHeight, satelliteTargetHeight, dt * 9f);
+            satelliteYaw = Mathf.LerpAngle(satelliteYaw, satelliteTargetYaw, dt * 10f);
+
+            UpdateSatelliteCameraTransformImmediate();
+        }
+
+        private void UpdateSatelliteCameraTransformImmediate()
+        {
+            if (aerialCamera == null) return;
+
+            float targetPitch = satellite3DObliqueTilt ? 58f : 89.9f;
+            Quaternion camRot = Quaternion.Euler(targetPitch, satelliteYaw, 0f);
+
+            if (satellite3DObliqueTilt)
+            {
+                // Offset camera backward along pitch ray so satelliteFocusXZ remains centered in the viewport!
+                float horizBackDist = satelliteHeight / Mathf.Tan(targetPitch * Mathf.Deg2Rad);
+                Quaternion flatYaw = Quaternion.Euler(0f, satelliteYaw, 0f);
+                Vector3 backOffset = flatYaw * new Vector3(0f, 0f, -horizBackDist);
+                aerialCamera.transform.position = new Vector3(satelliteFocusXZ.x, satelliteHeight, satelliteFocusXZ.y) + backOffset;
+            }
+            else
+            {
+                aerialCamera.transform.position = new Vector3(satelliteFocusXZ.x, satelliteHeight, satelliteFocusXZ.y);
+            }
+
+            aerialCamera.transform.rotation = camRot;
+            aerialCamera.fieldOfView = 50f;
+        }
+
+        private void CheckAerialSectorHotkeys(bool isDrone)
+        {
+            // 5 Key Sectors along the Paso del Norte Corridor (from South Av. Juárez to North Loop 375 / Rio Bravo)
+            Vector2? targetXZ = null;
+            float targetAlt = isDrone ? 26f : 65f;
+            float targetPitch = 36f;
+
+            if (WasKeyPressed(KeyCode.Alpha1))
+            {
+                // Sector 1: Av. Juárez Sur (Inicio Corredor)
+                targetXZ = new Vector2(0f, -15f);
+                targetAlt = isDrone ? 20f : 52f;
+                targetPitch = 30f;
+            }
+            else if (WasKeyPressed(KeyCode.Alpha2))
+            {
+                // Sector 2: Intersección C. Gardenias y Kiosco Ciudadano
+                targetXZ = new Vector2(0f, 15f);
+                targetAlt = isDrone ? 22f : 55f;
+                targetPitch = 35f;
+            }
+            else if (WasKeyPressed(KeyCode.Alpha3))
+            {
+                // Sector 3: Plaza de Peaje y Plumas (Acceso al Puente)
+                targetXZ = new Vector2(3f, 45f);
+                targetAlt = isDrone ? 22f : 54f;
+                targetPitch = 34f;
+            }
+            else if (WasKeyPressed(KeyCode.Alpha4))
+            {
+                // Sector 4: Joroba del Puente Internacional Paso del Norte (Z=55..75)
+                targetXZ = new Vector2(4f, 68f);
+                targetAlt = isDrone ? 30f : 68f;
+                targetPitch = 38f;
+            }
+            else if (WasKeyPressed(KeyCode.Alpha5))
+            {
+                // Sector 5: Río Bravo, Vías del Ferrocarril y Loop 375 (Stage 2 Norte Z=80..185)
+                targetXZ = new Vector2(4f, 132f);
+                targetAlt = isDrone ? 42f : 105f;
+                targetPitch = 44f;
+            }
+
+            if (targetXZ.HasValue)
+            {
+                if (isDrone)
+                {
+                    droneAutoTargetPosition = new Vector3(targetXZ.Value.x, targetAlt, targetXZ.Value.y);
+                    dronePitch = targetPitch;
+                }
+                else
+                {
+                    satelliteTargetFocusXZ = targetXZ.Value;
+                    satelliteTargetHeight = targetAlt;
+                }
+            }
+        }
+
+        private void TeleportPlayerToGroundPosition(float targetX, float targetZ)
+        {
+            float clampedX = Mathf.Clamp(targetX, -65f, 65f);
+            float clampedZ = Mathf.Clamp(targetZ, -32f, 220f);
+
+            // Raycast downward from high sky to land safely on bridge deck, ramps, or street surface
+            float groundY = 0f;
+            if (Physics.Raycast(new Vector3(clampedX, 120f, clampedZ), Vector3.down, out RaycastHit hit, 160f))
+            {
+                groundY = hit.point.y;
+            }
+
+            if (characterController != null) characterController.enabled = false;
+            transform.position = new Vector3(clampedX, groundY + 1.08f, clampedZ);
+            if (characterController != null) characterController.enabled = true;
+
+            SetAerialViewMode(AerialViewMode.GroundFirstPerson);
+        }
+
+        private bool IsMouseOverSatelliteHUDRects(Vector2 screenMousePos)
+        {
+            Vector2 guiMouse = new Vector2(screenMousePos.x, Screen.height - screenMousePos.y);
+            // Top bar & sector bar
+            if (guiMouse.y < 92f) return true;
+            // Bottom-left Google Maps Layer Switcher card
+            if (guiMouse.x < 280f && guiMouse.y > Screen.height - 150f) return true;
+            // Bottom-right Zoom & Compass control dock
+            if (guiMouse.x > Screen.width - 260f && guiMouse.y > Screen.height - 230f) return true;
+            return false;
+        }
+
+        private void DrawGoogleMapsLayerSwitcherCard()
+        {
+            bool isEs = (currentLanguage == "es");
+
+            // Google Maps-inspired Floating Square Thumbnail Card at Bottom-Left!
+            float cardW = 114f;
+            float cardH = 128f;
+            float cardX = 16f;
+            float cardY = Screen.height - cardH - 42f;
+            googleMapsLauncherRect = new Rect(cardX, cardY, cardW, cardH);
+
+            Color prevColor = GUI.color;
+
+            // White/Glass Border Frame like Google Maps Satellite Tile
+            GUI.color = new Color(0.95f, 0.98f, 1f, 0.94f);
+            GUI.DrawTexture(googleMapsLauncherRect, Texture2D.whiteTexture);
+
+            Rect innerDark = new Rect(cardX + 3f, cardY + 3f, cardW - 6f, cardH - 6f);
+            GUI.color = new Color(0.06f, 0.09f, 0.14f, 0.96f);
+            GUI.DrawTexture(innerDark, Texture2D.whiteTexture);
+            GUI.color = prevColor;
+
+            // Live Overhead RenderTexture Preview inside the square
+            Rect thumbRect = new Rect(cardX + 5f, cardY + 5f, cardW - 10f, 76f);
+            if (miniSatellitePreviewRT != null)
+            {
+                GUI.DrawTexture(thumbRect, miniSatellitePreviewRT, ScaleMode.ScaleAndCrop, false);
+            }
+
+            // Player dot in center of live satellite thumbnail
+            GUI.color = new Color(0.15f, 0.55f, 1f, 0.95f);
+            GUI.DrawTexture(new Rect(thumbRect.center.x - 4f, thumbRect.center.y - 4f, 8f, 8f), Texture2D.whiteTexture);
+            GUI.color = prevColor;
+
+            // Top badge inside thumbnail: "CAPAS AÉREAS"
+            Rect badgeRect = new Rect(thumbRect.x + 3f, thumbRect.y + 3f, thumbRect.width - 6f, 16f);
+            GUI.color = new Color(0.02f, 0.05f, 0.10f, 0.82f);
+            GUI.DrawTexture(badgeRect, Texture2D.whiteTexture);
+            GUI.color = prevColor;
+
+            GUIStyle badgeStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 9,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = new Color(0.55f, 0.92f, 1f) }
+            };
+            GUI.Label(badgeRect, isEs ? "🛰️ VISTA AÉREA" : "🛰️ AERIAL VIEW", badgeStyle);
+
+            // Clicking the thumbnail itself opens Google Maps Satellite View!
+            if (GUI.Button(thumbRect, GUIContent.none, GUIStyle.none))
+            {
+                SetAerialViewMode(AerialViewMode.SatelliteTopDown);
+            }
+
+            // Two compact buttons below thumbnail: [🛰️ Satélite (G)] and [🚁 Dron 3D (V)]
+            GUIStyle modeBtnStyle = new GUIStyle(GUI.skin.button)
+            {
+                fontSize = 10,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = new Color(0.95f, 0.98f, 1f) }
+            };
+
+            Rect satBtnRect = new Rect(cardX + 5f, cardY + 83f, cardW - 10f, 20f);
+            GUI.color = new Color(0.18f, 0.58f, 0.96f, 0.95f);
+            if (GUI.Button(satBtnRect, isEs ? "🛰️ Satélite [G]" : "🛰️ Satellite [G]", modeBtnStyle))
+            {
+                SetAerialViewMode(AerialViewMode.SatelliteTopDown);
+            }
+
+            Rect droneBtnRect = new Rect(cardX + 5f, cardY + 105f, cardW - 10f, 19f);
+            GUI.color = new Color(0.16f, 0.78f, 0.58f, 0.95f);
+            if (GUI.Button(droneBtnRect, isEs ? "🚁 Dron Libre [V]" : "🚁 3D Drone [V]", modeBtnStyle))
+            {
+                SetAerialViewMode(AerialViewMode.DroneFreeFlight);
+            }
+            GUI.color = prevColor;
+        }
+
+        private void DrawDroneFlightHUD()
+        {
+            bool isEs = (currentLanguage == "es");
+            Color prevColor = GUI.color;
+
+            // 1. Top Telemetry Header Bar (DJI Mavic / Tactical Drone OSD)
+            Rect topHudRect = new Rect(Screen.width * 0.5f - 390f, 38f, 780f, 44f);
+            GUI.color = new Color(0.03f, 0.06f, 0.11f, 0.88f);
+            GUI.DrawTexture(topHudRect, Texture2D.whiteTexture);
+            GUI.color = new Color(0.15f, 0.88f, 0.98f, 0.95f);
+            GUI.DrawTexture(new Rect(topHudRect.x, topHudRect.y, topHudRect.width, 2f), Texture2D.whiteTexture);
+            GUI.color = prevColor;
+
+            float horizSpeed = new Vector2(droneVelocity.x, droneVelocity.z).magnitude;
+            float distFromPlayer = Vector3.Distance(dronePosition, transform.position);
+            bool isSport = IsKeyHeld(KeyCode.LeftShift) || IsSprintPressed();
+            bool isNadir90 = dronePitch >= 82f;
+
+            GUIStyle telemetryStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 11,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = new Color(0.88f, 0.97f, 1f) }
+            };
+
+            string modeTag = isSport ? (isEs ? "⚡ MODO SPORT" : "⚡ SPORT MODE") : (isEs ? "🚁 MODO CINE" : "🚁 CINE MODE");
+            string gimbalTag = isNadir90
+                ? (isEs ? "📐 GIMBAL: -89.5° (CENITAL CIELO→SUELO)" : "📐 GIMBAL: -89.5° (TOP-DOWN NADIR)")
+                : $"📐 GIMBAL: -{dronePitch:F0}°";
+            string zoomFactor = $"{(60f / Mathf.Max(20f, droneCurrentFov)):F1}x";
+
+            string telemetryLine1 =
+                $"{modeTag}   |   ALT: {dronePosition.y:F1} m   |   VEL: {horizSpeed:F1} m/s   |   DIST: {distFromPlayer:F0} m   |   {gimbalTag}   |   ZOOM: {zoomFactor}   |   🔋 99% 📶 GPS 18 SAT";
+            GUI.Label(new Rect(topHudRect.x + 8f, topHudRect.y + 3f, topHudRect.width - 16f, 20f), telemetryLine1, telemetryStyle);
+
+            // Quick Sector Jump Buttons [1..5] inside top bar
+            GUILayout.BeginArea(new Rect(topHudRect.x + 10f, topHudRect.y + 22f, topHudRect.width - 20f, 20f));
+            GUILayout.BeginHorizontal();
+            GUIStyle secBtn = new GUIStyle(GUI.skin.button) { fontSize = 9, fontStyle = FontStyle.Bold };
+            if (GUILayout.Button(isEs ? "[1] Av. Juárez Sur" : "[1] South Entry", secBtn, GUILayout.Height(18f)))
+            {
+                droneAutoTargetPosition = new Vector3(0f, 20f, -15f);
+            }
+            if (GUILayout.Button(isEs ? "[2] C. Gardenias" : "[2] Gardenias St", secBtn, GUILayout.Height(18f)))
+            {
+                droneAutoTargetPosition = new Vector3(0f, 22f, 15f);
+            }
+            if (GUILayout.Button(isEs ? "[3] Caseta y Plumas" : "[3] Toll Plaza", secBtn, GUILayout.Height(18f)))
+            {
+                droneAutoTargetPosition = new Vector3(3f, 22f, 45f);
+            }
+            if (GUILayout.Button(isEs ? "[4] Puente Paso del Norte" : "[4] Bridge Deck", secBtn, GUILayout.Height(18f)))
+            {
+                droneAutoTargetPosition = new Vector3(4f, 30f, 68f);
+            }
+            if (GUILayout.Button(isEs ? "[5] Río Bravo / Tren / Loop 375" : "[5] Rio Grande / Loop 375", secBtn, GUILayout.Height(18f)))
+            {
+                droneAutoTargetPosition = new Vector3(4f, 42f, 132f);
+            }
+            GUILayout.EndHorizontal();
+            GUILayout.EndArea();
+
+            // 2. Center Gimbal Crosshair & Horizon Brackets
+            float cx = Screen.width * 0.5f;
+            float cy = Screen.height * 0.5f;
+            GUI.color = new Color(0.20f, 0.95f, 1f, 0.65f);
+            // Crosshair lines
+            GUI.DrawTexture(new Rect(cx - 24f, cy - 1f, 16f, 2f), Texture2D.whiteTexture);
+            GUI.DrawTexture(new Rect(cx + 8f, cy - 1f, 16f, 2f), Texture2D.whiteTexture);
+            GUI.DrawTexture(new Rect(cx - 1f, cy - 24f, 2f, 16f), Texture2D.whiteTexture);
+            GUI.DrawTexture(new Rect(cx - 1f, cy + 8f, 2f, 16f), Texture2D.whiteTexture);
+
+            // Framing corner brackets
+            float bw = 150f;
+            float bh = 95f;
+            GUI.DrawTexture(new Rect(cx - bw, cy - bh, 22f, 2f), Texture2D.whiteTexture);
+            GUI.DrawTexture(new Rect(cx - bw, cy - bh, 2f, 22f), Texture2D.whiteTexture);
+            GUI.DrawTexture(new Rect(cx + bw - 22f, cy - bh, 22f, 2f), Texture2D.whiteTexture);
+            GUI.DrawTexture(new Rect(cx + bw - 2f, cy - bh, 2f, 22f), Texture2D.whiteTexture);
+            GUI.DrawTexture(new Rect(cx - bw, cy + bh - 2f, 22f, 2f), Texture2D.whiteTexture);
+            GUI.DrawTexture(new Rect(cx - bw, cy + bh - 22f, 2f, 22f), Texture2D.whiteTexture);
+            GUI.DrawTexture(new Rect(cx + bw - 22f, cy + bh - 2f, 22f, 2f), Texture2D.whiteTexture);
+            GUI.DrawTexture(new Rect(cx + bw - 2f, cy + bh - 22f, 2f, 22f), Texture2D.whiteTexture);
+            GUI.color = prevColor;
+
+            // 3. Draw 3D World-Space Markers for Player & Key Corridor Landmarks
+            if (droneShowWorldMarkers)
+            {
+                DrawAerialWorldProjectedMarkers(isSatelliteMode: false);
+            }
+
+            // 4. Bottom Drone Flight Control Deck
+            Rect bottomDeck = new Rect(Screen.width * 0.5f - 430f, Screen.height - 64f, 860f, 34f);
+            GUI.color = new Color(0.03f, 0.06f, 0.11f, 0.90f);
+            GUI.DrawTexture(bottomDeck, Texture2D.whiteTexture);
+            GUI.color = prevColor;
+
+            GUIStyle deckTextStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 11,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = new Color(0.92f, 0.97f, 1f) }
+            };
+
+            string chaseTag = droneThirdPersonChaseView
+                ? (isEs ? "[F] Vista: 3ra Persona (Cuadricóptero)" : "[F] View: 3rd-Person Quadcopter")
+                : (isEs ? "[F] Vista: 1ra Persona (Gimbal FPV)" : "[F] View: 1st-Person FPV");
+
+            string controlsHint = isEs
+                ? $"WASD: Volar  |  Espacio/E: Subir  |  Q/C: Bajar  |  Shift: Turbo  |  [R]: Mirar 90° al Suelo  |  {chaseTag}  |  [T]: Aterrizar Jugador Aquí  |  [G]: Satélite  |  [V/Esc]: Salir"
+                : $"WASD: Fly  |  Space/E: Ascend  |  Q/C: Descend  |  Shift: Turbo  |  [R]: 90° Top-Down  |  {chaseTag}  |  [T]: Teleport Player Here  |  [G]: Satellite  |  [V/Esc]: Exit";
+
+            GUI.Label(bottomDeck, controlsHint, deckTextStyle);
+        }
+
+        private void DrawSatelliteMapHUD()
+        {
+            bool isEs = (currentLanguage == "es");
+            Color prevColor = GUI.color;
+
+            // 1. Draw Hybrid Map Pins & Street/Infrastructure Labels over the 3D World!
+            if (satelliteShowHybridLabels)
+            {
+                DrawAerialWorldProjectedMarkers(isSatelliteMode: true);
+            }
+
+            // 2. Top Google Maps Search / Coordinates Omni-Bar + Sector Pills
+            Rect omniBar = new Rect(16f, 40f, 760f, 44f);
+            GUI.color = new Color(0.06f, 0.09f, 0.14f, 0.95f);
+            GUI.DrawTexture(omniBar, Texture2D.whiteTexture);
+            GUI.color = new Color(0.25f, 0.65f, 1f, 0.95f);
+            GUI.DrawTexture(new Rect(omniBar.x, omniBar.y, 4f, omniBar.height), Texture2D.whiteTexture);
+            GUI.color = prevColor;
+
+            GUIStyle searchTitleStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 12,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleLeft,
+                normal = { textColor = Color.white }
+            };
+
+            string tiltDesc = satellite3DObliqueTilt
+                ? (isEs ? "Relieve 3D Oblicuo (58°)" : "3D Oblique Tilt (58°)")
+                : (isEs ? "Cenital 90° (Cielo → Suelo)" : "Top-Down Nadir (90°)");
+
+            string omniTitle = isEs
+                ? $"🛰️ Google Maps Satelital — Paso del Norte  |  Centro: X={satelliteFocusXZ.x:F0}m, Z={satelliteFocusXZ.y:F0}m  |  Altitud: {satelliteHeight:F0}m  |  {tiltDesc}"
+                : $"🛰️ Satellite Map View — Paso del Norte  |  Center: X={satelliteFocusXZ.x:F0}m, Z={satelliteFocusXZ.y:F0}m  |  Alt: {satelliteHeight:F0}m  |  {tiltDesc}";
+
+            GUI.Label(new Rect(omniBar.x + 12f, omniBar.y + 2f, omniBar.width - 20f, 20f), omniTitle, searchTitleStyle);
+
+            // Sector Jump Pills inside Omni-Bar row 2
+            GUILayout.BeginArea(new Rect(omniBar.x + 10f, omniBar.y + 22f, omniBar.width - 20f, 20f));
+            GUILayout.BeginHorizontal();
+            GUIStyle pillStyle = new GUIStyle(GUI.skin.button)
+            {
+                fontSize = 10,
+                fontStyle = FontStyle.Bold,
+                normal = { textColor = new Color(0.92f, 0.97f, 1f) }
+            };
+
+            if (GUILayout.Button(isEs ? "📍 [1] Av. Juárez Sur" : "📍 [1] South Entry", pillStyle, GUILayout.Height(18f)))
+            {
+                satelliteTargetFocusXZ = new Vector2(0f, -15f);
+                satelliteTargetHeight = 50f;
+            }
+            if (GUILayout.Button(isEs ? "📍 [2] C. Gardenias" : "📍 [2] Gardenias St", pillStyle, GUILayout.Height(18f)))
+            {
+                satelliteTargetFocusXZ = new Vector2(0f, 15f);
+                satelliteTargetHeight = 52f;
+            }
+            if (GUILayout.Button(isEs ? "📍 [3] Caseta Peaje" : "📍 [3] Toll Plaza", pillStyle, GUILayout.Height(18f)))
+            {
+                satelliteTargetFocusXZ = new Vector2(3f, 45f);
+                satelliteTargetHeight = 48f;
+            }
+            if (GUILayout.Button(isEs ? "📍 [4] Puente (Z=50..75)" : "📍 [4] Bridge Deck", pillStyle, GUILayout.Height(18f)))
+            {
+                satelliteTargetFocusXZ = new Vector2(4f, 68f);
+                satelliteTargetHeight = 64f;
+            }
+            if (GUILayout.Button(isEs ? "🌊 [5] Río Bravo / Tren / Loop 375" : "🌊 [5] Rio Grande / Loop 375", pillStyle, GUILayout.Height(18f)))
+            {
+                satelliteTargetFocusXZ = new Vector2(4f, 135f);
+                satelliteTargetHeight = 105f;
+            }
+            if (GUILayout.Button(isEs ? "🧍 Ir a Jugador" : "🧍 Center Player", pillStyle, GUILayout.Height(18f)))
+            {
+                satelliteTargetFocusXZ = new Vector2(transform.position.x, transform.position.z);
+                satelliteTargetHeight = 48f;
+            }
+            GUILayout.EndHorizontal();
+            GUILayout.EndArea();
+
+            // 3. Subtle Center Target Reticle (shows exact ground coordinates for [T] Teleport)
+            float cx = Screen.width * 0.5f;
+            float cy = Screen.height * 0.5f;
+            GUI.color = new Color(1f, 1f, 1f, 0.55f);
+            GUI.DrawTexture(new Rect(cx - 12f, cy - 1f, 24f, 2f), Texture2D.whiteTexture);
+            GUI.DrawTexture(new Rect(cx - 1f, cy - 12f, 2f, 24f), Texture2D.whiteTexture);
+            GUI.color = prevColor;
+
+            // 4. Bottom-Left Google Maps Layer Switcher Card (Return to Street View / Switch to 3D Drone)
+            Rect layerCard = new Rect(16f, Screen.height - 134f, 244f, 92f);
+            GUI.color = new Color(0.06f, 0.09f, 0.14f, 0.95f);
+            GUI.DrawTexture(layerCard, Texture2D.whiteTexture);
+            GUI.color = new Color(0.25f, 0.65f, 1f, 0.95f);
+            GUI.DrawTexture(new Rect(layerCard.x, layerCard.y, layerCard.width, 2f), Texture2D.whiteTexture);
+            GUI.color = prevColor;
+
+            GUILayout.BeginArea(new Rect(layerCard.x + 10f, layerCard.y + 8f, layerCard.width - 20f, layerCard.height - 14f));
+            GUIStyle cardHeader = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 11,
+                fontStyle = FontStyle.Bold,
+                normal = { textColor = new Color(0.65f, 0.90f, 1f) }
+            };
+            GUILayout.Label(isEs ? "🗺️ CAPAS Y MODO DE CÁMARA" : "🗺️ MAP LAYERS & CAMERA MODE", cardHeader);
+
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button(isEs ? "🚶 Vista Calle [G/Esc]" : "🚶 Street View [G/Esc]", GUILayout.Height(26f)))
+            {
+                SetAerialViewMode(AerialViewMode.GroundFirstPerson);
+            }
+            if (GUILayout.Button(isEs ? "🚁 Piloto Dron [V]" : "🚁 3D Drone [V]", GUILayout.Height(26f)))
+            {
+                SetAerialViewMode(AerialViewMode.DroneFreeFlight);
+            }
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            string labelsBtn = satelliteShowHybridLabels
+                ? (isEs ? "🏷️ Etiquetas: ACTIVAS" : "🏷️ Labels: ON")
+                : (isEs ? "🏷️ Etiquetas: OCULTAS" : "🏷️ Labels: OFF");
+            if (GUILayout.Button(labelsBtn, GUILayout.Height(24f)))
+            {
+                satelliteShowHybridLabels = !satelliteShowHybridLabels;
+            }
+            string tiltBtn = satellite3DObliqueTilt
+                ? (isEs ? "📐 [R] Ver 90° Cenital" : "📐 [R] 90° Top-Down")
+                : (isEs ? "🧊 [R] Vista 3D (58°)" : "🧊 [R] 3D Tilt (58°)");
+            if (GUILayout.Button(tiltBtn, GUILayout.Height(24f)))
+            {
+                satellite3DObliqueTilt = !satellite3DObliqueTilt;
+            }
+            GUILayout.EndHorizontal();
+            GUILayout.EndArea();
+
+            // 5. Bottom-Right Google Maps Zoom [+]/[-], Compass [N], and Teleport Player [T] Controls
+            Rect rightDock = new Rect(Screen.width - 234f, Screen.height - 178f, 218f, 136f);
+            GUI.color = new Color(0.06f, 0.09f, 0.14f, 0.95f);
+            GUI.DrawTexture(rightDock, Texture2D.whiteTexture);
+            GUI.color = new Color(0.25f, 0.65f, 1f, 0.95f);
+            GUI.DrawTexture(new Rect(rightDock.x, rightDock.y, rightDock.width, 2f), Texture2D.whiteTexture);
+            GUI.color = prevColor;
+
+            GUILayout.BeginArea(new Rect(rightDock.x + 10f, rightDock.y + 8f, rightDock.width - 20f, rightDock.height - 14f));
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button(isEs ? "➕ Acercar Zoom" : "➕ Zoom In", GUILayout.Height(26f)))
+            {
+                satelliteTargetHeight = Mathf.Clamp(satelliteTargetHeight * 0.75f, 12f, 240f);
+            }
+            if (GUILayout.Button(isEs ? "➖ Alejar Zoom" : "➖ Zoom Out", GUILayout.Height(26f)))
+            {
+                satelliteTargetHeight = Mathf.Clamp(satelliteTargetHeight * 1.32f, 12f, 240f);
+            }
+            GUILayout.EndHorizontal();
+
+            GUILayout.Space(4f);
+            if (GUILayout.Button(isEs ? $"🧭 Brújula: {satelliteYaw:F0}° (Pulsa [N] Norte)" : $"🧭 Compass: {satelliteYaw:F0}° ([N] North)", GUILayout.Height(24f)))
+            {
+                satelliteTargetYaw = 0f;
+            }
+
+            GUILayout.Space(4f);
+            GUIStyle teleportBtnStyle = new GUIStyle(GUI.skin.button)
+            {
+                fontSize = 11,
+                fontStyle = FontStyle.Bold,
+                normal = { textColor = new Color(0.55f, 1f, 0.68f) }
+            };
+            if (GUILayout.Button(isEs ? "⚡ [T] Teletransportar Jugador Aquí" : "⚡ [T] Teleport Player to Center", teleportBtnStyle, GUILayout.Height(28f)))
+            {
+                TeleportPlayerToGroundPosition(satelliteFocusXZ.x, satelliteFocusXZ.y);
+            }
+
+            GUIStyle dragHintStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 9,
+                alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = new Color(0.75f, 0.84f, 0.95f) }
+            };
+            GUILayout.Label(isEs ? "🖱️ Arrastra con clic izq. • Rueda: Zoom" : "🖱️ Left-click & drag • Scroll: Zoom", dragHintStyle);
+            GUILayout.EndArea();
+        }
+
+        private void DrawAerialWorldProjectedMarkers(bool isSatelliteMode)
+        {
+            if (aerialCamera == null) return;
+            bool isEs = (currentLanguage == "es");
+            Color prevColor = GUI.color;
+
+            // 1. Always highlight Player's Ground Position ("TÚ ESTÁS AQUÍ")
+            DrawSingleWorldPin(
+                transform.position + new Vector3(0f, 2.2f, 0f),
+                isEs ? "🧍 TÚ (JUGADOR)" : "🧍 YOU (PLAYER)",
+                new Color(0.12f, 0.58f, 1f, 0.96f),
+                Color.white,
+                width: 122f);
+
+            // 2. Major Corridor & Stage 2 Infrastructure Landmarks
+            DrawSingleWorldPin(
+                new Vector3(0f, 3.5f, -20f),
+                isEs ? "🛣️ Av. Juárez (Acceso Sur)" : "🛣️ Av. Juarez (South Entry)",
+                new Color(0.14f, 0.22f, 0.34f, 0.88f),
+                new Color(0.85f, 0.94f, 1f),
+                width: 158f);
+
+            DrawSingleWorldPin(
+                new Vector3(0f, 3.5f, 15f),
+                isEs ? "🚦 Cruce C. Gardenias" : "🚦 C. Gardenias Crossing",
+                new Color(0.14f, 0.22f, 0.34f, 0.88f),
+                new Color(0.85f, 0.94f, 1f),
+                width: 142f);
+
+            DrawSingleWorldPin(
+                new Vector3(-7.0f, 3.6f, 26.8f),
+                isEs ? "🏛️ Kiosco Participación" : "🏛️ Citizen Kiosk",
+                new Color(0.10f, 0.48f, 0.38f, 0.92f),
+                new Color(0.75f, 1f, 0.90f),
+                width: 148f);
+
+            DrawSingleWorldPin(
+                new Vector3(3.0f, 5.2f, 45.5f),
+                isEs ? "🚧 Caseta Peaje y Plumas" : "🚧 Toll Booths & Gates",
+                new Color(0.62f, 0.36f, 0.08f, 0.92f),
+                new Color(1f, 0.92f, 0.65f),
+                width: 156f);
+
+            DrawSingleWorldPin(
+                new Vector3(4.0f, 10.5f, 65.0f),
+                isEs ? "🌉 Puente Paso del Norte" : "🌉 Paso del Norte Bridge",
+                new Color(0.16f, 0.38f, 0.68f, 0.92f),
+                new Color(0.80f, 0.95f, 1f),
+                width: 162f);
+
+            // Stage 2 Landmarks North of Z=69 (Under-bridge streets, Rio Bravo, Railway, Loop 375)
+            DrawSingleWorldPin(
+                new Vector3(4.0f, 4.0f, 78.0f),
+                isEs ? "🛣️ Calles Bajo Puente (Z=78)" : "🛣️ Under-Bridge Streets",
+                new Color(0.20f, 0.28f, 0.38f, 0.88f),
+                new Color(0.88f, 0.94f, 1f),
+                width: 164f);
+
+            DrawSingleWorldPin(
+                new Vector3(4.0f, 3.0f, 110.0f),
+                isEs ? "🌊 Canal Río Bravo (Frontera MX/US)" : "🌊 Rio Grande Channel (Border)",
+                new Color(0.08f, 0.44f, 0.68f, 0.92f),
+                new Color(0.72f, 0.96f, 1f),
+                width: 198f);
+
+            DrawSingleWorldPin(
+                new Vector3(4.0f, 4.0f, 148.0f),
+                isEs ? "🚂 Vías del Ferrocarril" : "🚂 Railway Corridor",
+                new Color(0.38f, 0.28f, 0.16f, 0.90f),
+                new Color(1f, 0.90f, 0.72f),
+                width: 148f);
+
+            DrawSingleWorldPin(
+                new Vector3(4.0f, 5.0f, 182.0f),
+                isEs ? "🛣️ César Chávez Border Hwy (Loop 375)" : "🛣️ Loop 375 Border Highway",
+                new Color(0.16f, 0.46f, 0.30f, 0.92f),
+                new Color(0.82f, 1f, 0.88f),
+                width: 215f);
+
+            // 3. In Satellite mode (or close-range Drone), show live NPC pins!
+            if (isSatelliteMode && satelliteHeight < 145f && cachedInteractionPoints != null)
+            {
+                for (int i = 0; i < cachedInteractionPoints.Length; i++)
+                {
+                    InteractionPoint pt = cachedInteractionPoints[i];
+                    if (pt == null || string.IsNullOrEmpty(pt.characterName)) continue;
+                    DrawSingleWorldPin(
+                        pt.transform.position + new Vector3(0f, 2.3f, 0f),
+                        $"👤 {pt.characterName}",
+                        new Color(0.12f, 0.16f, 0.22f, 0.84f),
+                        new Color(0.95f, 0.88f, 0.55f),
+                        width: 128f);
+                }
+            }
+
+            GUI.color = prevColor;
+        }
+
+        private void DrawSingleWorldPin(Vector3 worldPos, string label, Color bgColor, Color textColor, float width)
+        {
+            if (aerialCamera == null) return;
+            Vector3 sp = aerialCamera.WorldToScreenPoint(worldPos);
+            if (sp.z <= 0.5f) return;
+
+            float guiX = sp.x;
+            float guiY = Screen.height - sp.y;
+            if (guiX < -80f || guiX > Screen.width + 80f || guiY < 45f || guiY > Screen.height - 45f) return;
+
+            Rect pillRect = new Rect(guiX - width * 0.5f, guiY - 11f, width, 20f);
+            Color prev = GUI.color;
+            GUI.color = bgColor;
+            GUI.DrawTexture(pillRect, Texture2D.whiteTexture);
+            GUI.color = prev;
+
+            GUIStyle pinStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 10,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = textColor }
+            };
+            GUI.Label(pillRect, label, pinStyle);
+        }
+
+        private void CleanupAerialCameraResources()
+        {
+            if (aerialCamera != null)
+            {
+                Destroy(aerialCamera.gameObject);
+                aerialCamera = null;
+            }
+            if (miniSatellitePreviewRT != null)
+            {
+                miniSatellitePreviewRT.Release();
+                Destroy(miniSatellitePreviewRT);
+                miniSatellitePreviewRT = null;
+            }
+            if (droneVisualModel != null)
+            {
+                Destroy(droneVisualModel);
+                droneVisualModel = null;
+            }
+        }
+
         #endregion
     }
 }
