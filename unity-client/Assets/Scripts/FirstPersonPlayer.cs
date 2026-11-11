@@ -6869,7 +6869,13 @@ namespace MyVirtualCommunity.Client.World
                 new Color(0.80f, 0.95f, 1f),
                 width: 162f);
 
-            // Stage 2 Landmarks North of Z=69 (Under-bridge streets, Rio Bravo, Railway, Loop 375)
+            // Stage 2 Landmarks North of Z=69 — REMOVED 2026-11-10 (Lorenzo):
+            // these pins were misplaced (Rio Grande at Z=110, Railway at Z=148,
+            // Loop 375 at Z=182) and cluttered the drone view. Re-add with the
+            // correct positions when needed: Under-Bridge Streets Z~78-167,
+            // Rio Grande Channel Z~215, Railway Corridor Z=289,
+            // Loop 375 Border Hwy Z=310. (Code kept below, commented out.)
+            /*
             DrawSingleWorldPin(
                 new Vector3(4.0f, 4.0f, 78.0f),
                 isEs ? "🛣️ Calles Bajo Puente (Z=78)" : "🛣️ Under-Bridge Streets",
@@ -6897,6 +6903,7 @@ namespace MyVirtualCommunity.Client.World
                 new Color(0.16f, 0.46f, 0.30f, 0.92f),
                 new Color(0.82f, 1f, 0.88f),
                 width: 215f);
+            */
 
             // 3. In Satellite mode (or close-range Drone), show live NPC pins!
             if (isSatelliteMode && satelliteHeight < 145f && cachedInteractionPoints != null)
