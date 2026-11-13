@@ -184,7 +184,7 @@ export const CORRIDOR_WAYPOINTS: Readonly<Record<string, Waypoint>> = Object.fre
   wp_bridge_toll_plaza: Object.freeze({
     id: 'wp_bridge_toll_plaza',
     associatedPlaceId: 'infrastructure:puente-paso-del-norte',
-    position: Object.freeze({ x: 15.2, y: 0.2, z: 39.5 }),
+    position: Object.freeze({ x: 15.2, y: 0.288, z: 39.5 }),
     label: Object.freeze({
       en: 'Puente Paso del Norte Toll Plaza Approach',
       es: 'Aproximación a Casetas del Puente Paso del Norte',
@@ -195,7 +195,7 @@ export const CORRIDOR_WAYPOINTS: Readonly<Record<string, Waypoint>> = Object.fre
   wp_canopy_waiting: Object.freeze({
     id: 'wp_canopy_waiting',
     associatedPlaceId: 'infrastructure:puente-paso-del-norte',
-    position: Object.freeze({ x: 15.2, y: 0.2, z: 40.5 }),
+    position: Object.freeze({ x: 15.2, y: 0.304, z: 40.5 }),
     label: Object.freeze({
       en: 'Bridge Plaza Canopy Shelter Waiting Area',
       es: 'Área de Espera Techada de la Plaza del Puente',
@@ -206,7 +206,7 @@ export const CORRIDOR_WAYPOINTS: Readonly<Record<string, Waypoint>> = Object.fre
   wp_mateo_queue_entry: Object.freeze({
     id: 'wp_mateo_queue_entry',
     associatedPlaceId: 'infrastructure:puente-paso-del-norte',
-    position: Object.freeze({ x: 15.2, y: 0.2, z: 42.0 }),
+    position: Object.freeze({ x: 15.2, y: 0.328, z: 42.0 }),
     label: Object.freeze({
       en: 'Bridge Pedestrian Queue Entry',
       es: 'Inicio de Fila Peatonal del Puente',
@@ -228,7 +228,7 @@ export const CORRIDOR_WAYPOINTS: Readonly<Record<string, Waypoint>> = Object.fre
   wp_sofia_queue_mid: Object.freeze({
     id: 'wp_sofia_queue_mid',
     associatedPlaceId: 'infrastructure:puente-paso-del-norte',
-    position: Object.freeze({ x: 15.2, y: 0.2, z: 45.5 }),
+    position: Object.freeze({ x: 15.2, y: 0.384, z: 45.5 }),
     label: Object.freeze({
       en: 'Bridge Pedestrian Queue Midpoint',
       es: 'Punto Medio de Fila Peatonal del Puente',
@@ -250,7 +250,7 @@ export const CORRIDOR_WAYPOINTS: Readonly<Record<string, Waypoint>> = Object.fre
   wp_hector_bench: Object.freeze({
     id: 'wp_hector_bench',
     associatedPlaceId: 'infrastructure:puente-paso-del-norte',
-    position: Object.freeze({ x: 15.2, y: 0.2, z: 50.5 }),
+    position: Object.freeze({ x: 15.2, y: 0.464, z: 50.5 }),
     label: Object.freeze({
       en: 'Artisan Wood Carving Workbench & Rest Bench',
       es: 'Mesa de Tallado Artesanal y Banca de Trabajo',
@@ -261,7 +261,7 @@ export const CORRIDOR_WAYPOINTS: Readonly<Record<string, Waypoint>> = Object.fre
   wp_hector_stand: Object.freeze({
     id: 'wp_hector_stand',
     associatedPlaceId: 'infrastructure:puente-paso-del-norte',
-    position: Object.freeze({ x: 15.2, y: 0.2, z: 49.0 }),
+    position: Object.freeze({ x: 15.2, y: 0.44, z: 49.0 }),
     label: Object.freeze({
       en: 'Artisan Woodcraft Exhibition Display',
       es: 'Exhibidor Artesanal de Artesanías de Madera',

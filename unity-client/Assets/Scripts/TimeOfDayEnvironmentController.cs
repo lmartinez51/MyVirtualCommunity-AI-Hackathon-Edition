@@ -444,7 +444,9 @@ namespace MyVirtualCommunity.Client.World
             // 1. Sun / Moon Directional Light
             if (sunLight != null)
             {
-                sunLight.transform.rotation = Quaternion.Euler(currentSunPitch, currentSunYaw, 0f);
+                // Backend sunYawDegrees is astronomical solar azimuth (90=E, 180=S, 270=W);
+                // Unity DirectionalLight shines along +Z (opposite to the sun's sky position), so add 180 deg.
+                sunLight.transform.rotation = Quaternion.Euler(currentSunPitch, currentSunYaw + 180f, 0f);
                 sunLight.color = currentSunColor;
                 sunLight.intensity = currentSunIntensity;
             }
