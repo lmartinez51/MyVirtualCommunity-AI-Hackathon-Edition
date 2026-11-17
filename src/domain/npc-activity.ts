@@ -13,7 +13,13 @@
  */
 
 import { deriveCivilTime, CivilTime } from './civil-time.js';
-import { BilingualText } from './synthetic-witness.js';
+import { BilingualText, SyntheticWitnessId } from './synthetic-witness.js';
+import {
+  NpcActorArchetype,
+  WitnessClassification,
+  canActorArchetypeEnterOffDuty,
+  getNpcActorClassification,
+} from './npc-actor-archetypes.js';
 
 export type NpcActivityState = 'available' | 'busy' | 'off_duty' | 'unavailable';
 
@@ -48,6 +54,10 @@ export interface NpcDailySchedule {
 export interface NpcScheduleProfile {
   readonly npcId: string;
   readonly canonicalName: string;
+  readonly actorArchetype?: NpcActorArchetype;
+  readonly isWitness?: boolean;
+  readonly witnessClassification?: WitnessClassification;
+  readonly witnessId?: SyntheticWitnessId | null;
   readonly role: BilingualText;
   readonly locationId: string;
   readonly locationName: BilingualText;
@@ -60,6 +70,12 @@ export interface NpcScheduleProfile {
 export interface NpcActivitySnapshot {
   readonly npcId: string;
   readonly canonicalName: string;
+  readonly actorArchetype: NpcActorArchetype;
+  readonly hasEmploymentSchedule: boolean;
+  readonly canEnterOffDuty: boolean;
+  readonly isWitness: boolean;
+  readonly witnessClassification: WitnessClassification;
+  readonly witnessId: SyntheticWitnessId | null;
   readonly state: NpcActivityState;
   readonly activityTitle: BilingualText;
   readonly activityDescription: BilingualText;
@@ -121,12 +137,36 @@ export function evaluateNpcActivity(
   const currentTotalMinutes = civil.hour * 60 + civil.minute;
   const daySchedule = profile.dailySchedules[civil.dayOfWeek];
 
-  let state: NpcActivityState = daySchedule ? daySchedule.defaultState : 'off_duty';
-  let activityTitle: BilingualText = daySchedule ? daySchedule.defaultActivityTitle : {
+  const classification = getNpcActorClassification(profile.npcId);
+  const actorArchetype: NpcActorArchetype =
+    profile.actorArchetype ?? classification?.actorArchetype ?? 'business_attendant';
+  const allowOffDuty = canActorArchetypeEnterOffDuty(actorArchetype);
+  const hasEmploymentSchedule = allowOffDuty;
+  const isWitness = profile.isWitness ?? classification?.isWitness ?? false;
+  const witnessClassification: WitnessClassification =
+    profile.witnessClassification ?? classification?.witnessClassification ?? 'none';
+  const witnessId: SyntheticWitnessId | null =
+    profile.witnessId !== undefined ? profile.witnessId : (classification?.witnessId ?? null);
+
+  let state: NpcActivityState;
+  if (!allowOffDuty) {
+    // Community Player Proxies do NOT have employment schedules and NEVER enter off_duty or unavailable.
+    state = daySchedule && daySchedule.defaultState === 'busy' ? 'busy' : 'available';
+  } else {
+    state = daySchedule ? daySchedule.defaultState : 'off_duty';
+  }
+
+  let activityTitle: BilingualText = daySchedule ? daySchedule.defaultActivityTitle : !allowOffDuty ? {
+    en: 'Present in pedestrian bridge queue',
+    es: 'Presente en fila peatonal del puente',
+  } : {
     en: 'Off duty',
     es: 'Fuera de servicio',
   };
-  let activityDescription: BilingualText = daySchedule ? daySchedule.defaultActivityDescription : {
+  let activityDescription: BilingualText = daySchedule ? daySchedule.defaultActivityDescription : !allowOffDuty ? {
+    en: 'Simulated community player participating in the Paso del Norte crossing queue.',
+    es: 'Jugador comunitario simulado participando en la fila peatonal del cruce Paso del Norte.',
+  } : {
     en: 'Not currently scheduled at this location.',
     es: 'Actualmente no tiene turno programado en esta ubicación.',
   };
@@ -141,7 +181,11 @@ export function evaluateNpcActivity(
       const endMin = win.endHour * 60 + win.endMinute;
 
       if (currentTotalMinutes >= startMin && currentTotalMinutes < endMin) {
-        state = win.state;
+        if (!allowOffDuty && (win.state === 'off_duty' || win.state === 'unavailable')) {
+          state = 'available';
+        } else {
+          state = win.state;
+        }
         activityTitle = win.activityTitle;
         activityDescription = win.activityDescription;
         nextTransitionMinutes = endMin;
@@ -168,6 +212,11 @@ export function evaluateNpcActivity(
     }
   }
 
+  // Defensive root invariant guard: Community Player Proxies can never hold off_duty or unavailable
+  if (!allowOffDuty && (state === 'off_duty' || state === 'unavailable')) {
+    state = 'available';
+  }
+
   // Calculate ISO string for next transition if known
   let nextTransitionIso: string | null = null;
   if (nextTransitionMinutes !== null) {
@@ -183,10 +232,15 @@ export function evaluateNpcActivity(
   const canInteract = state === 'available' || state === 'busy';
   let interactionNotice: BilingualText | null = null;
   if (state === 'busy') {
-    interactionNotice = Object.freeze({
-      en: `${profile.canonicalName} is occupied with routine tasks (${activityTitle.en}), but can provide brief responses.`,
-      es: `${profile.canonicalName} se encuentra realizando labores de rutina (${activityTitle.es}), pero puede atender consultas breves.`,
-    });
+    interactionNotice = !allowOffDuty
+      ? Object.freeze({
+          en: `${profile.canonicalName} is occupied with a brief queue activity (${activityTitle.en}), and can still chat.`,
+          es: `${profile.canonicalName} realiza una actividad breve en la fila (${activityTitle.es}), pero puede conversar.`,
+        })
+      : Object.freeze({
+          en: `${profile.canonicalName} is occupied with routine tasks (${activityTitle.en}), but can provide brief responses.`,
+          es: `${profile.canonicalName} se encuentra realizando labores de rutina (${activityTitle.es}), pero puede atender consultas breves.`,
+        });
   } else if (state === 'off_duty') {
     interactionNotice = Object.freeze({
       en: `${profile.canonicalName} is currently off duty.`,
@@ -202,6 +256,12 @@ export function evaluateNpcActivity(
   return Object.freeze({
     npcId: profile.npcId,
     canonicalName: profile.canonicalName,
+    actorArchetype,
+    hasEmploymentSchedule,
+    canEnterOffDuty: allowOffDuty,
+    isWitness,
+    witnessClassification,
+    witnessId,
     state,
     activityTitle,
     activityDescription,
@@ -290,6 +350,10 @@ function createOffDutyDay(
 export const ELENA_SCHEDULE: NpcScheduleProfile = Object.freeze({
   npcId: 'elena-border-concierge',
   canonicalName: 'Elena Ramos',
+  actorArchetype: 'public_servant',
+  isWitness: false,
+  witnessClassification: 'none',
+  witnessId: null,
   role: Object.freeze({
     en: 'Border Pedestrian Concierge',
     es: 'Concierge de Orientación Peatonal',
@@ -364,6 +428,10 @@ export const ELENA_SCHEDULE: NpcScheduleProfile = Object.freeze({
 export const CARLOS_SCHEDULE: NpcScheduleProfile = Object.freeze({
   npcId: 'carlos-farmacia-attendant',
   canonicalName: 'Carlos Méndez',
+  actorArchetype: 'business_attendant',
+  isWitness: false,
+  witnessClassification: 'none',
+  witnessId: null,
   role: Object.freeze({
     en: 'Virtual Pharmacy Attendant',
     es: 'Encargado Virtual de Farmacia',
@@ -459,6 +527,10 @@ export const CARLOS_SCHEDULE: NpcScheduleProfile = Object.freeze({
 export const VALERIA_SCHEDULE: NpcScheduleProfile = Object.freeze({
   npcId: 'valeria-optica-attendant',
   canonicalName: 'Valeria Domínguez',
+  actorArchetype: 'business_attendant',
+  isWitness: false,
+  witnessClassification: 'none',
+  witnessId: null,
   role: Object.freeze({
     en: 'Virtual Optical Attendant',
     es: 'Encargada Virtual de Óptica',
@@ -535,10 +607,14 @@ export const VALERIA_SCHEDULE: NpcScheduleProfile = Object.freeze({
   }),
 });
 
-/** 4. Mateo Navarro — Student Pedestrian Witness */
+/** 4. Mateo Navarro — Community Player Proxy & Bridge Pedestrian Queue Witness */
 export const MATEO_SCHEDULE: NpcScheduleProfile = Object.freeze({
   npcId: 'mateo-student',
   canonicalName: 'Mateo Navarro',
+  actorArchetype: 'community_player_proxy',
+  isWitness: true,
+  witnessClassification: 'community_queue_witness',
+  witnessId: 'mateo-student',
   role: Object.freeze({
     en: 'UTEP Computer Science Student',
     es: 'Estudiante de Ciencias Computacionales en UTEP',
@@ -551,81 +627,81 @@ export const MATEO_SCHEDULE: NpcScheduleProfile = Object.freeze({
   timeZone: TZ_JUAREZ,
   isDemonstrationSchedule: true,
   demonstrationNotice: SIMULATED_ROUTINE_NOTICE,
-  dailySchedules: Object.freeze<Record<number, NpcDailySchedule>>({
-    0: createOffDutyDay(
-      0,
-      'Weekend rest',
-      'Fin de semana en casa',
-      'Not commuting today. Working on computer science coursework at home.',
-      'No cruza el puente hoy. Realiza tareas de programación y descanso en casa.'
-    ),
-    6: createOffDutyDay(
-      6,
-      'Weekend study group',
-      'Grupo de estudio de fin de semana',
-      'Studying off-corridor with classmates.',
-      'Estudiando fuera del corredor con compañeros de carrera.'
-    ),
-    ...[1, 2, 3, 4, 5].reduce<Record<number, NpcDailySchedule>>((acc, day) => {
+  dailySchedules: Object.freeze<Record<number, NpcDailySchedule>>(
+    [0, 1, 2, 3, 4, 5, 6].reduce<Record<number, NpcDailySchedule>>((acc, day) => {
+      const isWeekend = day === 0 || day === 6;
       acc[day] = {
         dayOfWeek: day,
-        defaultState: 'off_duty',
-        defaultActivityTitle: { en: 'Attending classes in El Paso', es: 'En clases en El Paso' },
-        defaultActivityDescription: {
-          en: 'Currently on campus at UTEP in El Paso, Texas.',
-          es: 'Actualmente en el campus universitario de UTEP en El Paso, Texas.',
-        },
-        windows: [
-          {
-            startHour: 7,
-            startMinute: 0,
-            endHour: 9,
-            endMinute: 30,
-            state: 'available',
-            activityTitle: { en: 'Commuting to morning classes', es: 'Cruzando hacia clases matutinas' },
-            activityDescription: {
-              en: 'Waiting in pedestrian queue to cross for morning lectures.',
-              es: 'Esperando en la fila peatonal para cruzar a sus clases matutinas.',
+        defaultState: 'available',
+        defaultActivityTitle: isWeekend
+          ? { en: 'Waiting in weekend pedestrian queue', es: 'Esperando en fila peatonal de fin de semana' }
+          : { en: 'Waiting in pedestrian crossing queue', es: 'Esperando en fila peatonal del cruce' },
+        defaultActivityDescription: isWeekend
+          ? {
+              en: 'Simulated community player participating in weekend pedestrian foot traffic toward El Paso.',
+              es: 'Jugador comunitario simulado participando en el cruce peatonal de fin de semana hacia El Paso.',
+            }
+          : {
+              en: 'Simulated community player participating in the Paso del Norte crossing queue and sharing observations.',
+              es: 'Jugador comunitario simulado en la fila peatonal del Puente Paso del Norte disponible para conversar.',
             },
-          },
-          {
-            startHour: 9,
-            startMinute: 30,
-            endHour: 10,
-            endMinute: 0,
-            state: 'busy',
-            activityTitle: {
-              en: 'Reviewing exam notes in queue',
-              es: 'Repasando apuntes de examen en la fila',
-            },
-            activityDescription: {
-              en: 'Focused on digital study flashcards on smartphone while queue moves slowly.',
-              es: 'Concentrado en notas de estudio en su teléfono mientras avanza la fila.',
-            },
-          },
-          {
-            startHour: 16,
-            startMinute: 30,
-            endHour: 19,
-            endMinute: 30,
-            state: 'available',
-            activityTitle: { en: 'Returning to Juárez after class', es: 'Regresando a Juárez tras clases' },
-            activityDescription: {
-              en: 'Heading southbound across the bridge back to Ciudad Juárez.',
-              es: 'Cruzando en dirección sur de regreso a Ciudad Juárez.',
-            },
-          },
-        ],
+        windows: isWeekend
+          ? []
+          : [
+              {
+                startHour: 7,
+                startMinute: 0,
+                endHour: 9,
+                endMinute: 30,
+                state: 'available',
+                activityTitle: { en: 'Commuting to morning classes', es: 'Cruzando hacia clases matutinas' },
+                activityDescription: {
+                  en: 'Waiting in pedestrian queue to cross for morning lectures.',
+                  es: 'Esperando en la fila peatonal para cruzar a sus clases matutinas.',
+                },
+              },
+              {
+                startHour: 9,
+                startMinute: 30,
+                endHour: 10,
+                endMinute: 0,
+                state: 'busy',
+                activityTitle: {
+                  en: 'Reviewing exam notes in queue',
+                  es: 'Repasando apuntes de examen en la fila',
+                },
+                activityDescription: {
+                  en: 'Focused on digital study flashcards on smartphone while queue moves slowly.',
+                  es: 'Concentrado en notas de estudio en su teléfono mientras avanza la fila.',
+                },
+              },
+              {
+                startHour: 16,
+                startMinute: 30,
+                endHour: 19,
+                endMinute: 30,
+                state: 'available',
+                activityTitle: { en: 'Returning through bridge corridor', es: 'Cruzando por el corredor del puente' },
+                activityDescription: {
+                  en: 'Walking along the bridge corridor between Ciudad Juárez and El Paso.',
+                  es: 'Recorriendo el corredor peatonal del puente entre Ciudad Juárez y El Paso.',
+                },
+              },
+            ],
       };
       return acc;
-    }, {}),
-  }),
+    }, {})
+  ),
 });
 
-/** 5. Sofía Alarcón — Cross-Border Retail Commuter */
+/** 5. Sofía Alarcón — Community Player Proxy & Bridge Pedestrian Queue Witness */
 export const SOFIA_SCHEDULE: NpcScheduleProfile = Object.freeze({
   npcId: 'sofia-cross-border-retail',
   canonicalName: 'Sofía Alarcón',
+  actorArchetype: 'community_player_proxy',
+  isWitness: true,
+  witnessClassification: 'community_queue_witness',
+  witnessId: 'sofia-cross-border-retail',
   role: Object.freeze({
     en: 'Cross-Border Retail Employee',
     es: 'Trabajadora Comercial Transfronteriza',
@@ -638,154 +714,168 @@ export const SOFIA_SCHEDULE: NpcScheduleProfile = Object.freeze({
   timeZone: TZ_JUAREZ,
   isDemonstrationSchedule: true,
   demonstrationNotice: SIMULATED_ROUTINE_NOTICE,
-  dailySchedules: Object.freeze<Record<number, NpcDailySchedule>>({
-    0: createOffDutyDay(
-      0,
-      'Sunday rest',
-      'Descanso dominical',
-      'Spending Sunday with family in Ciudad Juárez.',
-      'Pasando el domingo en familia en Ciudad Juárez.'
-    ),
-    ...[1, 2, 3, 4, 5, 6].reduce<Record<number, NpcDailySchedule>>((acc, day) => {
+  dailySchedules: Object.freeze<Record<number, NpcDailySchedule>>(
+    [0, 1, 2, 3, 4, 5, 6].reduce<Record<number, NpcDailySchedule>>((acc, day) => {
+      const isSunday = day === 0;
       acc[day] = {
         dayOfWeek: day,
-        defaultState: 'off_duty',
-        defaultActivityTitle: { en: 'Working retail shift in El Paso', es: 'Laborando en turno comercial en El Paso' },
-        defaultActivityDescription: {
-          en: 'Working floor shift at retail store in downtown El Paso.',
-          es: 'Cumpliendo turno de trabajo en comercio del centro de El Paso.',
-        },
-        windows: [
-          {
-            startHour: 8,
-            startMinute: 0,
-            endHour: 11,
-            endMinute: 0,
-            state: 'available',
-            activityTitle: { en: 'Commuting to retail shift', es: 'Cruzando hacia turno de trabajo' },
-            activityDescription: {
-              en: 'Walking in pedestrian queue with cross-border work permit.',
-              es: 'Avanzando en la fila peatonal con permiso laboral transfronterizo.',
+        defaultState: 'available',
+        defaultActivityTitle: isSunday
+          ? { en: 'Crossing on Sunday errands', es: 'En fila peatonal dominical' }
+          : { en: 'Waiting in pedestrian crossing queue', es: 'Esperando en fila peatonal del puente' },
+        defaultActivityDescription: isSunday
+          ? {
+              en: 'Simulated community player participating in Sunday pedestrian queue activity.',
+              es: 'Jugadora comunitaria simulada participando en el flujo peatonal dominical del puente.',
+            }
+          : {
+              en: 'Simulated community player participating in the Paso del Norte pedestrian queue.',
+              es: 'Jugadora comunitaria simulada presente en la fila peatonal del Puente Paso del Norte.',
             },
-          },
-          {
-            startHour: 11,
-            startMinute: 0,
-            endHour: 11,
-            endMinute: 30,
-            state: 'busy',
-            activityTitle: {
-              en: 'Coordinating shift with supervisor',
-              es: 'Coordinando horario con supervisor',
-            },
-            activityDescription: {
-              en: 'Sending message to store supervisor regarding bridge crossing progress.',
-              es: 'Enviando mensaje al encargado de tienda sobre el avance en el puente.',
-            },
-          },
-          {
-            startHour: 17,
-            startMinute: 30,
-            endHour: 20,
-            endMinute: 30,
-            state: 'available',
-            activityTitle: { en: 'Returning home from work', es: 'Regresando a casa tras jornada' },
-            activityDescription: {
-              en: 'Walking southbound back across the bridge to Avenida Juárez.',
-              es: 'Caminando de regreso en dirección sur hacia Avenida Juárez.',
-            },
-          },
-        ],
+        windows: isSunday
+          ? []
+          : [
+              {
+                startHour: 8,
+                startMinute: 0,
+                endHour: 11,
+                endMinute: 0,
+                state: 'available',
+                activityTitle: { en: 'Commuting in bridge queue', es: 'Avanzando en fila del puente' },
+                activityDescription: {
+                  en: 'Waiting and moving smoothly within the pedestrian crossing queue.',
+                  es: 'Esperando y avanzando con calma dentro de la fila peatonal del cruce.',
+                },
+              },
+              {
+                startHour: 11,
+                startMinute: 0,
+                endHour: 11,
+                endMinute: 30,
+                state: 'busy',
+                activityTitle: {
+                  en: 'Checking crossing pace under canopy',
+                  es: 'Revisando avance bajo el techado de fila',
+                },
+                activityDescription: {
+                  en: 'Stepping briefly under the shaded canopy shelter to message family and check line progress.',
+                  es: 'Haciendo una breve pausa bajo la sombra del techado para enviar un mensaje y observar el avance.',
+                },
+              },
+              {
+                startHour: 17,
+                startMinute: 30,
+                endHour: 20,
+                endMinute: 30,
+                state: 'available',
+                activityTitle: { en: 'Passing through bridge plaza', es: 'Recorriendo la plaza del puente' },
+                activityDescription: {
+                  en: 'Active along the Avenida Juárez pedestrian approach toward the bridge plaza.',
+                  es: 'Presente en el acceso peatonal de Avenida Juárez junto a la plaza del puente.',
+                },
+              },
+            ],
       };
       return acc;
-    }, {}),
-  }),
+    }, {})
+  ),
 });
 
-/** 6. Don Héctor Méndez — Artisan Woodworker */
+/** 6. Don Héctor Méndez — Community Player Proxy & Bridge Pedestrian Queue Witness */
 export const HECTOR_SCHEDULE: NpcScheduleProfile = Object.freeze({
   npcId: 'hector-artisan',
   canonicalName: 'Don Héctor Méndez',
+  actorArchetype: 'community_player_proxy',
+  isWitness: true,
+  witnessClassification: 'community_queue_witness',
+  witnessId: 'hector-artisan',
   role: Object.freeze({
-    en: 'Traditional Woodcraft Artisan',
-    es: 'Artesano de Madera Tradicional',
+    en: 'Retired Leather Artisan & Regular Traveler',
+    es: 'Artesano Retirado y Viajero Frecuente',
   }),
   locationId: 'infrastructure:puente-paso-del-norte',
   locationName: Object.freeze({
-    en: 'Corridor Pedestrian Walkway near Bridge Plaza',
-    es: 'Andador Peatonal cerca de Plaza del Puente',
+    en: 'Paso del Norte Pedestrian Queue',
+    es: 'Fila Peatonal del Puente Paso del Norte',
   }),
   timeZone: TZ_JUAREZ,
   isDemonstrationSchedule: true,
   demonstrationNotice: SIMULATED_ROUTINE_NOTICE,
-  dailySchedules: Object.freeze<Record<number, NpcDailySchedule>>({
-    0: createOffDutyDay(
-      0,
-      'Sunday rest',
-      'Descanso dominical',
-      'At home workshop preparing wood materials for the upcoming week.',
-      'En taller preparando maderas y barnices para la semana.'
-    ),
-    ...[1, 2, 3, 4, 5, 6].reduce<Record<number, NpcDailySchedule>>((acc, day) => {
+  dailySchedules: Object.freeze<Record<number, NpcDailySchedule>>(
+    [0, 1, 2, 3, 4, 5, 6].reduce<Record<number, NpcDailySchedule>>((acc, day) => {
+      const isSunday = day === 0;
       acc[day] = {
         dayOfWeek: day,
-        defaultState: 'off_duty',
-        defaultActivityTitle: { en: 'Artisan workshop', es: 'Taller de artesanías' },
-        defaultActivityDescription: {
-          en: 'Outside outdoor exhibition hours (10:00 - 17:00 Mon-Sat).',
-          es: 'Fuera de horario de exhibición en corredor (10:00 - 17:00 Lun-Sáb).',
-        },
-        windows: [
-          {
-            startHour: 10,
-            startMinute: 0,
-            endHour: 13,
-            endMinute: 0,
-            state: 'available',
-            activityTitle: { en: 'Exhibiting woodcrafts', es: 'Mostrando artesanías de madera' },
-            activityDescription: {
-              en: 'Conversing with travelers and exhibiting handcrafted ironwood and pine figures.',
-              es: 'Conversando con transeúntes y exhibiendo figuras de palo fierro y pino.',
+        defaultState: 'available',
+        defaultActivityTitle: isSunday
+          ? { en: 'Visiting family across the bridge', es: 'En fila para visita familiar dominical' }
+          : { en: 'Waiting in bridge pedestrian queue', es: 'Esperando en fila peatonal del puente' },
+        defaultActivityDescription: isSunday
+          ? {
+              en: 'Simulated community player waiting comfortably in the Sunday crossing queue.',
+              es: 'Jugador comunitario simulado esperando tranquilamente en la fila dominical del puente.',
+            }
+          : {
+              en: 'Simulated community player waiting in the Paso del Norte crossing line and observing queue conditions.',
+              es: 'Jugador comunitario simulado esperando en la fila del Puente Paso del Norte y observando el ritmo de cruce.',
             },
-          },
-          {
-            startHour: 13,
-            startMinute: 0,
-            endHour: 14,
-            endMinute: 0,
-            state: 'busy',
-            activityTitle: {
-              en: 'Carving and polishing pieces',
-              es: 'Tallando y puliendo piezas artesanales',
-            },
-            activityDescription: {
-              en: 'Carefully carving relief details on a wooden plaque at his workstation.',
-              es: 'Tallando con gubia detalles en relieve en una tabla de mezquite.',
-            },
-          },
-          {
-            startHour: 14,
-            startMinute: 0,
-            endHour: 17,
-            endMinute: 0,
-            state: 'available',
-            activityTitle: { en: 'Exhibiting woodcrafts', es: 'Mostrando artesanías de madera' },
-            activityDescription: {
-              en: 'Sharing stories of Avenida Juárez and showing handmade souvenirs.',
-              es: 'Compartiendo anécdotas de la Avenida Juárez y mostrando recuerdos artesanales.',
-            },
-          },
-        ],
+        windows: isSunday
+          ? []
+          : [
+              {
+                startHour: 10,
+                startMinute: 0,
+                endHour: 13,
+                endMinute: 0,
+                state: 'available',
+                activityTitle: { en: 'Chatting in pedestrian queue', es: 'Conversando en fila peatonal' },
+                activityDescription: {
+                  en: 'Conversing calmly with fellow pedestrians along the bridge plaza approach.',
+                  es: 'Conversando con tranquilidad con otros peatones en el andador del puente.',
+                },
+              },
+              {
+                startHour: 13,
+                startMinute: 0,
+                endHour: 14,
+                endMinute: 0,
+                state: 'busy',
+                activityTitle: {
+                  en: 'Resting and carving woodkeepsake at bench',
+                  es: 'Descansando y tallando figura de madera en banca',
+                },
+                activityDescription: {
+                  en: 'Seated briefly on the wooden bench whittling a small keepsake while waiting in the queue area.',
+                  es: 'Sentado brevemente en la banca de madera tallando un detalle artesanal mientras espera en la zona del puente.',
+                },
+              },
+              {
+                startHour: 14,
+                startMinute: 0,
+                endHour: 17,
+                endMinute: 0,
+                state: 'available',
+                activityTitle: { en: 'Waiting near bridge plaza', es: 'Esperando junto a la plaza del puente' },
+                activityDescription: {
+                  en: 'Sharing anecdotes of Avenida Juárez while waiting to cross.',
+                  es: 'Compartiendo anécdotas de la Avenida Juárez mientras aguarda su turno de cruce.',
+                },
+              },
+            ],
       };
       return acc;
-    }, {}),
-  }),
+    }, {})
+  ),
 });
 
 /** 7. Lic. Patricia Morales — Municipal Citizen Service Desk */
 export const PATRICIA_SCHEDULE: NpcScheduleProfile = Object.freeze({
   npcId: 'patricia-citizen-rep',
   canonicalName: 'Lic. Patricia Morales',
+  actorArchetype: 'public_servant',
+  isWitness: false,
+  witnessClassification: 'none',
+  witnessId: null,
   role: Object.freeze({
     en: 'Citizen Service Representative',
     es: 'Enlace de Atención Ciudadana',

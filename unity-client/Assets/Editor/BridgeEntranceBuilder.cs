@@ -164,8 +164,9 @@ namespace MyVirtualCommunity.Editor
             Material signalRedMat = CreateOrGetMaterial("Assets/Settings/SignalRed.mat", new Color(0.92f, 0.12f, 0.14f), 0.1f);
             CreateArchTollBarrierGates(canopy.transform, yellowCurbsMat, boothZocaloMat, bridgeSteelMat, barrierWhiteMat, barrierRedMat, signalGreenMat, signalRedMat);
 
-            // 8. Fideicomiso Surveillance Camera on South Bridge Facade ("Paso del Norte - Vista Sur")
+            // 8. Fideicomiso Surveillance Cameras on Bridge Canopy ("Vista Sur" & rear "Vista Norte" Easter Eggs)
             CreateFideicomisoFacadeCamera(canopy.transform, whiteConcreteMat, bridgeSteelMat, boothZocaloMat);
+            CreateFideicomisoRearCamera(canopy.transform, whiteConcreteMat, bridgeSteelMat, boothZocaloMat);
 
             // 9. 4-Lane Roadway Markings under & approaching bridge
             RebuildCorridorLaneMarkings(borderRoot.transform, whiteStripeMat);
@@ -611,24 +612,76 @@ namespace MyVirtualCommunity.Editor
         /// </summary>
         private static void CreateFideicomisoFacadeCamera(Transform canopyParent, Material whiteHousingMat, Material steelMat, Material darkLensMat)
         {
-            GameObject camRoot = new GameObject("Bridge_Fideicomiso_Camera_VistaSur");
-            camRoot.transform.SetParent(canopyParent);
-            camRoot.transform.position = new Vector3(2.40f, 7.95f, 41.12f);
+            BuildFideicomisoCameraHardware(
+                "Bridge_Fideicomiso_Camera_VistaSur",
+                canopyParent,
+                new Vector3(2.40f, 7.95f, 41.12f),
+                isNorthFacing: false,
+                headPitchDeg: 28f,
+                headYawDeg: 180f,
+                whiteHousingMat,
+                steelMat,
+                darkLensMat);
+        }
 
-            // 1. Weatherproof NEMA Junction Box mounted on the South fascia
+        /// <summary>
+        /// Constructs the Fideicomiso de Puentes Fronterizos rear surveillance camera
+        /// ("Paso del Norte - Vista Norte") mounted on the upper North edge of the bridge canopy
+        /// at (X = 6.00m, Y = 7.65m, Z = 50.40m), aimed North along the 4 bridge lanes, FELIZ VIAJE sign, and crosswalk.
+        /// </summary>
+        internal static void CreateFideicomisoRearCamera(Transform canopyParent, Material whiteHousingMat, Material steelMat, Material darkLensMat)
+        {
+            while (GameObject.Find("Bridge_Fideicomiso_Camera_VistaNorte") != null)
+            {
+                UnityEngine.Object.DestroyImmediate(GameObject.Find("Bridge_Fideicomiso_Camera_VistaNorte"));
+            }
+
+            BuildFideicomisoCameraHardware(
+                "Bridge_Fideicomiso_Camera_VistaNorte",
+                canopyParent,
+                new Vector3(6.00f, 7.65f, 50.40f),
+                isNorthFacing: true,
+                headPitchDeg: 24f,
+                headYawDeg: 356f,
+                whiteHousingMat,
+                steelMat,
+                darkLensMat);
+        }
+
+        private static void BuildFideicomisoCameraHardware(
+            string objectName,
+            Transform canopyParent,
+            Vector3 mountWorldPos,
+            bool isNorthFacing,
+            float headPitchDeg,
+            float headYawDeg,
+            Material whiteHousingMat,
+            Material steelMat,
+            Material darkLensMat)
+        {
+            float zDir = isNorthFacing ? 1f : -1f;
+            float headYOffset = isNorthFacing ? 0.65f : 0.34f;
+            float knuckleYOffset = isNorthFacing ? 0.38f : 0.22f;
+            float knuckleScaleY = isNorthFacing ? 0.28f : 0.14f;
+
+            GameObject camRoot = new GameObject(objectName);
+            camRoot.transform.SetParent(canopyParent);
+            camRoot.transform.position = mountWorldPos;
+
+            // 1. Weatherproof NEMA Junction Box mounted on the fascia
             GameObject junctionBox = GameObject.CreatePrimitive(PrimitiveType.Cube);
             junctionBox.name = "Camera_Junction_Box";
             junctionBox.transform.SetParent(camRoot.transform);
-            junctionBox.transform.localPosition = new Vector3(0f, 0f, -0.06f);
+            junctionBox.transform.localPosition = new Vector3(0f, 0f, 0.06f * zDir);
             junctionBox.transform.localScale = new Vector3(0.32f, 0.32f, 0.14f);
             SetMaterial(junctionBox, steelMat);
             UnityEngine.Object.DestroyImmediate(junctionBox.GetComponent<Collider>());
 
-            // 2. Cantilever Mounting Arm extending South (-Z) and slightly upward (+Y)
+            // 2. Cantilever Mounting Arm extending outward (+/-Z) and upward (+Y)
             GameObject armHoriz = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             armHoriz.name = "Mounting_Arm_Horizontal";
             armHoriz.transform.SetParent(camRoot.transform);
-            armHoriz.transform.localPosition = new Vector3(0f, 0.12f, -0.34f);
+            armHoriz.transform.localPosition = new Vector3(0f, 0.12f, 0.34f * zDir);
             armHoriz.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
             armHoriz.transform.localScale = new Vector3(0.06f, 0.28f, 0.06f);
             SetMaterial(armHoriz, steelMat);
@@ -637,16 +690,16 @@ namespace MyVirtualCommunity.Editor
             GameObject armVert = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             armVert.name = "Mounting_Knuckle_Vertical";
             armVert.transform.SetParent(camRoot.transform);
-            armVert.transform.localPosition = new Vector3(0f, 0.22f, -0.56f);
-            armVert.transform.localScale = new Vector3(0.07f, 0.14f, 0.07f);
+            armVert.transform.localPosition = new Vector3(0f, knuckleYOffset, 0.56f * zDir);
+            armVert.transform.localScale = new Vector3(0.07f, knuckleScaleY, 0.07f);
             SetMaterial(armVert, steelMat);
             UnityEngine.Object.DestroyImmediate(armVert.GetComponent<Collider>());
 
-            // 3. Articulated Camera Housing Head tilted 28 deg downward looking South (Yaw = 180 deg)
+            // 3. Articulated Camera Housing Head
             GameObject headPivot = new GameObject("Camera_Head_Pivot");
             headPivot.transform.SetParent(camRoot.transform);
-            headPivot.transform.localPosition = new Vector3(0f, 0.34f, -0.58f);
-            headPivot.transform.localRotation = Quaternion.Euler(28f, 180f, 0f);
+            headPivot.transform.localPosition = new Vector3(0f, headYOffset, 0.58f * zDir);
+            headPivot.transform.localRotation = Quaternion.Euler(headPitchDeg, headYawDeg, 0f);
 
             // Main camera body
             GameObject camBody = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -678,7 +731,7 @@ namespace MyVirtualCommunity.Editor
 
             // 4. Secret Easter Egg Raycast Target Collider (Trigger so it never blocks physical movement)
             SphereCollider clickTrigger = camRoot.AddComponent<SphereCollider>();
-            clickTrigger.center = new Vector3(0f, 0.25f, -0.45f);
+            clickTrigger.center = new Vector3(0f, headYOffset - 0.05f, 0.45f * zDir);
             clickTrigger.radius = 0.90f;
             clickTrigger.isTrigger = true;
         }
@@ -983,12 +1036,10 @@ namespace MyVirtualCommunity.Editor
                 kioskGo.transform.position = new Vector3(19.20f, 0.20f, 39.50f);
                 kioskGo.transform.rotation = Quaternion.Euler(0f, 0f, 0f); // FACES SOUTH!
 
-                // Eliminate Z-fighting on highlight disc by placing it slightly above sidewalk surface (Y = 0.215m)
                 var highlight = kioskGo.transform.Find("Highlight_Indicator");
                 if (highlight != null)
                 {
-                    highlight.localPosition = new Vector3(0f, 0.015f, -1.0f);
-                    highlight.localScale = new Vector3(1.8f, 0.02f, 1.8f);
+                    UnityEngine.Object.DestroyImmediate(highlight.gameObject);
                 }
 
                 var kioskInteract = kioskGo.GetComponent<InteractionPoint>();
@@ -1033,11 +1084,7 @@ namespace MyVirtualCommunity.Editor
                 mateo.transform.position = new Vector3(15.20f, 0.20f, 42.0f);
                 mateo.transform.rotation = Quaternion.Euler(0f, 0f, 0f);
                 var hl = mateo.transform.Find("Highlight_Indicator");
-                if (hl != null)
-                {
-                    hl.localPosition = new Vector3(0f, 0.015f, 0f);
-                    hl.localScale = new Vector3(1.3f, 0.02f, 1.3f);
-                }
+                if (hl != null) UnityEngine.Object.DestroyImmediate(hl.gameObject);
             }
 
             // Sofia: (15.20f, 0.20f, 45.5f)
@@ -1047,11 +1094,7 @@ namespace MyVirtualCommunity.Editor
                 sofia.transform.position = new Vector3(15.20f, 0.20f, 45.5f);
                 sofia.transform.rotation = Quaternion.Euler(0f, 0f, 0f);
                 var hl = sofia.transform.Find("Highlight_Indicator");
-                if (hl != null)
-                {
-                    hl.localPosition = new Vector3(0f, 0.015f, 0f);
-                    hl.localScale = new Vector3(1.3f, 0.02f, 1.3f);
-                }
+                if (hl != null) UnityEngine.Object.DestroyImmediate(hl.gameObject);
             }
 
             // Hector: (15.20f, 0.20f, 49.0f)
@@ -1061,11 +1104,7 @@ namespace MyVirtualCommunity.Editor
                 hector.transform.position = new Vector3(15.20f, 0.20f, 49.0f);
                 hector.transform.rotation = Quaternion.Euler(0f, 0f, 0f);
                 var hl = hector.transform.Find("Highlight_Indicator");
-                if (hl != null)
-                {
-                    hl.localPosition = new Vector3(0f, 0.015f, 0f);
-                    hl.localScale = new Vector3(1.3f, 0.02f, 1.3f);
-                }
+                if (hl != null) UnityEngine.Object.DestroyImmediate(hl.gameObject);
             }
 
             // Update Pedestrian Queue Canopy Cover (White architectural concourse canopy)

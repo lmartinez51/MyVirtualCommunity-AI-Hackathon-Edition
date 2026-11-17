@@ -580,6 +580,12 @@ namespace MyVirtualCommunity.Client.Api
     {
         public string npcId;
         public string canonicalName;
+        public string actorArchetype; // "business_attendant" | "public_servant" | "community_player_proxy"
+        public bool hasEmploymentSchedule;
+        public bool canEnterOffDuty;
+        public bool isWitness;
+        public string witnessClassification;
+        public string witnessId;
         public string state; // "available" | "busy" | "off_duty" | "unavailable"
         public BilingualTextDto activityTitle;
         public BilingualTextDto activityDescription;
@@ -703,6 +709,10 @@ namespace MyVirtualCommunity.Client.Api
     {
         public string npcId;
         public string canonicalName;
+        public string actorArchetype;
+        public bool isWitness;
+        public string witnessClassification;
+        public string witnessId;
         public string movementState; // "stationary" | "moving" | "arrived" | "waiting"
         public string currentWaypointId;
         public string destinationWaypointId;
@@ -720,6 +730,22 @@ namespace MyVirtualCommunity.Client.Api
         public string localCivilTime;
         public bool isDemonstrationMovement;
         public BilingualTextDto demonstrationNotice;
+
+        // Increment 5.22.0 Autonomous Locomotion, Bridge Patrols & Bounded Business Activity fields
+        public string behaviorProfileType;      // "bridge_patrol" | "business_local_autonomy" | "fixed_anchor_scheduled"
+        public string autonomousBehaviorState;  // "patrolling" | "observing" | "paused" | "turning_around" | "passing_encounter" | "player_interaction_paused" | "resuming" | "working_stationary" | "local_roaming" | "idle_observation" | "customer_awareness" | "returning_to_station" | "customer_interaction" | "off_duty" | "fixed_station"
+        public string controlMode;              // "autonomous_bridge_patrol" | "autonomous_business_local" | "scheduled_routine_transition" | "player_interaction_suspended" | "fixed_station_anchor"
+        public float currentSpeedMps;
+        public string patrolDirection;          // "northbound" | "southbound" | "none"
+        public int patrolCycleIndex;
+        public bool isSuspendedByPlayerInteraction;
+        public string suspendedByPlayerId;
+        public string passingEncounterPartnerNpcId;
+        public string passingEncounterSessionId;
+        public string passingEncounterType;     // "passing_greeting" | "passing_exchange"
+        public string businessDomainId;
+        public bool withinAuthorizedDomain;
+        public Vector3Dto activeSegmentEndPosition;
     }
 
     [Serializable]
@@ -756,6 +782,117 @@ namespace MyVirtualCommunity.Client.Api
 
     #endregion
 
+    #region NPC Social Awareness DTOs (Increment 5.20.0)
+
+    [Serializable]
+    public class NpcAwarenessDirectionDto
+    {
+        public float x;
+        public float z;
+    }
+
+    [Serializable]
+    public class NpcAwarenessSpatialRelationDto
+    {
+        public float horizontalDistanceMeters;
+        public float verticalSeparationMeters;
+        public NpcAwarenessDirectionDto directionToTarget;
+    }
+
+    [Serializable]
+    public class NpcSocialAwarenessDto
+    {
+        public string npcId;
+        public string canonicalName;
+        public string actorArchetype;
+        public bool isWitness;
+        public string witnessClassification;
+        public string witnessId;
+        public string awarenessState; // unaware | player_aware | player_attentive | npc_aware | social_engaged
+        public string targetEntityType; // none | player | npc
+        public string targetEntityId;
+        public NpcAwarenessSpatialRelationDto spatialRelation;
+        public bool socialEligible;
+        public bool canOrientTowardTarget;
+        public bool retainsContextualActivity;
+        public string pairedPartnerNpcId;
+        public string associatedPlaceId;
+        public string currentWaypointId;
+        public string interactionAvailability;
+        public string movementState;
+        public float nearbyPlayerDistanceMeters;
+        public int nearbyNpcCount;
+        public string detectionBasis;
+        public bool supportsLineOfSight;
+        public BilingualTextDto reason;
+        public string evaluatedAt;
+        public string timeZone;
+        public string localCivilTime;
+        public bool isDemonstrationAwareness;
+        public BilingualTextDto demonstrationNotice;
+    }
+
+    [Serializable]
+    public class ActiveNpcSocialPairDto
+    {
+        public string npcIdA;
+        public string npcIdB;
+        public float distanceMeters;
+    }
+
+    [Serializable]
+    public class NpcSocialAwarenessSummaryDto
+    {
+        public int unawareCount;
+        public int playerAwareCount;
+        public int playerAttentiveCount;
+        public int npcAwareCount;
+        public int socialEngagedCount;
+        public int activePairCount;
+        public int totalCount;
+    }
+
+    [Serializable]
+    public class NpcSocialAwarenessThresholdsDto
+    {
+        public float playerGeneralMeters;
+        public float playerCloseMeters;
+        public float npcAwarenessMeters;
+        public float npcSocialMeters;
+        public float maxVerticalSeparationMeters;
+    }
+
+    [Serializable]
+    public class NpcRosterSocialAwarenessResponseDto
+    {
+        public bool success;
+        public string evaluatedAt;
+        public string timeZone;
+        public string localCivilTime;
+        public string playerId;
+        public Vector3Dto playerPosition;
+        public string detectionBasis;
+        public bool supportsLineOfSight;
+        public string environmentalAwarenessScope;
+        public NpcSocialAwarenessThresholdsDto thresholds;
+        public NpcSocialAwarenessDto[] npcsList;
+        public ActiveNpcSocialPairDto[] activeSocialPairs;
+        public NpcSocialAwarenessSummaryDto summary;
+        public bool isDemonstrationAwareness;
+        public BilingualTextDto demonstrationNotice;
+        public ApiErrorDto error;
+    }
+
+    [Serializable]
+    public class NpcSocialAwarenessResponseDto
+    {
+        public bool success;
+        public NpcSocialAwarenessDto awareness;
+        public ApiErrorDto error;
+    }
+
+    #endregion
+
     #region NPC Interaction Context & Spatial Demeanor DTOs (Increment 5.17.0)
 
     [Serializable]
@@ -763,6 +900,12 @@ namespace MyVirtualCommunity.Client.Api
     {
         public string npcId;
         public string canonicalName;
+        public string actorArchetype;
+        public bool hasEmploymentSchedule;
+        public bool canEnterOffDuty;
+        public bool isWitness;
+        public string witnessClassification;
+        public string witnessId;
         public BilingualTextDto role;
         public string activityState;
         public BilingualTextDto activityTitle;
@@ -786,6 +929,8 @@ namespace MyVirtualCommunity.Client.Api
         public string evaluatedAt;
         public string timeZone;
         public string localCivilTime;
+        public NpcSocialAwarenessDto socialAwareness;
+        public NpcSocialInteractionParticipationDto socialInteraction;
         public bool isDemonstrationContext;
         public BilingualTextDto demonstrationNotice;
     }
@@ -820,8 +965,128 @@ namespace MyVirtualCommunity.Client.Api
         public string localCivilTime;
         public NpcInteractionSummaryDto summary;
         public NpcInteractionContextDto[] npcsList;
+        public NpcSocialAwarenessSummaryDto socialAwarenessSummary;
+        public ActiveNpcSocialPairDto[] activeSocialPairs;
+        public NpcSocialInteractionSessionDto[] activeSocialInteractions;
+        public NpcSocialInteractionsSummaryDto socialInteractionsSummary;
+        public Vector3Dto playerPosition;
         public bool isDemonstrationContext;
         public BilingualTextDto demonstrationNotice;
+        public ApiErrorDto error;
+    }
+
+    #endregion
+
+    #region Autonomous NPC Social Interaction Lifecycle DTOs (Increment 5.21.0)
+
+    [Serializable]
+    public class NpcSocialInteractionParticipantDto
+    {
+        public string npcId;
+        public string canonicalName;
+        public string actorArchetype;
+        public bool isWitness;
+        public string witnessClassification;
+        public string witnessId;
+        public string conversationalRole; // speaker | listener | mutual | none
+        public string associatedPlaceId;
+        public string currentWaypointId;
+    }
+
+    [Serializable]
+    public class NpcSocialInteractionSessionDto
+    {
+        public string sessionId;
+        public string[] participantNpcIds;
+        public NpcSocialInteractionParticipantDto[] participants;
+        public string interactionType; // community_queue_exchange | merchant_neighbor_exchange | civic_corridor_greeting | corridor_social_exchange
+        public string phase; // initiating | engaged | closing | completed
+        public bool isActive;
+        public string startedAt;
+        public string expectedEndAt;
+        public string cooldownEndsAt;
+        public int turnIndex;
+        public string activeSpeakerNpcId;
+        public string activeListenerNpcId;
+        public float distanceMeters;
+        public string evaluatedAt;
+        public string timeZone;
+        public string localCivilTime;
+        public BilingualTextDto reason;
+        public bool isDemonstrationInteraction;
+        public BilingualTextDto demonstrationNotice;
+    }
+
+    [Serializable]
+    public class NpcSocialInteractionParticipationDto
+    {
+        public string npcId;
+        public string canonicalName;
+        public string actorArchetype;
+        public bool hasEmploymentSchedule;
+        public bool canEnterOffDuty;
+        public bool isWitness;
+        public string witnessClassification;
+        public string witnessId;
+        public bool inActiveInteraction;
+        public string sessionId;
+        public string phase; // initiating | engaged | closing | completed | null
+        public string interactionType;
+        public string partnerNpcId;
+        public string conversationalRole; // speaker | listener | mutual | none
+        public int turnIndex;
+        public string sessionStartedAt;
+        public string sessionExpectedEndAt;
+        public string cooldownUntil;
+        public bool inCooldown;
+        public bool eligibleForSocialInteraction;
+        public bool supersededByPlayerPriority;
+        public string interactionAvailability;
+        public string movementState;
+        public string evaluatedAt;
+        public string timeZone;
+        public string localCivilTime;
+        public BilingualTextDto reason;
+        public bool isDemonstrationInteraction;
+        public BilingualTextDto demonstrationNotice;
+    }
+
+    [Serializable]
+    public class NpcSocialInteractionsSummaryDto
+    {
+        public int activeSessionCount;
+        public int initiatingCount;
+        public int engagedCount;
+        public int closingCount;
+        public int completedCount;
+        public int participatingNpcCount;
+        public int cooldownNpcCount;
+        public int totalCount;
+    }
+
+    [Serializable]
+    public class NpcRosterSocialInteractionsResponseDto
+    {
+        public bool success;
+        public string evaluatedAt;
+        public string timeZone;
+        public string localCivilTime;
+        public string activePlayerInteractionNpcId;
+        public float maxHorizontalRangeMeters;
+        public float maxVerticalSeparationMeters;
+        public NpcSocialInteractionSessionDto[] sessions;
+        public NpcSocialInteractionParticipationDto[] npcsList;
+        public NpcSocialInteractionsSummaryDto summary;
+        public bool isDemonstrationInteraction;
+        public BilingualTextDto demonstrationNotice;
+        public ApiErrorDto error;
+    }
+
+    [Serializable]
+    public class NpcSocialInteractionResponseDto
+    {
+        public bool success;
+        public NpcSocialInteractionParticipationDto interaction;
         public ApiErrorDto error;
     }
 
@@ -862,6 +1127,105 @@ namespace MyVirtualCommunity.Client.Api
     {
         public bool success;
         public BorderLaneBarrierDto lane;
+        public ApiErrorDto error;
+    }
+
+    #endregion
+
+    #region Server-Authoritative Interaction Validation DTOs (Increment 5.18.0)
+
+    [Serializable]
+    public class PlanarDirectionDto
+    {
+        public float x;
+        public float z;
+    }
+
+    [Serializable]
+    public class PlayerMovementIntentRequestDto
+    {
+        public PlanarDirectionDto direction;
+        public string movementMode; // "walk" | "sprint"
+        public int sequenceNumber;
+    }
+
+    [Serializable]
+    public class PlayerSpatialStateDto
+    {
+        public string playerId;
+        public Vector3Dto position;
+        public int lastSequenceNumber;
+        public string updatedAt;
+    }
+
+    [Serializable]
+    public class PlayerMovementIntentResponseDto
+    {
+        public bool success;
+        public bool accepted;
+        public bool outOfOrder;
+        public string reasonCode;
+        public BilingualTextDto message;
+        public PlayerSpatialStateDto player;
+        public PlanarDirectionDto appliedDirection;
+        public float appliedSpeedMps;
+        public float elapsedSeconds;
+        public float displacementMeters;
+        public ApiErrorDto error;
+    }
+
+    [Serializable]
+    public class NpcInteractionValidationRequestDto
+    {
+        public string playerId;
+        public string npcId;
+        public string intent;
+        public string requestId;
+    }
+
+    [Serializable]
+    public class NpcInteractionValidationResponseDto
+    {
+        public bool success;
+        public bool allowed;
+        public string reasonCode;
+        public BilingualTextDto message;
+        public string playerId;
+        public string npcId;
+        public string intent;
+        public string requestId;
+        public string evaluatedAt;
+        public string timeZone;
+        public string localCivilTime;
+        public float distanceMeters;
+        public float maxDistanceMeters;
+        public string interactionAvailability;
+        public string interactionMode;
+        public string movementState;
+        public string activityState;
+        public string actorArchetype;
+        public bool isWitness;
+        public string witnessClassification;
+        public string witnessId;
+        public NpcInteractionContextDto interactionContext;
+        public ApiErrorDto error;
+    }
+
+    [Serializable]
+    public class EndNpcInteractionRequestDto
+    {
+        public string playerId;
+        public string npcId;
+    }
+
+    [Serializable]
+    public class EndNpcInteractionResponseDto
+    {
+        public bool success;
+        public bool released;
+        public string playerId;
+        public string npcId;
+        public NpcMovementSnapshotDto movement;
         public ApiErrorDto error;
     }
 

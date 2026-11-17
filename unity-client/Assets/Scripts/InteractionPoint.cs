@@ -35,6 +35,39 @@ namespace MyVirtualCommunity.Client.World
         [Tooltip("Visual symbol or avatar indicator.")]
         public string avatar = "[NPC]";
 
+        [Header("Authoritative Actor Archetype & Witness Classification (Increment 5.20.0.2)")]
+        [Tooltip("Authoritative backend archetype: business_attendant | public_servant | community_player_proxy.")]
+        public string actorArchetype = "";
+
+        [Tooltip("Whether this actor is governed by an employment/service schedule.")]
+        public bool hasEmploymentSchedule = true;
+
+        [Tooltip("Whether this actor is permitted to enter off_duty state.")]
+        public bool canEnterOffDuty = true;
+
+        [Tooltip("Whether this actor holds canonical community witness classification.")]
+        public bool isWitness = false;
+
+        [Tooltip("Witness classification category (e.g. none | community_queue_witness).")]
+        public string witnessClassification = "none";
+
+        [Tooltip("Canonical witness identifier if isWitness is true.")]
+        public string witnessId = "";
+
+        public bool IsCommunityPlayerProxy()
+        {
+            if (!string.IsNullOrEmpty(actorArchetype))
+            {
+                return string.Equals(actorArchetype, "community_player_proxy", StringComparison.OrdinalIgnoreCase);
+            }
+            return category == InteractionCategory.SyntheticWitness;
+        }
+
+        public bool CanDisplayOffDutyState()
+        {
+            return !IsCommunityPlayerProxy() && canEnterOffDuty;
+        }
+
         [Header("Authoritative World Core Activity (Simulated Presence)")]
         [Tooltip("Current activity state: available | busy | off_duty | unavailable.")]
         public string activityState = "available";
@@ -93,6 +126,7 @@ namespace MyVirtualCommunity.Client.World
         public string GetInteractionAvailabilityBadge(string language)
         {
             bool isEs = string.Equals(language, "es", StringComparison.OrdinalIgnoreCase);
+            bool isProxy = IsCommunityPlayerProxy();
             switch (interactionAvailability)
             {
                 case "available_in_transit":
@@ -102,11 +136,23 @@ namespace MyVirtualCommunity.Client.World
                 case "busy":
                     return isEs ? "[Ocupado]" : "[Busy]";
                 case "off_duty":
+                    if (isProxy)
+                    {
+                        return isEs ? "[Disponible]" : "[Available]";
+                    }
                     return isEs ? "[Fuera de turno]" : "[Off Duty]";
                 case "unavailable":
+                    if (isProxy)
+                    {
+                        return isEs ? "[Disponible]" : "[Available]";
+                    }
                     return isEs ? "[Cerrado hoy]" : "[Closed Today]";
                 case "available_normal":
                 default:
+                    if (isProxy)
+                    {
+                        return isEs ? "[Disponible]" : "[Available]";
+                    }
                     return isEs ? "[En servicio]" : "[On Duty]";
             }
         }
@@ -127,6 +173,94 @@ namespace MyVirtualCommunity.Client.World
         [Tooltip("Movement progress along active route (0.0 to 1.0).")]
         [Range(0f, 1f)]
         public float progression = 0f;
+
+        [Header("Authoritative Social Awareness (Increment 5.20.0)")]
+        [Tooltip("Awareness state: unaware | player_aware | player_attentive | npc_aware | social_engaged.")]
+        public string socialAwarenessState = "unaware";
+
+        [Tooltip("Detected target entity type: none | player | npc.")]
+        public string socialTargetEntityType = "none";
+
+        [Tooltip("Detected target entity identifier.")]
+        public string socialTargetEntityId = "";
+
+        [Tooltip("Mutual 1-to-1 social partner NPC ID when social_engaged.")]
+        public string socialPairedPartnerNpcId = "";
+
+        [Tooltip("Horizontal distance in meters to current awareness target (-1 if none).")]
+        public float socialTargetHorizontalDistanceMeters = -1f;
+
+        [Tooltip("Authoritative unit planar direction (XZ) toward target.")]
+        public Vector2 socialTargetDirectionXZ = Vector2.zero;
+
+        [Tooltip("Whether World Core allows visual orientation toward the target.")]
+        public bool socialCanOrientTowardTarget = false;
+
+        [Tooltip("Whether the NPC retains a focused contextual activity alongside awareness.")]
+        public bool socialRetainsContextualActivity = false;
+
+        [Tooltip("Whether the NPC is currently eligible for mutual social pairing.")]
+        public bool socialEligible = false;
+
+        [Tooltip("True when authoritative social awareness snapshot data is available.")]
+        public bool socialAwarenessAvailable = false;
+
+        [Header("Autonomous Social Interaction Lifecycle (Increment 5.21.0)")]
+        [Tooltip("Active or recently completed session identifier.")]
+        public string socialInteractionSessionId = "";
+
+        [Tooltip("Lifecycle phase: none | initiating | engaged | closing | completed.")]
+        public string socialInteractionPhase = "";
+
+        [Tooltip("Contextual interaction type classification.")]
+        public string socialInteractionType = "";
+
+        [Tooltip("Canonical NPC identifier of the interaction partner.")]
+        public string socialInteractionPartnerNpcId = "";
+
+        [Tooltip("Conversational turn role: speaker | listener | mutual | none.")]
+        public string socialInteractionConversationalRole = "none";
+
+        [Tooltip("Zero-based deterministic turn counter during engaged phase.")]
+        public int socialInteractionTurnIndex = 0;
+
+        public string socialInteractionStartedAt = "";
+        public string socialInteractionExpectedEndAt = "";
+        public string socialInteractionCooldownUntil = "";
+        public bool socialInteractionInCooldown = false;
+        public bool socialInteractionActive = false;
+        public bool socialInteractionAvailable = false;
+
+        [Header("Autonomous Locomotion & Bounded Business Activity (Increment 5.22.0)")]
+        [Tooltip("Behavioral profile type: bridge_patrol | business_local_autonomy | fixed_anchor_scheduled.")]
+        public string behaviorProfileType = "";
+
+        [Tooltip("Authoritative behavioral state: patrolling | observing | paused | turning_around | passing_encounter | player_interaction_paused | resuming | working_stationary | local_roaming | idle_observation | customer_awareness | returning_to_station | customer_interaction | off_duty | fixed_station.")]
+        public string autonomousBehaviorState = "";
+
+        [Tooltip("Movement control mode: autonomous_bridge_patrol | autonomous_business_local | scheduled_routine_transition | player_interaction_suspended | fixed_station_anchor.")]
+        public string movementControlMode = "";
+
+        [Tooltip("Bridge patrol direction: northbound | southbound | none.")]
+        public string patrolDirection = "none";
+
+        [Tooltip("Deterministic patrol or local-autonomy cycle index.")]
+        public int patrolCycleIndex = 0;
+
+        [Tooltip("True when an authorized player-initiated conversation has suspended autonomous movement.")]
+        public bool isSuspendedByPlayerInteraction = false;
+
+        [Tooltip("Partner NPC ID during a brief passing encounter.")]
+        public string passingEncounterPartnerNpcId = "";
+
+        [Tooltip("Passing encounter type: passing_greeting | passing_exchange.")]
+        public string passingEncounterType = "";
+
+        [Tooltip("Assigned spatial domain identifier.")]
+        public string businessDomainId = "";
+
+        [Tooltip("True when the authoritative position lies within the configured spatial domain.")]
+        public bool withinAuthorizedDomain = true;
 
         public string GetMovementDisplayLabel(string language)
         {

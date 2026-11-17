@@ -35,6 +35,20 @@ import {
   evaluateRosterInteractionContext,
 } from '../domain/npc-interaction-context.js';
 import {
+  evaluateRosterSocialAwareness,
+  NpcRosterSocialAwarenessSnapshot,
+  NpcSocialAwarenessContext,
+} from '../domain/npc-social-awareness.js';
+import {
+  NpcRosterSocialInteractionsSnapshot,
+  NpcSocialInteractionParticipation,
+} from '../domain/npc-social-interaction.js';
+import {
+  PlayerMovementIntent,
+  PlayerMovementStepResult,
+  PlayerSpatialState,
+} from '../domain/player-movement.js';
+import {
   BorderLaneBarriersRoster,
   BorderLaneBarrierSnapshot,
   LaneBarrierId,
@@ -485,7 +499,8 @@ export class RemoteWorldCoreAdapter implements WorldCorePort {
 
   public async getNpcInteractionContext(
     npcId: string,
-    evaluatedAt?: Date | string | number
+    evaluatedAt?: Date | string | number,
+    playerId?: string
   ): Promise<NpcInteractionContext | null> {
     const effectiveTime =
       evaluatedAt !== undefined
@@ -493,11 +508,22 @@ export class RemoteWorldCoreAdapter implements WorldCorePort {
           ? evaluatedAt
           : new Date(evaluatedAt).toISOString()
         : await this.getCurrentWorldTime();
-    return evaluateNpcInteractionContext(npcId, effectiveTime);
+    const baseContext = evaluateNpcInteractionContext(npcId, effectiveTime);
+    if (!baseContext) return null;
+
+    const awarenessRoster = await this.getNpcRosterSocialAwareness(playerId, effectiveTime);
+    const awareness = awarenessRoster.npcs[npcId];
+    return awareness
+      ? Object.freeze({
+          ...baseContext,
+          socialAwareness: awareness,
+        })
+      : baseContext;
   }
 
   public async getNpcRosterInteractionContext(
-    evaluatedAt?: Date | string | number
+    evaluatedAt?: Date | string | number,
+    playerId?: string
   ): Promise<NpcRosterInteractionContext> {
     const effectiveTime =
       evaluatedAt !== undefined
@@ -505,7 +531,136 @@ export class RemoteWorldCoreAdapter implements WorldCorePort {
           ? evaluatedAt
           : new Date(evaluatedAt).toISOString()
         : await this.getCurrentWorldTime();
-    return evaluateRosterInteractionContext(effectiveTime);
+    const interactionRoster = evaluateRosterInteractionContext(effectiveTime);
+    const movementRoster = evaluateRosterMovement(NPC_MOVEMENT_PROFILES, effectiveTime);
+    const awarenessRoster = evaluateRosterSocialAwareness({
+      evaluatedAt: effectiveTime,
+      player: null,
+      interactionRoster,
+      movementRoster,
+    });
+    void playerId;
+
+    const enrichedNpcs: Record<string, NpcInteractionContext> = {};
+    const enrichedList: NpcInteractionContext[] = [];
+    for (const ctx of interactionRoster.npcsList) {
+      const awareness = awarenessRoster.npcs[ctx.npcId];
+      const enriched = awareness
+        ? Object.freeze({
+            ...ctx,
+            socialAwareness: awareness,
+          })
+        : ctx;
+      enrichedNpcs[ctx.npcId] = enriched;
+      enrichedList.push(enriched);
+    }
+
+    return Object.freeze({
+      ...interactionRoster,
+      npcs: Object.freeze(enrichedNpcs),
+      npcsList: Object.freeze(enrichedList),
+      socialAwarenessSummary: awarenessRoster.summary,
+      activeSocialPairs: awarenessRoster.activeSocialPairs,
+      playerPosition: null,
+    });
+  }
+
+  public async getNpcSocialAwareness(
+    npcId: string,
+    playerId?: string,
+    evaluatedAt?: Date | string | number
+  ): Promise<NpcSocialAwarenessContext | null> {
+    if (typeof npcId !== 'string' || npcId.trim() === '') {
+      return null;
+    }
+    const roster = await this.getNpcRosterSocialAwareness(playerId, evaluatedAt);
+    return roster.npcs[npcId.trim()] ?? null;
+  }
+
+  public async getNpcRosterSocialAwareness(
+    _playerId?: string,
+    evaluatedAt?: Date | string | number
+  ): Promise<NpcRosterSocialAwarenessSnapshot> {
+    const effectiveTime =
+      evaluatedAt !== undefined
+        ? typeof evaluatedAt === 'string'
+          ? evaluatedAt
+          : new Date(evaluatedAt).toISOString()
+        : await this.getCurrentWorldTime();
+    // Remote World Core does not yet model authoritative player spatial state;
+    // evaluates canonical NPC-to-NPC awareness honestly with player: null.
+    return evaluateRosterSocialAwareness({
+      evaluatedAt: effectiveTime,
+      player: null,
+    });
+  }
+
+  public async getNpcSocialInteraction(
+    npcId: string,
+    playerId?: string,
+    evaluatedAt?: Date | string | number,
+    activePlayerInteractionNpcId?: string | null
+  ): Promise<NpcSocialInteractionParticipation | null> {
+    if (typeof npcId !== 'string' || npcId.trim() === '') {
+      return null;
+    }
+    const roster = await this.getNpcRosterSocialInteractions(
+      playerId,
+      evaluatedAt,
+      activePlayerInteractionNpcId
+    );
+    return roster.npcs[npcId.trim()] ?? null;
+  }
+
+  public async getNpcRosterSocialInteractions(
+    playerId?: string,
+    evaluatedAt?: Date | string | number,
+    activePlayerInteractionNpcId?: string | null
+  ): Promise<NpcRosterSocialInteractionsSnapshot> {
+    const queryParts: string[] = [];
+    if (evaluatedAt !== undefined && evaluatedAt !== null && String(evaluatedAt).trim() !== '') {
+      const parsedDate = new Date(evaluatedAt);
+      if (Number.isNaN(parsedDate.getTime())) {
+        throw new Error(`Invalid evaluatedAt timestamp: ${String(evaluatedAt)}`);
+      }
+      queryParts.push(`at=${encodeURIComponent(parsedDate.toISOString())}`);
+    }
+    if (typeof playerId === 'string' && playerId.trim() !== '') {
+      queryParts.push(`playerId=${encodeURIComponent(playerId.trim())}`);
+    }
+    if (typeof activePlayerInteractionNpcId === 'string' && activePlayerInteractionNpcId.trim() !== '') {
+      queryParts.push(`activePlayerInteractionNpcId=${encodeURIComponent(activePlayerInteractionNpcId.trim())}`);
+    }
+    const queryString = queryParts.length > 0 ? `?${queryParts.join('&')}` : '';
+    const { status, data } = await this.getJson(`/api/world/npcs/social-interactions${queryString}`);
+
+    if (status === 404 || status === 501) {
+      throw new WorldCoreHttpError(
+        501,
+        'Remote World Core server does not support authoritative social interaction lifecycle queries.',
+        'not-supported'
+      );
+    }
+
+    if (status !== 200) {
+      const errorMsg = data?.error?.message ?? `World Core responded with HTTP ${status}`;
+      throw new WorldCoreHttpError(status, errorMsg, data?.error?.code);
+    }
+
+    if (
+      !data ||
+      typeof data !== 'object' ||
+      !Array.isArray(data.sessions) ||
+      !data.npcs ||
+      !Array.isArray(data.npcsList) ||
+      !data.summary
+    ) {
+      throw new WorldCoreResponseValidationError(
+        'Remote World Core returned malformed social-interactions snapshot (sessions/npcsList missing).'
+      );
+    }
+
+    return data as NpcRosterSocialInteractionsSnapshot;
   }
 
   public async getBorderLaneBarriers(
@@ -538,5 +693,49 @@ export class RemoteWorldCoreAdapter implements WorldCorePort {
     const worldTime = await this.getCurrentWorldTime();
     this.localLaneBarriers = updateLaneBarrierStatus(this.localLaneBarriers, laneId, status, reason, worldTime);
     return this.localLaneBarriers.lanes[laneId];
+  }
+
+  public async getPlayerState(_playerId: string): Promise<PlayerSpatialState | null> {
+    throw new WorldCoreHttpError(
+      501,
+      'Remote World Core does not support authoritative player spatial state queries.',
+      'not-supported'
+    );
+  }
+
+  public async applyPlayerMovement(
+    _playerId: string,
+    _movementIntent: PlayerMovementIntent,
+    _serverTimeMs?: number
+  ): Promise<PlayerMovementStepResult> {
+    throw new WorldCoreHttpError(
+      501,
+      'Remote World Core does not support authoritative player movement integration.',
+      'not-supported'
+    );
+  }
+
+  public async suspendNpcMovementForInteraction(
+    _playerId: string,
+    _npcId: string,
+    _suspendedAt?: Date | string | number
+  ): Promise<NpcMovementSnapshot | null> {
+    throw new WorldCoreHttpError(
+      501,
+      'Remote World Core does not support authoritative interaction movement suspension.',
+      'not-supported'
+    );
+  }
+
+  public async releaseNpcMovementFromInteraction(
+    _playerId: string,
+    _npcId?: string,
+    _releasedAt?: Date | string | number
+  ): Promise<NpcMovementSnapshot | null> {
+    throw new WorldCoreHttpError(
+      501,
+      'Remote World Core does not support authoritative interaction movement release.',
+      'not-supported'
+    );
   }
 }

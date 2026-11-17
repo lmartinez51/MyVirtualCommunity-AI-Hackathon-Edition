@@ -131,8 +131,7 @@ namespace MyVirtualCommunity.Editor
                 Transform hl = interactTr.Find("Highlight_Indicator");
                 if (hl != null)
                 {
-                    hl.localPosition = new Vector3(0f, -0.785f, 0f);
-                    hl.localScale = new Vector3(1.6f, 0.02f, 1.6f);
+                    UnityEngine.Object.DestroyImmediate(hl.gameObject);
                 }
             }
 

@@ -5,7 +5,21 @@ import { CitizenReportRecord } from '../domain/citizen-report.js';
 import { NpcActivitySnapshot, NpcRosterActivitySnapshot } from '../domain/npc-activity.js';
 import { WorldEnvironmentSnapshot } from '../domain/time-of-day.js';
 import { NpcMovementSnapshot, NpcRosterMovementSnapshot } from '../domain/npc-waypoint-movement.js';
+import { NpcInteractionPauseInterval } from '../domain/npc-autonomous-locomotion.js';
 import { NpcInteractionContext, NpcRosterInteractionContext } from '../domain/npc-interaction-context.js';
+import {
+  NpcRosterSocialAwarenessSnapshot,
+  NpcSocialAwarenessContext,
+} from '../domain/npc-social-awareness.js';
+import {
+  NpcRosterSocialInteractionsSnapshot,
+  NpcSocialInteractionParticipation,
+} from '../domain/npc-social-interaction.js';
+import {
+  PlayerMovementIntent,
+  PlayerMovementStepResult,
+  PlayerSpatialState,
+} from '../domain/player-movement.js';
 import {
   BorderLaneBarriersRoster,
   BorderLaneBarrierSnapshot,
@@ -126,15 +140,55 @@ export interface WorldCorePort {
    */
   getNpcInteractionContext?(
     npcId: string,
-    evaluatedAt?: Date | string | number
+    evaluatedAt?: Date | string | number,
+    playerId?: string
   ): Promise<NpcInteractionContext | null>;
 
   /**
    * Evaluates the authoritative interaction context for all corridor NPCs in a single coherent snapshot.
    */
   getNpcRosterInteractionContext?(
-    evaluatedAt?: Date | string | number
+    evaluatedAt?: Date | string | number,
+    playerId?: string
   ): Promise<NpcRosterInteractionContext>;
+
+  /**
+   * Evaluates deterministic social awareness for a canonical NPC grounded in World Core positions.
+   * Returns null if the NPC is not recognized.
+   */
+  getNpcSocialAwareness?(
+    npcId: string,
+    playerId?: string,
+    evaluatedAt?: Date | string | number
+  ): Promise<NpcSocialAwarenessContext | null>;
+
+  /**
+   * Evaluates deterministic social awareness for all corridor NPCs in a single coherent snapshot.
+   */
+  getNpcRosterSocialAwareness?(
+    playerId?: string,
+    evaluatedAt?: Date | string | number
+  ): Promise<NpcRosterSocialAwarenessSnapshot>;
+
+  /**
+   * Evaluates deterministic autonomous NPC-to-NPC social interaction participation for a single NPC.
+   * Returns null if the NPC is not recognized.
+   */
+  getNpcSocialInteraction?(
+    npcId: string,
+    playerId?: string,
+    evaluatedAt?: Date | string | number,
+    activePlayerInteractionNpcId?: string | null
+  ): Promise<NpcSocialInteractionParticipation | null>;
+
+  /**
+   * Evaluates deterministic autonomous NPC-to-NPC social interaction sessions across the roster.
+   */
+  getNpcRosterSocialInteractions?(
+    playerId?: string,
+    evaluatedAt?: Date | string | number,
+    activePlayerInteractionNpcId?: string | null
+  ): Promise<NpcRosterSocialInteractionsSnapshot>;
 
   /**
    * Retrieves the authoritative status of all 4 vehicular toll barrier gates at the Paso del Norte bridge entrance.
@@ -151,4 +205,47 @@ export interface WorldCorePort {
     status: BarrierPhysicalState,
     reason?: string
   ): Promise<BorderLaneBarrierSnapshot>;
+
+  /**
+   * Retrieves the authoritative spatial state of a player in the corridor,
+   * or null if the player identifier is not registered.
+   */
+  getPlayerState?(playerId: string): Promise<PlayerSpatialState | null>;
+
+  /**
+   * Applies a normalized movement intent in World Core using server-measured elapsed time,
+   * returning the resulting canonical player position and integration metadata.
+   */
+  applyPlayerMovement?(
+    playerId: string,
+    movementIntent: PlayerMovementIntent,
+    serverTimeMs?: number
+  ): Promise<PlayerMovementStepResult>;
+
+  /**
+   * Authoritatively suspends an NPC's autonomous patrol or business local roaming
+   * when an authorized player-initiated interaction begins (Increment 5.22.0 Subsystem A3).
+   */
+  suspendNpcMovementForInteraction?(
+    playerId: string,
+    npcId: string,
+    suspendedAt?: Date | string | number
+  ): Promise<NpcMovementSnapshot | null>;
+
+  /**
+   * Releases an active player-interaction movement suspension and resumes autonomous
+   * locomotion from the preserved progression state (Increment 5.22.0 Subsystem A3).
+   */
+  releaseNpcMovementFromInteraction?(
+    playerId: string,
+    npcId?: string,
+    releasedAt?: Date | string | number
+  ): Promise<NpcMovementSnapshot | null>;
+
+  /**
+   * Returns recorded interaction pause intervals for deterministic state reconstruction.
+   */
+  getNpcInteractionPauseIntervals?(
+    npcId?: string
+  ): Readonly<Record<string, readonly NpcInteractionPauseInterval[]>>;
 }

@@ -176,14 +176,7 @@ namespace MyVirtualCommunity.Editor
                 "¿Puedo surtir una receta médica aquí?"
             };
 
-            // Visual Highlight Indicator
-            GameObject benHighlight = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            benHighlight.name = "Highlight_Indicator";
-            benHighlight.transform.SetParent(benInteractGo.transform);
-            benHighlight.transform.localPosition = new Vector3(0f, -0.9f, 0f);
-            benHighlight.transform.localScale = new Vector3(1.8f, 0.05f, 1.8f);
-            SetMaterial(benHighlight, benavidesBlueMat);
-            UnityEngine.Object.DestroyImmediate(benHighlight.GetComponent<Collider>());
+            // Visual Highlight Indicator intentionally omitted (Increment 5.22.1)
 
             // 5. Commercial Buildings: West Side (Óptica Fashion @ Av. Juárez 859)
             GameObject optica = new GameObject("Storefront_OpticaFashion");
@@ -265,14 +258,7 @@ namespace MyVirtualCommunity.Editor
                 "¿Puedo agendar una cita para examen de la vista?"
             };
 
-            // Visual Highlight Indicator
-            GameObject optHighlight = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            optHighlight.name = "Highlight_Indicator";
-            optHighlight.transform.SetParent(optInteractGo.transform);
-            optHighlight.transform.localPosition = new Vector3(0f, -0.9f, 0f);
-            optHighlight.transform.localScale = new Vector3(1.8f, 0.05f, 1.8f);
-            SetMaterial(optHighlight, opticaGoldMat);
-            UnityEngine.Object.DestroyImmediate(optHighlight.GetComponent<Collider>());
+            // Visual Highlight Indicator intentionally omitted (Increment 5.22.1)
 
             // 6. Adjacent Urban Buildings (Flanking Storefronts to complete street canyon)
             CreateUrbanBuilding("UrbanBuilding_East_South", new Vector3(18.3f, 4.0f, -17f), new Vector3(12f, 8f, 16f), buildingsRoot, CreateOrGetMaterial("Assets/Settings/StuccoWarm.mat", new Color(0.85f, 0.76f, 0.65f), 0.1f));
@@ -528,14 +514,7 @@ namespace MyVirtualCommunity.Editor
                 "¿Dónde puedo ver las cámaras en vivo del puente?"
             };
 
-            // Visual Highlight Indicator
-            GameObject kioskHighlight = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            kioskHighlight.name = "Highlight_Indicator";
-            kioskHighlight.transform.SetParent(kioskGo.transform);
-            kioskHighlight.transform.localPosition = new Vector3(0f, 0.05f, -1.0f);
-            kioskHighlight.transform.localScale = new Vector3(1.8f, 0.05f, 1.8f);
-            SetMaterial(kioskHighlight, bridgeTurquoiseMat);
-            UnityEngine.Object.DestroyImmediate(kioskHighlight.GetComponent<Collider>());
+            // Visual Highlight Indicator intentionally omitted (Increment 5.22.1)
 
             // 10. Bridge Structure Extension toward Rio Grande (Z > +52m)
             GameObject bridgeDeck = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -647,14 +626,7 @@ namespace MyVirtualCommunity.Editor
             head.transform.localScale = new Vector3(0.42f, 0.42f, 0.42f);
             SetMaterial(head, standeeMat);
 
-            // Ground Highlight Ring
-            GameObject highlight = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            highlight.name = "Highlight_Indicator";
-            highlight.transform.SetParent(go.transform);
-            highlight.transform.localPosition = new Vector3(0f, 0.04f, 0f);
-            highlight.transform.localScale = new Vector3(1.3f, 0.04f, 1.3f);
-            SetMaterial(highlight, highlightMat);
-            UnityEngine.Object.DestroyImmediate(highlight.GetComponent<Collider>());
+            // Ground Highlight Ring intentionally omitted (Increment 5.22.1)
 
             // Interaction Point Component
             var interact = go.AddComponent<InteractionPoint>();
@@ -662,6 +634,12 @@ namespace MyVirtualCommunity.Editor
             interact.characterId = charId;
             interact.characterName = charName;
             interact.characterRole = charRole;
+            interact.actorArchetype = "community_player_proxy";
+            interact.hasEmploymentSchedule = false;
+            interact.canEnterOffDuty = false;
+            interact.isWitness = true;
+            interact.witnessClassification = "community_queue_witness";
+            interact.witnessId = charId;
             interact.avatar = avatar;
             interact.landmarkId = $"witness:{charId}";
             interact.title = $"{avatar} {charName}";

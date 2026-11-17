@@ -150,7 +150,7 @@ namespace MyVirtualCommunity.Editor
                     currentWaypointId = "wp_carlos_counter",
                     destinationWaypointId = "wp_east_dining_benches",
                     activeRouteId = "route_carlos_to_lunch",
-                    position = new Vector3Dto { x = 9.5f, y = 0.68f, z = 0.4f },
+                    position = new Vector3Dto { x = 9.5f, y = 0.2f, z = 0.4f },
                     forwardHeading = new HeadingDto { x = -0.92f, z = 0.37f },
                     progression = 0.09f,
                     associatedPlaceId = "pharmacy:farmacias-benavides",
@@ -160,7 +160,7 @@ namespace MyVirtualCommunity.Editor
                 movCtrl.ApplySingleNpcSnapshot(carlosDto, snapImmediately: true);
 
                 Vector3 pos = movCtrl.GetNpcPosition("carlos-farmacia-attendant");
-                AssertCheck("Carlos position reflects route departure", Vector3.Distance(pos, new Vector3(9.5f, 0.68f, 0.4f)) < 0.1f);
+                AssertCheck("Carlos position reflects route departure", Vector3.Distance(pos, new Vector3(9.5f, 0.2f, 0.4f)) < 0.1f);
                 AssertCheck("Carlos movement state is moving", movCtrl.GetNpcMovementState("carlos-farmacia-attendant") == "moving");
                 AssertCheck("Carlos progression > 0", movCtrl.GetNpcProgression("carlos-farmacia-attendant") > 0.05f);
 
@@ -299,7 +299,8 @@ namespace MyVirtualCommunity.Editor
                 movCtrl.ApplySingleNpcSnapshot(mateoDto, snapImmediately: true);
 
                 Vector3 pos = movCtrl.GetNpcPosition("mateo-student");
-                AssertCheck("Mateo queue advance position valid", Vector3.Distance(pos, new Vector3(9.8f, 0.2f, 36.2f)) < 0.1f);
+                float mateoXzDist = Vector2.Distance(new Vector2(pos.x, pos.z), new Vector2(9.8f, 36.2f));
+                AssertCheck("Mateo queue advance position valid", mateoXzDist < 0.1f && pos.y >= -0.05f && pos.y <= 0.25f);
                 AssertCheck("Mateo movement state is moving", movCtrl.GetNpcMovementState("mateo-student") == "moving");
 
                 playerCam.transform.position = new Vector3(9.1f, 1.6f, 30.0f);
@@ -340,7 +341,8 @@ namespace MyVirtualCommunity.Editor
                 movCtrl.ApplySingleNpcSnapshot(sofiaDto, snapImmediately: true);
 
                 Vector3 pos = movCtrl.GetNpcPosition("sofia-cross-border-retail");
-                AssertCheck("Sofía evening movement position valid", Vector3.Distance(pos, new Vector3(9.8f, 0.2f, 38.2f)) < 0.1f);
+                float sofiaXzDist = Vector2.Distance(new Vector2(pos.x, pos.z), new Vector2(9.8f, 38.2f));
+                AssertCheck("Sofía evening movement position valid", sofiaXzDist < 0.1f && pos.y >= -0.05f && pos.y <= 0.25f);
                 AssertCheck("Sofía movement state is moving", movCtrl.GetNpcMovementState("sofia-cross-border-retail") == "moving");
 
                 playerCam.transform.position = new Vector3(7.0f, 1.6f, 34.0f);

@@ -6,3 +6,5 @@ export * from './talk-to-business-attendant.js';
 export * from './create-citizen-report-draft.js';
 export * from './submit-citizen-report.js';
 export * from './get-citizen-report.js';
+export * from './validate-npc-interaction.js';
+export * from './move-player.js';

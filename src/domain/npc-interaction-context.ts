@@ -19,18 +19,36 @@
  */
 
 import { deriveCivilTime, CivilTime } from './civil-time.js';
-import { BilingualText } from './synthetic-witness.js';
+import { BilingualText, SyntheticWitnessId } from './synthetic-witness.js';
+import {
+  NpcActorArchetype,
+  WitnessClassification,
+  canActorArchetypeEnterOffDuty,
+  getNpcActorClassification,
+} from './npc-actor-archetypes.js';
+import type {
+  ActiveNpcSocialPair,
+  NpcRosterSocialAwarenessSnapshot,
+  NpcSocialAwarenessContext,
+} from './npc-social-awareness.js';
+import type {
+  NpcRosterSocialInteractionsSnapshot,
+  NpcSocialInteractionParticipation,
+  NpcSocialInteractionSession,
+} from './npc-social-interaction.js';
 import {
   NPC_SCHEDULE_ROSTER,
   NpcActivityState,
   NpcActivitySnapshot,
   evaluateNpcActivity,
 } from './npc-activity.js';
+import type { EvaluateAutonomousMovementOptions } from './npc-autonomous-locomotion.js';
 import {
   CORRIDOR_WAYPOINTS,
   NPC_MOVEMENT_PROFILES,
   NpcMovementState,
   NpcMovementSnapshot,
+  Vector3D,
   evaluateNpcMovement,
 } from './npc-waypoint-movement.js';
 
@@ -53,6 +71,12 @@ export type NpcInteractionMode =
 export interface NpcInteractionContext {
   readonly npcId: string;
   readonly canonicalName: string;
+  readonly actorArchetype: NpcActorArchetype;
+  readonly hasEmploymentSchedule: boolean;
+  readonly canEnterOffDuty: boolean;
+  readonly isWitness: boolean;
+  readonly witnessClassification: WitnessClassification;
+  readonly witnessId: SyntheticWitnessId | null;
   readonly role: BilingualText;
   readonly activityState: NpcActivityState;
   readonly activityTitle: BilingualText;
@@ -76,6 +100,8 @@ export interface NpcInteractionContext {
   readonly evaluatedAt: string;
   readonly timeZone: string;
   readonly localCivilTime: string;
+  readonly socialAwareness?: NpcSocialAwarenessContext;
+  readonly socialInteraction?: NpcSocialInteractionParticipation;
   readonly isDemonstrationContext: true;
   readonly demonstrationNotice: BilingualText;
 }
@@ -95,6 +121,11 @@ export interface NpcRosterInteractionContext {
     readonly unavailableCount: number;
     readonly totalCount: number;
   };
+  readonly socialAwarenessSummary?: NpcRosterSocialAwarenessSnapshot['summary'];
+  readonly activeSocialPairs?: readonly ActiveNpcSocialPair[];
+  readonly activeSocialInteractions?: readonly NpcSocialInteractionSession[];
+  readonly socialInteractionsSummary?: NpcRosterSocialInteractionsSnapshot['summary'];
+  readonly playerPosition?: Vector3D | null;
   readonly isDemonstrationContext: true;
   readonly demonstrationNotice: BilingualText;
 }
@@ -122,7 +153,8 @@ export type CanonicalNpcId = typeof CANONICAL_NPC_IDS[number];
  */
 export function evaluateNpcInteractionContext(
   npcId: string,
-  evaluatedAt: Date | string | number
+  evaluatedAt: Date | string | number,
+  movementOptions?: EvaluateAutonomousMovementOptions
 ): NpcInteractionContext | null {
   const scheduleProfile = NPC_SCHEDULE_ROSTER[npcId];
   const movementProfile = NPC_MOVEMENT_PROFILES[npcId];
@@ -134,11 +166,21 @@ export function evaluateNpcInteractionContext(
   const instantIso = typeof evaluatedAt === 'string' ? evaluatedAt : new Date(evaluatedAt).toISOString();
   const civil: CivilTime = deriveCivilTime(instantIso, scheduleProfile.timeZone);
 
-  // 1. Authoritative Activity Evaluation
+  // 1. Authoritative Actor Classification & Activity Evaluation
+  const classification = getNpcActorClassification(npcId);
   const activitySnap: NpcActivitySnapshot = evaluateNpcActivity(scheduleProfile, instantIso);
+  const actorArchetype = classification?.actorArchetype ?? activitySnap.actorArchetype;
+  const allowOffDuty = canActorArchetypeEnterOffDuty(actorArchetype);
+  const isWitness = classification?.isWitness ?? activitySnap.isWitness;
+  const witnessClassification = classification?.witnessClassification ?? activitySnap.witnessClassification;
+  const witnessId = classification?.witnessId ?? activitySnap.witnessId;
 
   // 2. Authoritative Waypoint Movement Evaluation
-  const movementSnap: NpcMovementSnapshot = evaluateNpcMovement(movementProfile, instantIso);
+  const movementSnap: NpcMovementSnapshot = evaluateNpcMovement(
+    movementProfile,
+    instantIso,
+    movementOptions
+  );
 
   // 3. Resolve Waypoint Metadata
   const currentWp = CORRIDOR_WAYPOINTS[movementSnap.currentWaypointId] ?? {
@@ -152,11 +194,11 @@ export function evaluateNpcInteractionContext(
     : null;
 
   // 4. Deterministic Interaction Policy with Strict Precedence
-  // Precedence 1: Off-Duty or Outside Operating Hours
+  // Precedence 1: Off-Duty or Outside Operating Hours (ONLY for employment/service archetypes, NEVER community_player_proxy)
   // Precedence 2: Active In-Transit Movement along Route
   // Precedence 3: Dwell / Break at Secondary Destination
   // Precedence 4: Busy at Primary Station
-  // Precedence 5: Available at Primary Station (Normal Service)
+  // Precedence 5: Available at Primary Station (Normal Service or Community Proxy Queue Presence)
 
   let interactionAvailability: NpcInteractionAvailability = 'available_normal';
   let interactionMode: NpcInteractionMode = 'normal_service';
@@ -166,7 +208,7 @@ export function evaluateNpcInteractionContext(
   let dialogueGuidance: BilingualText;
   let contextualGreeting: BilingualText;
 
-  if (activitySnap.state === 'off_duty') {
+  if (allowOffDuty && activitySnap.state === 'off_duty') {
     interactionAvailability = 'off_duty';
     interactionMode = 'off_duty_courtesy';
     canInitiateConversation = true;
@@ -181,7 +223,7 @@ export function evaluateNpcInteractionContext(
     });
     contextualGreeting = getOffDutyGreeting(npcId);
 
-  } else if (activitySnap.state === 'unavailable') {
+  } else if (allowOffDuty && activitySnap.state === 'unavailable') {
     interactionAvailability = 'unavailable';
     interactionMode = 'closed';
     canInitiateConversation = true;
@@ -196,7 +238,11 @@ export function evaluateNpcInteractionContext(
     });
     contextualGreeting = getClosedGreeting(npcId);
 
-  } else if (movementSnap.movementState === 'moving') {
+  } else if (
+    movementSnap.movementState === 'moving' &&
+    movementSnap.controlMode !== 'autonomous_bridge_patrol' &&
+    movementSnap.controlMode !== 'autonomous_business_local'
+  ) {
     interactionAvailability = 'available_in_transit';
     interactionMode = 'in_transit';
     canInitiateConversation = true;
@@ -247,26 +293,42 @@ export function evaluateNpcInteractionContext(
     contextualGreeting = getBusyGreeting(npcId, activitySnap.activityTitle);
 
   } else {
-    // Normal available service
+    // Normal available presence / service
     interactionAvailability = 'available_normal';
     interactionMode = 'normal_service';
     canInitiateConversation = true;
     isAvailableForNormalService = true;
 
-    decisionReason = Object.freeze({
-      en: `${scheduleProfile.canonicalName} is on active duty at ${currentWp.label.en} and fully available for normal service.`,
-      es: `${scheduleProfile.canonicalName} está en turno activo en ${currentWp.label.es} y totalmente disponible para atención normal.`,
-    });
-    dialogueGuidance = Object.freeze({
-      en: 'NPC provides full standard assistance according to their professional role in the corridor.',
-      es: 'El personaje brinda atención completa de acuerdo con su función profesional en el corredor.',
-    });
+    decisionReason = !allowOffDuty
+      ? Object.freeze({
+          en: `${scheduleProfile.canonicalName} is present as a simulated community player${isWitness ? ' and bridge witness' : ''} at ${currentWp.label.en}, open for conversation.`,
+          es: `${scheduleProfile.canonicalName} participa como jugador comunitario simulado${isWitness ? ' y testigo del cruce' : ''} en ${currentWp.label.es}, disponible para conversar.`,
+        })
+      : Object.freeze({
+          en: `${scheduleProfile.canonicalName} is on active duty at ${currentWp.label.en} and fully available for normal service.`,
+          es: `${scheduleProfile.canonicalName} está en turno activo en ${currentWp.label.es} y totalmente disponible para atención normal.`,
+        });
+    dialogueGuidance = !allowOffDuty
+      ? Object.freeze({
+          en: 'Simulated community player (bridge queue witness). Converses naturally about the crossing queue and daily pedestrian perspective.',
+          es: 'Jugador comunitario simulado (testigo en la fila del puente). Conversa con naturalidad sobre la fila y su experiencia peatonal.',
+        })
+      : Object.freeze({
+          en: 'NPC provides full standard assistance according to their professional role in the corridor.',
+          es: 'El personaje brinda atención completa de acuerdo con su función profesional en el corredor.',
+        });
     contextualGreeting = getStandardGreeting(npcId);
   }
 
   return Object.freeze({
     npcId: scheduleProfile.npcId,
     canonicalName: scheduleProfile.canonicalName,
+    actorArchetype,
+    hasEmploymentSchedule: allowOffDuty,
+    canEnterOffDuty: allowOffDuty,
+    isWitness,
+    witnessClassification,
+    witnessId,
     role: scheduleProfile.role,
     activityState: activitySnap.state,
     activityTitle: activitySnap.activityTitle,
@@ -299,7 +361,8 @@ export function evaluateNpcInteractionContext(
  * Evaluates the interaction context across all 7 canonical NPCs simultaneously.
  */
 export function evaluateRosterInteractionContext(
-  evaluatedAt: Date | string | number
+  evaluatedAt: Date | string | number,
+  movementOptions?: EvaluateAutonomousMovementOptions
 ): NpcRosterInteractionContext {
   const instantIso = typeof evaluatedAt === 'string' ? evaluatedAt : new Date(evaluatedAt).toISOString();
   const npcs: Record<string, NpcInteractionContext> = {};
@@ -312,7 +375,7 @@ export function evaluateRosterInteractionContext(
   let unavailableCount = 0;
 
   for (const id of CANONICAL_NPC_IDS) {
-    const ctx = evaluateNpcInteractionContext(id, instantIso);
+    const ctx = evaluateNpcInteractionContext(id, instantIso, movementOptions);
     if (ctx) {
       npcs[id] = ctx;
       switch (ctx.interactionAvailability) {

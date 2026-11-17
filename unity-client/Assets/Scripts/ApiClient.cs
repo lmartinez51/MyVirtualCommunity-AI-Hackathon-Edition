@@ -259,11 +259,181 @@ namespace MyVirtualCommunity.Client.Api
         }
 
         /// <summary>
-        /// Retrieves authoritative interaction context roster across all corridor NPCs (Increment 5.17.0).
+        /// Retrieves authoritative interaction context roster across all corridor NPCs (Increment 5.17.0 / 5.20.0 / 5.21.0).
         /// </summary>
-        public void GetNpcRosterInteractionContext(Action<NpcRosterInteractionContextResponseDto> onSuccess, Action<string> onError)
+        public void GetNpcRosterInteractionContext(
+            Action<NpcRosterInteractionContextResponseDto> onSuccess,
+            Action<string> onError,
+            string playerId = "player-1",
+            string activePlayerInteractionNpcId = null)
         {
-            StartCoroutine(SendGetRequest<NpcRosterInteractionContextResponseDto>("/api/world/npcs/interaction-context", onSuccess, onError));
+            string query = string.IsNullOrEmpty(playerId)
+                ? ""
+                : $"?playerId={UnityEngine.Networking.UnityWebRequest.EscapeURL(playerId)}";
+            if (!string.IsNullOrEmpty(activePlayerInteractionNpcId))
+            {
+                string sep = string.IsNullOrEmpty(query) ? "?" : "&";
+                query += $"{sep}activePlayerInteractionNpcId={UnityEngine.Networking.UnityWebRequest.EscapeURL(activePlayerInteractionNpcId)}";
+            }
+            StartCoroutine(SendGetRequest<NpcRosterInteractionContextResponseDto>($"/api/world/npcs/interaction-context{query}", onSuccess, onError));
+        }
+
+        /// <summary>
+        /// Retrieves aggregate authoritative social awareness roster across all corridor NPCs (Increment 5.20.0).
+        /// </summary>
+        public void GetNpcRosterSocialAwareness(Action<NpcRosterSocialAwarenessResponseDto> onSuccess, Action<string> onError, string playerId = "player-1")
+        {
+            string query = string.IsNullOrEmpty(playerId) ? "" : $"?playerId={Uri.EscapeDataString(playerId)}";
+            StartCoroutine(SendGetRequest<NpcRosterSocialAwarenessResponseDto>($"/api/world/npcs/social-awareness{query}", onSuccess, onError));
+        }
+
+        /// <summary>
+        /// Retrieves authoritative social awareness context for an individual canonical NPC (Increment 5.20.0).
+        /// </summary>
+        public void GetNpcSocialAwareness(string npcId, Action<NpcSocialAwarenessResponseDto> onSuccess, Action<string> onError, string playerId = "player-1")
+        {
+            if (string.IsNullOrEmpty(npcId))
+            {
+                onError?.Invoke("npcId cannot be empty");
+                return;
+            }
+            string query = string.IsNullOrEmpty(playerId) ? "" : $"?playerId={Uri.EscapeDataString(playerId)}";
+            StartCoroutine(SendGetRequest<NpcSocialAwarenessResponseDto>($"/api/world/npcs/{Uri.EscapeDataString(npcId)}/social-awareness{query}", onSuccess, onError));
+        }
+
+        /// <summary>
+        /// Retrieves aggregate autonomous NPC-to-NPC social interaction lifecycle state across all corridor NPCs (Increment 5.21.0).
+        /// </summary>
+        public void GetNpcRosterSocialInteractions(
+            Action<NpcRosterSocialInteractionsResponseDto> onSuccess,
+            Action<string> onError,
+            string playerId = "player-1",
+            string activePlayerInteractionNpcId = null)
+        {
+            string query = string.IsNullOrEmpty(playerId) ? "" : $"?playerId={Uri.EscapeDataString(playerId)}";
+            if (!string.IsNullOrEmpty(activePlayerInteractionNpcId))
+            {
+                string sep = string.IsNullOrEmpty(query) ? "?" : "&";
+                query += $"{sep}activePlayerInteractionNpcId={Uri.EscapeDataString(activePlayerInteractionNpcId)}";
+            }
+            StartCoroutine(SendGetRequest<NpcRosterSocialInteractionsResponseDto>($"/api/world/npcs/social-interactions{query}", onSuccess, onError));
+        }
+
+        /// <summary>
+        /// Retrieves authoritative social interaction participation for a single canonical NPC (Increment 5.21.0).
+        /// </summary>
+        public void GetNpcSocialInteraction(
+            string npcId,
+            Action<NpcSocialInteractionResponseDto> onSuccess,
+            Action<string> onError,
+            string playerId = "player-1",
+            string activePlayerInteractionNpcId = null)
+        {
+            if (string.IsNullOrEmpty(npcId))
+            {
+                onError?.Invoke("npcId cannot be empty");
+                return;
+            }
+            string query = string.IsNullOrEmpty(playerId) ? "" : $"?playerId={Uri.EscapeDataString(playerId)}";
+            if (!string.IsNullOrEmpty(activePlayerInteractionNpcId))
+            {
+                string sep = string.IsNullOrEmpty(query) ? "?" : "&";
+                query += $"{sep}activePlayerInteractionNpcId={Uri.EscapeDataString(activePlayerInteractionNpcId)}";
+            }
+            StartCoroutine(SendGetRequest<NpcSocialInteractionResponseDto>($"/api/world/npcs/{Uri.EscapeDataString(npcId)}/social-interaction{query}", onSuccess, onError));
+        }
+
+        /// <summary>
+        /// Submits normalized planar movement intent to the authoritative World Core (Increment 5.18.0.1).
+        /// Never sends absolute client positions, speeds, or client delta times.
+        /// </summary>
+        public void SendPlayerMovementIntent(
+            string playerId,
+            Vector2 planarDirectionXZ,
+            bool isSprinting,
+            int sequenceNumber,
+            Action<PlayerMovementIntentResponseDto> onSuccess,
+            Action<string> onError)
+        {
+            if (string.IsNullOrEmpty(playerId))
+            {
+                onError?.Invoke("playerId cannot be empty");
+                return;
+            }
+
+            Vector2 clampedDir = planarDirectionXZ.sqrMagnitude > 1.0f ? planarDirectionXZ.normalized : planarDirectionXZ;
+            var payload = new PlayerMovementIntentRequestDto
+            {
+                direction = new PlanarDirectionDto
+                {
+                    x = clampedDir.x,
+                    z = clampedDir.y
+                },
+                movementMode = isSprinting ? "sprint" : "walk",
+                sequenceNumber = sequenceNumber
+            };
+            StartCoroutine(SendPostRequest<PlayerMovementIntentRequestDto, PlayerMovementIntentResponseDto>(
+                $"/api/world/players/{Uri.EscapeDataString(playerId)}/movement",
+                payload,
+                onSuccess,
+                onError));
+        }
+
+        /// <summary>
+        /// Requests server-authoritative validation before opening an NPC interaction (Increment 5.18.0).
+        /// Sends only minimum intent/identity fields; never supplies client coordinates, availability, or distance.
+        /// </summary>
+        public void ValidateNpcInteraction(
+            string playerId,
+            string npcId,
+            string intent,
+            string requestId,
+            Action<NpcInteractionValidationResponseDto> onSuccess,
+            Action<string> onError)
+        {
+            if (string.IsNullOrEmpty(playerId) || string.IsNullOrEmpty(npcId))
+            {
+                onError?.Invoke("playerId and npcId are required");
+                return;
+            }
+            var payload = new NpcInteractionValidationRequestDto
+            {
+                playerId = playerId,
+                npcId = npcId,
+                intent = string.IsNullOrEmpty(intent) ? "talk" : intent,
+                requestId = requestId ?? ""
+            };
+            StartCoroutine(SendPostRequest<NpcInteractionValidationRequestDto, NpcInteractionValidationResponseDto>(
+                $"/api/world/npcs/{Uri.EscapeDataString(npcId)}/interact",
+                payload,
+                onSuccess,
+                onError));
+        }
+
+        /// <summary>
+        /// Releases an active player-initiated NPC interaction movement suspension (Increment 5.22.0 Subsystem A3).
+        /// </summary>
+        public void EndNpcInteraction(
+            string playerId,
+            string npcId,
+            Action<EndNpcInteractionResponseDto> onSuccess = null,
+            Action<string> onError = null)
+        {
+            if (string.IsNullOrEmpty(playerId) || string.IsNullOrEmpty(npcId))
+            {
+                onError?.Invoke("playerId and npcId are required");
+                return;
+            }
+            var payload = new EndNpcInteractionRequestDto
+            {
+                playerId = playerId,
+                npcId = npcId
+            };
+            StartCoroutine(SendPostRequest<EndNpcInteractionRequestDto, EndNpcInteractionResponseDto>(
+                "/api/world/interactions/end",
+                payload,
+                onSuccess,
+                onError));
         }
 
         /// <summary>

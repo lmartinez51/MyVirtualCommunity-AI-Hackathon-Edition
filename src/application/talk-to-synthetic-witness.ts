@@ -15,6 +15,11 @@ import {
   validateWitnessMessage,
 } from '../domain/synthetic-witness.js';
 import { MetaModelPort } from '../ports/meta-model-port.js';
+import {
+  NpcActorArchetype,
+  WitnessClassification,
+  getNpcActorClassification,
+} from '../domain/npc-actor-archetypes.js';
 
 export class UnknownWitnessError extends Error {
   constructor(message: string) {
@@ -49,6 +54,9 @@ export interface TalkToWitnessResult {
 export interface PublicWitnessProfile {
   readonly id: SyntheticWitnessId;
   readonly name: string;
+  readonly actorArchetype: NpcActorArchetype;
+  readonly isWitness: true;
+  readonly witnessClassification: WitnessClassification;
   readonly avatar: string;
   readonly age: number;
   readonly role: BilingualText;
@@ -97,19 +105,25 @@ export class TalkToSyntheticWitnessUseCase {
    */
   public getRoster(): WitnessRosterResult {
     const witnesses: PublicWitnessProfile[] = Object.values(SYNTHETIC_WITNESS_ROSTER).map(
-      (w: SyntheticWitnessProfile) => ({
-        id: w.id,
-        name: w.name,
-        avatar: w.avatar,
-        age: w.age,
-        role: w.role,
-        background: w.background,
-        crossingReason: w.crossingReason,
-        communicationStyle: w.communicationStyle,
-        syntheticMarker: SYNTHETIC_MARKER,
-        personalWaitMinutes: w.permittedKnowledge.personalWaitMinutes,
-        suggestedPrompts: w.suggestedPrompts,
-      })
+      (w: SyntheticWitnessProfile) => {
+        const classification = getNpcActorClassification(w.id);
+        return {
+          id: w.id,
+          name: w.name,
+          actorArchetype: classification?.actorArchetype ?? 'community_player_proxy',
+          isWitness: true,
+          witnessClassification: classification?.witnessClassification ?? 'community_queue_witness',
+          avatar: w.avatar,
+          age: w.age,
+          role: w.role,
+          background: w.background,
+          crossingReason: w.crossingReason,
+          communicationStyle: w.communicationStyle,
+          syntheticMarker: SYNTHETIC_MARKER,
+          personalWaitMinutes: w.permittedKnowledge.personalWaitMinutes,
+          suggestedPrompts: w.suggestedPrompts,
+        };
+      }
     );
 
     return {

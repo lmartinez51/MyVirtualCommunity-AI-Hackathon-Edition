@@ -115,31 +115,32 @@ namespace MyVirtualCommunity.Editor
 
             var slabs = new List<Transform>();
 
-            // 0) Transition slab replacing Bridge_Pedestrian_UpperWalkway (Z = 42.20m to 53.00m):
+            // 0) Transition slab replacing Bridge_Pedestrian_UpperWalkway (Z = 42.20m to 51.00m):
             //    - At Z=42.20m: matches Step_3_YellowRiser (X = -6.725..-4.575, Y = 0.560m)
             //    - At Z=46.00m: widens West to X = -8.500 while clearing Pillar 1 (X = -4.575)
-            //    - At Z=53.00m: tapers East edge to X = -6.000, Y = 0.486m (100% flush with WestWalkway_Slab_SouthExt_Z53_68)
+            //    - At Z=51.00m: tapers East edge to X = -6.000, Y = 0.486m (100% flush with WestWalkway_Slab_SouthExt_Z51_68)
             //    - Grounded down to Y = 0.150m (below Sidewalk_West_North_Section Y=0.200m)
-            BuildTransitionSlabZ42_53(slabsRoot.transform, concreteMat);
+            BuildTransitionSlabZ42_51(slabsRoot.transform, concreteMat);
 
-            // A) South extended approach (Z = 53.0m to 68.018m, length = 15.018m)
-            //    Starts further South than East fixed roof (Z=68m), matching the real webcam photo!
+            // A) South extended approach (Z = 51.0m to 68.018m, length = 17.018m, center Z = 59.509m)
+            //    Extends South past the Z=53.80..55.40m crosswalk portal so the covered roof and Warren truss
+            //    frame the pedestrian entrance coherently on both sides without blocking passage.
             GameObject southExt = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            southExt.name = "WestWalkway_Slab_SouthExt_Z53_68";
+            southExt.name = "WestWalkway_Slab_SouthExt_Z51_68";
             southExt.transform.SetParent(slabsRoot.transform);
-            southExt.transform.position = new Vector3(-7.25f, 0.411f, 60.509f);
+            southExt.transform.position = new Vector3(-7.25f, 0.411f, 59.509f);
             southExt.transform.rotation = Quaternion.identity;
-            southExt.transform.localScale = new Vector3(2.50f, 0.15f, 15.018f);
+            southExt.transform.localScale = new Vector3(2.50f, 0.15f, 17.018f);
             SetMaterial(southExt, concreteMat);
             slabs.Add(southExt.transform);
 
             // Grounding base under SouthExt down to Y = 0.150m so there is zero shadow/floating gap above Sidewalk_West_North_Section
             GameObject southExtBase = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            southExtBase.name = "WestWalkway_SouthExt_Base_Z53_68";
+            southExtBase.name = "WestWalkway_SouthExt_Base_Z51_68";
             southExtBase.transform.SetParent(slabsRoot.transform);
-            southExtBase.transform.position = new Vector3(-7.25f, 0.27f, 60.509f);
+            southExtBase.transform.position = new Vector3(-7.25f, 0.27f, 59.509f);
             southExtBase.transform.rotation = Quaternion.identity;
-            southExtBase.transform.localScale = new Vector3(2.50f, 0.24f, 15.018f);
+            southExtBase.transform.localScale = new Vector3(2.50f, 0.24f, 17.018f);
             SetMaterial(southExtBase, concreteMat);
 
             // B) Main bridge deck segments Seg01..28 (mirror of East Walkway_Slab_Seg01..28)
@@ -190,42 +191,42 @@ namespace MyVirtualCommunity.Editor
                 Transform slab = slabs[i];
                 float slabLen = slab.localScale.z;
 
-                if (i == 0 && slab.name == "WestWalkway_Slab_SouthExt_Z53_68")
+                if (i == 0 && slab.name == "WestWalkway_Slab_SouthExt_Z51_68")
                 {
-                    // Split yellow curb around the crosswalk entrance opening (Z = 53.90m..55.30m)
-                    // 1a. South curb piece (Z = 53.00m..53.90m)
+                    // Split yellow curb around the crosswalk entrance portal (Z = 53.80m..55.40m)
+                    // 1a. South curb piece (Z = 51.00m..53.80m, length = 2.80m)
                     GameObject curbSouth = GameObject.CreatePrimitive(PrimitiveType.Cube);
                     curbSouth.name = $"WestExt_YellowCurb_{slab.name}_South";
                     curbSouth.transform.SetParent(railRoot.transform);
-                    curbSouth.transform.position = new Vector3(-5.90f, 0.336f, 53.45f);
+                    curbSouth.transform.position = new Vector3(-5.90f, 0.336f, 52.40f);
                     curbSouth.transform.rotation = Quaternion.identity;
-                    curbSouth.transform.localScale = new Vector3(0.20f, 0.30f, 0.90f);
+                    curbSouth.transform.localScale = new Vector3(0.20f, 0.30f, 2.80f);
                     SetMaterial(curbSouth, yellowCurbMat);
 
-                    // 1b. Flush curb cut / vado at the crosswalk opening (Z = 53.90m..55.30m, top Y = 0.400m street level)
-                    GameObject curbMouth = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                    curbMouth.name = $"WestExt_YellowCurb_{slab.name}_CrosswalkMouth";
-                    curbMouth.transform.SetParent(railRoot.transform);
-                    curbMouth.transform.position = new Vector3(-5.90f, 0.380f, 54.60f);
-                    curbMouth.transform.rotation = Quaternion.identity;
-                    curbMouth.transform.localScale = new Vector3(0.20f, 0.04f, 1.40f);
-                    SetMaterial(curbMouth, yellowCurbMat);
+                    // 1b. Smooth curb cut / vado wedge at the crosswalk opening (Z = 53.80m..55.40m):
+                    //     Slopes cleanly from street asphalt Y = 0.400m (X = -5.80m) up to walkway Y = 0.486m (X = -6.00m)
+                    CreateCrosswalkCurbCutWedge(
+                        $"WestExt_YellowCurb_{slab.name}_CrosswalkMouth",
+                        railRoot.transform,
+                        -6.00f, -5.80f, 53.80f, 55.40f,
+                        0.486f, 0.400f, 0.150f, yellowCurbMat);
 
-                    // 1c. North curb piece (Z = 55.30m..68.018m)
-                    float northLen = 68.018f - 55.30f;
+                    // 1c. North curb piece (Z = 55.40m..68.018m, length = 12.618m)
+                    float northLen = 68.018f - 55.40f;
                     GameObject curbNorth = GameObject.CreatePrimitive(PrimitiveType.Cube);
                     curbNorth.name = $"WestExt_YellowCurb_{slab.name}_North";
                     curbNorth.transform.SetParent(railRoot.transform);
-                    curbNorth.transform.position = new Vector3(-5.90f, 0.336f, 55.30f + northLen * 0.5f);
+                    curbNorth.transform.position = new Vector3(-5.90f, 0.336f, 55.40f + northLen * 0.5f);
                     curbNorth.transform.rotation = Quaternion.identity;
                     curbNorth.transform.localScale = new Vector3(0.20f, 0.30f, northLen);
                     SetMaterial(curbNorth, yellowCurbMat);
 
-                    // 2. Place posts on either side of the crosswalk opening (Z=53.20, 53.90, 55.30, then every 2m)
-                    postAnchors.Add(new Vector3(-5.90f, 0.486f, 53.20f));
-                    postAnchors.Add(new Vector3(-5.90f, 0.486f, 53.90f));
-                    postAnchors.Add(new Vector3(-5.90f, 0.486f, 55.30f));
-                    for (float pz = 57.30f; pz <= 67.85f; pz += 2.0f)
+                    // 2. Place posts on either side of the crosswalk opening (Z=51.20, 52.50, 53.80 | open | 55.40, then every 2m)
+                    postAnchors.Add(new Vector3(-5.90f, 0.486f, 51.20f));
+                    postAnchors.Add(new Vector3(-5.90f, 0.486f, 52.50f));
+                    postAnchors.Add(new Vector3(-5.90f, 0.486f, 53.80f));
+                    postAnchors.Add(new Vector3(-5.90f, 0.486f, 55.40f));
+                    for (float pz = 57.40f; pz <= 67.85f; pz += 2.0f)
                     {
                         postAnchors.Add(new Vector3(-5.90f, 0.486f, pz));
                     }
@@ -276,8 +277,8 @@ namespace MyVirtualCommunity.Editor
                 if (i < postAnchors.Count - 1)
                 {
                     Vector3 pNext = postAnchors[i + 1];
-                    // Skip tube span across the West crosswalk entrance opening (Z = 53.90m..55.30m)
-                    bool isCrosswalkOpening = Mathf.Abs(p.z - 53.90f) < 0.05f && Mathf.Abs(pNext.z - 55.30f) < 0.05f;
+                    // Skip tube span across the West crosswalk entrance portal (Z = 53.80m..55.40m)
+                    bool isCrosswalkOpening = Mathf.Abs(p.z - 53.80f) < 0.05f && Mathf.Abs(pNext.z - 55.40f) < 0.05f;
                     if (!isCrosswalkOpening)
                     {
                         for (int t = 0; t < 3; t++)
@@ -325,17 +326,48 @@ namespace MyVirtualCommunity.Editor
             CreateBeam($"{slab.name}_OuterTopBeam", segRoot.transform, slab, OuterTrussX, slabTopOffset + EaveHeightAboveSlab, 0f, 0.10f, 0.12f, segLen, steelMat);
             CreateBeam($"{slab.name}_InnerTopBeam", segRoot.transform, slab, InnerTrussX, slabTopOffset + EaveHeightAboveSlab, 0f, 0.10f, 0.12f, segLen, steelMat);
             CreateBeam($"{slab.name}_OuterMidRail", segRoot.transform, slab, OuterTrussX, slabTopOffset + MidRailHeightAboveSlab, 0f, 0.07f, 0.07f, segLen, steelMat);
-            CreateBeam($"{slab.name}_InnerMidRail", segRoot.transform, slab, InnerTrussX, slabTopOffset + MidRailHeightAboveSlab, 0f, 0.07f, 0.07f, segLen, steelMat);
 
-            // 4. ~3.0m bays for vertical posts, diagonal truss struts & transverse arch ribs
-            int bayCount = Mathf.Max(1, Mathf.RoundToInt(segLen / 3.0f));
-            float bayLen = segLen / bayCount;
-            float zStart = -segLen * 0.5f;
+            bool isSouthApproachWithPortal = (slab.name == "WestWalkway_Slab_SouthExt_Z51_68");
+            if (isSouthApproachWithPortal)
+            {
+                // Leave Z = 53.80m..55.40m completely clear on the inner (roadside) truss for unobstructed pedestrian entry!
+                // South segment: Z = 51.00m..53.80m (center Z = 52.40m -> local -7.109m, len = 2.80m)
+                CreateBeam($"{slab.name}_InnerMidRail_South", segRoot.transform, slab, InnerTrussX, slabTopOffset + MidRailHeightAboveSlab, 52.40f - 59.509f, 0.07f, 0.07f, 2.80f, steelMat);
+                // North segment: Z = 55.40m..68.018m (center Z = 61.709m -> local +2.200m, len = 12.618m)
+                CreateBeam($"{slab.name}_InnerMidRail_North", segRoot.transform, slab, InnerTrussX, slabTopOffset + MidRailHeightAboveSlab, 61.709f - 59.509f, 0.07f, 0.07f, 12.618f, steelMat);
+            }
+            else
+            {
+                CreateBeam($"{slab.name}_InnerMidRail", segRoot.transform, slab, InnerTrussX, slabTopOffset + MidRailHeightAboveSlab, 0f, 0.07f, 0.07f, segLen, steelMat);
+            }
 
+            // 4. Vertical posts, diagonal truss struts & transverse arch ribs
+            float[] bayEdgesLocalZ;
+            int portalBayIndex = -1;
+            if (isSouthApproachWithPortal)
+            {
+                // Bay 0: 51.00..53.80 (closed Warren bay south of entrance)
+                // Bay 1: 53.80..55.40 (open 1.60m pedestrian portal - no inner truss diagonals!)
+                // Bays 2..5: 55.40..68.018 (4 uniform closed Warren bays north of entrance)
+                float[] worldZ = new float[] { 51.00f, 53.80f, 55.40f, 58.5545f, 61.709f, 64.8635f, 68.018f };
+                bayEdgesLocalZ = new float[worldZ.Length];
+                for (int i = 0; i < worldZ.Length; i++) bayEdgesLocalZ[i] = worldZ[i] - 59.509f;
+                portalBayIndex = 1;
+            }
+            else
+            {
+                int count = Mathf.Max(1, Mathf.RoundToInt(segLen / 3.0f));
+                float bayLen = segLen / count;
+                float zStart = -segLen * 0.5f;
+                bayEdgesLocalZ = new float[count + 1];
+                for (int i = 0; i <= count; i++) bayEdgesLocalZ[i] = zStart + i * bayLen;
+            }
+
+            int bayCount = bayEdgesLocalZ.Length - 1;
             for (int b = 0; b <= bayCount; b++)
             {
                 if (b == bayCount && !capNorthEnd) continue;
-                float z = zStart + b * bayLen;
+                float z = bayEdgesLocalZ[b];
 
                 CreatePost($"{slab.name}_PostOut_{b}", segRoot.transform, slab, OuterTrussX, slabTopOffset, z, EaveHeightAboveSlab, 0.09f, steelMat);
                 CreatePost($"{slab.name}_PostIn_{b}", segRoot.transform, slab, InnerTrussX, slabTopOffset, z, EaveHeightAboveSlab, 0.09f, steelMat);
@@ -344,8 +376,8 @@ namespace MyVirtualCommunity.Editor
 
             for (int b = 0; b < bayCount; b++)
             {
-                float zA = zStart + b * bayLen;
-                float zB = zA + bayLen;
+                float zA = bayEdgesLocalZ[b];
+                float zB = bayEdgesLocalZ[b + 1];
                 float zMid = (zA + zB) * 0.5f;
 
                 Vector3 outTopA = GetWorldPoint(slab, OuterTrussX, slabTopOffset + EaveHeightAboveSlab, zA);
@@ -354,11 +386,14 @@ namespace MyVirtualCommunity.Editor
                 CreateStrut($"{slab.name}_TrussOut_{b}_A", segRoot.transform, outTopA, outMid, 0.055f, steelMat);
                 CreateStrut($"{slab.name}_TrussOut_{b}_B", segRoot.transform, outMid, outTopB, 0.055f, steelMat);
 
-                Vector3 inTopA = GetWorldPoint(slab, InnerTrussX, slabTopOffset + EaveHeightAboveSlab, zA);
-                Vector3 inMid = GetWorldPoint(slab, InnerTrussX, slabTopOffset + MidRailHeightAboveSlab, zMid);
-                Vector3 inTopB = GetWorldPoint(slab, InnerTrussX, slabTopOffset + EaveHeightAboveSlab, zB);
-                CreateStrut($"{slab.name}_TrussIn_{b}_A", segRoot.transform, inTopA, inMid, 0.055f, steelMat);
-                CreateStrut($"{slab.name}_TrussIn_{b}_B", segRoot.transform, inMid, inTopB, 0.055f, steelMat);
+                if (b != portalBayIndex)
+                {
+                    Vector3 inTopA = GetWorldPoint(slab, InnerTrussX, slabTopOffset + EaveHeightAboveSlab, zA);
+                    Vector3 inMid = GetWorldPoint(slab, InnerTrussX, slabTopOffset + MidRailHeightAboveSlab, zMid);
+                    Vector3 inTopB = GetWorldPoint(slab, InnerTrussX, slabTopOffset + EaveHeightAboveSlab, zB);
+                    CreateStrut($"{slab.name}_TrussIn_{b}_A", segRoot.transform, inTopA, inMid, 0.055f, steelMat);
+                    CreateStrut($"{slab.name}_TrussIn_{b}_B", segRoot.transform, inMid, inTopB, 0.055f, steelMat);
+                }
             }
         }
 
@@ -533,19 +568,19 @@ namespace MyVirtualCommunity.Editor
             uvs.Add(new Vector2(u1, 0f)); uvs.Add(new Vector2(u0, 0f));
         }
 
-        private static void BuildTransitionSlabZ42_53(Transform parent, Material mat)
+        private static void BuildTransitionSlabZ42_51(Transform parent, Material mat)
         {
             // Two smooth segments:
             //   1) Z = 42.20m -> 46.00m: West widens -6.725 -> -8.500, East stays -4.575 (clears Pillar 1), Y slopes 0.560 -> 0.534
-            //   2) Z = 46.00m -> 53.00m: West stays -8.500, East tapers -4.575 -> -6.000, Y slopes 0.534 -> 0.486
-            GameObject go = new GameObject("WestWalkway_TransitionSlab_Z42_53");
+            //   2) Z = 46.00m -> 51.00m: West stays -8.500, East tapers -4.575 -> -6.000, Y slopes 0.534 -> 0.486
+            GameObject go = new GameObject("WestWalkway_TransitionSlab_Z42_51");
             go.transform.SetParent(parent);
 
             MeshFilter mf = go.AddComponent<MeshFilter>();
             MeshRenderer mr = go.AddComponent<MeshRenderer>();
             mr.sharedMaterial = mat;
 
-            float[] zs = new float[] { 42.20f, 46.00f, 53.00f };
+            float[] zs = new float[] { 42.20f, 46.00f, 51.00f };
             float[] xW = new float[] { -6.725f, -8.500f, -8.500f };
             float[] xE = new float[] { -4.575f, -4.575f, -6.000f };
             float[] yTop = new float[] { 0.560f, 0.534f, 0.486f };
@@ -593,6 +628,47 @@ namespace MyVirtualCommunity.Editor
             mf.sharedMesh = mesh;
             MeshCollider mc = go.AddComponent<MeshCollider>();
             mc.sharedMesh = mesh;
+        }
+
+        private static void CreateCrosswalkCurbCutWedge(
+            string name, Transform parent,
+            float xWest, float xEast, float zMin, float zMax,
+            float yWestTop, float yEastTop, float yBot, Material mat)
+        {
+            GameObject go = new GameObject(name);
+            go.transform.SetParent(parent);
+
+            MeshFilter mf = go.AddComponent<MeshFilter>();
+            MeshRenderer mr = go.AddComponent<MeshRenderer>();
+            mr.sharedMaterial = mat;
+
+            Vector3 sw = new Vector3(xWest, yWestTop, zMin);
+            Vector3 se = new Vector3(xEast, yEastTop, zMin);
+            Vector3 ne = new Vector3(xEast, yEastTop, zMax);
+            Vector3 nw = new Vector3(xWest, yWestTop, zMax);
+            Vector3 bsw = new Vector3(xWest, yBot, zMin);
+            Vector3 bse = new Vector3(xEast, yBot, zMin);
+            Vector3 bne = new Vector3(xEast, yBot, zMax);
+            Vector3 bnw = new Vector3(xWest, yBot, zMax);
+
+            var verts = new List<Vector3>();
+            var tris = new List<int>();
+            var uvs = new List<Vector2>();
+            AddQuad(verts, tris, uvs, nw, ne, se, sw, 0f, 1f);     // Top slope
+            AddQuad(verts, tris, uvs, sw, se, bse, bsw, 0f, 1f);   // South
+            AddQuad(verts, tris, uvs, ne, nw, bnw, bne, 0f, 1f);   // North
+            AddQuad(verts, tris, uvs, nw, sw, bsw, bnw, 0f, 1f);   // West
+            AddQuad(verts, tris, uvs, se, ne, bne, bse, 0f, 1f);   // East
+            AddQuad(verts, tris, uvs, bsw, bse, bne, bnw, 0f, 1f); // Bottom
+
+            Mesh mesh = new Mesh { name = $"{name}_Mesh" };
+            mesh.SetVertices(verts);
+            mesh.SetTriangles(tris, 0);
+            mesh.SetUVs(0, uvs);
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+            mf.sharedMesh = mesh;
+            go.AddComponent<MeshCollider>().sharedMesh = mesh;
         }
 
         private static void CaptureScreenshots()

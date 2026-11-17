@@ -29,11 +29,35 @@ import {
   NpcRosterMovementSnapshot,
 } from '../domain/npc-waypoint-movement.js';
 import {
+  EvaluateAutonomousMovementOptions,
+  NpcInteractionPauseInterval,
+} from '../domain/npc-autonomous-locomotion.js';
+import { MAX_INTERACTION_DISTANCE_METERS } from '../domain/npc-interaction-validation.js';
+import {
   evaluateNpcInteractionContext,
   evaluateRosterInteractionContext,
   NpcInteractionContext,
   NpcRosterInteractionContext,
 } from '../domain/npc-interaction-context.js';
+import {
+  evaluateRosterSocialAwareness,
+  NpcRosterSocialAwarenessSnapshot,
+  NpcSocialAwarenessContext,
+} from '../domain/npc-social-awareness.js';
+import {
+  evaluateRosterSocialInteractions,
+  NpcRosterSocialInteractionsSnapshot,
+  NpcSocialInteractionParticipation,
+} from '../domain/npc-social-interaction.js';
+import {
+  DEFAULT_PLAYER_ID,
+  PlayerMovementIntent,
+  PlayerMovementStepResult,
+  PlayerSpatialState,
+  UnauthorizedPlayerIdentityError,
+  applyAuthoritativePlayerMovement,
+  createInitialPlayerState,
+} from '../domain/player-movement.js';
 import {
   BorderLaneBarriersRoster,
   BorderLaneBarrierSnapshot,
@@ -50,6 +74,8 @@ export interface InMemoryWorldCoreOptions {
   readonly initialSchedules?: readonly BusinessSchedule[];
   readonly persistenceFilePath?: string | null;
   readonly persistencePath?: string | null;
+  readonly nowFn?: () => number;
+  readonly initialPauseIntervals?: Readonly<Record<string, readonly NpcInteractionPauseInterval[]>>;
 }
 
 /**
@@ -71,23 +97,40 @@ export class InMemoryWorldCoreAdapter implements WorldCorePort {
   private citizenReports: Map<string, CitizenReportRecord> = new Map();
   private persistenceFilePath: string | null = null;
   private laneBarriers: BorderLaneBarriersRoster = createDefaultBorderLaneBarriers();
+  private players: Map<string, PlayerSpatialState> = new Map();
+  private interactionPauseIntervals: Map<string, NpcInteractionPauseInterval[]> = new Map();
+  private readonly nowFn: () => number;
 
   constructor(optionsOrSchedules?: readonly BusinessSchedule[] | InMemoryWorldCoreOptions) {
     let schedules: readonly BusinessSchedule[] | undefined;
+    let customNowFn: (() => number) | undefined;
+    let initialPauses: Readonly<Record<string, readonly NpcInteractionPauseInterval[]>> | undefined;
     if (Array.isArray(optionsOrSchedules)) {
       schedules = optionsOrSchedules;
     } else if (optionsOrSchedules && typeof optionsOrSchedules === 'object') {
       const opts = optionsOrSchedules as InMemoryWorldCoreOptions;
       schedules = opts.initialSchedules;
       this.persistenceFilePath = opts.persistenceFilePath ?? opts.persistencePath ?? null;
+      customNowFn = opts.nowFn;
+      initialPauses = opts.initialPauseIntervals;
     }
+    this.nowFn = customNowFn ?? (() => Date.now());
 
     if (schedules && schedules.length > 0) {
       for (const s of schedules) {
         this.schedules.set(s.businessId, s);
       }
+      this.players.set(DEFAULT_PLAYER_ID, createInitialPlayerState(DEFAULT_PLAYER_ID, this.nowFn()));
     } else {
       this.resetToDefaults();
+    }
+
+    if (initialPauses) {
+      for (const [npcId, list] of Object.entries(initialPauses)) {
+        if (Array.isArray(list)) {
+          this.interactionPauseIntervals.set(npcId, list.map((item) => Object.freeze({ ...item })));
+        }
+      }
     }
 
     this.loadReportsFromDisk();
@@ -196,6 +239,8 @@ export class InMemoryWorldCoreAdapter implements WorldCorePort {
     this.schedules.set(farmaciasBenavides.businessId, farmaciasBenavides);
     this.schedules.set(opticaFashion.businessId, opticaFashion);
     this.simulatedWorldTime = null;
+    this.players.clear();
+    this.players.set(DEFAULT_PLAYER_ID, createInitialPlayerState(DEFAULT_PLAYER_ID, this.nowFn()));
   }
 
   /**
@@ -339,9 +384,149 @@ export class InMemoryWorldCoreAdapter implements WorldCorePort {
     return evaluateWorldEnvironment(effectiveTime);
   }
 
+  private buildMovementOptions(playerId: string = DEFAULT_PLAYER_ID): EvaluateAutonomousMovementOptions {
+    const normalizedPlayerId =
+      typeof playerId === 'string' && playerId.trim() !== '' ? playerId.trim() : DEFAULT_PLAYER_ID;
+    const player = this.players.get(normalizedPlayerId) ?? null;
+    return {
+      pauseIntervalsByNpcId: this.getNpcInteractionPauseIntervals(),
+      player,
+    };
+  }
+
+  public getNpcInteractionPauseIntervals(
+    npcId?: string
+  ): Readonly<Record<string, readonly NpcInteractionPauseInterval[]>> {
+    if (typeof npcId === 'string' && npcId.trim() !== '') {
+      const key = npcId.trim();
+      const list = this.interactionPauseIntervals.get(key) ?? [];
+      return Object.freeze({ [key]: Object.freeze([...list]) });
+    }
+    const out: Record<string, readonly NpcInteractionPauseInterval[]> = {};
+    for (const [k, list] of this.interactionPauseIntervals.entries()) {
+      out[k] = Object.freeze([...list]);
+    }
+    return Object.freeze(out);
+  }
+
+  public async suspendNpcMovementForInteraction(
+    playerId: string,
+    npcId: string,
+    suspendedAt?: Date | string | number
+  ): Promise<NpcMovementSnapshot | null> {
+    const cleanNpcId = typeof npcId === 'string' ? npcId.trim() : '';
+    const cleanPlayerId =
+      typeof playerId === 'string' && playerId.trim() !== '' ? playerId.trim() : DEFAULT_PLAYER_ID;
+    const profile = NPC_MOVEMENT_PROFILES[cleanNpcId];
+    if (!profile) return null;
+
+    const effectiveTime =
+      suspendedAt !== undefined
+        ? typeof suspendedAt === 'string'
+          ? suspendedAt
+          : new Date(suspendedAt).toISOString()
+        : await this.getCurrentWorldTime();
+    const suspendedAtMs = Date.parse(effectiveTime);
+
+    const currentSnap = evaluateNpcMovement(
+      profile,
+      effectiveTime,
+      this.buildMovementOptions(cleanPlayerId)
+    );
+
+    // Release any previous active suspension held by this player on other NPCs
+    for (const [otherNpcId, intervals] of this.interactionPauseIntervals.entries()) {
+      if (otherNpcId === cleanNpcId) continue;
+      const updated = intervals.map((iv) =>
+        iv.playerId === cleanPlayerId && iv.endedAtMs === null
+          ? Object.freeze({ ...iv, endedAtMs: Math.max(iv.startedAtMs, suspendedAtMs) })
+          : iv
+      );
+      this.interactionPauseIntervals.set(otherNpcId, updated);
+    }
+
+    // Only autonomous bridge_patrol and autonomous_business_local modes suspend movement on player interaction
+    // (scheduled routine transitions like Carlos's lunch walk remain scheduled_routine_transition).
+    if (
+      currentSnap.controlMode === 'autonomous_bridge_patrol' ||
+      currentSnap.controlMode === 'autonomous_business_local' ||
+      currentSnap.controlMode === 'player_interaction_suspended'
+    ) {
+      const list = [...(this.interactionPauseIntervals.get(cleanNpcId) ?? [])];
+      const alreadyActive = list.some(
+        (iv) =>
+          iv.playerId === cleanPlayerId &&
+          iv.startedAtMs <= suspendedAtMs &&
+          (iv.endedAtMs === null || suspendedAtMs < iv.endedAtMs)
+      );
+      if (!alreadyActive) {
+        list.push(
+          Object.freeze({
+            npcId: cleanNpcId,
+            playerId: cleanPlayerId,
+            startedAtMs: suspendedAtMs,
+            endedAtMs: null,
+            reason: 'authorized_player_interaction',
+          })
+        );
+        this.interactionPauseIntervals.set(cleanNpcId, list);
+      }
+    }
+
+    return evaluateNpcMovement(profile, effectiveTime, this.buildMovementOptions(cleanPlayerId));
+  }
+
+  public async releaseNpcMovementFromInteraction(
+    playerId: string,
+    npcId?: string,
+    releasedAt?: Date | string | number
+  ): Promise<NpcMovementSnapshot | null> {
+    const cleanPlayerId =
+      typeof playerId === 'string' && playerId.trim() !== '' ? playerId.trim() : DEFAULT_PLAYER_ID;
+    const cleanNpcId = typeof npcId === 'string' && npcId.trim() !== '' ? npcId.trim() : null;
+
+    const effectiveTime =
+      releasedAt !== undefined
+        ? typeof releasedAt === 'string'
+          ? releasedAt
+          : new Date(releasedAt).toISOString()
+        : await this.getCurrentWorldTime();
+    const releasedAtMs = Date.parse(effectiveTime);
+
+    let targetNpcId: string | null = cleanNpcId;
+    for (const [id, intervals] of this.interactionPauseIntervals.entries()) {
+      if (cleanNpcId && id !== cleanNpcId) continue;
+      let changed = false;
+      const updated = intervals.map((iv) => {
+        if (iv.playerId === cleanPlayerId && (iv.endedAtMs === null || iv.endedAtMs > releasedAtMs)) {
+          changed = true;
+          if (!targetNpcId) targetNpcId = id;
+          return Object.freeze({
+            ...iv,
+            endedAtMs: Math.max(iv.startedAtMs, releasedAtMs),
+          });
+        }
+        return iv;
+      });
+      if (changed) {
+        this.interactionPauseIntervals.set(id, updated);
+      }
+    }
+
+    if (targetNpcId && NPC_MOVEMENT_PROFILES[targetNpcId]) {
+      return evaluateNpcMovement(
+        NPC_MOVEMENT_PROFILES[targetNpcId]!,
+        effectiveTime,
+        this.buildMovementOptions(cleanPlayerId)
+      );
+    }
+    return null;
+  }
+
   public async getNpcMovement(
     npcId: string,
-    evaluatedAt?: Date | string | number
+    evaluatedAt?: Date | string | number,
+    playerId: string = DEFAULT_PLAYER_ID
   ): Promise<NpcMovementSnapshot | null> {
     const profile = NPC_MOVEMENT_PROFILES[npcId];
     if (!profile) return null;
@@ -351,11 +536,12 @@ export class InMemoryWorldCoreAdapter implements WorldCorePort {
           ? evaluatedAt
           : new Date(evaluatedAt).toISOString()
         : await this.getCurrentWorldTime();
-    return evaluateNpcMovement(profile, effectiveTime);
+    return evaluateNpcMovement(profile, effectiveTime, this.buildMovementOptions(playerId));
   }
 
   public async getNpcRosterMovement(
-    evaluatedAt?: Date | string | number
+    evaluatedAt?: Date | string | number,
+    playerId: string = DEFAULT_PLAYER_ID
   ): Promise<NpcRosterMovementSnapshot> {
     const effectiveTime =
       evaluatedAt !== undefined
@@ -363,12 +549,18 @@ export class InMemoryWorldCoreAdapter implements WorldCorePort {
           ? evaluatedAt
           : new Date(evaluatedAt).toISOString()
         : await this.getCurrentWorldTime();
-    return evaluateRosterMovement(NPC_MOVEMENT_PROFILES, effectiveTime);
+    return evaluateRosterMovement(
+      NPC_MOVEMENT_PROFILES,
+      effectiveTime,
+      this.buildMovementOptions(playerId)
+    );
   }
 
   public async getNpcInteractionContext(
     npcId: string,
-    evaluatedAt?: Date | string | number
+    evaluatedAt?: Date | string | number,
+    playerId: string = DEFAULT_PLAYER_ID,
+    activePlayerInteractionNpcId?: string | null
   ): Promise<NpcInteractionContext | null> {
     const effectiveTime =
       evaluatedAt !== undefined
@@ -376,11 +568,29 @@ export class InMemoryWorldCoreAdapter implements WorldCorePort {
           ? evaluatedAt
           : new Date(evaluatedAt).toISOString()
         : await this.getCurrentWorldTime();
-    return evaluateNpcInteractionContext(npcId, effectiveTime);
+    const movOpts = this.buildMovementOptions(playerId);
+    const baseContext = evaluateNpcInteractionContext(npcId, effectiveTime, movOpts);
+    if (!baseContext) return null;
+
+    const awarenessRoster = await this.getNpcRosterSocialAwareness(playerId, effectiveTime);
+    const interactionsRoster = await this.getNpcRosterSocialInteractions(
+      playerId,
+      effectiveTime,
+      activePlayerInteractionNpcId
+    );
+    const awareness = awarenessRoster.npcs[npcId];
+    const socialInteraction = interactionsRoster.npcs[npcId];
+    return Object.freeze({
+      ...baseContext,
+      ...(awareness ? { socialAwareness: awareness } : {}),
+      ...(socialInteraction ? { socialInteraction } : {}),
+    });
   }
 
   public async getNpcRosterInteractionContext(
-    evaluatedAt?: Date | string | number
+    evaluatedAt?: Date | string | number,
+    playerId: string = DEFAULT_PLAYER_ID,
+    activePlayerInteractionNpcId?: string | null
   ): Promise<NpcRosterInteractionContext> {
     const effectiveTime =
       evaluatedAt !== undefined
@@ -388,7 +598,122 @@ export class InMemoryWorldCoreAdapter implements WorldCorePort {
           ? evaluatedAt
           : new Date(evaluatedAt).toISOString()
         : await this.getCurrentWorldTime();
-    return evaluateRosterInteractionContext(effectiveTime);
+    const normalizedPlayerId = typeof playerId === 'string' && playerId.trim() !== '' ? playerId.trim() : DEFAULT_PLAYER_ID;
+    const player = this.players.get(normalizedPlayerId) ?? null;
+    const movOpts = this.buildMovementOptions(normalizedPlayerId);
+    const interactionRoster = evaluateRosterInteractionContext(effectiveTime, movOpts);
+    const movementRoster = evaluateRosterMovement(NPC_MOVEMENT_PROFILES, effectiveTime, movOpts);
+
+    const awarenessRoster = evaluateRosterSocialAwareness({
+      evaluatedAt: effectiveTime,
+      player,
+      interactionRoster,
+      movementRoster,
+    });
+    const interactionsRoster = evaluateRosterSocialInteractions({
+      evaluatedAt: effectiveTime,
+      interactionRoster,
+      movementRoster,
+      activePlayerInteractionNpcId,
+    });
+
+    const enrichedNpcs: Record<string, NpcInteractionContext> = {};
+    const enrichedList: NpcInteractionContext[] = [];
+    for (const ctx of interactionRoster.npcsList) {
+      const awareness = awarenessRoster.npcs[ctx.npcId];
+      const socialInteraction = interactionsRoster.npcs[ctx.npcId];
+      const enriched = Object.freeze({
+        ...ctx,
+        ...(awareness ? { socialAwareness: awareness } : {}),
+        ...(socialInteraction ? { socialInteraction } : {}),
+      });
+      enrichedNpcs[ctx.npcId] = enriched;
+      enrichedList.push(enriched);
+    }
+
+    return Object.freeze({
+      ...interactionRoster,
+      npcs: Object.freeze(enrichedNpcs),
+      npcsList: Object.freeze(enrichedList),
+      socialAwarenessSummary: awarenessRoster.summary,
+      activeSocialPairs: awarenessRoster.activeSocialPairs,
+      activeSocialInteractions: interactionsRoster.sessions,
+      socialInteractionsSummary: interactionsRoster.summary,
+      playerPosition: awarenessRoster.playerPosition,
+    });
+  }
+
+  public async getNpcSocialAwareness(
+    npcId: string,
+    playerId: string = DEFAULT_PLAYER_ID,
+    evaluatedAt?: Date | string | number
+  ): Promise<NpcSocialAwarenessContext | null> {
+    if (typeof npcId !== 'string' || npcId.trim() === '') {
+      return null;
+    }
+    const roster = await this.getNpcRosterSocialAwareness(playerId, evaluatedAt);
+    return roster.npcs[npcId.trim()] ?? null;
+  }
+
+  public async getNpcRosterSocialAwareness(
+    playerId: string = DEFAULT_PLAYER_ID,
+    evaluatedAt?: Date | string | number
+  ): Promise<NpcRosterSocialAwarenessSnapshot> {
+    const effectiveTime =
+      evaluatedAt !== undefined
+        ? typeof evaluatedAt === 'string'
+          ? evaluatedAt
+          : new Date(evaluatedAt).toISOString()
+        : await this.getCurrentWorldTime();
+    const normalizedPlayerId =
+      typeof playerId === 'string' && playerId.trim() !== '' ? playerId.trim() : DEFAULT_PLAYER_ID;
+    const player = this.players.get(normalizedPlayerId) ?? null;
+    const movOpts = this.buildMovementOptions(normalizedPlayerId);
+
+    return evaluateRosterSocialAwareness({
+      evaluatedAt: effectiveTime,
+      player,
+      interactionRoster: evaluateRosterInteractionContext(effectiveTime, movOpts),
+      movementRoster: evaluateRosterMovement(NPC_MOVEMENT_PROFILES, effectiveTime, movOpts),
+    });
+  }
+
+  public async getNpcSocialInteraction(
+    npcId: string,
+    playerId: string = DEFAULT_PLAYER_ID,
+    evaluatedAt?: Date | string | number,
+    activePlayerInteractionNpcId?: string | null
+  ): Promise<NpcSocialInteractionParticipation | null> {
+    if (typeof npcId !== 'string' || npcId.trim() === '') {
+      return null;
+    }
+    const roster = await this.getNpcRosterSocialInteractions(
+      playerId,
+      evaluatedAt,
+      activePlayerInteractionNpcId
+    );
+    return roster.npcs[npcId.trim()] ?? null;
+  }
+
+  public async getNpcRosterSocialInteractions(
+    playerId: string = DEFAULT_PLAYER_ID,
+    evaluatedAt?: Date | string | number,
+    activePlayerInteractionNpcId?: string | null
+  ): Promise<NpcRosterSocialInteractionsSnapshot> {
+    const effectiveTime =
+      evaluatedAt !== undefined
+        ? typeof evaluatedAt === 'string'
+          ? evaluatedAt
+          : new Date(evaluatedAt).toISOString()
+        : await this.getCurrentWorldTime();
+    const movOpts = this.buildMovementOptions(playerId);
+
+    return evaluateRosterSocialInteractions({
+      evaluatedAt: effectiveTime,
+      interactionRoster: evaluateRosterInteractionContext(effectiveTime, movOpts),
+      movementRoster: evaluateRosterMovement(NPC_MOVEMENT_PROFILES, effectiveTime, movOpts),
+      activePlayerInteractionNpcId,
+    });
   }
 
   public async getBorderLaneBarriers(
@@ -421,5 +746,47 @@ export class InMemoryWorldCoreAdapter implements WorldCorePort {
     const worldTime = await this.getCurrentWorldTime();
     this.laneBarriers = updateLaneBarrierStatus(this.laneBarriers, laneId, status, reason, worldTime);
     return this.laneBarriers.lanes[laneId];
+  }
+
+  public async getPlayerState(playerId: string): Promise<PlayerSpatialState | null> {
+    if (!playerId || typeof playerId !== 'string') return null;
+    return this.players.get(playerId.trim()) ?? null;
+  }
+
+  public async applyPlayerMovement(
+    playerId: string,
+    movementIntent: PlayerMovementIntent,
+    serverTimeMs?: number
+  ): Promise<PlayerMovementStepResult> {
+    const normalizedId = typeof playerId === 'string' ? playerId.trim() : '';
+    const existing = normalizedId ? this.players.get(normalizedId) ?? null : null;
+    if (!existing) {
+      throw new UnauthorizedPlayerIdentityError(normalizedId || String(playerId));
+    }
+
+    const effectiveNowMs =
+      typeof serverTimeMs === 'number' && Number.isFinite(serverTimeMs) ? serverTimeMs : this.nowFn();
+
+    const stepResult = applyAuthoritativePlayerMovement(existing, movementIntent, effectiveNowMs);
+    if (stepResult.accepted) {
+      this.players.set(normalizedId, stepResult.player);
+      const currentWorldIso = await this.getCurrentWorldTime();
+      for (const [npcId, intervals] of this.interactionPauseIntervals.entries()) {
+        const hasOpen = intervals.some((iv) => iv.playerId === normalizedId && iv.endedAtMs === null);
+        if (!hasOpen) continue;
+        const prof = NPC_MOVEMENT_PROFILES[npcId];
+        if (!prof) continue;
+        const npcSnap = evaluateNpcMovement(prof, currentWorldIso, this.buildMovementOptions(normalizedId));
+        const dist = Math.hypot(
+          stepResult.player.position.x - npcSnap.position.x,
+          stepResult.player.position.y - npcSnap.position.y,
+          stepResult.player.position.z - npcSnap.position.z
+        );
+        if (dist > MAX_INTERACTION_DISTANCE_METERS + 1.5) {
+          await this.releaseNpcMovementFromInteraction(normalizedId, npcId, currentWorldIso);
+        }
+      }
+    }
+    return stepResult;
   }
 }

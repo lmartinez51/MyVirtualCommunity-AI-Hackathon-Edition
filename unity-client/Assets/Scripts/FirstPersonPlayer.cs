@@ -99,6 +99,25 @@ namespace MyVirtualCommunity.Client.World
         private string lastFailedMessage = null;
         private Vector2 dialogueScrollPosition = Vector2.zero;
 
+        // Server-Authoritative Movement & Interaction Validation State (Increments 5.18.0 & 5.18.0.1)
+        private const string AuthoritativePlayerId = "player-1";
+        private const float MovementSyncIntervalSeconds = 0.1f;
+        private const float MaxServerReconciliationDriftMeters = 2.5f;
+        private bool isInteractionValidationPending = false;
+        private string pendingInteractionNpcId = null;
+        private string interactionFeedbackMessage = null;
+        private Color interactionFeedbackColor = new Color(1f, 0.72f, 0.25f);
+        private float interactionFeedbackUntilTime = -1f;
+        private int movementSequenceNumber = 0;
+        private int lastAcknowledgedMovementSeq = 0;
+        private float lastMovementIntentSendTime = -10f;
+        private bool isMovementIntentInFlight = false;
+        private bool wasMovingLastTick = false;
+        private Vector2 lastPlanarMoveDirection = Vector2.zero;
+        private bool lastSprintState = false;
+        private Vector3 lastReconciledServerPosition = new Vector3(0f, 1f, -15f);
+        private bool hasReconciledServerPosition = false;
+
         // Live Border Intelligence Cache (Elena's Kiosk)
         private BorderWaitTimesResponseDto liveBorderWaitTimes = null;
         private bool isBorderWaitTimesLoading = false;
@@ -168,16 +187,83 @@ namespace MyVirtualCommunity.Client.World
         // Authoritative NPC Waypoint Movement Controller (Increment 5.16.0)
         private NpcWaypointMovementController movementController;
 
-        // Secret Fideicomiso Surveillance Camera Easter Egg (Paso del Norte - Vista Sur -> YouTube Live)
-        private const string FideicomisoCameraObjectName = "Bridge_Fideicomiso_Camera_VistaSur";
-        private const string FideicomisoYoutubeLiveUrl = "https://www.youtube.com/watch?v=IcvugJWPXz8";
-        private const string FideicomisoYoutubeThumbUrl = "https://i.ytimg.com/vi/IcvugJWPXz8/hqdefault.jpg";
+        // Secret Fideicomiso Surveillance Camera Easter Eggs (Vista Sur & rear Vista Norte -> YouTube Live)
+        private sealed class FideicomisoCameraFeedConfig
+        {
+            public readonly string ObjectName;
+            public readonly string YoutubeLiveUrl;
+            public readonly string YoutubeThumbUrl;
+            public readonly string YoutubeShortLabel;
+            public readonly string OsdCameraName;
+            public readonly string MirrorHintEs;
+            public readonly string MirrorHintEn;
+            public readonly Vector3 TriggerWorldPos;
+            public readonly Vector3 RuntimeCameraPos;
+            public readonly Quaternion RuntimeCameraRot;
+            public readonly float RuntimeCameraFov;
+
+            public FideicomisoCameraFeedConfig(
+                string objectName,
+                string youtubeLiveUrl,
+                string youtubeThumbUrl,
+                string youtubeShortLabel,
+                string osdCameraName,
+                string mirrorHintEs,
+                string mirrorHintEn,
+                Vector3 triggerWorldPos,
+                Vector3 runtimeCameraPos,
+                Quaternion runtimeCameraRot,
+                float runtimeCameraFov)
+            {
+                ObjectName = objectName;
+                YoutubeLiveUrl = youtubeLiveUrl;
+                YoutubeThumbUrl = youtubeThumbUrl;
+                YoutubeShortLabel = youtubeShortLabel;
+                OsdCameraName = osdCameraName;
+                MirrorHintEs = mirrorHintEs;
+                MirrorHintEn = mirrorHintEn;
+                TriggerWorldPos = triggerWorldPos;
+                RuntimeCameraPos = runtimeCameraPos;
+                RuntimeCameraRot = runtimeCameraRot;
+                RuntimeCameraFov = runtimeCameraFov;
+            }
+        }
+
+        private static readonly FideicomisoCameraFeedConfig[] FideicomisoCameraFeeds = new FideicomisoCameraFeedConfig[]
+        {
+            new FideicomisoCameraFeedConfig(
+                objectName: "Bridge_Fideicomiso_Camera_VistaSur",
+                youtubeLiveUrl: "https://www.youtube.com/watch?v=IcvugJWPXz8",
+                youtubeThumbUrl: "https://i.ytimg.com/vi/IcvugJWPXz8/hqdefault.jpg",
+                youtubeShortLabel: "youtu.be/IcvugJWPXz8",
+                osdCameraName: "Paso del Norte (Vista Sur)",
+                mirrorHintEs: "🎥 Espejo CCTV Activo: Camina con WASD frente al puente para verte en cámara",
+                mirrorHintEn: "🎥 Live CCTV Mirror: Walk with WASD in front of the bridge to see yourself",
+                triggerWorldPos: new Vector3(2.40f, 8.20f, 40.65f),
+                runtimeCameraPos: new Vector3(2.40f, 8.15f, 40.20f),
+                runtimeCameraRot: Quaternion.Euler(28f, 180f, 0f),
+                runtimeCameraFov: 55f),
+            new FideicomisoCameraFeedConfig(
+                objectName: "Bridge_Fideicomiso_Camera_VistaNorte",
+                youtubeLiveUrl: "https://www.youtube.com/watch?v=0Pg3S6s76IE",
+                youtubeThumbUrl: "https://i.ytimg.com/vi/0Pg3S6s76IE/hqdefault.jpg",
+                youtubeShortLabel: "youtu.be/0Pg3S6s76IE",
+                osdCameraName: "Paso del Norte (Vista Norte)",
+                mirrorHintEs: "🎥 Espejo CCTV Activo: Cruza el puente o el paso peatonal para verte en cámara",
+                mirrorHintEn: "🎥 Live CCTV Mirror: Walk onto the bridge or crosswalk to see yourself",
+                triggerWorldPos: new Vector3(6.00f, 8.30f, 50.98f),
+                runtimeCameraPos: new Vector3(5.96f, 8.14f, 51.32f),
+                runtimeCameraRot: Quaternion.Euler(27f, 356f, 0f),
+                runtimeCameraFov: 74f)
+        };
+
+        private int activeFideicomisoFeedIndex = 0;
         private bool isFideicomisoCameraPipOpen = false;
         private bool fideicomisoPipShowRealYoutubeThumb = false; // false = Live 3D CCTV Mirror + Overlay, true = Real YouTube Stream Thumbnail
         private Camera fideicomisoCctvCamera = null;
         private RenderTexture fideicomisoCctvRenderTexture = null;
-        private Texture2D fideicomisoYoutubeThumbTex = null;
-        private bool isFetchingFideicomisoYoutubeThumb = false;
+        private readonly Texture2D[] fideicomisoYoutubeThumbTexByFeed = new Texture2D[2];
+        private readonly bool[] isFetchingFideicomisoYoutubeThumbByFeed = new bool[2];
         private GameObject playerSelfCctvProxy = null;
         private Rect fideicomisoPipWindowRect = new Rect(0, 0, 540, 368);
 
@@ -700,6 +786,7 @@ namespace MyVirtualCommunity.Client.World
 
                     HandleLook();
                     HandleMovement();
+                    SyncAuthoritativeMovementIntentIfNeeded();
                     UpdateFideicomisoPlayerSelfAvatarProxy();
                     UpdateMiniSatellitePreviewRender();
                     HandleInteractionProximity();
@@ -796,17 +883,202 @@ namespace MyVirtualCommunity.Client.World
 
         public void OpenInteractionModal(InteractionPoint point)
         {
+            if (point == null) return;
+            if (currentState == PrimaryUIState.PauseMenu || currentState == PrimaryUIState.ControlsGuide) return;
+
+            if (point.category == InteractionCategory.Informational || string.IsNullOrEmpty(point.characterId))
+            {
+                OpenAuthorizedInteractionModal(point);
+                return;
+            }
+
+            if (isInteractionValidationPending)
+            {
+                return;
+            }
+
+            EnsureApiClient();
+            if (apiClient == null)
+            {
+                bool isEs = currentLanguage == "es";
+                ShowInteractionFeedback(
+                    isEs
+                        ? "No se pudo validar la interacción: ApiClient no disponible."
+                        : "Unable to validate interaction: ApiClient is unavailable.",
+                    new Color(1f, 0.42f, 0.42f));
+                return;
+            }
+
+            isInteractionValidationPending = true;
+            pendingInteractionNpcId = point.characterId;
+            StartCoroutine(ValidateAndOpenNpcInteractionRoutine(point));
+        }
+
+        private IEnumerator ValidateAndOpenNpcInteractionRoutine(InteractionPoint point)
+        {
+            // Wait for any active movement intent request to finish first to preserve strict ordering
+            float inFlightWait = 0f;
+            while (isMovementIntentInFlight && inFlightWait < 3.0f)
+            {
+                inFlightWait += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            // Flush final movement intent (or idle anchor) and reconcile canonical World Core position
+            Vector2 flushDir = wasMovingLastTick ? lastPlanarMoveDirection : Vector2.zero;
+            bool flushSprint = wasMovingLastTick && lastSprintState;
+            wasMovingLastTick = false;
+
+            bool moveSyncDone = false;
+            string moveSyncError = null;
+            int seq = ++movementSequenceNumber;
+            isMovementIntentInFlight = true;
+
+            apiClient.SendPlayerMovementIntent(
+                AuthoritativePlayerId,
+                flushDir,
+                flushSprint,
+                seq,
+                res =>
+                {
+                    isMovementIntentInFlight = false;
+                    ApplyAuthoritativeMovementResponse(res);
+                    moveSyncDone = true;
+                },
+                err =>
+                {
+                    isMovementIntentInFlight = false;
+                    moveSyncError = err;
+                    moveSyncDone = true;
+                });
+
+            float syncWait = 0f;
+            while (!moveSyncDone && syncWait < 3.0f)
+            {
+                syncWait += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            if (!string.IsNullOrEmpty(moveSyncError))
+            {
+                isInteractionValidationPending = false;
+                pendingInteractionNpcId = null;
+                bool isEsErr = currentLanguage == "es";
+                ShowInteractionFeedback(
+                    isEsErr
+                        ? $"Error al sincronizar movimiento con el servidor: {moveSyncError}"
+                        : $"Server movement sync error: {moveSyncError}",
+                    new Color(1f, 0.42f, 0.42f));
+                yield break;
+            }
+
+            string requestId = Guid.NewGuid().ToString("N");
+            bool validationDone = false;
+            NpcInteractionValidationResponseDto validationResponse = null;
+            string validationError = null;
+
+            apiClient.ValidateNpcInteraction(
+                AuthoritativePlayerId,
+                point.characterId,
+                "talk",
+                requestId,
+                res =>
+                {
+                    validationResponse = res;
+                    validationDone = true;
+                },
+                err =>
+                {
+                    validationError = err;
+                    validationDone = true;
+                });
+
+            while (!validationDone)
+            {
+                yield return null;
+            }
+
+            isInteractionValidationPending = false;
+            pendingInteractionNpcId = null;
+
+            bool isEs = currentLanguage == "es";
+
+            if (!string.IsNullOrEmpty(validationError))
+            {
+                ShowInteractionFeedback(
+                    isEs
+                        ? $"Error del servidor al validar interacción: {validationError}"
+                        : $"Server validation error: {validationError}",
+                    new Color(1f, 0.42f, 0.42f));
+                yield break;
+            }
+
+            if (validationResponse == null || !validationResponse.allowed)
+            {
+                string serverMsg = "";
+                if (validationResponse?.message != null)
+                {
+                    serverMsg = isEs
+                        ? (!string.IsNullOrEmpty(validationResponse.message.es) ? validationResponse.message.es : validationResponse.message.en)
+                        : (!string.IsNullOrEmpty(validationResponse.message.en) ? validationResponse.message.en : validationResponse.message.es);
+                }
+
+                if (string.IsNullOrEmpty(serverMsg))
+                {
+                    serverMsg = isEs
+                        ? "Interacción rechazada por el servidor autoritativo."
+                        : "Interaction rejected by the authoritative server.";
+                }
+
+                ShowInteractionFeedback(serverMsg, new Color(1f, 0.72f, 0.25f));
+                yield break;
+            }
+
+            if (validationResponse.interactionContext != null)
+            {
+                ApplyInteractionContextToPoint(point, validationResponse.interactionContext);
+            }
+
+            OpenAuthorizedInteractionModal(point);
+        }
+
+        private void OpenAuthorizedInteractionModal(InteractionPoint point)
+        {
             if (currentState == PrimaryUIState.PauseMenu || currentState == PrimaryUIState.ControlsGuide) return;
 
             activeModalPoint = point;
             currentState = PrimaryUIState.Dialogue;
             requestErrorMessage = null;
+            interactionFeedbackMessage = null;
             currentInputText = "";
             LockCursor(false);
 
+            EnsureMovementController();
+            if (movementController != null)
+            {
+                movementController.SetActivePlayerInteractionNpc(point.characterId ?? "");
+            }
+
             RefreshIndividualNpcActivity(point);
             RefreshIndividualNpcInteractionContext(point);
+            if (apiClient != null && !string.IsNullOrEmpty(point.characterId))
+            {
+                apiClient.GetNpcMovement(
+                    point.characterId,
+                    res =>
+                    {
+                        if (res != null && res.success && res.movement != null && movementController != null)
+                        {
+                            movementController.ApplySingleNpcSnapshot(res.movement, snapImmediately: false);
+                        }
+                    },
+                    _ => { });
+            }
             EnsureInitialGreeting(point);
+            if (movementController != null && !string.IsNullOrEmpty(point.characterId))
+            {
+                movementController.TriggerNpcGreeting(point.characterId);
+            }
 
             // If opening Elena's Kiosk, fetch fresh official wait times
             if (point.category == InteractionCategory.BorderConcierge)
@@ -822,8 +1094,121 @@ namespace MyVirtualCommunity.Client.World
             }
         }
 
+        private void ShowInteractionFeedback(string message, Color color, float durationSeconds = 5.0f)
+        {
+            interactionFeedbackMessage = message;
+            interactionFeedbackColor = color;
+            interactionFeedbackUntilTime = Time.unscaledTime + durationSeconds;
+        }
+
+        private void SyncAuthoritativeMovementIntentIfNeeded()
+        {
+            if (apiClient == null || isMovementIntentInFlight) return;
+
+            Vector2 rawInput = GetMovementInput();
+            bool isSprinting = IsSprintPressed();
+            Vector3 worldDir = transform.forward * rawInput.y + transform.right * rawInput.x;
+            if (worldDir.sqrMagnitude > 1.0f)
+            {
+                worldDir.Normalize();
+            }
+
+            Vector2 planarDir = new Vector2(worldDir.x, worldDir.z);
+            bool isMovingNow = planarDir.sqrMagnitude > 0.0001f;
+
+            // Transition idle -> moving: send zero-direction anchor to start server delta measurement accurately
+            if (isMovingNow && !wasMovingLastTick)
+            {
+                wasMovingLastTick = true;
+                lastPlanarMoveDirection = planarDir;
+                lastSprintState = isSprinting;
+                DispatchMovementIntent(Vector2.zero, false);
+                return;
+            }
+
+            // Transition moving -> idle: flush last active direction once to conclude segment
+            if (!isMovingNow && wasMovingLastTick)
+            {
+                Vector2 closingDir = lastPlanarMoveDirection;
+                bool closingSprint = lastSprintState;
+                wasMovingLastTick = false;
+                lastPlanarMoveDirection = Vector2.zero;
+                lastSprintState = false;
+                DispatchMovementIntent(closingDir, closingSprint);
+                return;
+            }
+
+            if (!isMovingNow)
+            {
+                return;
+            }
+
+            float elapsed = Time.unscaledTime - lastMovementIntentSendTime;
+            bool directionChanged = (planarDir - lastPlanarMoveDirection).sqrMagnitude > 0.04f || isSprinting != lastSprintState;
+
+            if (elapsed >= MovementSyncIntervalSeconds || directionChanged)
+            {
+                lastPlanarMoveDirection = planarDir;
+                lastSprintState = isSprinting;
+                DispatchMovementIntent(planarDir, isSprinting);
+            }
+        }
+
+        private void DispatchMovementIntent(Vector2 planarDir, bool isSprinting)
+        {
+            int seq = ++movementSequenceNumber;
+            isMovementIntentInFlight = true;
+            lastMovementIntentSendTime = Time.unscaledTime;
+
+            apiClient.SendPlayerMovementIntent(
+                AuthoritativePlayerId,
+                planarDir,
+                isSprinting,
+                seq,
+                res =>
+                {
+                    isMovementIntentInFlight = false;
+                    ApplyAuthoritativeMovementResponse(res);
+                },
+                _ =>
+                {
+                    isMovementIntentInFlight = false;
+                });
+        }
+
+        private void ApplyAuthoritativeMovementResponse(PlayerMovementIntentResponseDto res)
+        {
+            if (res == null || !res.accepted || res.outOfOrder || res.player?.position == null)
+            {
+                return;
+            }
+
+            if (res.player.lastSequenceNumber < lastAcknowledgedMovementSeq)
+            {
+                return;
+            }
+
+            lastAcknowledgedMovementSeq = res.player.lastSequenceNumber;
+            Vector3 serverPos = new Vector3(res.player.position.x, res.player.position.y, res.player.position.z);
+            lastReconciledServerPosition = serverPos;
+            hasReconciledServerPosition = true;
+
+            float planarDrift = Vector2.Distance(
+                new Vector2(transform.position.x, transform.position.z),
+                new Vector2(serverPos.x, serverPos.z));
+
+            if (planarDrift > MaxServerReconciliationDriftMeters && characterController != null)
+            {
+                bool wasEnabled = characterController.enabled;
+                characterController.enabled = false;
+                transform.position = new Vector3(serverPos.x, transform.position.y, serverPos.z);
+                characterController.enabled = wasEnabled;
+            }
+        }
+
         public void CloseInteractionModal()
         {
+            string closingCharId = activeModalPoint != null ? activeModalPoint.characterId : null;
             activeModalPoint = null;
             currentState = PrimaryUIState.Exploration;
             requestErrorMessage = null;
@@ -831,6 +1216,28 @@ namespace MyVirtualCommunity.Client.World
             CloseEnlargedImageViewer();
             DestroyOverlayTexture();
             LockCursor(true);
+
+            EnsureMovementController();
+            if (movementController != null)
+            {
+                movementController.SetActivePlayerInteractionNpc("");
+            }
+
+            EnsureApiClient();
+            if (apiClient != null && !string.IsNullOrEmpty(closingCharId))
+            {
+                apiClient.EndNpcInteraction(
+                    AuthoritativePlayerId,
+                    closingCharId,
+                    res =>
+                    {
+                        if (res != null && res.success && res.movement != null && movementController != null)
+                        {
+                            movementController.ApplySingleNpcSnapshot(res.movement, snapImmediately: false);
+                        }
+                    },
+                    _ => { });
+            }
         }
 
         private void CloseEnlargedImageViewer()
@@ -1389,12 +1796,49 @@ namespace MyVirtualCommunity.Client.World
 
             if (points == null || points.Length == 0) return;
 
-            foreach (var pt in points)
+            string activePlayerNpcId = (IsDialogueOpen && activeModalPoint != null) ? activeModalPoint.characterId : null;
+            EnsureMovementController();
+            if (movementController != null)
             {
-                if (pt == null || string.IsNullOrEmpty(pt.characterId)) continue;
-                RefreshIndividualNpcActivity(pt);
-                RefreshIndividualNpcInteractionContext(pt);
+                movementController.SetActivePlayerInteractionNpc(activePlayerNpcId ?? "");
             }
+
+            // Use a single aggregate World Core request instead of per-NPC HTTP fan-out (Increment 5.20.0 / 5.21.0).
+            apiClient.GetNpcRosterInteractionContext(
+                res =>
+                {
+                    if (res == null || !res.success || res.npcsList == null) return;
+
+                    foreach (var ctx in res.npcsList)
+                    {
+                        if (ctx == null || string.IsNullOrEmpty(ctx.npcId)) continue;
+                        for (int i = 0; i < points.Length; i++)
+                        {
+                            InteractionPoint pt = points[i];
+                            if (pt != null && string.Equals(pt.characterId, ctx.npcId, StringComparison.OrdinalIgnoreCase))
+                            {
+                                ApplyInteractionContextToPoint(pt, ctx);
+                            }
+                        }
+                    }
+
+                    EnsureMovementController();
+                    if (movementController != null)
+                    {
+                        movementController.ApplyAuthoritativeInteractionContextRoster(res);
+                    }
+                },
+                err =>
+                {
+                    if (movementController != null)
+                    {
+                        movementController.ClearAllSocialAwareness();
+                        movementController.ClearAllSocialInteractions();
+                    }
+                },
+                playerId: "player-1",
+                activePlayerInteractionNpcId: activePlayerNpcId
+            );
         }
 
         public void RefreshIndividualNpcInteractionContext(InteractionPoint pt)
@@ -1411,52 +1855,7 @@ namespace MyVirtualCommunity.Client.World
                     var ctx = res != null ? (res.context ?? res.interactionContext) : null;
                     if (ctx != null && pt != null)
                     {
-                        pt.interactionAvailability = ctx.interactionAvailability ?? "available_normal";
-                        pt.interactionMode = ctx.interactionMode ?? "normal_service";
-                        pt.isAvailableForNormalService = ctx.isAvailableForNormalService;
-                        pt.canInteract = ctx.canInitiateConversation;
-                        if (!string.IsNullOrEmpty(ctx.activityState))
-                        {
-                            pt.activityState = ctx.activityState;
-                        }
-                        if (ctx.activityTitle != null)
-                        {
-                            pt.activityTitleEn = ctx.activityTitle.en ?? pt.activityTitleEn;
-                            pt.activityTitleEs = ctx.activityTitle.es ?? pt.activityTitleEs;
-                        }
-                        if (ctx.activityDescription != null)
-                        {
-                            pt.activityDescriptionEn = ctx.activityDescription.en ?? pt.activityDescriptionEn;
-                            pt.activityDescriptionEs = ctx.activityDescription.es ?? pt.activityDescriptionEs;
-                        }
-                        if (ctx.decisionReason != null)
-                        {
-                            pt.decisionReasonEn = ctx.decisionReason.en ?? "";
-                            pt.decisionReasonEs = ctx.decisionReason.es ?? "";
-                        }
-                        if (ctx.dialogueGuidance != null)
-                        {
-                            pt.dialogueGuidanceEn = ctx.dialogueGuidance.en ?? "";
-                            pt.dialogueGuidanceEs = ctx.dialogueGuidance.es ?? "";
-                        }
-                        if (ctx.contextualGreeting != null)
-                        {
-                            pt.contextualGreetingEn = ctx.contextualGreeting.en ?? "";
-                            pt.contextualGreetingEs = ctx.contextualGreeting.es ?? "";
-                        }
-                        if (!string.IsNullOrEmpty(ctx.movementState))
-                        {
-                            pt.movementState = ctx.movementState;
-                        }
-                        if (!string.IsNullOrEmpty(ctx.currentWaypointId))
-                        {
-                            pt.currentWaypointId = ctx.currentWaypointId;
-                        }
-                        if (!string.IsNullOrEmpty(ctx.destinationWaypointId))
-                        {
-                            pt.destinationWaypointId = ctx.destinationWaypointId;
-                        }
-                        pt.progression = ctx.progression;
+                        ApplyInteractionContextToPoint(pt, ctx);
                     }
                 },
                 err =>
@@ -1464,6 +1863,95 @@ namespace MyVirtualCommunity.Client.World
                     // Fail gracefully: retain existing local or default state
                 }
             );
+        }
+
+        private static void ApplyInteractionContextToPoint(InteractionPoint pt, NpcInteractionContextDto ctx)
+        {
+            if (pt == null || ctx == null) return;
+            pt.interactionAvailability = ctx.interactionAvailability ?? "available_normal";
+            pt.interactionMode = ctx.interactionMode ?? "normal_service";
+            pt.isAvailableForNormalService = ctx.isAvailableForNormalService;
+            pt.canInteract = ctx.canInitiateConversation;
+            if (!string.IsNullOrEmpty(ctx.actorArchetype))
+            {
+                pt.actorArchetype = ctx.actorArchetype;
+                pt.hasEmploymentSchedule = ctx.hasEmploymentSchedule;
+                pt.canEnterOffDuty = ctx.canEnterOffDuty;
+                pt.isWitness = ctx.isWitness;
+                pt.witnessClassification = string.IsNullOrEmpty(ctx.witnessClassification) ? "none" : ctx.witnessClassification;
+                pt.witnessId = ctx.witnessId ?? "";
+            }
+            if (!string.IsNullOrEmpty(ctx.activityState))
+            {
+                pt.activityState = ctx.activityState;
+            }
+            if (ctx.activityTitle != null)
+            {
+                pt.activityTitleEn = ctx.activityTitle.en ?? pt.activityTitleEn;
+                pt.activityTitleEs = ctx.activityTitle.es ?? pt.activityTitleEs;
+            }
+            if (ctx.activityDescription != null)
+            {
+                pt.activityDescriptionEn = ctx.activityDescription.en ?? pt.activityDescriptionEn;
+                pt.activityDescriptionEs = ctx.activityDescription.es ?? pt.activityDescriptionEs;
+            }
+            if (ctx.decisionReason != null)
+            {
+                pt.decisionReasonEn = ctx.decisionReason.en ?? "";
+                pt.decisionReasonEs = ctx.decisionReason.es ?? "";
+            }
+            if (ctx.dialogueGuidance != null)
+            {
+                pt.dialogueGuidanceEn = ctx.dialogueGuidance.en ?? "";
+                pt.dialogueGuidanceEs = ctx.dialogueGuidance.es ?? "";
+            }
+            if (ctx.contextualGreeting != null)
+            {
+                pt.contextualGreetingEn = ctx.contextualGreeting.en ?? "";
+                pt.contextualGreetingEs = ctx.contextualGreeting.es ?? "";
+            }
+            if (!string.IsNullOrEmpty(ctx.movementState))
+            {
+                pt.movementState = ctx.movementState;
+            }
+            if (!string.IsNullOrEmpty(ctx.currentWaypointId))
+            {
+                pt.currentWaypointId = ctx.currentWaypointId;
+            }
+            if (!string.IsNullOrEmpty(ctx.destinationWaypointId))
+            {
+                pt.destinationWaypointId = ctx.destinationWaypointId;
+            }
+            pt.progression = ctx.progression;
+            if (ctx.socialAwareness != null)
+            {
+                pt.socialAwarenessState = string.IsNullOrEmpty(ctx.socialAwareness.awarenessState) ? "unaware" : ctx.socialAwareness.awarenessState;
+                pt.socialTargetEntityType = string.IsNullOrEmpty(ctx.socialAwareness.targetEntityType) ? "none" : ctx.socialAwareness.targetEntityType;
+                pt.socialTargetEntityId = ctx.socialAwareness.targetEntityId ?? "";
+                pt.socialPairedPartnerNpcId = ctx.socialAwareness.pairedPartnerNpcId ?? "";
+                pt.socialTargetHorizontalDistanceMeters = ctx.socialAwareness.spatialRelation != null
+                    ? ctx.socialAwareness.spatialRelation.horizontalDistanceMeters
+                    : -1f;
+                pt.socialCanOrientTowardTarget = ctx.socialAwareness.canOrientTowardTarget;
+                pt.socialRetainsContextualActivity = ctx.socialAwareness.retainsContextualActivity;
+                pt.socialEligible = ctx.socialAwareness.socialEligible;
+                pt.socialAwarenessAvailable = true;
+            }
+            if (ctx.socialInteraction != null)
+            {
+                pt.socialInteractionSessionId = ctx.socialInteraction.sessionId ?? "";
+                pt.socialInteractionPhase = ctx.socialInteraction.phase ?? "";
+                pt.socialInteractionType = ctx.socialInteraction.interactionType ?? "";
+                pt.socialInteractionPartnerNpcId = ctx.socialInteraction.partnerNpcId ?? "";
+                pt.socialInteractionConversationalRole = string.IsNullOrEmpty(ctx.socialInteraction.conversationalRole) ? "none" : ctx.socialInteraction.conversationalRole;
+                pt.socialInteractionTurnIndex = ctx.socialInteraction.turnIndex;
+                pt.socialInteractionStartedAt = ctx.socialInteraction.sessionStartedAt ?? "";
+                pt.socialInteractionExpectedEndAt = ctx.socialInteraction.sessionExpectedEndAt ?? "";
+                pt.socialInteractionCooldownUntil = ctx.socialInteraction.cooldownUntil ?? "";
+                pt.socialInteractionInCooldown = ctx.socialInteraction.inCooldown;
+                pt.socialInteractionActive = ctx.socialInteraction.inActiveInteraction;
+                pt.socialInteractionAvailable = true;
+            }
         }
 
         public void RefreshIndividualNpcActivity(InteractionPoint pt)
@@ -1479,6 +1967,15 @@ namespace MyVirtualCommunity.Client.World
                 {
                     if (res != null && res.success && res.activity != null && pt != null)
                     {
+                        if (!string.IsNullOrEmpty(res.activity.actorArchetype))
+                        {
+                            pt.actorArchetype = res.activity.actorArchetype;
+                            pt.hasEmploymentSchedule = res.activity.hasEmploymentSchedule;
+                            pt.canEnterOffDuty = res.activity.canEnterOffDuty;
+                            pt.isWitness = res.activity.isWitness;
+                            pt.witnessClassification = string.IsNullOrEmpty(res.activity.witnessClassification) ? "none" : res.activity.witnessClassification;
+                            pt.witnessId = res.activity.witnessId ?? "";
+                        }
                         pt.activityState = res.activity.state ?? "available";
                         pt.canInteract = res.activity.canInteract;
                         if (res.activity.activityTitle != null)
@@ -1805,6 +2302,10 @@ namespace MyVirtualCommunity.Client.World
                     {
                         DrawInteractionPrompt(currentNearbyPoint);
                     }
+                    if (!string.IsNullOrEmpty(interactionFeedbackMessage) && Time.unscaledTime < interactionFeedbackUntilTime)
+                    {
+                        DrawInteractionFeedbackBanner();
+                    }
                     if (isFideicomisoCameraPipOpen)
                     {
                         DrawFideicomisoCameraEasterEggPiP();
@@ -2004,12 +2505,12 @@ namespace MyVirtualCommunity.Client.World
                     actBadge = isEs ? " [Ocupado]" : " [Busy]";
                     nameplateTextColor = isNearby ? new Color(1f, 0.95f, 0.2f) : new Color(1f, 0.85f, 0.35f);
                 }
-                else if (pt.interactionAvailability == "off_duty" || pt.activityState == "off_duty")
+                else if (!pt.IsCommunityPlayerProxy() && (pt.interactionAvailability == "off_duty" || pt.activityState == "off_duty"))
                 {
                     actBadge = isEs ? " [Fuera de turno]" : " [Off Duty]";
                     nameplateTextColor = isNearby ? new Color(1f, 0.85f, 0.4f) : new Color(0.72f, 0.76f, 0.82f);
                 }
-                else if (pt.interactionAvailability == "unavailable" || pt.activityState == "unavailable")
+                else if (!pt.IsCommunityPlayerProxy() && (pt.interactionAvailability == "unavailable" || pt.activityState == "unavailable"))
                 {
                     actBadge = isEs ? " [Cerrado]" : " [Closed]";
                     nameplateTextColor = isNearby ? new Color(0.85f, 0.85f, 0.85f) : new Color(0.6f, 0.6f, 0.65f);
@@ -2104,11 +2605,32 @@ namespace MyVirtualCommunity.Client.World
                 statusTag = $" • {promptBadge}";
             }
 
-            string subText = isEs ? $"{point.subtitle}{statusTag} • Presiona E" : $"{point.subtitle}{statusTag} • Press E";
+            string subText = isInteractionValidationPending
+                ? (isEs ? "Validando con el servidor..." : "Validating with server...")
+                : (isEs ? $"{point.subtitle}{statusTag} • Presiona E" : $"{point.subtitle}{statusTag} • Press E");
             GUILayout.Label(subText, subStyle);
 
             GUILayout.EndHorizontal();
             GUILayout.EndArea();
+        }
+
+        private void DrawInteractionFeedbackBanner()
+        {
+            float width = Mathf.Min(640f, Screen.width - 40f);
+            float height = 56f;
+            float x = (Screen.width - width) * 0.5f;
+            float y = Screen.height - 172f;
+
+            GUI.Box(new Rect(x, y, width, height), GUIContent.none, GetOpaquePromptStyle());
+            GUIStyle feedbackStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 13,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter,
+                wordWrap = true,
+                normal = { textColor = interactionFeedbackColor }
+            };
+            GUI.Label(new Rect(x + 12f, y + 6f, width - 24f, height - 12f), interactionFeedbackMessage, feedbackStyle);
         }
 
         private void DrawPauseMenu()
@@ -2575,11 +3097,11 @@ namespace MyVirtualCommunity.Client.World
                 {
                     actBadge = " <color=#ffd700>[Ocupado]</color>";
                 }
-                else if (pt.activityState == "off_duty")
+                else if (!pt.IsCommunityPlayerProxy() && pt.activityState == "off_duty")
                 {
                     actBadge = " <color=#8899aa>[Fuera]</color>";
                 }
-                else if (pt.activityState == "available")
+                else if (pt.activityState == "available" || pt.IsCommunityPlayerProxy())
                 {
                     actBadge = " <color=#55ff77>[Disp]</color>";
                 }
@@ -2970,22 +3492,51 @@ namespace MyVirtualCommunity.Client.World
                         statusColor = new Color(1f, 0.85f, 0.25f);
                         break;
                     case "off_duty":
-                        actStatusText = isEs
-                            ? $"[*] DEMEANOR AUTORITATIVO: [FUERA DE TURNO] {actTitle}"
-                            : $"[*] AUTHORITATIVE DEMEANOR: [OFF DUTY] {actTitle}";
-                        statusColor = new Color(0.75f, 0.8f, 0.85f);
+                        if (point.IsCommunityPlayerProxy())
+                        {
+                            actStatusText = isEs
+                                ? $"[*] ESTADO EN FILA: [DISPONIBLE] {actTitle}"
+                                : $"[*] QUEUE STATUS: [AVAILABLE] {actTitle}";
+                            statusColor = new Color(0.35f, 0.95f, 0.45f);
+                        }
+                        else
+                        {
+                            actStatusText = isEs
+                                ? $"[*] DEMEANOR AUTORITATIVO: [FUERA DE TURNO] {actTitle}"
+                                : $"[*] AUTHORITATIVE DEMEANOR: [OFF DUTY] {actTitle}";
+                            statusColor = new Color(0.75f, 0.8f, 0.85f);
+                        }
                         break;
                     case "unavailable":
-                        actStatusText = isEs
-                            ? $"[*] DEMEANOR AUTORITATIVO: [CERRADO HOY] {actTitle}"
-                            : $"[*] AUTHORITATIVE DEMEANOR: [CLOSED TODAY] {actTitle}";
-                        statusColor = new Color(0.65f, 0.65f, 0.65f);
+                        if (point.IsCommunityPlayerProxy())
+                        {
+                            actStatusText = isEs
+                                ? $"[*] ESTADO EN FILA: [DISPONIBLE] {actTitle}"
+                                : $"[*] QUEUE STATUS: [AVAILABLE] {actTitle}";
+                            statusColor = new Color(0.35f, 0.95f, 0.45f);
+                        }
+                        else
+                        {
+                            actStatusText = isEs
+                                ? $"[*] DEMEANOR AUTORITATIVO: [CERRADO HOY] {actTitle}"
+                                : $"[*] AUTHORITATIVE DEMEANOR: [CLOSED TODAY] {actTitle}";
+                            statusColor = new Color(0.65f, 0.65f, 0.65f);
+                        }
                         break;
                     case "available_normal":
                     default:
-                        actStatusText = isEs
-                            ? $"[*] DEMEANOR AUTORITATIVO: [EN SERVICIO] {actTitle}"
-                            : $"[*] AUTHORITATIVE DEMEANOR: [ON DUTY] {actTitle}";
+                        if (point.IsCommunityPlayerProxy())
+                        {
+                            actStatusText = isEs
+                                ? $"[*] ESTADO EN FILA: [DISPONIBLE] {actTitle}"
+                                : $"[*] QUEUE STATUS: [AVAILABLE] {actTitle}";
+                        }
+                        else
+                        {
+                            actStatusText = isEs
+                                ? $"[*] DEMEANOR AUTORITATIVO: [EN SERVICIO] {actTitle}"
+                                : $"[*] AUTHORITATIVE DEMEANOR: [ON DUTY] {actTitle}";
+                        }
                         statusColor = new Color(0.35f, 0.95f, 0.45f);
                         break;
                 }
@@ -5139,7 +5690,7 @@ namespace MyVirtualCommunity.Client.World
                 ray = cam.ScreenPointToRay(mousePos);
             }
 
-            // Use RaycastAll (75m range, including trigger colliders) so nothing blocks clicking the facade camera
+            // Use RaycastAll (75m range, including trigger colliders) so nothing blocks clicking the facade cameras
             RaycastHit[] hits = Physics.RaycastAll(ray, 75.0f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Collide);
             if (hits != null && hits.Length > 0)
             {
@@ -5148,28 +5699,40 @@ namespace MyVirtualCommunity.Client.World
                     Transform t = hits[i].transform;
                     while (t != null)
                     {
-                        if (t.name == FideicomisoCameraObjectName)
+                        for (int feedIdx = 0; feedIdx < FideicomisoCameraFeeds.Length; feedIdx++)
                         {
-                            OpenFideicomisoCameraEasterEgg();
-                            return true;
+                            if (t.name == FideicomisoCameraFeeds[feedIdx].ObjectName)
+                            {
+                                OpenFideicomisoCameraEasterEgg(feedIdx);
+                                return true;
+                            }
                         }
                         t = t.parent;
                     }
                 }
             }
 
-            // Generous angular fallback: if the player is within 60m of the Fideicomiso camera and aiming within 2.5 degrees of it
-            Vector3 cameraWorldPos = new Vector3(2.40f, 8.20f, 40.65f);
-            Vector3 toCam = cameraWorldPos - ray.origin;
-            float dist = toCam.magnitude;
-            if (dist <= 65.0f)
+            // Generous angular fallback: select whichever camera the player is aiming closest to within 2.4 degrees and 65m
+            int bestFeedIdx = -1;
+            float bestAngle = 2.4f;
+            for (int feedIdx = 0; feedIdx < FideicomisoCameraFeeds.Length; feedIdx++)
             {
-                float angle = Vector3.Angle(ray.direction, toCam.normalized);
-                if (angle <= 2.4f)
+                Vector3 toCam = FideicomisoCameraFeeds[feedIdx].TriggerWorldPos - ray.origin;
+                float dist = toCam.magnitude;
+                if (dist <= 65.0f && dist > 0.01f)
                 {
-                    OpenFideicomisoCameraEasterEgg();
-                    return true;
+                    float angle = Vector3.Angle(ray.direction, toCam / dist);
+                    if (angle <= bestAngle)
+                    {
+                        bestAngle = angle;
+                        bestFeedIdx = feedIdx;
+                    }
                 }
+            }
+            if (bestFeedIdx >= 0)
+            {
+                OpenFideicomisoCameraEasterEgg(bestFeedIdx);
+                return true;
             }
 
             return false;
@@ -5177,11 +5740,18 @@ namespace MyVirtualCommunity.Client.World
 
         public void OpenFideicomisoCameraEasterEgg()
         {
+            OpenFideicomisoCameraEasterEgg(0);
+        }
+
+        public void OpenFideicomisoCameraEasterEgg(int feedIndex)
+        {
+            if (feedIndex < 0 || feedIndex >= FideicomisoCameraFeeds.Length) feedIndex = 0;
+            activeFideicomisoFeedIndex = feedIndex;
             isFideicomisoCameraPipOpen = true;
             EnsureFideicomisoCctvCameraAndProxy();
-            if (fideicomisoYoutubeThumbTex == null && !isFetchingFideicomisoYoutubeThumb)
+            if (fideicomisoYoutubeThumbTexByFeed[feedIndex] == null && !isFetchingFideicomisoYoutubeThumbByFeed[feedIndex])
             {
-                StartCoroutine(FetchFideicomisoYoutubeThumbnailCoroutine());
+                StartCoroutine(FetchFideicomisoYoutubeThumbnailCoroutine(feedIndex));
             }
             // Unlock cursor immediately so the player can click [Expandir en YouTube] or toggle modes
             LockCursor(false);
@@ -5210,17 +5780,13 @@ namespace MyVirtualCommunity.Client.World
                 fideicomisoCctvRenderTexture.Create();
             }
 
+            FideicomisoCameraFeedConfig activeFeed = FideicomisoCameraFeeds[activeFideicomisoFeedIndex];
             if (fideicomisoCctvCamera == null)
             {
                 GameObject cctvGo = new GameObject("Fideicomiso_CCTV_LiveCamera_Runtime");
-                // Optical center just in front of Bridge_Fideicomiso_Camera_VistaSur lens looking South (28 deg pitch)
-                cctvGo.transform.position = new Vector3(2.40f, 8.15f, 40.20f);
-                cctvGo.transform.rotation = Quaternion.Euler(28f, 180f, 0f);
-
                 fideicomisoCctvCamera = cctvGo.AddComponent<Camera>();
-                fideicomisoCctvCamera.fieldOfView = 55f;
                 fideicomisoCctvCamera.nearClipPlane = 0.25f;
-                fideicomisoCctvCamera.farClipPlane = 260f;
+                fideicomisoCctvCamera.farClipPlane = 320f;
                 fideicomisoCctvCamera.targetTexture = fideicomisoCctvRenderTexture;
 
                 Camera mainCam = Camera.main;
@@ -5230,6 +5796,9 @@ namespace MyVirtualCommunity.Client.World
                     fideicomisoCctvCamera.backgroundColor = mainCam.backgroundColor;
                 }
             }
+            fideicomisoCctvCamera.transform.position = activeFeed.RuntimeCameraPos;
+            fideicomisoCctvCamera.transform.rotation = activeFeed.RuntimeCameraRot;
+            fideicomisoCctvCamera.fieldOfView = activeFeed.RuntimeCameraFov;
             fideicomisoCctvCamera.enabled = true;
 
             // Create a visible player avatar proxy so the player can see themselves walking on the CCTV monitor or from aerial view!
@@ -5309,23 +5878,27 @@ namespace MyVirtualCommunity.Client.World
             if (!playerSelfCctvProxy.activeSelf) playerSelfCctvProxy.SetActive(true);
         }
 
-        private IEnumerator FetchFideicomisoYoutubeThumbnailCoroutine()
+        private IEnumerator FetchFideicomisoYoutubeThumbnailCoroutine(int feedIndex)
         {
-            isFetchingFideicomisoYoutubeThumb = true;
-            using (UnityWebRequest uwr = UnityWebRequestTexture.GetTexture(FideicomisoYoutubeThumbUrl))
+            if (feedIndex < 0 || feedIndex >= FideicomisoCameraFeeds.Length) yield break;
+            isFetchingFideicomisoYoutubeThumbByFeed[feedIndex] = true;
+            using (UnityWebRequest uwr = UnityWebRequestTexture.GetTexture(FideicomisoCameraFeeds[feedIndex].YoutubeThumbUrl))
             {
                 uwr.timeout = 8;
                 yield return uwr.SendWebRequest();
                 if (uwr.result == UnityWebRequest.Result.Success)
                 {
-                    fideicomisoYoutubeThumbTex = DownloadHandlerTexture.GetContent(uwr);
+                    fideicomisoYoutubeThumbTexByFeed[feedIndex] = DownloadHandlerTexture.GetContent(uwr);
                 }
             }
-            isFetchingFideicomisoYoutubeThumb = false;
+            isFetchingFideicomisoYoutubeThumbByFeed[feedIndex] = false;
         }
 
         private void DrawFideicomisoCameraEasterEggPiP()
         {
+            int feedIdx = activeFideicomisoFeedIndex;
+            FideicomisoCameraFeedConfig activeFeed = FideicomisoCameraFeeds[feedIdx];
+            Texture2D activeYoutubeThumb = fideicomisoYoutubeThumbTexByFeed[feedIdx];
             bool isEs = (currentLanguage == "es");
             float winW = 548f;
             float winH = 382f;
@@ -5404,10 +5977,10 @@ namespace MyVirtualCommunity.Client.World
                 // Draw Live 3D CCTV RenderTexture
                 GUI.DrawTexture(videoRect, fideicomisoCctvRenderTexture, ScaleMode.StretchToFill, false);
             }
-            else if (fideicomisoYoutubeThumbTex != null)
+            else if (activeYoutubeThumb != null)
             {
-                // Draw Real YouTube Live Stream Thumbnail fetched from i.ytimg.com/vi/IcvugJWPXz8/hqdefault.jpg
-                GUI.DrawTexture(videoRect, fideicomisoYoutubeThumbTex, ScaleMode.ScaleAndCrop, false);
+                // Draw Real YouTube Live Stream Thumbnail fetched from i.ytimg.com
+                GUI.DrawTexture(videoRect, activeYoutubeThumb, ScaleMode.ScaleAndCrop, false);
             }
             else
             {
@@ -5424,7 +5997,7 @@ namespace MyVirtualCommunity.Client.World
                 // Top-Left Black OSD Timestamp & Camera Name (matching real photo)
                 string nowTimestamp = DateTime.Now.ToString("dd/MM/yyyy hh:mm:ss tt");
                 Rect osdTopLeft1 = new Rect(videoRect.x + 4f, videoRect.y + 4f, 188f, 18f);
-                Rect osdTopLeft2 = new Rect(videoRect.x + 4f, videoRect.y + 22f, 206f, 18f);
+                Rect osdTopLeft2 = new Rect(videoRect.x + 4f, videoRect.y + 22f, 214f, 18f);
                 GUI.color = new Color(0f, 0f, 0f, 0.86f);
                 GUI.DrawTexture(osdTopLeft1, Texture2D.whiteTexture);
                 GUI.DrawTexture(osdTopLeft2, Texture2D.whiteTexture);
@@ -5438,7 +6011,7 @@ namespace MyVirtualCommunity.Client.World
                     normal = { textColor = new Color(0.96f, 0.96f, 0.96f) }
                 };
                 GUI.Label(new Rect(osdTopLeft1.x + 4f, osdTopLeft1.y, osdTopLeft1.width - 6f, osdTopLeft1.height), nowTimestamp, osdMonoStyle);
-                GUI.Label(new Rect(osdTopLeft2.x + 4f, osdTopLeft2.y, osdTopLeft2.width - 6f, osdTopLeft2.height), "Paso del Norte (Vista Sur)", osdMonoStyle);
+                GUI.Label(new Rect(osdTopLeft2.x + 4f, osdTopLeft2.y, osdTopLeft2.width - 6f, osdTopLeft2.height), activeFeed.OsdCameraName, osdMonoStyle);
 
                 // Top-Right Black Banner: "DESCARGA LA APP PUENTES FRONTERIZOS"
                 Rect osdTopRight = new Rect(videoRect.xMax - 246f, videoRect.y + 4f, 242f, 18f);
@@ -5489,7 +6062,7 @@ namespace MyVirtualCommunity.Client.World
                 };
                 GUI.Label(
                     new Rect(mirrorHintRect.x + 5f, mirrorHintRect.y, mirrorHintRect.width - 8f, mirrorHintRect.height),
-                    isEs ? "🎥 Espejo CCTV Activo: Camina con WASD frente al puente para verte en cámara" : "🎥 Live CCTV Mirror: Walk with WASD in front of the bridge to see yourself",
+                    isEs ? activeFeed.MirrorHintEs : activeFeed.MirrorHintEn,
                     mirrorHintStyle);
             }
             else
@@ -5507,7 +6080,7 @@ namespace MyVirtualCommunity.Client.World
                 };
                 GUI.Label(
                     new Rect(realBadgeRect.x + 6f, realBadgeRect.y + 2f, realBadgeRect.width - 10f, 18f),
-                    isEs ? "🌐 Captura Real YouTube Live (youtu.be/IcvugJWPXz8)" : "🌐 Real YouTube Live Snapshot (youtu.be/IcvugJWPXz8)",
+                    isEs ? $"🌐 Captura Real YouTube Live ({activeFeed.YoutubeShortLabel})" : $"🌐 Real YouTube Live Snapshot ({activeFeed.YoutubeShortLabel})",
                     realBadgeStyle);
             }
 
@@ -5529,9 +6102,9 @@ namespace MyVirtualCommunity.Client.World
             if (GUILayout.Button(toggleModeLabel, GUILayout.Width(175f), GUILayout.Height(28f)))
             {
                 fideicomisoPipShowRealYoutubeThumb = !fideicomisoPipShowRealYoutubeThumb;
-                if (fideicomisoPipShowRealYoutubeThumb && fideicomisoYoutubeThumbTex == null && !isFetchingFideicomisoYoutubeThumb)
+                if (fideicomisoPipShowRealYoutubeThumb && fideicomisoYoutubeThumbTexByFeed[feedIdx] == null && !isFetchingFideicomisoYoutubeThumbByFeed[feedIdx])
                 {
-                    StartCoroutine(FetchFideicomisoYoutubeThumbnailCoroutine());
+                    StartCoroutine(FetchFideicomisoYoutubeThumbnailCoroutine(feedIdx));
                 }
             }
 
@@ -5548,7 +6121,7 @@ namespace MyVirtualCommunity.Client.World
 
             GUILayout.FlexibleSpace();
 
-            // Primary CTA: Expand / Watch Live Stream on YouTube (https://www.youtube.com/watch?v=IcvugJWPXz8)
+            // Primary CTA: Expand / Watch Live Stream on YouTube
             GUIStyle ytExpandBtnStyle = new GUIStyle(GUI.skin.button)
             {
                 fontSize = 12,
@@ -5558,7 +6131,7 @@ namespace MyVirtualCommunity.Client.World
             string expandLabel = isEs ? "⛶ Expandir en YouTube ↗" : "⛶ Expand on YouTube ↗";
             if (GUILayout.Button(expandLabel, ytExpandBtnStyle, GUILayout.Width(242f), GUILayout.Height(28f)))
             {
-                Application.OpenURL(FideicomisoYoutubeLiveUrl);
+                Application.OpenURL(activeFeed.YoutubeLiveUrl);
             }
 
             GUILayout.EndHorizontal();
@@ -5578,10 +6151,13 @@ namespace MyVirtualCommunity.Client.World
                 Destroy(fideicomisoCctvRenderTexture);
                 fideicomisoCctvRenderTexture = null;
             }
-            if (fideicomisoYoutubeThumbTex != null)
+            for (int i = 0; i < fideicomisoYoutubeThumbTexByFeed.Length; i++)
             {
-                Destroy(fideicomisoYoutubeThumbTex);
-                fideicomisoYoutubeThumbTex = null;
+                if (fideicomisoYoutubeThumbTexByFeed[i] != null)
+                {
+                    Destroy(fideicomisoYoutubeThumbTexByFeed[i]);
+                    fideicomisoYoutubeThumbTexByFeed[i] = null;
+                }
             }
             if (playerSelfCctvProxy != null)
             {

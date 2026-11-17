@@ -27,6 +27,7 @@ namespace MyVirtualCommunity.Character
         private float _breathPhase;
         private float _currentSpeed;
         private bool _isMoving;
+        private bool _externalControllerActive;
 
         // Base transform initial rotations
         private Quaternion _initTorsoRot = Quaternion.identity;
@@ -57,6 +58,13 @@ namespace MyVirtualCommunity.Character
         {
             isNpcAttendant = enableAttendantStance;
         }
+
+        public void SetExternalControllerActive(bool active)
+        {
+            _externalControllerActive = active;
+        }
+
+        public bool IsNpcAttendant => isNpcAttendant;
 
         public void CacheInitialPoses(bool forceRecache = false)
         {
@@ -132,6 +140,7 @@ namespace MyVirtualCommunity.Character
 
         private void LateUpdate()
         {
+            if (_externalControllerActive) return;
             if (character == null || character.VisualRoot == null) return;
 
             float dt = Time.deltaTime;

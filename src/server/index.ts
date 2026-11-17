@@ -53,6 +53,17 @@ import {
 } from '../application/submit-citizen-report.js';
 import { GetCitizenReportUseCase } from '../application/get-citizen-report.js';
 import {
+  validateNpcInteraction,
+  InvalidInteractionRequestError,
+  WorldCoreCapabilityMissingError,
+} from '../application/validate-npc-interaction.js';
+import {
+  DEFAULT_PLAYER_ID,
+  InvalidPlayerMovementInputError,
+  UnauthorizedPlayerIdentityError,
+} from '../domain/player-movement.js';
+import { movePlayer } from '../application/move-player.js';
+import {
   isValidBarrierState,
   LaneBarrierId,
   createDefaultBorderLaneBarriers,
@@ -73,11 +84,13 @@ export interface AssistantServerOptions {
   readonly submitReportUseCase?: SubmitCitizenReportUseCase;
   readonly getReportUseCase?: GetCitizenReportUseCase;
   readonly publicDir?: string;
+  readonly nowFn?: () => number;
 }
 
 export function createAssistantServer(options: AssistantServerOptions = {}) {
   const config = options.config ?? loadConfig();
   const publicDir = options.publicDir ?? resolve(process.cwd(), 'public');
+  const nowFn = options.nowFn ?? (() => Date.now());
 
   let worldCore: WorldCorePort;
   let isExplicitRemoteWorldCore = false;
@@ -472,8 +485,21 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
         (pathname === '/api/world/npcs/interaction-context' || pathname === '/api/npcs/interaction-context')
       ) {
         const atParam = parsedUrl.searchParams.get('at');
+        if (atParam !== null && Number.isNaN(Date.parse(atParam))) {
+          sendJson(res, 400, {
+            success: false,
+            error: { code: 'invalid-evaluation-time', message: `Invalid "at" timestamp: "${atParam}"` },
+          });
+          return;
+        }
+        const playerIdParam = parsedUrl.searchParams.get('playerId') ?? undefined;
+        const activeNpcParam = parsedUrl.searchParams.get('activePlayerInteractionNpcId') ?? undefined;
         if ('getNpcRosterInteractionContext' in worldCore && typeof worldCore.getNpcRosterInteractionContext === 'function') {
-          const rosterContext = await worldCore.getNpcRosterInteractionContext(atParam ?? undefined);
+          const rosterContext = await (worldCore.getNpcRosterInteractionContext as any)(
+            atParam ?? undefined,
+            playerIdParam,
+            activeNpcParam
+          );
           sendJson(res, 200, {
             success: true,
             ...rosterContext,
@@ -492,8 +518,22 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
       if (method === 'GET' && npcInteractionContextMatch && npcInteractionContextMatch[1]) {
         const npcId = npcInteractionContextMatch[1];
         const atParam = parsedUrl.searchParams.get('at');
+        if (atParam !== null && Number.isNaN(Date.parse(atParam))) {
+          sendJson(res, 400, {
+            success: false,
+            error: { code: 'invalid-evaluation-time', message: `Invalid "at" timestamp: "${atParam}"` },
+          });
+          return;
+        }
+        const playerIdParam = parsedUrl.searchParams.get('playerId') ?? undefined;
+        const activeNpcParam = parsedUrl.searchParams.get('activePlayerInteractionNpcId') ?? undefined;
         if ('getNpcInteractionContext' in worldCore && typeof worldCore.getNpcInteractionContext === 'function') {
-          const context = await worldCore.getNpcInteractionContext(npcId, atParam ?? undefined);
+          const context = await (worldCore.getNpcInteractionContext as any)(
+            npcId,
+            atParam ?? undefined,
+            playerIdParam,
+            activeNpcParam
+          );
           if (!context) {
             sendJson(res, 404, {
               success: false,
@@ -511,6 +551,439 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
             success: false,
             error: { code: 'not-supported', message: 'World Core does not implement getNpcInteractionContext' },
           });
+        }
+        return;
+      }
+
+      // 4h-2. GET /api/world/npcs/social-awareness (Aggregate Authoritative NPC Social Awareness)
+      if (
+        method === 'GET' &&
+        (pathname === '/api/world/npcs/social-awareness' || pathname === '/api/npcs/social-awareness')
+      ) {
+        const atParam = parsedUrl.searchParams.get('at');
+        if (atParam !== null && Number.isNaN(Date.parse(atParam))) {
+          sendJson(res, 400, {
+            success: false,
+            error: { code: 'invalid-evaluation-time', message: `Invalid "at" timestamp: "${atParam}"` },
+          });
+          return;
+        }
+        const playerIdParam = parsedUrl.searchParams.get('playerId') ?? undefined;
+        if ('getNpcRosterSocialAwareness' in worldCore && typeof worldCore.getNpcRosterSocialAwareness === 'function') {
+          const rosterAwareness = await worldCore.getNpcRosterSocialAwareness(playerIdParam, atParam ?? undefined);
+          sendJson(res, 200, {
+            success: true,
+            ...rosterAwareness,
+          });
+        } else {
+          sendJson(res, 501, {
+            success: false,
+            error: { code: 'not-supported', message: 'World Core does not implement getNpcRosterSocialAwareness' },
+          });
+        }
+        return;
+      }
+
+      // 4h-3. GET /api/world/npcs/:id/social-awareness (Individual NPC Authoritative Social Awareness)
+      const npcSocialAwarenessMatch = pathname.match(/^\/api\/(?:world\/)?npcs\/([a-zA-Z0-9_-]+)\/social-awareness$/);
+      if (method === 'GET' && npcSocialAwarenessMatch && npcSocialAwarenessMatch[1]) {
+        const npcId = npcSocialAwarenessMatch[1];
+        const atParam = parsedUrl.searchParams.get('at');
+        if (atParam !== null && Number.isNaN(Date.parse(atParam))) {
+          sendJson(res, 400, {
+            success: false,
+            error: { code: 'invalid-evaluation-time', message: `Invalid "at" timestamp: "${atParam}"` },
+          });
+          return;
+        }
+        const playerIdParam = parsedUrl.searchParams.get('playerId') ?? undefined;
+        if ('getNpcSocialAwareness' in worldCore && typeof worldCore.getNpcSocialAwareness === 'function') {
+          const awareness = await worldCore.getNpcSocialAwareness(npcId, playerIdParam, atParam ?? undefined);
+          if (!awareness) {
+            sendJson(res, 404, {
+              success: false,
+              error: { code: 'npc-not-found', message: `NPC "${npcId}" not found in authoritative social awareness roster.` },
+            });
+            return;
+          }
+          sendJson(res, 200, {
+            success: true,
+            awareness,
+          });
+        } else {
+          sendJson(res, 501, {
+            success: false,
+            error: { code: 'not-supported', message: 'World Core does not implement getNpcSocialAwareness' },
+          });
+        }
+        return;
+      }
+
+      // 4h-4. GET /api/world/npcs/social-interactions (Aggregate Autonomous NPC Social Interaction Lifecycle)
+      if (
+        method === 'GET' &&
+        (pathname === '/api/world/npcs/social-interactions' || pathname === '/api/npcs/social-interactions')
+      ) {
+        const atParam = parsedUrl.searchParams.get('at');
+        if (atParam !== null && Number.isNaN(Date.parse(atParam))) {
+          sendJson(res, 400, {
+            success: false,
+            error: { code: 'invalid-evaluation-time', message: `Invalid "at" timestamp: "${atParam}"` },
+          });
+          return;
+        }
+        const playerIdParam = parsedUrl.searchParams.get('playerId') ?? undefined;
+        const activePlayerNpcParam = parsedUrl.searchParams.get('activePlayerInteractionNpcId') ?? undefined;
+        if ('getNpcRosterSocialInteractions' in worldCore && typeof worldCore.getNpcRosterSocialInteractions === 'function') {
+          try {
+            const interactions = await worldCore.getNpcRosterSocialInteractions(
+              playerIdParam,
+              atParam ?? undefined,
+              activePlayerNpcParam
+            );
+            sendJson(res, 200, {
+              success: true,
+              ...interactions,
+            });
+          } catch (err) {
+            if (err instanceof WorldCoreHttpError && (err.statusCode === 501 || err.errorCode === 'not-supported')) {
+              sendJson(res, 501, {
+                success: false,
+                error: { code: 'not-supported', message: err.message },
+              });
+              return;
+            }
+            throw err;
+          }
+        } else {
+          sendJson(res, 501, {
+            success: false,
+            error: { code: 'not-supported', message: 'World Core does not implement getNpcRosterSocialInteractions' },
+          });
+        }
+        return;
+      }
+
+      // 4h-5. GET /api/world/npcs/:id/social-interaction (Individual NPC Autonomous Social Interaction Participation)
+      const npcSocialInteractionMatch = pathname.match(/^\/api\/(?:world\/)?npcs\/([a-zA-Z0-9_-]+)\/social-interaction$/);
+      if (method === 'GET' && npcSocialInteractionMatch && npcSocialInteractionMatch[1]) {
+        const npcId = npcSocialInteractionMatch[1];
+        const atParam = parsedUrl.searchParams.get('at');
+        if (atParam !== null && Number.isNaN(Date.parse(atParam))) {
+          sendJson(res, 400, {
+            success: false,
+            error: { code: 'invalid-evaluation-time', message: `Invalid "at" timestamp: "${atParam}"` },
+          });
+          return;
+        }
+        const playerIdParam = parsedUrl.searchParams.get('playerId') ?? undefined;
+        const activePlayerNpcParam = parsedUrl.searchParams.get('activePlayerInteractionNpcId') ?? undefined;
+        if ('getNpcSocialInteraction' in worldCore && typeof worldCore.getNpcSocialInteraction === 'function') {
+          try {
+            const participation = await worldCore.getNpcSocialInteraction(
+              npcId,
+              playerIdParam,
+              atParam ?? undefined,
+              activePlayerNpcParam
+            );
+            if (!participation) {
+              sendJson(res, 404, {
+                success: false,
+                error: { code: 'npc-not-found', message: `NPC "${npcId}" not found in authoritative social interaction roster.` },
+              });
+              return;
+            }
+            sendJson(res, 200, {
+              success: true,
+              interaction: participation,
+            });
+          } catch (err) {
+            if (err instanceof WorldCoreHttpError && (err.statusCode === 501 || err.errorCode === 'not-supported')) {
+              sendJson(res, 501, {
+                success: false,
+                error: { code: 'not-supported', message: err.message },
+              });
+              return;
+            }
+            throw err;
+          }
+        } else {
+          sendJson(res, 501, {
+            success: false,
+            error: { code: 'not-supported', message: 'World Core does not implement getNpcSocialInteraction' },
+          });
+        }
+        return;
+      }
+
+      // 4i. POST /api/world/npcs/:id/interact & POST /api/world/interactions/validate (Server-Authoritative Interaction Validation)
+      const npcInteractMatch = pathname.match(/^\/api\/(?:world\/)?npcs\/([a-zA-Z0-9_-]+)\/interact$/);
+      const isValidateRoute =
+        pathname === '/api/world/interactions/validate' || pathname === '/api/interactions/validate';
+      if (method === 'POST' && ((npcInteractMatch && npcInteractMatch[1]) || isValidateRoute)) {
+        const rawBody = await readBody(req);
+        if (!rawBody || typeof rawBody !== 'object' || Array.isArray(rawBody)) {
+          sendJson(res, 400, {
+            success: false,
+            error: { code: 'invalid-request', message: 'Request body must be a JSON object' },
+          });
+          return;
+        }
+
+        const body = rawBody as Record<string, unknown>;
+        const npcId = npcInteractMatch?.[1] ?? (typeof body.npcId === 'string' ? body.npcId : '');
+        const playerId = typeof body.playerId === 'string' ? body.playerId : DEFAULT_PLAYER_ID;
+        const intent = body.intent as string | undefined;
+        const requestId = typeof body.requestId === 'string' ? body.requestId : null;
+        const atParam = parsedUrl.searchParams.get('at');
+
+        if (atParam !== null && Number.isNaN(Date.parse(atParam))) {
+          sendJson(res, 400, {
+            success: false,
+            error: { code: 'invalid-evaluation-time', message: `Invalid "at" timestamp: "${atParam}"` },
+          });
+          return;
+        }
+
+        try {
+          const decision = await validateNpcInteraction(worldCore, {
+            playerId,
+            npcId,
+            intent,
+            requestId,
+            evaluatedAt: atParam ?? undefined,
+          });
+
+          if (decision.reasonCode === 'player_not_found' || decision.reasonCode === 'npc_not_found') {
+            sendJson(res, 404, {
+              success: false,
+              error: {
+                code: decision.reasonCode.replace(/_/g, '-'),
+                message: decision.message.en,
+              },
+              ...decision,
+            });
+            return;
+          }
+
+          sendJson(res, 200, {
+            success: true,
+            ...decision,
+          });
+        } catch (err) {
+          if (err instanceof InvalidInteractionRequestError) {
+            sendJson(res, 400, {
+              success: false,
+              error: { code: err.code, message: err.message },
+            });
+            return;
+          }
+          if (err instanceof WorldCoreCapabilityMissingError) {
+            sendJson(res, 501, {
+              success: false,
+              error: { code: 'not-supported', message: err.message },
+            });
+            return;
+          }
+          if (err instanceof WorldCoreHttpError) {
+            sendJson(res, err.statusCode, {
+              success: false,
+              error: { code: err.errorCode ?? 'world-core-error', message: err.message },
+            });
+            return;
+          }
+          throw err;
+        }
+        return;
+      }
+
+      // 4i-2. POST /api/world/interactions/end & POST /api/world/npcs/:id/interact/end (Release Player Interaction Movement Suspension)
+      const npcEndInteractMatch = pathname.match(/^\/api\/(?:world\/)?npcs\/([a-zA-Z0-9_-]+)\/interact\/end$/);
+      if (
+        method === 'POST' &&
+        (pathname === '/api/world/interactions/end' ||
+          pathname === '/api/interactions/end' ||
+          Boolean(npcEndInteractMatch))
+      ) {
+        const atParam = parsedUrl.searchParams.get('at');
+        if (atParam !== null && Number.isNaN(Date.parse(atParam))) {
+          sendJson(res, 400, {
+            success: false,
+            error: { code: 'invalid-evaluation-time', message: `Invalid "at" timestamp: "${atParam}"` },
+          });
+          return;
+        }
+
+        const rawBody = await readBody(req);
+        if (!rawBody || typeof rawBody !== 'object' || Array.isArray(rawBody)) {
+          sendJson(res, 400, {
+            success: false,
+            error: { code: 'invalid-request', message: 'Request body must be a JSON object.' },
+          });
+          return;
+        }
+
+        const body = rawBody as Record<string, unknown>;
+        const playerId = typeof body.playerId === 'string' ? body.playerId.trim() : DEFAULT_PLAYER_ID;
+        const npcId = npcEndInteractMatch?.[1]
+          ? npcEndInteractMatch[1]
+          : typeof body.npcId === 'string'
+          ? body.npcId.trim()
+          : undefined;
+
+        if ('releaseNpcMovementFromInteraction' in worldCore && typeof worldCore.releaseNpcMovementFromInteraction === 'function') {
+          try {
+            const movement = await worldCore.releaseNpcMovementFromInteraction(
+              playerId,
+              npcId,
+              atParam ?? undefined
+            );
+            sendJson(res, 200, {
+              success: true,
+              released: true,
+              playerId,
+              npcId: npcId ?? movement?.npcId ?? null,
+              movement,
+            });
+          } catch (err) {
+            if (err instanceof WorldCoreHttpError) {
+              sendJson(res, err.statusCode, {
+                success: false,
+                error: { code: err.errorCode ?? 'world-core-error', message: err.message },
+              });
+              return;
+            }
+            throw err;
+          }
+        } else {
+          sendJson(res, 501, {
+            success: false,
+            error: { code: 'not-supported', message: 'World Core does not implement releaseNpcMovementFromInteraction' },
+          });
+        }
+        return;
+      }
+
+      // 4j. GET /api/world/players/:id & POST /api/world/players/:id/movement (Authoritative Player Movement)
+      const playerStateMatch = pathname.match(/^\/api\/(?:world\/)?players\/([a-zA-Z0-9_-]+)$/);
+      if (method === 'GET' && playerStateMatch && playerStateMatch[1]) {
+        const playerId = playerStateMatch[1];
+        if (playerId !== DEFAULT_PLAYER_ID) {
+          sendJson(res, 403, {
+            success: false,
+            error: {
+              code: 'unauthorized-player-identity',
+              message: `Player "${playerId}" is not authorized in this single-player corridor session.`,
+            },
+          });
+          return;
+        }
+        if ('getPlayerState' in worldCore && typeof worldCore.getPlayerState === 'function') {
+          try {
+            const player = await worldCore.getPlayerState(playerId);
+            if (!player) {
+              sendJson(res, 404, {
+                success: false,
+                error: { code: 'player-not-found', message: `Player "${playerId}" not found in authoritative World Core.` },
+              });
+              return;
+            }
+            sendJson(res, 200, {
+              success: true,
+              player,
+            });
+          } catch (err) {
+            if (err instanceof WorldCoreHttpError) {
+              sendJson(res, err.statusCode, {
+                success: false,
+                error: { code: err.errorCode ?? 'world-core-error', message: err.message },
+              });
+              return;
+            }
+            throw err;
+          }
+        } else {
+          sendJson(res, 501, {
+            success: false,
+            error: { code: 'not-supported', message: 'World Core does not implement getPlayerState' },
+          });
+        }
+        return;
+      }
+
+      // Direct client-supplied absolute position mutation is disabled.
+      const playerPosMatch = pathname.match(/^\/api\/(?:world\/)?players\/([a-zA-Z0-9_-]+)\/position$/);
+      if (playerPosMatch) {
+        sendJson(res, 403, {
+          success: false,
+          error: {
+            code: 'absolute-position-forbidden',
+            message:
+              'Client-supplied absolute player positions are disabled. Submit movement intent to POST /api/world/players/:id/movement instead.',
+          },
+        });
+        return;
+      }
+
+      const playerMoveMatch = pathname.match(/^\/api\/(?:world\/)?players\/([a-zA-Z0-9_-]+)\/movement$/);
+      if (method === 'POST' && playerMoveMatch && playerMoveMatch[1]) {
+        const playerId = playerMoveMatch[1];
+        const rawBody = await readBody(req);
+        if (!rawBody || typeof rawBody !== 'object' || Array.isArray(rawBody)) {
+          sendJson(res, 400, {
+            success: false,
+            error: { code: 'invalid-request', message: 'Request body must be a JSON object.' },
+          });
+          return;
+        }
+
+        const body = rawBody as Record<string, unknown>;
+        try {
+          const step = await movePlayer(
+            worldCore,
+            {
+              playerId,
+              direction: body.direction as { x: number; z: number },
+              movementMode: body.movementMode as string | undefined,
+              sequenceNumber: body.sequenceNumber as number | undefined,
+            },
+            nowFn()
+          );
+
+          sendJson(res, 200, {
+            success: true,
+            ...step,
+          });
+        } catch (err) {
+          if (err instanceof UnauthorizedPlayerIdentityError) {
+            sendJson(res, 403, {
+              success: false,
+              error: { code: err.code, message: err.message },
+            });
+            return;
+          }
+          if (err instanceof InvalidPlayerMovementInputError) {
+            sendJson(res, 400, {
+              success: false,
+              error: { code: err.code, message: err.message },
+            });
+            return;
+          }
+          if (err instanceof WorldCoreCapabilityMissingError) {
+            sendJson(res, 501, {
+              success: false,
+              error: { code: 'not-supported', message: err.message },
+            });
+            return;
+          }
+          if (err instanceof WorldCoreHttpError) {
+            sendJson(res, err.statusCode, {
+              success: false,
+              error: { code: err.errorCode ?? 'world-core-error', message: err.message },
+            });
+            return;
+          }
+          throw err;
         }
         return;
       }

@@ -130,9 +130,17 @@ describe('Deterministic NPC Activity, Routines & World Presence Domain', () => {
     const run2 = evaluateNpcActivity(MATEO_SCHEDULE, historicalTime);
 
     assert.deepStrictEqual(run1, run2);
-    // At 11:00 Juárez on a weekday, Mateo is on campus in El Paso (off_duty)
-    assert.strictEqual(run1.state, 'off_duty');
-    assert.strictEqual(run1.activityTitle.es, 'En clases en El Paso');
+    // Community Player Proxies never enter off_duty across historical timestamps
+    assert.strictEqual(run1.state, 'available');
+    assert.strictEqual(run1.actorArchetype, 'community_player_proxy');
+    assert.strictEqual(run1.isWitness, true);
+
+    // Public servant / business attendant historical off_duty determinism remains preserved
+    const nightHistorical = '2025-05-15T05:30:00.000Z'; // 23:30 Juárez MDT
+    const patriciaRun1 = evaluateNpcActivity(PATRICIA_SCHEDULE, nightHistorical);
+    const patriciaRun2 = evaluateNpcActivity(PATRICIA_SCHEDULE, nightHistorical);
+    assert.deepStrictEqual(patriciaRun1, patriciaRun2);
+    assert.strictEqual(patriciaRun1.state, 'off_duty');
   });
 
   it('7. evaluateRosterActivity aggregates snapshots and accurate summary counts for all 7 NPCs', () => {

@@ -186,8 +186,10 @@ describe('Deterministic NPC Waypoint Movement & Spatial Presence (Domain Tests)'
       const directSnap = evaluateNpcMovement(profile, new Date(baseTime + 70 * 60 * 1000));
 
       assert.deepStrictEqual(directSnap, sequentialSnap);
-      assert.strictEqual(directSnap.movementState, 'waiting');
-      assert.strictEqual(directSnap.currentWaypointId, 'wp_optica_workshop');
+      assert.strictEqual(directSnap.movementState, 'stationary');
+      assert.strictEqual(directSnap.autonomousBehaviorState, 'scheduled_station_task');
+      assert.strictEqual(directSnap.activityState, 'busy');
+      assert.strictEqual(directSnap.currentWaypointId, 'wp_valeria_storefront');
     });
   });
 
