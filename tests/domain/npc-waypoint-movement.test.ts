@@ -66,14 +66,34 @@ describe('Deterministic NPC Waypoint Movement & Spatial Presence (Domain Tests)'
   });
 
   describe('3. Multi-Segment Route Traversal & Piecewise Interpolation', () => {
-    it('progresses smoothly across segments for multi-segment route (Carlos Farmacia to Lunch Benches)', () => {
-      const profile = NPC_MOVEMENT_PROFILES['carlos-farmacia-attendant']!;
-      assert.ok(profile);
+    it('progresses smoothly across segments for multi-segment route (piecewise interpolation engine) while keeping Carlos in pharmacy domain', () => {
+      const syntheticProfile = {
+        npcId: 'synthetic-multi-seg-walker',
+        canonicalName: 'Synthetic Walker',
+        primaryWaypointId: 'wp_carlos_counter',
+        timeZone: 'America/Ciudad_Juarez',
+        transitions: [
+          {
+            id: 'synthetic_multi_seg',
+            daysOfWeek: [1, 2, 3, 4, 5, 6],
+            departureHour: 14,
+            departureMinute: 0,
+            outboundRouteId: 'route_carlos_to_lunch',
+            outboundDurationSeconds: CORRIDOR_ROUTES['route_carlos_to_lunch']!.totalDurationSeconds,
+            destinationWaypointId: 'wp_east_dining_benches',
+            arrivalDwellSeconds: 20,
+            returnHour: 14,
+            returnMinute: 59,
+            returnRouteId: 'route_carlos_to_counter',
+            returnDurationSeconds: CORRIDOR_ROUTES['route_carlos_to_counter']!.totalDurationSeconds,
+            description: { en: 'Synthetic multi-segment route test', es: 'Prueba de ruta multisegmento' },
+          },
+        ],
+      };
 
-      // On a Wednesday (day 3), Carlos departs at 14:00:00 CST
-      // Departure instant: 2026-11-04T14:00:00-07:00 (which is 21:00:00 UTC)
+      // Departure instant: 2026-11-04T14:00:00-07:00 (21:00:00 UTC)
       const t0 = new Date('2026-11-04T21:00:00Z');
-      const snap0 = evaluateNpcMovement(profile, t0);
+      const snap0 = evaluateNpcMovement(syntheticProfile, t0);
       assert.strictEqual(snap0.movementState, 'moving');
       assert.strictEqual(snap0.progression, 0.0);
       assert.strictEqual(snap0.currentWaypointId, 'wp_carlos_counter');
@@ -81,64 +101,63 @@ describe('Deterministic NPC Waypoint Movement & Spatial Presence (Domain Tests)'
       assert.strictEqual(snap0.position.x, 10.5);
       assert.strictEqual(snap0.position.z, 0.0);
 
-      // Halfway through Carlos's route
+      // Halfway through multi-segment route
       const routeDur = CORRIDOR_ROUTES['route_carlos_to_lunch']!.totalDurationSeconds;
       const tMid = new Date(t0.getTime() + Math.floor(routeDur / 2) * 1000);
-      const snapMid = evaluateNpcMovement(profile, tMid);
+      const snapMid = evaluateNpcMovement(syntheticProfile, tMid);
       assert.strictEqual(snapMid.movementState, 'moving');
       assert.ok(snapMid.progression > 0.4 && snapMid.progression < 0.6);
       assert.ok(snapMid.position.z > 0 && snapMid.position.z < 22);
 
       // At route arrival
       const tArrive = new Date(t0.getTime() + routeDur * 1000);
-      const snapArrive = evaluateNpcMovement(profile, tArrive);
+      const snapArrive = evaluateNpcMovement(syntheticProfile, tArrive);
       assert.strictEqual(snapArrive.movementState, 'arrived');
       assert.strictEqual(snapArrive.progression, 1.0);
       assert.strictEqual(snapArrive.currentWaypointId, 'wp_east_dining_benches');
       assert.strictEqual(snapArrive.position.x, 8.5);
       assert.strictEqual(snapArrive.position.z, 22.0);
 
-      // Waiting at destination (5 minutes into lunch)
-      const tWaiting = new Date(t0.getTime() + 300 * 1000);
-      const snapWaiting = evaluateNpcMovement(profile, tWaiting);
-      assert.strictEqual(snapWaiting.movementState, 'waiting');
-      assert.strictEqual(snapWaiting.currentWaypointId, 'wp_east_dining_benches');
-      assert.strictEqual(snapWaiting.position.x, 8.5);
-      assert.strictEqual(snapWaiting.position.z, 22.0);
+      // Canonical Carlos remains inside Farmacias Benavides at 14:05 (zero external lunch walk)
+      const carlosProfile = NPC_MOVEMENT_PROFILES['carlos-farmacia-attendant']!;
+      const snapWaiting = evaluateNpcMovement(carlosProfile, new Date(t0.getTime() + 300 * 1000));
+      assert.strictEqual(snapWaiting.controlMode, 'autonomous_business_local');
+      assert.strictEqual(snapWaiting.withinAuthorizedDomain, true);
+      assert.notStrictEqual(snapWaiting.currentWaypointId, 'wp_east_dining_benches');
     });
   });
 
   describe('4. Return Route Progression & Arrival Back at Origin', () => {
-    it('executes return journey and arrives back at primary counter waypoint', () => {
-      const profile = NPC_MOVEMENT_PROFILES['carlos-farmacia-attendant']!;
+    it('executes return journey and arrives back at primary station waypoint (Elena Ramos)', () => {
+      const profile = NPC_MOVEMENT_PROFILES['elena-border-concierge']!;
 
-      // Return departure is at 14:59:00 CST (21:59:00 UTC)
-      const tReturn0 = new Date('2026-11-04T21:59:00Z');
+      // Return departure is at 14:29:00 CST (21:29:00 UTC)
+      const tReturn0 = new Date('2026-11-04T21:29:00Z');
       const snapReturn0 = evaluateNpcMovement(profile, tReturn0);
       assert.strictEqual(snapReturn0.movementState, 'moving');
-      assert.strictEqual(snapReturn0.destinationWaypointId, 'wp_carlos_counter');
-      assert.strictEqual(snapReturn0.activeRouteId, 'route_carlos_to_counter');
+      assert.strictEqual(snapReturn0.destinationWaypointId, 'wp_elena_kiosk');
+      assert.strictEqual(snapReturn0.activeRouteId, 'route_elena_plaza_to_kiosk');
 
       // Halfway back
-      const returnDur = CORRIDOR_ROUTES['route_carlos_to_counter']!.totalDurationSeconds;
+      const returnDur = CORRIDOR_ROUTES['route_elena_plaza_to_kiosk']!.totalDurationSeconds;
       const tReturnMid = new Date(tReturn0.getTime() + Math.floor(returnDur / 2) * 1000);
       const snapReturnMid = evaluateNpcMovement(profile, tReturnMid);
       assert.strictEqual(snapReturnMid.movementState, 'moving');
       assert.ok(snapReturnMid.progression > 0.4 && snapReturnMid.progression < 0.6);
 
-      // Arrival back at counter
+      // Arrival back at kiosk
       const tBack = new Date(tReturn0.getTime() + returnDur * 1000);
       const snapBack = evaluateNpcMovement(profile, tBack);
       assert.strictEqual(snapBack.movementState, 'arrived');
-      assert.strictEqual(snapBack.currentWaypointId, 'wp_carlos_counter');
+      assert.strictEqual(snapBack.currentWaypointId, 'wp_elena_kiosk');
 
-      // 15:05:00 CST (past return dwell) -> stationary at primary counter
-      const tDuty = new Date('2026-11-04T22:05:00Z');
+      // 14:35:00 CST (past return dwell) -> stationary at primary kiosk
+      const tDuty = new Date('2026-11-04T21:35:00Z');
       const snapDuty = evaluateNpcMovement(profile, tDuty);
       assert.strictEqual(snapDuty.movementState, 'stationary');
-      assert.strictEqual(snapDuty.currentWaypointId, 'wp_carlos_counter');
-      assert.strictEqual(snapDuty.position.x, 10.5);
-      assert.strictEqual(snapDuty.position.z, 0.0);
+      assert.strictEqual(snapDuty.currentWaypointId, 'wp_elena_kiosk');
+      assert.strictEqual(snapDuty.position.x, 19.2);
+      assert.strictEqual(snapDuty.position.z, 39.5);
     });
   });
 
@@ -186,10 +205,9 @@ describe('Deterministic NPC Waypoint Movement & Spatial Presence (Domain Tests)'
       const directSnap = evaluateNpcMovement(profile, new Date(baseTime + 70 * 60 * 1000));
 
       assert.deepStrictEqual(directSnap, sequentialSnap);
-      assert.strictEqual(directSnap.movementState, 'stationary');
-      assert.strictEqual(directSnap.autonomousBehaviorState, 'scheduled_station_task');
-      assert.strictEqual(directSnap.activityState, 'busy');
-      assert.strictEqual(directSnap.currentWaypointId, 'wp_valeria_storefront');
+      assert.strictEqual(directSnap.controlMode, 'autonomous_business_local');
+      assert.strictEqual(directSnap.activityState, 'available');
+      assert.strictEqual(directSnap.withinAuthorizedDomain, true);
     });
   });
 
@@ -249,31 +267,31 @@ describe('Deterministic NPC Waypoint Movement & Spatial Presence (Domain Tests)'
   });
 
   describe('9. Authoritative movementStartTime UTC Contract (Increment 5.17.0 Task A)', () => {
-    it('evaluates movementStartTime as true UTC instant under Standard Time (Nov 4, 2026, 14:00 CST -> 21:00 UTC)', () => {
-      const profile = NPC_MOVEMENT_PROFILES['carlos-farmacia-attendant']!;
-      // Nov 4, 2026, 14:00:10 local Ciudad Juarez time (UTC-7)
-      const tStandard = new Date('2026-11-04T21:00:10.000Z');
+    it('evaluates movementStartTime as true UTC instant under Standard Time (Nov 4, 2026, 13:30 CST -> 20:30 UTC)', () => {
+      const profile = NPC_MOVEMENT_PROFILES['elena-border-concierge']!;
+      // Nov 4, 2026, 13:30:03 local Ciudad Juarez time (UTC-7)
+      const tStandard = new Date('2026-11-04T20:30:03.000Z');
       const snap = evaluateNpcMovement(profile, tStandard);
 
       assert.strictEqual(snap.movementState, 'moving');
-      assert.strictEqual(snap.movementStartTime, '2026-11-04T21:00:00.000Z');
+      assert.strictEqual(snap.movementStartTime, '2026-11-04T20:30:00.000Z');
     });
 
-    it('evaluates movementStartTime as true UTC instant under Daylight Time (Jul 4, 2026, 14:00 CDT -> 20:00 UTC)', () => {
-      const profile = NPC_MOVEMENT_PROFILES['carlos-farmacia-attendant']!;
-      // Jul 4, 2026 is a Saturday (day 6), Carlos works Mon-Sat, departs at 14:00 local time (UTC-6)
-      const tDaylight = new Date('2026-07-04T20:00:10.000Z');
+    it('evaluates movementStartTime as true UTC instant under Daylight Time (Jul 4, 2026, 13:30 CDT -> 19:30 UTC)', () => {
+      const profile = NPC_MOVEMENT_PROFILES['elena-border-concierge']!;
+      // Jul 4, 2026 is a Saturday (day 6), Elena works daily, departs at 13:30 local time (UTC-6)
+      const tDaylight = new Date('2026-07-04T19:30:03.000Z');
       const snap = evaluateNpcMovement(profile, tDaylight);
 
       assert.strictEqual(snap.movementState, 'moving');
-      assert.strictEqual(snap.movementStartTime, '2026-07-04T20:00:00.000Z');
+      assert.strictEqual(snap.movementStartTime, '2026-07-04T19:30:00.000Z');
     });
 
     it('correctly handles local calendar date differing from UTC calendar date', () => {
       const profile = NPC_MOVEMENT_PROFILES['elena-border-concierge']!;
       // Elena has shift handover transition daily at 13:30 local time.
-      // Standard time Nov 4 13:30 local time is Nov 4 20:30 UTC. Elena moves for 9 seconds.
-      const t = new Date('2026-11-04T20:30:05.000Z');
+      // Standard time Nov 4 13:30 local time is Nov 4 20:30 UTC.
+      const t = new Date('2026-11-04T20:30:03.000Z');
       const snap = evaluateNpcMovement(profile, t);
 
       assert.strictEqual(snap.movementState, 'moving');
@@ -285,13 +303,13 @@ describe('Deterministic NPC Waypoint Movement & Spatial Presence (Domain Tests)'
     });
 
     it('produces identical movementStartTime on repeated evaluations with identical input', () => {
-      const profile = NPC_MOVEMENT_PROFILES['carlos-farmacia-attendant']!;
-      const t = new Date('2026-11-04T21:00:15.000Z');
+      const profile = NPC_MOVEMENT_PROFILES['elena-border-concierge']!;
+      const t = new Date('2026-11-04T20:30:03.000Z');
       const snap1 = evaluateNpcMovement(profile, t);
       const snap2 = evaluateNpcMovement(profile, t);
 
       assert.strictEqual(snap1.movementStartTime, snap2.movementStartTime);
-      assert.strictEqual(snap1.movementStartTime, '2026-11-04T21:00:00.000Z');
+      assert.strictEqual(snap1.movementStartTime, '2026-11-04T20:30:00.000Z');
     });
   });
 });

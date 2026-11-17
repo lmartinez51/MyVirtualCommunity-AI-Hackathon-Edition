@@ -202,18 +202,31 @@ export const BRIDGE_FULL_LOOP_NODES: readonly BridgeLoopNode[] = Object.freeze([
   Object.freeze({ id: 'east_trans_z66', corridor: 'east_walkway', direction: 'northbound', position: Object.freeze({ x: 15.25, y: 0.482, z: 66.25 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.85 }),
   // East Covered Span Segments 01..28 (exact center top surface Y = slabPos.y + 0.075m)
   Object.freeze({ id: 'east_seg01', corridor: 'east_walkway', direction: 'northbound', position: Object.freeze({ x: 15.25, y: 0.485, z: 74.02 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
+  Object.freeze({ id: 'east_seg02', corridor: 'east_walkway', direction: 'northbound', position: Object.freeze({ x: 15.25, y: 0.628, z: 84.046 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
   Object.freeze({ id: 'east_seg03', corridor: 'east_walkway', direction: 'northbound', position: Object.freeze({ x: 15.25, y: 0.905, z: 94.08 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
+  Object.freeze({ id: 'east_seg04', corridor: 'east_walkway', direction: 'northbound', position: Object.freeze({ x: 15.25, y: 1.306, z: 104.108 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
   Object.freeze({ id: 'east_seg05', corridor: 'east_walkway', direction: 'northbound', position: Object.freeze({ x: 15.25, y: 1.815, z: 114.14 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
+  Object.freeze({ id: 'east_seg06', corridor: 'east_walkway', direction: 'northbound', position: Object.freeze({ x: 15.25, y: 2.404, z: 124.173 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
   Object.freeze({ id: 'east_seg07', corridor: 'east_walkway', direction: 'northbound', position: Object.freeze({ x: 15.25, y: 3.055, z: 134.21 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
+  Object.freeze({ id: 'east_seg08', corridor: 'east_walkway', direction: 'northbound', position: Object.freeze({ x: 15.25, y: 3.733, z: 144.242 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
   Object.freeze({ id: 'east_seg09', corridor: 'east_walkway', direction: 'northbound', position: Object.freeze({ x: 15.25, y: 4.415, z: 154.28 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
+  Object.freeze({ id: 'east_seg10', corridor: 'east_walkway', direction: 'northbound', position: Object.freeze({ x: 15.25, y: 5.066, z: 164.316 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
   Object.freeze({ id: 'east_seg11', corridor: 'east_walkway', direction: 'northbound', position: Object.freeze({ x: 15.25, y: 5.665, z: 174.35 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
+  Object.freeze({ id: 'east_seg12', corridor: 'east_walkway', direction: 'northbound', position: Object.freeze({ x: 15.314, y: 6.172, z: 184.247 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
   Object.freeze({ id: 'east_seg13', corridor: 'east_walkway', direction: 'northbound', position: Object.freeze({ x: 15.51, y: 6.575, z: 194.15 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
+  Object.freeze({ id: 'east_seg14', corridor: 'east_walkway', direction: 'northbound', position: Object.freeze({ x: 15.799, y: 6.862, z: 204.098 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
   Object.freeze({ id: 'east_seg15_crest', corridor: 'east_walkway', direction: 'northbound', position: Object.freeze({ x: 16.16, y: 7.015, z: 214.07 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
+  Object.freeze({ id: 'east_seg16', corridor: 'east_walkway', direction: 'northbound', position: Object.freeze({ x: 16.587, y: 7.023, z: 224.048 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
   Object.freeze({ id: 'east_seg17', corridor: 'east_walkway', direction: 'northbound', position: Object.freeze({ x: 17.06, y: 6.965, z: 234.03 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
+  Object.freeze({ id: 'east_seg18', corridor: 'east_walkway', direction: 'northbound', position: Object.freeze({ x: 17.583, y: 6.913, z: 244.016 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
   Object.freeze({ id: 'east_seg19', corridor: 'east_walkway', direction: 'northbound', position: Object.freeze({ x: 18.15, y: 6.855, z: 254.01 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
+  Object.freeze({ id: 'east_seg20', corridor: 'east_walkway', direction: 'northbound', position: Object.freeze({ x: 18.75, y: 6.802, z: 263.999 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
   Object.freeze({ id: 'east_seg21', corridor: 'east_walkway', direction: 'northbound', position: Object.freeze({ x: 19.39, y: 6.745, z: 274.00 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
+  Object.freeze({ id: 'east_seg22', corridor: 'east_walkway', direction: 'northbound', position: Object.freeze({ x: 20.065, y: 6.690, z: 283.993 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
   Object.freeze({ id: 'east_seg23', corridor: 'east_walkway', direction: 'northbound', position: Object.freeze({ x: 20.77, y: 6.635, z: 293.99 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
+  Object.freeze({ id: 'east_seg24', corridor: 'east_walkway', direction: 'northbound', position: Object.freeze({ x: 21.515, y: 6.579, z: 303.993 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
   Object.freeze({ id: 'east_seg25', corridor: 'east_walkway', direction: 'northbound', position: Object.freeze({ x: 22.29, y: 6.375, z: 314.01 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
+  Object.freeze({ id: 'east_seg26', corridor: 'east_walkway', direction: 'northbound', position: Object.freeze({ x: 23.089, y: 5.748, z: 324.030 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
   Object.freeze({ id: 'east_seg27', corridor: 'east_walkway', direction: 'northbound', position: Object.freeze({ x: 23.92, y: 4.865, z: 334.04 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
   Object.freeze({ id: 'east_seg28', corridor: 'east_walkway', direction: 'northbound', position: Object.freeze({ x: 24.77, y: 4.235, z: 344.02 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
   // East North Descent Ramp & El Paso End (exact center top surface Y = 2.085m at Z=385m)
@@ -229,18 +242,31 @@ export const BRIDGE_FULL_LOOP_NODES: readonly BridgeLoopNode[] = Object.freeze([
   // West Covered Span Segments 28..01 (exact center top surface Y = slabPos.y + 0.075m)
   Object.freeze({ id: 'west_seg28', corridor: 'west_walkway', direction: 'southbound', position: Object.freeze({ x: 2.35, y: 4.235, z: 345.94 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
   Object.freeze({ id: 'west_seg27', corridor: 'west_walkway', direction: 'southbound', position: Object.freeze({ x: 1.50, y: 4.865, z: 335.86 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
+  Object.freeze({ id: 'west_seg26', corridor: 'west_walkway', direction: 'southbound', position: Object.freeze({ x: 0.664, y: 5.747, z: 325.864 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
   Object.freeze({ id: 'west_seg25', corridor: 'west_walkway', direction: 'southbound', position: Object.freeze({ x: -0.15, y: 6.375, z: 315.75 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
+  Object.freeze({ id: 'west_seg24', corridor: 'west_walkway', direction: 'southbound', position: Object.freeze({ x: -0.921, y: 6.579, z: 305.690 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
   Object.freeze({ id: 'west_seg23', corridor: 'west_walkway', direction: 'southbound', position: Object.freeze({ x: -1.67, y: 6.635, z: 295.61 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
+  Object.freeze({ id: 'west_seg22', corridor: 'west_walkway', direction: 'southbound', position: Object.freeze({ x: -2.381, y: 6.690, z: 285.548 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
   Object.freeze({ id: 'west_seg21', corridor: 'west_walkway', direction: 'southbound', position: Object.freeze({ x: -3.07, y: 6.745, z: 275.46 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
+  Object.freeze({ id: 'west_seg20', corridor: 'west_walkway', direction: 'southbound', position: Object.freeze({ x: -3.707, y: 6.802, z: 265.398 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
   Object.freeze({ id: 'west_seg19', corridor: 'west_walkway', direction: 'southbound', position: Object.freeze({ x: -4.31, y: 6.855, z: 255.31 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
+  Object.freeze({ id: 'west_seg18', corridor: 'west_walkway', direction: 'southbound', position: Object.freeze({ x: -4.884, y: 6.913, z: 245.238 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
   Object.freeze({ id: 'west_seg17', corridor: 'west_walkway', direction: 'southbound', position: Object.freeze({ x: -5.40, y: 6.965, z: 235.15 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
+  Object.freeze({ id: 'west_seg16', corridor: 'west_walkway', direction: 'southbound', position: Object.freeze({ x: -5.890, y: 7.023, z: 225.064 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
   Object.freeze({ id: 'west_seg15_crest', corridor: 'west_walkway', direction: 'southbound', position: Object.freeze({ x: -6.32, y: 7.015, z: 214.97 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
+  Object.freeze({ id: 'west_seg14', corridor: 'west_walkway', direction: 'southbound', position: Object.freeze({ x: -6.689, y: 6.862, z: 204.848 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
   Object.freeze({ id: 'west_seg13', corridor: 'west_walkway', direction: 'southbound', position: Object.freeze({ x: -6.99, y: 6.575, z: 194.75 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
+  Object.freeze({ id: 'west_seg12', corridor: 'west_walkway', direction: 'southbound', position: Object.freeze({ x: -7.184, y: 6.173, z: 184.537 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
   Object.freeze({ id: 'west_seg11', corridor: 'west_walkway', direction: 'southbound', position: Object.freeze({ x: -7.25, y: 5.665, z: 174.41 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
+  Object.freeze({ id: 'west_seg10', corridor: 'west_walkway', direction: 'southbound', position: Object.freeze({ x: -7.250, y: 5.066, z: 164.311 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
   Object.freeze({ id: 'west_seg09', corridor: 'west_walkway', direction: 'southbound', position: Object.freeze({ x: -7.25, y: 4.415, z: 154.32 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
+  Object.freeze({ id: 'west_seg08', corridor: 'west_walkway', direction: 'southbound', position: Object.freeze({ x: -7.250, y: 3.733, z: 144.237 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
   Object.freeze({ id: 'west_seg07', corridor: 'west_walkway', direction: 'southbound', position: Object.freeze({ x: -7.25, y: 3.055, z: 134.25 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
+  Object.freeze({ id: 'west_seg06', corridor: 'west_walkway', direction: 'southbound', position: Object.freeze({ x: -7.250, y: 2.403, z: 124.168 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
   Object.freeze({ id: 'west_seg05', corridor: 'west_walkway', direction: 'southbound', position: Object.freeze({ x: -7.25, y: 1.815, z: 114.18 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
+  Object.freeze({ id: 'west_seg04', corridor: 'west_walkway', direction: 'southbound', position: Object.freeze({ x: -7.250, y: 1.306, z: 104.104 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
   Object.freeze({ id: 'west_seg03', corridor: 'west_walkway', direction: 'southbound', position: Object.freeze({ x: -7.25, y: 0.905, z: 94.10 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
+  Object.freeze({ id: 'west_seg02', corridor: 'west_walkway', direction: 'southbound', position: Object.freeze({ x: -7.250, y: 0.628, z: 84.044 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
   Object.freeze({ id: 'west_seg01', corridor: 'west_walkway', direction: 'southbound', position: Object.freeze({ x: -7.25, y: 0.485, z: 74.02 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
   Object.freeze({ id: 'west_south_ext_north', corridor: 'west_walkway', direction: 'southbound', position: Object.freeze({ x: -7.25, y: 0.486, z: 68.00 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.95 }),
   Object.freeze({ id: 'west_crosswalk_portal', corridor: 'west_walkway', direction: 'southbound', position: Object.freeze({ x: -7.25, y: 0.486, z: 54.60 }), waypointId: 'wp_bridge_north_overlook', safeHalfWidthMeters: 0.70 }),
@@ -367,7 +393,7 @@ export const FARMACIA_BENAVIDES_AUTONOMY_DOMAIN: BusinessMovementDomain = Object
     'wp_farmacia_consultorio_south',
     'wp_farmacia_storefront',
   ]),
-  authorizedExternalTaskTransitionIds: Object.freeze(['carlos_lunch_walk']),
+  authorizedExternalTaskTransitionIds: Object.freeze([]),
   provenance: Object.freeze({
     en: 'Verified against EastSidewalkBlockBuilder.cs (Benavides_MainBuilding Z=-3.8..+5.2m, facade X=12.0m) and Sidewalk_East (X=7.0..12.0m, curb X=6.9m, ParkingMeter/Pole max X=7.415m). Safe roaming inset [8.40, 10.85] x [-2.65, 3.85] maintains >=0.55m clearance from all domain edges.',
     es: 'Verificado contra EastSidewalkBlockBuilder.cs (Benavides_MainBuilding Z=-3.8..+5.2m, fachada X=12.0m) y Sidewalk_East (X=7.0..12.0m, guarnición X=6.9m, parquímetro/poste máx X=7.415m). Zona interior segura [8.40, 10.85] x [-2.65, 3.85] mantiene >=0.55m de holgura respecto a todo el perímetro.',
@@ -425,7 +451,7 @@ export const OPTICA_FASHION_AUTONOMY_DOMAIN: BusinessMovementDomain = Object.fre
     'wp_optica_south_promenade',
     'wp_optica_south_window',
   ]),
-  authorizedExternalTaskTransitionIds: Object.freeze(['valeria_calibration_walk']),
+  authorizedExternalTaskTransitionIds: Object.freeze([]),
   provenance: Object.freeze({
     en: 'Verified against WestSidewalkBlockBuilder.cs (Bay 4 Óptica Fashion Z=-1.80..+3.40m, facade X=-12.0m) and Sidewalk_West (X=-12.0..-7.0m). Safe roaming inset [-10.85, -8.00] x [-1.65, 2.90] stays strictly inside Óptica Fashion frontage with >=0.60m curb clearance, never entering Pharmacy (Z<-2.15), Santa Fe (Z>3.4), or Bar La Cucaracha (Z=6.1..11.4).',
     es: 'Verificado contra WestSidewalkBlockBuilder.cs (Local 4 Óptica Fashion Z=-1.80..+3.40m, fachada X=-12.0m) y Sidewalk_West (X=-12.0..-7.0m). Zona interior segura [-10.85, -8.00] x [-1.65, 2.90] permanece frente a Óptica Fashion con >=0.60m de margen al borde, sin invadir Farma, Santa Fe ni Bar La Cucaracha.',
@@ -1425,6 +1451,7 @@ function evaluatePointOnBridgeLoop(
   lateralOffsetMeters: number
 ): {
   readonly position: Vector3D;
+  readonly activeSegmentEndPosition: Vector3D;
   readonly heading: { readonly x: number; readonly z: number };
   readonly currentWaypointId: string;
   readonly destinationWaypointId: string;
@@ -1461,12 +1488,19 @@ function evaluatePointOnBridgeLoop(
       const x = nodeA.position.x + dx * r + hz * clampedLat * latWeight;
       const y = nodeA.position.y + dy * r;
       const z = nodeA.position.z + dz * r - hx * clampedLat * latWeight;
+      const endX = nodeB.position.x + hz * clampedLat * latWeight;
+      const endZ = nodeB.position.z - hx * clampedLat * latWeight;
 
       return {
         position: {
           x: Math.round(x * 1000) / 1000,
           y: Math.round(y * 1000) / 1000,
           z: Math.round(z * 1000) / 1000,
+        },
+        activeSegmentEndPosition: {
+          x: Math.round(endX * 1000) / 1000,
+          y: Math.round(nodeB.position.y * 1000) / 1000,
+          z: Math.round(endZ * 1000) / 1000,
         },
         heading: {
           x: Math.round(hx * 1000) / 1000,
@@ -1483,6 +1517,7 @@ function evaluatePointOnBridgeLoop(
   const first = BRIDGE_FULL_LOOP_NODES[0]!;
   return {
     position: first.position,
+    activeSegmentEndPosition: BRIDGE_FULL_LOOP_NODES[1]!.position,
     heading: { x: 0, z: 1 },
     currentWaypointId: first.waypointId,
     destinationWaypointId: BRIDGE_FULL_LOOP_NODES[1]!.waypointId,
@@ -1734,6 +1769,7 @@ export function evaluateBridgePatrolMovement(params: {
     passingEncounterType: null,
     businessDomainId: BRIDGE_PATROL_DOMAIN.domainId,
     withinAuthorizedDomain: isPointInBridgePatrolDomain(interp.position),
+    activeSegmentEndPosition: movementState === 'moving' ? interp.activeSegmentEndPosition : interp.position,
   };
 }
 
@@ -1746,19 +1782,15 @@ function getBusinessStationAnchorWindows(npcId: string, dayOfWeek: number): Time
     return [{ startSec: 0, endSec: 86400 }];
   }
 
-  const windows: TimeWindowSec[] = [
-    { startSec: 9 * 3600 + 59 * 60, endSec: 10 * 3600 + 2 * 60 },
-    { startSec: 10 * 3600 + 59 * 60, endSec: 11 * 3600 + 1 * 60 },
-  ];
+  // Robotic continuous-service schedule: storefront attendants remain active inside their
+  // business domain throughout 100% of operating hours and anchor ("power off") only when closed.
+  const windows: TimeWindowSec[] = [];
 
   if (npcId === 'carlos-farmacia-attendant') {
     windows.push({ startSec: 0, endSec: 7 * 3600 });
-    windows.push({ startSec: 13 * 3600 + 58 * 60 + 45, endSec: 15 * 3600 + 5 * 60 + 30 });
-    windows.push({ startSec: 21 * 3600, endSec: 24 * 3600 });
+    windows.push({ startSec: 22 * 3600, endSec: 24 * 3600 });
   } else if (npcId === 'valeria-optica-attendant') {
     windows.push({ startSec: 0, endSec: 9 * 3600 });
-    windows.push({ startSec: 11 * 3600 + 59 * 60 + 45, endSec: 12 * 3600 + 0 * 60 + 30 });
-    windows.push({ startSec: 12 * 3600 + 58 * 60 + 45, endSec: 13 * 3600 + 50 * 60 + 30 });
     windows.push({ startSec: 17 * 3600, endSec: 24 * 3600 });
   }
 

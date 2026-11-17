@@ -56,17 +56,17 @@ describe('Deterministic NPC Waypoint Movement API Integration Tests', () => {
     const url = `http://127.0.0.1:${addr.port}`;
 
     try {
-      // 14:00:15 CST on Wednesday (21:00:15 UTC): Carlos is moving towards lunch
-      const movingTime = '2026-11-04T21:00:15.000Z';
+      // 13:30:03 CST on Wednesday (20:30:03 UTC): Elena is moving towards Bridge Plaza
+      const movingTime = '2026-11-04T20:30:03.000Z';
       const res = await fetch(`${url}/api/world/npcs/movement?at=${encodeURIComponent(movingTime)}`);
       assert.strictEqual(res.status, 200);
       const data = (await res.json()) as any;
 
-      const carlos = data.npcs['carlos-farmacia-attendant'];
-      assert.strictEqual(carlos.movementState, 'moving');
-      assert.strictEqual(carlos.destinationWaypointId, 'wp_east_dining_benches');
-      assert.ok(carlos.progression > 0 && carlos.progression < 1);
-      assert.ok(carlos.position.z > 0 && carlos.position.z < 22);
+      const elena = data.npcs['elena-border-concierge'];
+      assert.strictEqual(elena.movementState, 'moving');
+      assert.strictEqual(elena.destinationWaypointId, 'wp_bridge_plaza');
+      assert.ok(elena.progression > 0 && elena.progression < 1);
+      assert.ok(elena.position.z >= 39.5 && elena.position.z <= 42.0);
     } finally {
       await serverInstance.stop();
     }

@@ -88,19 +88,34 @@ namespace MyVirtualCommunity.Client.World
             public float visualSpeedMps = 0f;
             public Vector3 lastVisualWorldPos;
             public bool hasLastVisualPos = false;
+            public bool hasReceivedAuthoritativeSnapshot = false;
             public bool hasValidTarget = false;
         }
 
         private static readonly RaycastHit[] GroundHitBuffer = new RaycastHit[16];
 
+        private static bool IsOverheadStructureCollider(Collider col)
+        {
+            if (col == null) return false;
+            string colName = col.gameObject.name;
+            return colName.IndexOf("Roof", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   colName.IndexOf("Canopy", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   colName.IndexOf("Gantry", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   colName.IndexOf("Arch_", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   colName.IndexOf("ArchRib", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   colName.IndexOf("Truss", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   colName.IndexOf("Fideicomiso", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                   colName.IndexOf("Sign", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
         /// <summary>
         /// Resolves the actual solid walkway/sidewalk surface Y beneath candidatePos using a downward raycast,
-        /// mirroring the PlayerController physical grounding pattern while ignoring NPC capsules and roofs (+2.5m above).
+        /// ignoring NPC capsules and overhead bridge canopies/gantries/signs/trusses.
         /// </summary>
         private static float ResolveGroundedSurfaceY(Vector3 candidatePos)
         {
             Vector3 rayOrigin = new Vector3(candidatePos.x, candidatePos.y + 1.15f, candidatePos.z);
-            int hitCount = Physics.RaycastNonAlloc(rayOrigin, Vector3.down, GroundHitBuffer, 2.5f, ~0, QueryTriggerInteraction.Ignore);
+            int hitCount = Physics.RaycastNonAlloc(rayOrigin, Vector3.down, GroundHitBuffer, 3.5f, ~0, QueryTriggerInteraction.Ignore);
             float bestY = float.MinValue;
             bool found = false;
 
@@ -113,13 +128,14 @@ namespace MyVirtualCommunity.Client.World
                 if (hitT.GetComponentInParent<BobbleheadCharacter>() != null ||
                     hitT.GetComponentInParent<InteractionPoint>() != null ||
                     hitT.GetComponentInParent<FirstPersonPlayer>() != null ||
-                    hit.collider is CharacterController)
+                    hit.collider is CharacterController ||
+                    IsOverheadStructureCollider(hit.collider))
                 {
                     continue;
                 }
 
                 float hitY = hit.point.y;
-                if (hitY <= candidatePos.y + 0.90f && hitY >= candidatePos.y - 1.25f && hitY > bestY)
+                if (hitY <= candidatePos.y + 0.90f && hitY >= candidatePos.y - 2.0f && hitY > bestY)
                 {
                     bestY = hitY;
                     found = true;
@@ -217,6 +233,7 @@ namespace MyVirtualCommunity.Client.World
         private readonly Dictionary<string, NpcAnimationController> animationControllersByNpcId = new Dictionary<string, NpcAnimationController>(StringComparer.OrdinalIgnoreCase);
         private Coroutine pollCoroutine = null;
         private string activePlayerInteractionNpcId = "";
+        private bool hasReceivedInitialPollRoster = false;
 
         public void SetActivePlayerInteractionNpc(string npcId)
         {
@@ -225,6 +242,7 @@ namespace MyVirtualCommunity.Client.World
 
         private void Awake()
         {
+            hasReceivedInitialPollRoster = false;
             DiscoverSceneReferences();
         }
 
@@ -389,11 +407,12 @@ namespace MyVirtualCommunity.Client.World
                 bool isFixedBorderKiosk = (t.gameObject.name == "Border_Information_Kiosk");
                 bool isFixedCitizenKiosk = (t.gameObject.name == "CitizenServiceDesk");
                 bool isAtPrimaryStation =
-                    string.IsNullOrEmpty(target.currentWaypointId) ||
-                    (!string.IsNullOrEmpty(target.primaryWaypointId) &&
-                     string.Equals(target.currentWaypointId, target.primaryWaypointId, StringComparison.OrdinalIgnoreCase) &&
-                     target.movementState != "moving" &&
-                     target.progression <= 0.001f);
+                    !string.Equals(target.behaviorProfileType, "bridge_patrol", StringComparison.OrdinalIgnoreCase) &&
+                    (string.IsNullOrEmpty(target.currentWaypointId) ||
+                     (!string.IsNullOrEmpty(target.primaryWaypointId) &&
+                      string.Equals(target.currentWaypointId, target.primaryWaypointId, StringComparison.OrdinalIgnoreCase) &&
+                      target.movementState != "moving" &&
+                      target.progression <= 0.001f));
 
                 Vector3 continuousGoal = (isFixedBorderKiosk || isFixedCitizenKiosk)
                     ? target.targetPosition
@@ -425,7 +444,7 @@ namespace MyVirtualCommunity.Client.World
                     {
                         float effectiveSpeed = ResolveStepSpeed(target, t.position, continuousGoal);
                         Vector3 nextPos = Vector3.MoveTowards(t.position, continuousGoal, effectiveSpeed * dt);
-                        nextPos.y = ResolveGroundedSurfaceY(new Vector3(nextPos.x, continuousGoal.y, nextPos.z));
+                        nextPos.y = ResolveGroundedSurfaceY(nextPos);
                         t.position = nextPos;
                     }
 
@@ -504,7 +523,7 @@ namespace MyVirtualCommunity.Client.World
                                     target.visualTransform.position,
                                     continuousGoal,
                                     visSpeed * dt);
-                                nextVisPos.y = ResolveGroundedSurfaceY(new Vector3(nextVisPos.x, continuousGoal.y, nextVisPos.z));
+                                nextVisPos.y = ResolveGroundedSurfaceY(nextVisPos);
                                 target.visualTransform.position = nextVisPos;
                             }
 
@@ -593,7 +612,9 @@ namespace MyVirtualCommunity.Client.World
                         {
                             if (dto != null && dto.success)
                             {
-                                ApplyAuthoritativeRoster(dto, snapImmediately: false);
+                                bool isInitialRoster = !hasReceivedInitialPollRoster;
+                                hasReceivedInitialPollRoster = true;
+                                ApplyAuthoritativeRoster(dto, snapImmediately: isInitialRoster);
                             }
                         },
                         onError: err =>
@@ -668,10 +689,17 @@ namespace MyVirtualCommunity.Client.World
 
             if (managedNpcs.TryGetValue(dto.npcId, out NpcPresentationTarget target))
             {
+                Vector3 previousTargetPos = target.targetPosition;
+                bool hadAuthoritativeSnapshotBefore = target.hasReceivedAuthoritativeSnapshot;
                 if (dto.position != null)
                 {
                     target.targetPosition = new Vector3(dto.position.x, dto.position.y, dto.position.z);
                 }
+                float horizontalJumpXZ = (hadAuthoritativeSnapshotBefore && dto.position != null)
+                    ? Vector2.Distance(
+                        new Vector2(previousTargetPos.x, previousTargetPos.z),
+                        new Vector2(target.targetPosition.x, target.targetPosition.z))
+                    : 0f;
                 if (dto.forwardHeading != null)
                 {
                     target.targetHeading = new Vector3(dto.forwardHeading.x, 0, dto.forwardHeading.z);
@@ -742,7 +770,10 @@ namespace MyVirtualCommunity.Client.World
                     }
                 }
 
-                if (snapImmediately && target.point != null)
+                target.hasReceivedAuthoritativeSnapshot = true;
+                bool shouldSnapTarget = snapImmediately || (hadAuthoritativeSnapshotBefore && horizontalJumpXZ > 12.0f);
+
+                if (shouldSnapTarget && target.point != null)
                 {
                     SnapSingleTarget(target);
                 }
@@ -786,11 +817,12 @@ namespace MyVirtualCommunity.Client.World
         private static void SnapSingleTarget(NpcPresentationTarget target)
         {
             bool isAtPrimaryStation =
-                string.IsNullOrEmpty(target.currentWaypointId) ||
-                (!string.IsNullOrEmpty(target.primaryWaypointId) &&
-                 string.Equals(target.currentWaypointId, target.primaryWaypointId, StringComparison.OrdinalIgnoreCase) &&
-                 target.movementState != "moving" &&
-                 target.progression <= 0.001f);
+                !string.Equals(target.behaviorProfileType, "bridge_patrol", StringComparison.OrdinalIgnoreCase) &&
+                (string.IsNullOrEmpty(target.currentWaypointId) ||
+                 (!string.IsNullOrEmpty(target.primaryWaypointId) &&
+                  string.Equals(target.currentWaypointId, target.primaryWaypointId, StringComparison.OrdinalIgnoreCase) &&
+                  target.movementState != "moving" &&
+                  target.progression <= 0.001f));
 
             bool isFixedBorderKiosk = target.point.gameObject.name == "Border_Information_Kiosk";
             bool isFixedCitizenKiosk = target.point.gameObject.name == "CitizenServiceDesk";

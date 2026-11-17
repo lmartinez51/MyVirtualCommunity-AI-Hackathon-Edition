@@ -19,11 +19,11 @@ import { PlayerSpatialState } from '../../src/domain/player-movement.js';
 
 // Wednesday 2026-11-04 10:00:00 MST (17:00:00 UTC) — normal daytime open hours; 6 stationary NPCs active at primary waypoints (Sofia & Hector 3.5m apart).
 const DAYTIME_NORMAL_INSTANT = '2026-11-04T17:00:00.000Z';
-// Wednesday 2026-11-04 14:00:15 MST (21:00:15 UTC) — Carlos walking, Elena away at plaza handover, daytime active.
-const CARLOS_WALKING_INSTANT = '2026-11-04T21:00:15.000Z';
+// Wednesday 2026-11-04 13:30:03 MST (20:30:03 UTC) — Elena walking to bridge plaza (in_transit), daytime active.
+const ELENA_WALKING_INSTANT = '2026-11-04T20:30:03.000Z';
 // Wednesday 2026-11-04 23:30:00 MST (2026-11-05T06:30:00.000Z) — Nighttime, businesses closed / off duty.
 const NIGHT_OFF_DUTY_INSTANT = '2026-11-05T06:30:00.000Z';
-// Wednesday 2026-11-04 13:05:00 MST (20:05:00 UTC) — Valeria in optical workshop, Héctor at carving bench.
+// Wednesday 2026-11-04 13:05:00 MST (20:05:00 UTC) — Patricia at primary station or Héctor at carving bench; Valeria open with zero breaks.
 const CONTEXTUAL_WORKSHOP_INSTANT = '2026-11-04T20:05:00.000Z';
 
 function makePlayer(x: number, y: number, z: number, playerId = 'player-1'): PlayerSpatialState {
@@ -76,10 +76,13 @@ describe('Deterministic NPC Social Awareness Domain Model (Increment 5.20.0)', (
   });
 
   it('2. Player awareness exactly at general threshold (8.000m) yields player_aware and switches to player_attentive at 4.000m', () => {
-    // Carlos at (10.5, 1.0, 0.0)
+    const fixedMov = buildSyntheticMovementRoster(DAYTIME_NORMAL_INSTANT, {
+      'carlos-farmacia-attendant': { x: 10.5, y: 1.0, z: 0.0, movementState: 'stationary' },
+    });
     const exactGeneral = makePlayer(10.5 + 8.0, 1.0, 0.0);
     const generalSnap = evaluateRosterSocialAwareness({
       evaluatedAt: DAYTIME_NORMAL_INSTANT,
+      movementRoster: fixedMov,
       player: exactGeneral,
     });
     const carlosGeneral = generalSnap.npcs['carlos-farmacia-attendant']!;
@@ -92,6 +95,7 @@ describe('Deterministic NPC Social Awareness Domain Model (Increment 5.20.0)', (
     const justOutsideClose = makePlayer(10.5 + 4.001, 1.0, 0.0);
     const outsideCloseSnap = evaluateRosterSocialAwareness({
       evaluatedAt: DAYTIME_NORMAL_INSTANT,
+      movementRoster: fixedMov,
       player: justOutsideClose,
     });
     assert.strictEqual(outsideCloseSnap.npcs['carlos-farmacia-attendant']!.awarenessState, 'player_aware');
@@ -100,6 +104,7 @@ describe('Deterministic NPC Social Awareness Domain Model (Increment 5.20.0)', (
     const exactClose = makePlayer(10.5 + 4.0, 1.0, 0.0);
     const closeSnap = evaluateRosterSocialAwareness({
       evaluatedAt: DAYTIME_NORMAL_INSTANT,
+      movementRoster: fixedMov,
       player: exactClose,
     });
     const carlosClose = closeSnap.npcs['carlos-farmacia-attendant']!;
@@ -197,31 +202,31 @@ describe('Deterministic NPC Social Awareness Domain Model (Increment 5.20.0)', (
   });
 
   it('6. In-transit, busy, off-duty, unavailable, and focused contextual activities respect social eligibility rules', () => {
-    // Moving NPC (Carlos at 14:00:15) is ineligible for social pairing even if near another NPC, yet can notice nearby player.
-    const movingInteractionRoster = evaluateRosterInteractionContext(CARLOS_WALKING_INSTANT);
-    const movingBaseMov = evaluateRosterMovement(NPC_MOVEMENT_PROFILES, CARLOS_WALKING_INSTANT);
-    const carlosPos = movingBaseMov.npcs['carlos-farmacia-attendant']!.position;
+    // Moving NPC (Elena at 13:30:03) is ineligible for social pairing even if near another NPC, yet can notice nearby player.
+    const movingInteractionRoster = evaluateRosterInteractionContext(ELENA_WALKING_INSTANT);
+    const movingBaseMov = evaluateRosterMovement(NPC_MOVEMENT_PROFILES, ELENA_WALKING_INSTANT);
+    const elenaPos = movingBaseMov.npcs['elena-border-concierge']!.position;
     const movingMovNearNpc = {
       ...movingBaseMov,
       npcs: Object.freeze({
         ...movingBaseMov.npcs,
         'mateo-student': Object.freeze({
           ...movingBaseMov.npcs['mateo-student']!,
-          position: Object.freeze({ x: carlosPos.x + 1.5, y: carlosPos.y, z: carlosPos.z }),
+          position: Object.freeze({ x: elenaPos.x + 1.5, y: elenaPos.y, z: elenaPos.z }),
         }),
       }),
     };
     const movingSnap = evaluateRosterSocialAwareness({
-      evaluatedAt: CARLOS_WALKING_INSTANT,
+      evaluatedAt: ELENA_WALKING_INSTANT,
       interactionRoster: movingInteractionRoster,
       movementRoster: movingMovNearNpc,
-      player: makePlayer(carlosPos.x, carlosPos.y, carlosPos.z + 3.0),
+      player: makePlayer(elenaPos.x, elenaPos.y, elenaPos.z + 3.0),
     });
-    const carlosMoving = movingSnap.npcs['carlos-farmacia-attendant']!;
-    assert.strictEqual(carlosMoving.interactionAvailability, 'available_in_transit');
-    assert.strictEqual(carlosMoving.socialEligible, false);
-    assert.strictEqual(carlosMoving.retainsContextualActivity, true);
-    assert.strictEqual(carlosMoving.pairedPartnerNpcId, null);
+    const elenaMoving = movingSnap.npcs['elena-border-concierge']!;
+    assert.strictEqual(elenaMoving.interactionAvailability, 'available_in_transit');
+    assert.strictEqual(elenaMoving.socialEligible, false);
+    assert.strictEqual(elenaMoving.retainsContextualActivity, true);
+    assert.strictEqual(elenaMoving.pairedPartnerNpcId, null);
 
     // Off-duty evening: all NPCs off_duty/unavailable remain strictly unaware and cannot orient
     const nightSnap = evaluateRosterSocialAwareness({
@@ -232,13 +237,13 @@ describe('Deterministic NPC Social Awareness Domain Model (Increment 5.20.0)', (
     assert.strictEqual(nightSnap.npcs['carlos-farmacia-attendant']!.canOrientTowardTarget, false);
     assert.strictEqual(nightSnap.npcs['carlos-farmacia-attendant']!.socialEligible, false);
 
-    // Contextual station work (13:05:00 CST): Valeria at optical workshop, Don Héctor at wood carving workbench retain contextual focus
+    // At 13:05:00 CST: Don Héctor at wood carving workbench retains contextual focus; Valeria remains available_normal (zero calibration break)
     const contextualSnap = evaluateRosterSocialAwareness({
       evaluatedAt: CONTEXTUAL_WORKSHOP_INSTANT,
       player: null,
     });
-    assert.strictEqual(contextualSnap.npcs['valeria-optica-attendant']!.socialEligible, false);
-    assert.strictEqual(contextualSnap.npcs['valeria-optica-attendant']!.retainsContextualActivity, true);
+    assert.strictEqual(contextualSnap.npcs['valeria-optica-attendant']!.interactionAvailability, 'available_normal');
+    assert.strictEqual(contextualSnap.npcs['valeria-optica-attendant']!.socialEligible, true);
     assert.strictEqual(contextualSnap.npcs['hector-artisan']!.socialEligible, false);
     assert.strictEqual(contextualSnap.npcs['hector-artisan']!.retainsContextualActivity, true);
   });

@@ -732,63 +732,22 @@ export const NPC_MOVEMENT_PROFILES: Readonly<Record<string, NpcMovementProfile>>
     ]),
   }),
 
-  // 2. Carlos Méndez — Lunch & Rest Break
+  // 2. Carlos Méndez — Storefront Attendant (no external breaks or free-time walks during 07:00-22:00 operating hours)
   'carlos-farmacia-attendant': Object.freeze({
     npcId: 'carlos-farmacia-attendant',
     canonicalName: 'Carlos Méndez',
     primaryWaypointId: 'wp_carlos_counter',
     timeZone: TZ_JUAREZ,
-    transitions: Object.freeze([
-      Object.freeze({
-        id: 'carlos_lunch_walk',
-        daysOfWeek: Object.freeze([1, 2, 3, 4, 5, 6]), // Mon-Sat
-        departureHour: 14,
-        departureMinute: 0,
-        outboundRouteId: 'route_carlos_to_lunch',
-        outboundDurationSeconds: CORRIDOR_ROUTES['route_carlos_to_lunch']!.totalDurationSeconds,
-        destinationWaypointId: 'wp_east_dining_benches',
-        arrivalDwellSeconds: 20,
-        returnHour: 14,
-        returnMinute: 59,
-        returnRouteId: 'route_carlos_to_counter',
-        returnDurationSeconds: CORRIDOR_ROUTES['route_carlos_to_counter']!.totalDurationSeconds,
-        description: Object.freeze({
-          en: 'Walking along East sidewalk to corridor benches for lunch break.',
-          es: 'Caminando por la acera oriente hacia las bancas para tomar su descanso de almuerzo.',
-        }),
-      }),
-    ]),
+    transitions: Object.freeze([]),
   }),
 
-  // 3. Valeria Domínguez — Equipment Calibration & Cleaning
+  // 3. Valeria Domínguez — Storefront Attendant (no external breaks or calibration walks during 09:00-17:00 operating hours)
   'valeria-optica-attendant': Object.freeze({
     npcId: 'valeria-optica-attendant',
     canonicalName: 'Valeria Domínguez',
     primaryWaypointId: 'wp_valeria_storefront',
     timeZone: TZ_JUAREZ,
-    transitions: Object.freeze([
-      Object.freeze({
-        id: 'valeria_calibration_walk',
-        daysOfWeek: Object.freeze([1, 2, 3, 4, 5, 6]), // Mon-Sat
-        departureHour: 13,
-        departureMinute: 0,
-        outboundRouteId: 'route_valeria_to_workshop',
-        outboundDurationSeconds: CORRIDOR_ROUTES['route_valeria_to_workshop']!.totalDurationSeconds,
-        destinationWaypointId: 'wp_optica_workshop',
-        arrivalDwellSeconds: 15,
-        returnHour: 13,
-        returnMinute: 44,
-        returnRouteId: 'route_valeria_to_counter',
-        returnDurationSeconds: CORRIDOR_ROUTES['route_valeria_to_counter']!.totalDurationSeconds,
-        // wp_optica_workshop (Z=8.0) lies physically in front of Bar La Cucaracha outside Óptica Fashion (Z=-1.80..+3.40),
-        // and no physical workshop geometry exists in the scene; retain schedule/busy task at verified storefront station.
-        isPhysicalDestinationVerified: false,
-        description: Object.freeze({
-          en: 'Moving to workshop area for trial lens sanitization and equipment calibration.',
-          es: 'Trasladándose al taller para desinfección de lentes y calibración de instrumentos.',
-        }),
-      }),
-    ]),
+    transitions: Object.freeze([]),
   }),
 
   // 4. Mateo Navarro — Queue Advance
@@ -1319,6 +1278,7 @@ function evaluateSingleNpcMovementBase(
       autonomousBehaviorState: patrolRes.autonomousBehaviorState,
       controlMode: patrolRes.controlMode,
       currentSpeedMps: patrolRes.movementState === 'moving' ? bridgeProfile.preferredSpeedMps : 0,
+      activeSegmentEndPosition: Object.freeze(patrolRes.activeSegmentEndPosition ?? patrolRes.position),
       patrolDirection: patrolRes.patrolDirection,
       patrolCycleIndex: patrolRes.patrolCycleIndex,
       isSuspendedByPlayerInteraction: patrolRes.isSuspendedByPlayerInteraction,

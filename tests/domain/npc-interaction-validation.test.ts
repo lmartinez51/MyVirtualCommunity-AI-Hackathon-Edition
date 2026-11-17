@@ -23,16 +23,16 @@ function makePlayerState(position: Vector3D, updatedAt: string): PlayerSpatialSt
 describe('Server-Authoritative NPC Interaction Validation Domain Model', () => {
   // Wednesday 2026-11-04 10:00:00 CST (17:00:00 UTC) -> Elena & Carlos on normal duty
   const normalDutyUtc = '2026-11-04T17:00:00.000Z';
-  // Wednesday 2026-11-04 14:00:15 CST (21:00:15 UTC) -> Carlos walking to lunch (in transit)
-  const inTransitUtc = '2026-11-04T21:00:15.000Z';
-  // Wednesday 2026-11-04 14:02:00 CST (21:02:00 UTC) -> Carlos at lunch benches (contextual)
-  const contextualUtc = '2026-11-04T21:02:00.000Z';
+  // Wednesday 2026-11-04 13:30:03 CST (20:30:03 UTC) -> Elena walking to bridge plaza (in transit)
+  const inTransitUtc = '2026-11-04T20:30:03.000Z';
+  // Wednesday 2026-11-04 13:35:00 CST (20:35:00 UTC) -> Elena at bridge plaza (contextual)
+  const contextualUtc = '2026-11-04T20:35:00.000Z';
   // Wednesday 2026-11-04 23:00:00 CST (2026-11-05T06:00:00.000Z) -> Off duty
   const offDutyUtc = '2026-11-05T06:00:00.000Z';
   // Sunday 2026-11-08 11:00:00 CST (18:00:00 UTC) -> Óptica Fashion closed (unavailable)
   const sundayClosedUtc = '2026-11-08T18:00:00.000Z';
-  // Wednesday 2026-11-04 21:15:00 CST (2026-11-05T04:15:00.000Z) -> Carlos register closing (busy)
-  const busyUtc = '2026-11-05T04:15:00.000Z';
+  // Wednesday 2026-11-04 14:29:30 CST (21:29:30 UTC) -> Elena back at Kiosk finishing handover log review (busy)
+  const busyUtc = '2026-11-04T21:29:30.000Z';
 
   it('1. Rejects when player does not exist in World Core', () => {
     const npcId = 'elena-border-concierge';
@@ -117,85 +117,85 @@ describe('Server-Authoritative NPC Interaction Validation Domain Model', () => {
   });
 
   it('4. Evaluates all 6 interactionAvailability states deterministically across talk and service intents', () => {
-    // A. available_in_transit (Carlos walking to lunch)
-    const carlosTransitCtx = evaluateNpcInteractionContext('carlos-farmacia-attendant', inTransitUtc);
-    const carlosTransitMov = evaluateNpcMovement(NPC_MOVEMENT_PROFILES['carlos-farmacia-attendant']!, inTransitUtc);
-    assert.ok(carlosTransitCtx && carlosTransitMov);
-    assert.strictEqual(carlosTransitCtx.interactionAvailability, 'available_in_transit');
+    // A. available_in_transit (Elena walking to bridge plaza)
+    const elenaTransitCtx = evaluateNpcInteractionContext('elena-border-concierge', inTransitUtc);
+    const elenaTransitMov = evaluateNpcMovement(NPC_MOVEMENT_PROFILES['elena-border-concierge']!, inTransitUtc);
+    assert.ok(elenaTransitCtx && elenaTransitMov);
+    assert.strictEqual(elenaTransitCtx.interactionAvailability, 'available_in_transit');
 
     const transitTalk = evaluateAuthoritativeInteractionDecision({
-      player: makePlayerState(carlosTransitMov.position, inTransitUtc),
+      player: makePlayerState(elenaTransitMov.position, inTransitUtc),
       playerId: DEFAULT_PLAYER_ID,
-      npcId: 'carlos-farmacia-attendant',
+      npcId: 'elena-border-concierge',
       intent: 'talk',
       requestId: null,
       evaluatedAt: inTransitUtc,
-      interactionContext: carlosTransitCtx,
-      movementSnapshot: carlosTransitMov,
+      interactionContext: elenaTransitCtx,
+      movementSnapshot: elenaTransitMov,
     });
     assert.strictEqual(transitTalk.allowed, true);
     assert.strictEqual(transitTalk.reasonCode, 'authorized_in_transit');
 
     const transitService = evaluateAuthoritativeInteractionDecision({
-      player: makePlayerState(carlosTransitMov.position, inTransitUtc),
+      player: makePlayerState(elenaTransitMov.position, inTransitUtc),
       playerId: DEFAULT_PLAYER_ID,
-      npcId: 'carlos-farmacia-attendant',
+      npcId: 'elena-border-concierge',
       intent: 'service',
       requestId: null,
       evaluatedAt: inTransitUtc,
-      interactionContext: carlosTransitCtx,
-      movementSnapshot: carlosTransitMov,
+      interactionContext: elenaTransitCtx,
+      movementSnapshot: elenaTransitMov,
     });
     assert.strictEqual(transitService.allowed, false);
     assert.strictEqual(transitService.reasonCode, 'npc_in_transit_service_paused');
 
-    // B. available_contextual (Carlos at lunch benches)
-    const carlosCtx = evaluateNpcInteractionContext('carlos-farmacia-attendant', contextualUtc);
-    const carlosMov = evaluateNpcMovement(NPC_MOVEMENT_PROFILES['carlos-farmacia-attendant']!, contextualUtc);
-    assert.ok(carlosCtx && carlosMov);
-    assert.strictEqual(carlosCtx.interactionAvailability, 'available_contextual');
+    // B. available_contextual (Elena at bridge plaza handover)
+    const elenaCtx = evaluateNpcInteractionContext('elena-border-concierge', contextualUtc);
+    const elenaMov = evaluateNpcMovement(NPC_MOVEMENT_PROFILES['elena-border-concierge']!, contextualUtc);
+    assert.ok(elenaCtx && elenaMov);
+    assert.strictEqual(elenaCtx.interactionAvailability, 'available_contextual');
 
     const contextualTalk = evaluateAuthoritativeInteractionDecision({
-      player: makePlayerState(carlosMov.position, contextualUtc),
+      player: makePlayerState(elenaMov.position, contextualUtc),
       playerId: DEFAULT_PLAYER_ID,
-      npcId: 'carlos-farmacia-attendant',
+      npcId: 'elena-border-concierge',
       intent: 'talk',
       requestId: null,
       evaluatedAt: contextualUtc,
-      interactionContext: carlosCtx,
-      movementSnapshot: carlosMov,
+      interactionContext: elenaCtx,
+      movementSnapshot: elenaMov,
     });
     assert.strictEqual(contextualTalk.allowed, true);
     assert.strictEqual(contextualTalk.reasonCode, 'authorized_contextual');
 
-    // C. busy (Carlos inventory audit)
-    const carlosBusyCtx = evaluateNpcInteractionContext('carlos-farmacia-attendant', busyUtc);
-    const carlosBusyMov = evaluateNpcMovement(NPC_MOVEMENT_PROFILES['carlos-farmacia-attendant']!, busyUtc);
-    assert.ok(carlosBusyCtx && carlosBusyMov);
-    assert.strictEqual(carlosBusyCtx.interactionAvailability, 'busy');
+    // C. busy (Elena back at kiosk completing handover log review)
+    const elenaBusyCtx = evaluateNpcInteractionContext('elena-border-concierge', busyUtc);
+    const elenaBusyMov = evaluateNpcMovement(NPC_MOVEMENT_PROFILES['elena-border-concierge']!, busyUtc);
+    assert.ok(elenaBusyCtx && elenaBusyMov);
+    assert.strictEqual(elenaBusyCtx.interactionAvailability, 'busy');
 
     const busyTalk = evaluateAuthoritativeInteractionDecision({
-      player: makePlayerState(carlosBusyMov.position, busyUtc),
+      player: makePlayerState(elenaBusyMov.position, busyUtc),
       playerId: DEFAULT_PLAYER_ID,
-      npcId: 'carlos-farmacia-attendant',
+      npcId: 'elena-border-concierge',
       intent: 'talk',
       requestId: null,
       evaluatedAt: busyUtc,
-      interactionContext: carlosBusyCtx,
-      movementSnapshot: carlosBusyMov,
+      interactionContext: elenaBusyCtx,
+      movementSnapshot: elenaBusyMov,
     });
     assert.strictEqual(busyTalk.allowed, true);
     assert.strictEqual(busyTalk.reasonCode, 'authorized_while_busy');
 
     const busyService = evaluateAuthoritativeInteractionDecision({
-      player: makePlayerState(carlosBusyMov.position, busyUtc),
+      player: makePlayerState(elenaBusyMov.position, busyUtc),
       playerId: DEFAULT_PLAYER_ID,
-      npcId: 'carlos-farmacia-attendant',
+      npcId: 'elena-border-concierge',
       intent: 'service',
       requestId: null,
       evaluatedAt: busyUtc,
-      interactionContext: carlosBusyCtx,
-      movementSnapshot: carlosBusyMov,
+      interactionContext: elenaBusyCtx,
+      movementSnapshot: elenaBusyMov,
     });
     assert.strictEqual(busyService.allowed, false);
     assert.strictEqual(busyService.reasonCode, 'npc_busy_service_deferred');

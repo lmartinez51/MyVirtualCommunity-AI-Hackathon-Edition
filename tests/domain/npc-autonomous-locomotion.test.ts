@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  BRIDGE_FULL_LOOP_NODES,
   BRIDGE_PATROL_DOMAIN,
   BRIDGE_PATROL_PROFILES,
   BUSINESS_AUTONOMY_DOMAINS,
@@ -707,14 +708,23 @@ describe('Autonomous NPC Locomotion, Bridge Patrols & Bounded Business Activity 
     assert.ok(valeriaStates.has('idle_observation'));
     assert.ok(valeriaStates.has('returning_to_station'));
 
-    // 4. Busy service task (Carlos 21:15 MST register closing) prevents optional roaming
-    const busySnap = evaluateNpcMovement(
+    // 4. Robotic storefront schedule: Carlos remains available & bounded inside Farmacias Benavides at 21:15 MST, then turns off_duty at 22:05 MST
+    const lateOpenSnap = evaluateNpcMovement(
       NPC_MOVEMENT_PROFILES['carlos-farmacia-attendant']!,
       '2026-11-05T04:15:00.000Z'
     );
-    assert.strictEqual(busySnap.movementState, 'stationary');
-    assert.strictEqual(busySnap.autonomousBehaviorState, 'working_stationary');
-    assert.strictEqual(busySnap.currentWaypointId, 'wp_carlos_counter');
+    assert.strictEqual(lateOpenSnap.activityState, 'available');
+    assert.strictEqual(lateOpenSnap.controlMode, 'autonomous_business_local');
+    assert.strictEqual(lateOpenSnap.withinAuthorizedDomain, true);
+
+    const closedCarlosSnap = evaluateNpcMovement(
+      NPC_MOVEMENT_PROFILES['carlos-farmacia-attendant']!,
+      '2026-11-05T05:05:00.000Z'
+    );
+    assert.strictEqual(closedCarlosSnap.movementState, 'stationary');
+    assert.strictEqual(closedCarlosSnap.autonomousBehaviorState, 'off_duty');
+    assert.strictEqual(closedCarlosSnap.activityState, 'off_duty');
+    assert.strictEqual(closedCarlosSnap.currentWaypointId, 'wp_carlos_counter');
 
     // 5. Off-duty (Sunday or night) prevents roaming and sets off_duty state
     const offDutySnap = evaluateNpcMovement(
@@ -1069,26 +1079,43 @@ describe('Autonomous NPC Locomotion, Bridge Patrols & Bounded Business Activity 
     assert.strictEqual(fallbackRes.currentWaypointId, 'wp_carlos_counter');
     assert.strictEqual(fallbackRes.actualSpeedMps, 0);
 
-    // D. Valeria elevation & scheduled workshop calibration preservation
+    // D. Robotic zero-break business-hours rule & bridge patrol dense loop / segment-end verification
     assert.strictEqual(CORRIDOR_WAYPOINTS['wp_valeria_storefront']!.position.y, 0.2);
-    const valeriaCalib = evaluateNpcMovement(
+    const valeriaMidday = evaluateNpcMovement(
       NPC_MOVEMENT_PROFILES['valeria-optica-attendant']!,
-      '2026-11-04T20:10:00.000Z' // Wed 13:10 MST inside valeria_calibration_walk (13:00-13:45)
+      '2026-11-04T20:10:00.000Z' // Wed 13:10 MST: no calibration break, stays active inside Optica Bay 4
     );
-    assert.strictEqual(valeriaCalib.activityState, 'busy');
-    assert.strictEqual(valeriaCalib.movementState, 'stationary');
-    assert.strictEqual(valeriaCalib.autonomousBehaviorState, 'scheduled_station_task');
-    assert.strictEqual(valeriaCalib.currentWaypointId, 'wp_valeria_storefront');
-    assert.strictEqual(valeriaCalib.currentSpeedMps, 0);
-    assert.ok(valeriaCalib.position.z >= -1.80 && valeriaCalib.position.z <= 3.40, 'Valeria calibration must not walk into Bar La Cucaracha Z=8.0');
+    assert.strictEqual(valeriaMidday.activityState, 'available');
+    assert.strictEqual(valeriaMidday.controlMode, 'autonomous_business_local');
+    assert.strictEqual(valeriaMidday.withinAuthorizedDomain, true);
+    assert.ok(valeriaMidday.position.z >= -1.80 && valeriaMidday.position.z <= 3.40, 'Valeria must remain strictly inside Optica Bay 4 frontage');
 
-    // E. Carlos scheduled lunch walk preserved
-    const carlosLunch = evaluateNpcMovement(
+    // E. Carlos has zero lunch break at 14:00:05 and 14:30:00 MST (never walks to Calle Gardenias / wp_east_dining_benches) and turns off_duty at 22:05
+    for (const openIso of ['2026-11-04T21:00:05.000Z', '2026-11-04T21:30:00.000Z']) {
+      const carlosMidday = evaluateNpcMovement(
+        NPC_MOVEMENT_PROFILES['carlos-farmacia-attendant']!,
+        openIso
+      );
+      assert.strictEqual(carlosMidday.activityState, 'available');
+      assert.strictEqual(carlosMidday.controlMode, 'autonomous_business_local');
+      assert.strictEqual(carlosMidday.withinAuthorizedDomain, true);
+      assert.notStrictEqual(carlosMidday.destinationWaypointId, 'wp_east_dining_benches');
+      assert.ok(carlosMidday.position.z >= -3.8 && carlosMidday.position.z <= 5.2, 'Carlos must stay strictly inside Farmacias Benavides');
+    }
+
+    const carlosAfterClose = evaluateNpcMovement(
       NPC_MOVEMENT_PROFILES['carlos-farmacia-attendant']!,
-      '2026-11-04T21:00:05.000Z' // Wed 14:00:05 MST
+      '2026-11-05T05:05:00.000Z' // Wed 22:05 MST
     );
-    assert.strictEqual(carlosLunch.movementState, 'moving');
-    assert.strictEqual(carlosLunch.activeRouteId, 'route_carlos_to_lunch');
-    assert.strictEqual(carlosLunch.destinationWaypointId, 'wp_east_dining_benches');
+    assert.strictEqual(carlosAfterClose.activityState, 'off_duty');
+    assert.strictEqual(carlosAfterClose.controlMode, 'fixed_station_anchor');
+    assert.strictEqual(carlosAfterClose.autonomousBehaviorState, 'off_duty');
+    assert.strictEqual(carlosAfterClose.movementState, 'stationary');
+
+    // F. Bridge patrol dense nodes & activeSegmentEndPosition bounded extrapolation contract
+    assert.ok(BRIDGE_FULL_LOOP_NODES.length >= 70, 'Dense East/West bridge nodes Seg01..28 must all be present');
+    const mateoSnap = evaluateNpcMovement(NPC_MOVEMENT_PROFILES['mateo-student']!, '2026-11-04T17:10:00.000Z');
+    assert.strictEqual(mateoSnap.withinAuthorizedDomain, true);
+    assert.ok(mateoSnap.activeSegmentEndPosition, 'bridge_patrol snapshot must publish activeSegmentEndPosition');
   });
 });

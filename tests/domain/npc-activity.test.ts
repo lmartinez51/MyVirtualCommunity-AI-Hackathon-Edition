@@ -6,6 +6,7 @@ import {
   evaluateRosterActivity,
   ELENA_SCHEDULE,
   CARLOS_SCHEDULE,
+  VALERIA_SCHEDULE,
   MATEO_SCHEDULE,
   PATRICIA_SCHEDULE,
 } from '../../src/domain/npc-activity.js';
@@ -80,27 +81,42 @@ describe('Deterministic NPC Activity, Routines & World Presence Domain', () => {
     assert.strictEqual(snapNight.activityTitle.es, 'Fuera de servicio');
   });
 
-  it('4. Carlos Méndez adheres strictly to verified Farmacias Benavides operating rules and breaks', () => {
+  it('4. Carlos Méndez & Valeria Domínguez follow continuous zero-break robotic storefront operating hours', () => {
     // Wednesday 2026-11-04 in Ciudad Juárez (UTC-7)
-    // 10:00 Juárez (UTC 17:00) -> Available
-    const snap10am = evaluateNpcActivity(CARLOS_SCHEDULE, '2026-11-04T17:00:00.000Z');
-    assert.strictEqual(snap10am.state, 'available');
+    // Carlos (Farmacias Benavides: 07:00-22:00 Mon-Sat, continuously available with zero breaks)
+    const carlos10am = evaluateNpcActivity(CARLOS_SCHEDULE, '2026-11-04T17:00:00.000Z');
+    assert.strictEqual(carlos10am.state, 'available');
 
-    // 14:15 Juárez (UTC 21:15) -> Busy (Lunch & stock)
-    const snapLunch = evaluateNpcActivity(CARLOS_SCHEDULE, '2026-11-04T21:15:00.000Z');
-    assert.strictEqual(snapLunch.state, 'busy');
-    assert.strictEqual(snapLunch.activityTitle.es, 'Almuerzo y verificación de anaqueles');
+    const carlosNoLunch = evaluateNpcActivity(CARLOS_SCHEDULE, '2026-11-04T21:15:00.000Z'); // 14:15 Juárez
+    assert.strictEqual(carlosNoLunch.state, 'available');
+    assert.strictEqual(carlosNoLunch.canInteract, true);
 
-    // 21:15 Juárez (UTC 04:15 next day) -> Busy (Register closing)
-    const snapClose = evaluateNpcActivity(CARLOS_SCHEDULE, '2026-11-05T04:15:00.000Z');
-    assert.strictEqual(snapClose.state, 'busy');
-    assert.strictEqual(snapClose.activityTitle.es, 'Cierre de caja y preparación de turno nocturno');
+    const carlosLateEvening = evaluateNpcActivity(CARLOS_SCHEDULE, '2026-11-05T04:15:00.000Z'); // 21:15 Juárez
+    assert.strictEqual(carlosLateEvening.state, 'available');
+    assert.strictEqual(carlosLateEvening.canInteract, true);
+
+    const carlosClosedNight = evaluateNpcActivity(CARLOS_SCHEDULE, '2026-11-05T05:05:00.000Z'); // 22:05 Juárez
+    assert.strictEqual(carlosClosedNight.state, 'off_duty');
+    assert.strictEqual(carlosClosedNight.canInteract, false);
 
     // Sunday 2026-11-08 at 12:00 Juárez (UTC 19:00) -> Closed on Sunday
-    const snapSunday = evaluateNpcActivity(CARLOS_SCHEDULE, '2026-11-08T19:00:00.000Z');
-    assert.strictEqual(snapSunday.state, 'off_duty');
-    assert.strictEqual(snapSunday.activityTitle.es, 'Sucursal cerrada en domingo');
-    assert.strictEqual(snapSunday.canInteract, false);
+    const carlosSunday = evaluateNpcActivity(CARLOS_SCHEDULE, '2026-11-08T19:00:00.000Z');
+    assert.strictEqual(carlosSunday.state, 'off_duty');
+    assert.strictEqual(carlosSunday.activityTitle.es, 'Sucursal cerrada en domingo');
+    assert.strictEqual(carlosSunday.canInteract, false);
+
+    // Valeria (Óptica Fashion: 09:00-17:00 Mon-Sat, continuously available with zero breaks)
+    const valeriaNoCalib = evaluateNpcActivity(VALERIA_SCHEDULE, '2026-11-04T20:10:00.000Z'); // 13:10 Juárez
+    assert.strictEqual(valeriaNoCalib.state, 'available');
+    assert.strictEqual(valeriaNoCalib.canInteract, true);
+
+    const valeriaAfterClose = evaluateNpcActivity(VALERIA_SCHEDULE, '2026-11-05T00:05:00.000Z'); // 17:05 Juárez
+    assert.strictEqual(valeriaAfterClose.state, 'off_duty');
+    assert.strictEqual(valeriaAfterClose.canInteract, false);
+
+    const valeriaSunday = evaluateNpcActivity(VALERIA_SCHEDULE, '2026-11-08T19:00:00.000Z');
+    assert.strictEqual(valeriaSunday.state, 'off_duty');
+    assert.strictEqual(valeriaSunday.canInteract, false);
   });
 
   it('5. Lic. Patricia Morales operates citizen desk on weekdays and rests on weekends', () => {

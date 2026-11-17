@@ -37,7 +37,7 @@ async function walkPlayerToTarget(
 
 describe('Server-Authoritative NPC Interaction Validation API Integration Tests', () => {
   const normalDutyUtc = '2026-11-04T17:00:00.000Z'; // Wed 10:00 CST
-  const inTransitUtc = '2026-11-04T21:00:15.000Z';  // Wed 14:00:15 CST (Carlos walking)
+  const inTransitUtc = '2026-11-04T20:30:03.000Z';  // Wed 13:30:03 CST (Elena walking to bridge plaza)
   const offDutyUtc = '2026-11-05T06:00:00.000Z';    // Wed 23:00 CST
   const sundayClosedUtc = '2026-11-08T18:00:00.000Z'; // Sun 11:00 CST (Valeria off duty)
 
@@ -218,13 +218,13 @@ describe('Server-Authoritative NPC Interaction Validation API Integration Tests'
     const url = `http://127.0.0.1:${addr.port}`;
 
     try {
-      const mov = await worldCore.getNpcMovement('carlos-farmacia-attendant', inTransitUtc);
+      const mov = await worldCore.getNpcMovement('elena-border-concierge', inTransitUtc);
       assert.ok(mov);
       assert.strictEqual(mov.movementState, 'moving');
 
       await walkPlayerToTarget(worldCore, mov.position, advanceClockMs);
 
-      const talkRes = await fetch(`${url}/api/npcs/carlos-farmacia-attendant/interact?at=${encodeURIComponent(inTransitUtc)}`, {
+      const talkRes = await fetch(`${url}/api/npcs/elena-border-concierge/interact?at=${encodeURIComponent(inTransitUtc)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ playerId: 'player-1', intent: 'talk' }),
@@ -234,7 +234,7 @@ describe('Server-Authoritative NPC Interaction Validation API Integration Tests'
       assert.strictEqual(talkData.allowed, true);
       assert.strictEqual(talkData.reasonCode, 'authorized_in_transit');
 
-      const serviceRes = await fetch(`${url}/api/npcs/carlos-farmacia-attendant/interact?at=${encodeURIComponent(inTransitUtc)}`, {
+      const serviceRes = await fetch(`${url}/api/npcs/elena-border-concierge/interact?at=${encodeURIComponent(inTransitUtc)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ playerId: 'player-1', intent: 'service' }),

@@ -56,20 +56,20 @@ describe('Deterministic NPC Interaction Context API Integration Tests', () => {
     const url = `http://127.0.0.1:${addr.port}`;
 
     try {
-      // 14:00:15 CST on Wednesday (21:00:15 UTC): Carlos walking to lunch
-      const movingTime = '2026-11-04T21:00:15.000Z';
+      // 13:30:03 CST on Wednesday (20:30:03 UTC): Elena walking to Bridge Plaza
+      const movingTime = '2026-11-04T20:30:03.000Z';
       const res = await fetch(`${url}/api/world/npcs/interaction-context?at=${encodeURIComponent(movingTime)}`);
       assert.strictEqual(res.status, 200);
       const data = (await res.json()) as any;
 
-      const carlos = data.npcs['carlos-farmacia-attendant'];
-      assert.strictEqual(carlos.movementState, 'moving');
-      assert.strictEqual(carlos.interactionAvailability, 'available_in_transit');
-      assert.strictEqual(carlos.interactionMode, 'in_transit');
-      assert.strictEqual(carlos.canInitiateConversation, true);
-      assert.strictEqual(carlos.isAvailableForNormalService, false);
-      assert.strictEqual(carlos.isMoving, true);
-      assert.strictEqual(carlos.destinationWaypointId, 'wp_east_dining_benches');
+      const elena = data.npcs['elena-border-concierge'];
+      assert.strictEqual(elena.movementState, 'moving');
+      assert.strictEqual(elena.interactionAvailability, 'available_in_transit');
+      assert.strictEqual(elena.interactionMode, 'in_transit');
+      assert.strictEqual(elena.canInitiateConversation, true);
+      assert.strictEqual(elena.isAvailableForNormalService, false);
+      assert.strictEqual(elena.isMoving, true);
+      assert.strictEqual(elena.destinationWaypointId, 'wp_bridge_plaza');
     } finally {
       await serverInstance.stop();
     }

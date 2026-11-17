@@ -235,7 +235,6 @@ describe('Contextual Social Awareness API Integration Tests (Increment 5.20.0)',
       { npcId: 'patricia-citizen-rep', homeWp: 'wp_patricia_desk', awayWp: 'wp_west_inspection', before: mstIso(11, 59), midOut: mstIso(12, 0, 5), arrived: mstIso(12, 5), midRet: mstIso(12, 59, 5), after: mstIso(13, 5) },
       { npcId: 'hector-artisan', homeWp: 'wp_hector_stand', awayWp: 'wp_hector_bench', before: mstIso(12, 59), midOut: mstIso(13, 0, 2), arrived: mstIso(13, 5), midRet: mstIso(13, 59, 2), after: mstIso(14, 5) },
       { npcId: 'elena-border-concierge', homeWp: 'wp_elena_kiosk', awayWp: 'wp_bridge_plaza', before: mstIso(13, 29), midOut: mstIso(13, 30, 3), arrived: mstIso(13, 35), midRet: mstIso(14, 29, 3), after: mstIso(14, 35) },
-      { npcId: 'carlos-farmacia-attendant', homeWp: 'wp_carlos_counter', awayWp: 'wp_east_dining_benches', before: mstIso(13, 59), midOut: mstIso(14, 0, 5), arrived: mstIso(14, 5), midRet: mstIso(14, 59, 5), after: mstIso(15, 5) },
     ];
 
     try {
@@ -266,15 +265,21 @@ describe('Contextual Social Awareness API Integration Tests (Increment 5.20.0)',
         assert.strictEqual(after.currentWaypointId, s.homeWp);
       }
 
-      // Valeria's 13:00-13:45 scheduled calibration task remains busy at her verified Optica station without walking to Bar La Cucaracha (wp_optica_workshop)
+      // Carlos (14:05 CST) & Valeria (13:05 CST) have zero breaks during open storefront hours and remain bounded inside their shops
+      const carlosMiddayRes = await fetch(`${url}/api/world/npcs/movement?at=${encodeURIComponent(mstIso(14, 5))}`);
+      assert.strictEqual(carlosMiddayRes.status, 200);
+      const carlosMidday = ((await carlosMiddayRes.json()) as any).npcs['carlos-farmacia-attendant'];
+      assert.strictEqual(carlosMidday.activityState, 'available');
+      assert.strictEqual(carlosMidday.controlMode, 'autonomous_business_local');
+      assert.strictEqual(carlosMidday.withinAuthorizedDomain, true);
+
       const valeriaCalibRes = await fetch(`${url}/api/world/npcs/movement?at=${encodeURIComponent(mstIso(13, 5))}`);
       assert.strictEqual(valeriaCalibRes.status, 200);
       const valeriaCalibBody = (await valeriaCalibRes.json()) as any;
       const valeriaCalib = valeriaCalibBody.npcs['valeria-optica-attendant'];
-      assert.strictEqual(valeriaCalib.activityState, 'busy');
-      assert.strictEqual(valeriaCalib.movementState, 'stationary');
-      assert.strictEqual(valeriaCalib.autonomousBehaviorState, 'scheduled_station_task');
-      assert.strictEqual(valeriaCalib.currentWaypointId, 'wp_valeria_storefront');
+      assert.strictEqual(valeriaCalib.activityState, 'available');
+      assert.strictEqual(valeriaCalib.controlMode, 'autonomous_business_local');
+      assert.strictEqual(valeriaCalib.withinAuthorizedDomain, true);
     } finally {
       await serverInstance.stop();
     }

@@ -25,8 +25,8 @@ import { PlayerSpatialState } from '../../src/domain/player-movement.js';
 
 // Wednesday 2026-11-04 10:00:00 MST (17:00:00 UTC): Sofia (z=45.5) and Hector (z=49.0) are 3.5m apart in queue.
 const DAYTIME_NORMAL_INSTANT = '2026-11-04T17:00:00.000Z';
-// Wednesday 2026-11-04 14:00:15 MST: Carlos walking (in_transit), Elena away at plaza.
-const CARLOS_WALKING_INSTANT = '2026-11-04T21:00:15.000Z';
+// Wednesday 2026-11-04 13:30:03 MST: Elena walking to bridge plaza (in_transit).
+const ELENA_WALKING_INSTANT = '2026-11-04T20:30:03.000Z';
 // Wednesday 2026-11-04 13:35:00 MST: Elena stationary at wp_bridge_plaza (17.8, 0.2, 42.0), 2.6m from Mateo (15.2, 0.328, 42.0).
 const ELENA_PLAZA_INSTANT = '2026-11-04T20:35:00.000Z';
 // Sunday 2026-11-08 02:30:00 MST: Late night Sunday — attendants & public servants off_duty, community proxies still active.
@@ -360,11 +360,11 @@ describe('Autonomous NPC Social Interaction Lifecycle Domain (Increment 5.21.0)'
     const movSnapshotAfter = evaluateRosterMovement(NPC_MOVEMENT_PROFILES, ELENA_PLAZA_INSTANT);
     assert.deepStrictEqual(movSnapshotAfter, movSnapshotBefore);
 
-    // In-transit Carlos (14:00:15) remains ineligible for social interaction and completes movement cleanly
-    const inTransitMov = evaluateRosterMovement(NPC_MOVEMENT_PROFILES, CARLOS_WALKING_INSTANT);
-    assert.strictEqual(inTransitMov.npcs['carlos-farmacia-attendant']!.movementState, 'moving');
-    const inTransitSocial = evaluateNpcSocialInteraction('carlos-farmacia-attendant', {
-      evaluatedAt: CARLOS_WALKING_INSTANT,
+    // In-transit Elena (13:30:03) remains ineligible for social interaction and completes movement cleanly
+    const inTransitMov = evaluateRosterMovement(NPC_MOVEMENT_PROFILES, ELENA_WALKING_INSTANT);
+    assert.strictEqual(inTransitMov.npcs['elena-border-concierge']!.movementState, 'moving');
+    const inTransitSocial = evaluateNpcSocialInteraction('elena-border-concierge', {
+      evaluatedAt: ELENA_WALKING_INSTANT,
     });
     assert.strictEqual(inTransitSocial?.inActiveInteraction, false);
     assert.strictEqual(inTransitSocial?.eligibleForSocialInteraction, false);
