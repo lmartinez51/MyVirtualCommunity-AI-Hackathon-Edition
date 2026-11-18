@@ -2980,18 +2980,21 @@ namespace MyVirtualCommunity.Editor
                 roadJuarez.transform.localScale = new Vector3(14.0f, 0.10f, 111.40f);
             }
 
-            // Extend Sidewalk_West & Curb_West continuously down to Z = -60.00m
+            // Trim Sidewalk_West & Curb_West cleanly at azNorthZAtJuarez + 3.00m (symmetric with Sidewalk_East for Azucenas NW R=3m fillet)
+            float swWestCutZ = azNorthZAtJuarez + 3.00f;
+            float swWestLen = 20.20f - swWestCutZ;
+            float swWestCenterZ = 0.5f * (20.20f + swWestCutZ);
             GameObject swWest = GameObject.Find("Sidewalk_West");
             if (swWest != null)
             {
-                swWest.transform.position = new Vector3(-7.40f, 0.10f, -19.90f);
-                swWest.transform.localScale = new Vector3(9.20f, 0.20f, 80.20f);
+                swWest.transform.position = new Vector3(-7.40f, 0.10f, swWestCenterZ);
+                swWest.transform.localScale = new Vector3(9.20f, 0.20f, swWestLen);
             }
             GameObject curbWest = GameObject.Find("Curb_West");
             if (curbWest != null)
             {
-                curbWest.transform.position = new Vector3(-2.70f, 0.10f, -19.90f);
-                curbWest.transform.localScale = new Vector3(0.20f, 0.20f, 80.20f);
+                curbWest.transform.position = new Vector3(-2.70f, 0.10f, swWestCenterZ);
+                curbWest.transform.localScale = new Vector3(0.20f, 0.20f, swWestLen);
             }
 
             // Adjust Sidewalk_East & Curb_East to terminate cleanly at azNorthZAtJuarez + 3.00m (start of Azucenas NW R=3m corner fillet)
@@ -3349,6 +3352,7 @@ namespace MyVirtualCommunity.Editor
 
             // 6. All Crisp Lane Markings & Export Actual Built Layout JSON for Automated OSM Overlay Check
             BuildEastOsmMarkings(eastRoadRoot.transform, net, whiteStripeMat, yellowStripeMat);
+            WestAzucenasCornerBuilder.BuildInOpenScene();
             ExportUnityLayoutJson(net);
 
             Debug.Log("[WestTriangleAndAbasoloBuilder] Built OSM-aligned Calle Azucenas East, Manuel Doblado stub, Southern Irregular Manzana & exported actual JSON.");
