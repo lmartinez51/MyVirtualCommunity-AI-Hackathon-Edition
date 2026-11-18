@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
 import { createServer, IncomingMessage, ServerResponse } from 'node:http';
 import { extname, resolve } from 'node:path';
 import { InMemoryWorldCoreAdapter } from '../adapters/in-memory-world-core-adapter.js';
@@ -21,6 +21,8 @@ import { AppConfig, loadConfig, maskApiKey } from '../config/index.js';
 import { InvalidBusinessIdError, parseBusinessId } from '../domain/business-id.js';
 import { PASO_DEL_NORTE_CORRIDOR } from '../domain/spatial-corridor.js';
 import { CbpBorderWaitTimeAdapter } from '../adapters/cbp-border-wait-time-adapter.js';
+import { LocalArchMediaAdapter } from '../adapters/local-arch-media-adapter.js';
+import { OpenMeteoWeatherAdapter } from '../adapters/open-meteo-weather-adapter.js';
 import { GetBorderWaitTimesUseCase } from '../application/get-border-wait-times.js';
 import {
   InvalidWitnessMessageError,
@@ -68,8 +70,10 @@ import {
   LaneBarrierId,
   createDefaultBorderLaneBarriers,
 } from '../domain/border-lane-barriers.js';
+import { ArchMediaPort } from '../ports/arch-media-port.js';
 import { BorderCrossingPort } from '../ports/border-crossing-port.js';
 import { MetaModelPort } from '../ports/meta-model-port.js';
+import { WeatherPort } from '../ports/weather-port.js';
 import { WorldCorePort } from '../ports/world-core-port.js';
 
 export interface AssistantServerOptions {
@@ -77,6 +81,9 @@ export interface AssistantServerOptions {
   readonly worldCore?: WorldCorePort;
   readonly metaModel?: MetaModelPort;
   readonly borderCrossingPort?: BorderCrossingPort;
+  readonly weatherPort?: WeatherPort;
+  readonly archMediaPort?: ArchMediaPort;
+  readonly archMediaDir?: string;
   readonly witnessUseCase?: TalkToSyntheticWitnessUseCase;
   readonly conciergeUseCase?: AskBorderConciergeUseCase;
   readonly businessAttendantUseCase?: TalkToBusinessAttendantUseCase;
@@ -128,6 +135,12 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
 
   const borderCrossingPort: BorderCrossingPort =
     options.borderCrossingPort ?? new CbpBorderWaitTimeAdapter();
+
+  const weatherPort: WeatherPort =
+    options.weatherPort ?? new OpenMeteoWeatherAdapter();
+
+  const archMediaPort: ArchMediaPort =
+    options.archMediaPort ?? new LocalArchMediaAdapter({ mediaDir: options.archMediaDir });
 
   const borderUseCase = new GetBorderWaitTimesUseCase({
     borderCrossingPort,
@@ -1064,6 +1077,109 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
             },
           });
         }
+        return;
+      }
+
+      // 6A. GET /api/world/weather (Authoritative Ciudad Juárez Centro Weather Observation)
+      if (method === 'GET' && pathname === '/api/world/weather') {
+        const refreshParam = parsedUrl.searchParams.get('refresh') ?? parsedUrl.searchParams.get('bypassCache');
+        const bypassCache = refreshParam === 'true' || refreshParam === '1';
+        const weather = await weatherPort.getCurrentWeather(bypassCache);
+        sendJson(res, 200, {
+          success: true,
+          weather,
+        });
+        return;
+      }
+
+      // 6A-2. GET /api/world/arch-playlist (Authoritative Av. Juárez Arch Billboard Video Playlist)
+      if (method === 'GET' && pathname === '/api/world/arch-playlist') {
+        const atParam = parsedUrl.searchParams.get('at')?.trim() || undefined;
+        let evalIso = atParam;
+        if (!evalIso && 'getWorldTime' in worldCore && typeof worldCore.getWorldTime === 'function') {
+          try {
+            const wt = await worldCore.getWorldTime();
+            evalIso = wt?.utcInstant;
+          } catch {
+            evalIso = undefined;
+          }
+        }
+        const playlist = await archMediaPort.getActivePlaylist(evalIso);
+        sendJson(res, 200, {
+          success: true,
+          ...playlist,
+        });
+        return;
+      }
+
+      // 6A-3. GET / HEAD /api/media/arch/:fileName (Serves video billboard assets with HTTP Range support)
+      const archMediaMatch = pathname.match(/^\/api\/media\/arch\/([^/]+)$/);
+      if ((method === 'GET' || method === 'HEAD') && archMediaMatch && archMediaMatch[1]) {
+        let decodedFileName = '';
+        try {
+          decodedFileName = decodeURIComponent(archMediaMatch[1]);
+        } catch {
+          sendJson(res, 400, {
+            success: false,
+            error: { code: 'invalid-media-filename', message: 'Invalid media file encoding.' },
+          });
+          return;
+        }
+
+        const resolved = await archMediaPort.resolveMediaFile(decodedFileName);
+        if (!resolved) {
+          sendJson(res, 404, {
+            success: false,
+            error: { code: 'arch-media-not-found', message: 'Requested billboard video asset was not found.' },
+          });
+          return;
+        }
+
+        const totalSize = resolved.sizeBytes;
+        const rangeHeader = req.headers.range;
+        res.setHeader('Content-Type', resolved.mimeType);
+        res.setHeader('Accept-Ranges', 'bytes');
+        res.setHeader('ETag', `"${resolved.sha256}"`);
+        res.setHeader('Cache-Control', 'public, max-age=60');
+
+        if (typeof rangeHeader === 'string' && rangeHeader.startsWith('bytes=')) {
+          const rangeSpec = rangeHeader.slice('bytes='.length).split(',')[0] ?? '';
+          const parts = rangeSpec.split('-');
+          const start = parts[0] ? Number.parseInt(parts[0], 10) : 0;
+          const end = parts[1] ? Number.parseInt(parts[1], 10) : totalSize - 1;
+
+          if (
+            !Number.isFinite(start) ||
+            !Number.isFinite(end) ||
+            start < 0 ||
+            end >= totalSize ||
+            start > end
+          ) {
+            res.statusCode = 416;
+            res.setHeader('Content-Range', `bytes */${totalSize}`);
+            res.end();
+            return;
+          }
+
+          const chunkSize = end - start + 1;
+          res.statusCode = 206;
+          res.setHeader('Content-Range', `bytes ${start}-${end}/${totalSize}`);
+          res.setHeader('Content-Length', String(chunkSize));
+          if (method === 'HEAD') {
+            res.end();
+            return;
+          }
+          createReadStream(resolved.absolutePath, { start, end }).pipe(res);
+          return;
+        }
+
+        res.statusCode = 200;
+        res.setHeader('Content-Length', String(totalSize));
+        if (method === 'HEAD') {
+          res.end();
+          return;
+        }
+        createReadStream(resolved.absolutePath).pipe(res);
         return;
       }
 

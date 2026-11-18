@@ -685,6 +685,75 @@ namespace MyVirtualCommunity.Client.Api
         public ApiErrorDto error;
     }
 
+    [Serializable]
+    public class WorldWeatherObservationDto
+    {
+        public string status; // available | unavailable
+        public string freshness; // live | cached | unavailable
+        public string locationName;
+        public float latitude;
+        public float longitude;
+        public float temperatureCelsius;
+        public float apparentTemperatureCelsius;
+        public float relativeHumidityPercent;
+        public float windSpeedKmh;
+        public int weatherCode;
+        public BilingualTextDto conditionLabel;
+        public bool isDay;
+        public string observedAt;
+        public string fetchedAt;
+        public string source;
+        public string errorDetail;
+
+        [NonSerialized] public bool hasTemperature = true;
+        [NonSerialized] public bool hasApparentTemperature = true;
+        [NonSerialized] public bool hasHumidity = true;
+        [NonSerialized] public bool hasWindSpeed = true;
+    }
+
+    [Serializable]
+    public class WorldWeatherResponseDto
+    {
+        public bool success;
+        public WorldWeatherObservationDto weather;
+        public ApiErrorDto error;
+    }
+
+    [Serializable]
+    public class ArchMediaCampaignWindowDto
+    {
+        public string startAt;
+        public string endAt;
+    }
+
+    [Serializable]
+    public class ArchPlaylistItemDto
+    {
+        public string id;
+        public string fileName;
+        public string title;
+        public string sponsor;
+        public string mediaType;
+        public string mimeType;
+        public long sizeBytes;
+        public string sha256;
+        public int order;
+        public float durationHintSeconds;
+        public string url;
+        public ArchMediaCampaignWindowDto activeWindow;
+    }
+
+    [Serializable]
+    public class ArchPlaylistResponseDto
+    {
+        public bool success;
+        public string generatedAt;
+        public string source;
+        public int pollRecommendedSeconds;
+        public ArchPlaylistItemDto[] items;
+        public ApiErrorDto error;
+    }
+
     #endregion
 
     #region NPC Waypoint Movement & Spatial Presence DTOs (Increment 5.16.0)

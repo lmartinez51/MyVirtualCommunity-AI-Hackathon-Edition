@@ -225,6 +225,51 @@ namespace MyVirtualCommunity.Client.Api
         }
 
         /// <summary>
+        /// Retrieves the authoritative meteorological observation for Ciudad Juárez Centro from the backend.
+        /// </summary>
+        public void GetWorldWeather(bool bypassCache, Action<WorldWeatherResponseDto> onSuccess, Action<string> onError)
+        {
+            string endpoint = bypassCache ? "/api/world/weather?refresh=true" : "/api/world/weather";
+            StartCoroutine(SendGetRequest<WorldWeatherResponseDto>(endpoint, onSuccess, onError, postProcessAction: (dto, rawJson) =>
+            {
+                PostProcessWorldWeather(dto, rawJson);
+            }));
+        }
+
+        private void PostProcessWorldWeather(WorldWeatherResponseDto dto, string rawJson)
+        {
+            if (dto?.weather == null || string.IsNullOrEmpty(rawJson)) return;
+            dto.weather.hasTemperature = !rawJson.Contains("\"temperatureCelsius\":null") && !rawJson.Contains("\"temperatureCelsius\": null");
+            dto.weather.hasApparentTemperature = !rawJson.Contains("\"apparentTemperatureCelsius\":null") && !rawJson.Contains("\"apparentTemperatureCelsius\": null");
+            dto.weather.hasHumidity = !rawJson.Contains("\"relativeHumidityPercent\":null") && !rawJson.Contains("\"relativeHumidityPercent\": null");
+            dto.weather.hasWindSpeed = !rawJson.Contains("\"windSpeedKmh\":null") && !rawJson.Contains("\"windSpeedKmh\": null");
+        }
+
+        /// <summary>
+        /// Retrieves the authoritative Gateway Arch billboard video playlist from the backend.
+        /// </summary>
+        public void GetArchPlaylist(Action<ArchPlaylistResponseDto> onSuccess, Action<string> onError)
+        {
+            StartCoroutine(SendGetRequest<ArchPlaylistResponseDto>("/api/world/arch-playlist", onSuccess, onError));
+        }
+
+        /// <summary>
+        /// Resolves a server-relative path (such as /api/media/arch/camila_loop.mp4) to a full URL.
+        /// </summary>
+        public string ResolveUrl(string relativeOrAbsoluteUrl)
+        {
+            if (string.IsNullOrEmpty(relativeOrAbsoluteUrl)) return "";
+            if (relativeOrAbsoluteUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                relativeOrAbsoluteUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                return relativeOrAbsoluteUrl;
+            }
+            string root = string.IsNullOrEmpty(baseUrl) ? "http://127.0.0.1:3000" : baseUrl.TrimEnd('/');
+            string path = relativeOrAbsoluteUrl.StartsWith("/") ? relativeOrAbsoluteUrl : "/" + relativeOrAbsoluteUrl;
+            return root + path;
+        }
+
+        /// <summary>
         /// Retrieves authoritative spatial waypoint movement state for a specific NPC.
         /// </summary>
         public void GetNpcMovement(string npcId, Action<NpcMovementResponseDto> onSuccess, Action<string> onError)
