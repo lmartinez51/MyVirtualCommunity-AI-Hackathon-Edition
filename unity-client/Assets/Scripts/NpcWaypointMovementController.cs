@@ -435,7 +435,7 @@ namespace MyVirtualCommunity.Client.World
                 }
                 else if (isFixedCitizenKiosk)
                 {
-                    t.position = new Vector3(-10.80f, 0.0f, 18.55f);
+                    t.position = new Vector3(-7.60f, 0.0f, 18.80f);
                     t.rotation = Quaternion.Euler(0f, 90f, 0f);
                 }
                 else if (!isStaleFrozen)
@@ -834,7 +834,7 @@ namespace MyVirtualCommunity.Client.World
             }
             else if (isFixedCitizenKiosk)
             {
-                target.point.transform.position = new Vector3(-10.80f, 0.0f, 18.55f);
+                target.point.transform.position = new Vector3(-7.60f, 0.0f, 18.80f);
                 target.point.transform.rotation = Quaternion.Euler(0f, 90f, 0f);
             }
             else

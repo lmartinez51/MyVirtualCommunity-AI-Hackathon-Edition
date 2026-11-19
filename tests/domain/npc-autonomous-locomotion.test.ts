@@ -795,7 +795,7 @@ describe('Autonomous NPC Locomotion, Bridge Patrols & Bounded Business Activity 
       assert.strictEqual(patricia.controlMode, 'fixed_station_anchor');
       assert.strictEqual(patricia.movementState, 'stationary');
       assert.strictEqual(patricia.currentWaypointId, 'wp_patricia_desk');
-      assert.deepStrictEqual(patricia.position, { x: -10.8, y: 0.0, z: 18.55 });
+      assert.deepStrictEqual(patricia.position, { x: -7.6, y: 0.0, z: 18.8 });
     }
 
     // Elena's scheduled 13:30 handover walk and Patricia's scheduled 12:00 inspection walk still work identically

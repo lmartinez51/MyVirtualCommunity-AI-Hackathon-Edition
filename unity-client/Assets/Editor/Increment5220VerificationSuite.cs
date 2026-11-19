@@ -267,7 +267,7 @@ namespace MyVirtualCommunity.Editor
                         ""currentWaypointId"": ""wp_patricia_desk"",
                         ""destinationWaypointId"": null,
                         ""activeRouteId"": null,
-                        ""position"": { ""x"": -10.8, ""y"": 0.0, ""z"": 18.55 },
+                        ""position"": { ""x"": -7.6, ""y"": 0.0, ""z"": 18.8 },
                         ""forwardHeading"": { ""x"": 0.0, ""z"": 1.0 },
                         ""progression"": 0.0,
                         ""activityState"": ""available"",

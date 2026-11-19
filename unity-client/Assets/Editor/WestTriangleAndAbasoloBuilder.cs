@@ -112,6 +112,29 @@ namespace MyVirtualCommunity.Editor
             CaptureVerificationScreenshots();
         }
 
+        [MenuItem("MyVirtualCommunity/Rebuild East Azucenas & Manzana Only")]
+        public static void RebuildEastAzucenasManzanaOnly()
+        {
+            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            if (!scene.IsValid())
+            {
+                Debug.LogError($"[WestTriangleAndAbasoloBuilder] Failed to open scene: {ScenePath}");
+                return;
+            }
+            Material asphaltMat = LoadMat("Assets/Settings/AsphaltMaterial.mat", new Color(0.18f, 0.18f, 0.20f));
+            Material concreteMat = LoadMat("Assets/Settings/ConcreteMaterial.mat", new Color(0.68f, 0.67f, 0.64f));
+            Material curbMat = LoadMat("Assets/Settings/CurbMaterial.mat", new Color(0.82f, 0.80f, 0.78f));
+            Material whiteStripeMat = LoadMat("Assets/Settings/WhiteStripeMaterial.mat", new Color(0.95f, 0.95f, 0.95f));
+            Material urbanLotMat = CreateOrGetMat("Assets/Settings/West_UrbanLotSurface.mat", new Color(0.36f, 0.35f, 0.34f), 0.05f);
+            Material yellowStripeMat = CreateOrGetMat("Assets/Settings/West_YellowStripe.mat", new Color(0.95f, 0.76f, 0.08f), 0.05f);
+
+            BuildEastAzucenasAndManzana(asphaltMat, concreteMat, curbMat, whiteStripeMat, yellowStripeMat, urbanLotMat);
+
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene, ScenePath);
+            Debug.Log("[WestTriangleAndAbasoloBuilder] Rebuilt East Azucenas & Manzana cleanly.");
+        }
+
         // =========================================================================
         // STEP 0: AUTHENTIC RECESSED WEST ADMIN BUILDING (MATCHING STREET VIEW)
         // =========================================================================
@@ -1807,7 +1830,7 @@ namespace MyVirtualCommunity.Editor
                 }
             }
 
-            net.manzanaOuterPoly = new List<Vector2> { new Vector2(12.00f, -21.50f), new Vector2(24.00f, -21.50f), new Vector2(24.00f, 22.00f) };
+            net.manzanaOuterPoly = new List<Vector2> { new Vector2(12.00f, -26.80f), new Vector2(24.00f, -26.80f), new Vector2(24.00f, 22.00f) };
             Vector2 gTipPt = net.gardSouthEdge[14];
             Vector2 aTipPt = net.azNorthEdge[aLim];
             int aTipIdx = Mathf.Max(0, aLim - 1);
@@ -1831,13 +1854,13 @@ namespace MyVirtualCommunity.Editor
             }
             net.manzanaOuterPoly.Add(new Vector2(12.00f, azNorthAt12));
 
-            // Inner Manzana urban lot pad (inset 1.60m inside curbs, strictly East of X=24 or South of Z=-21.5, ZERO overlap with existing stores!)
+            // Inner Manzana urban lot pad (inset 1.60m inside curbs, strictly East of X=24, ZERO overlap with extended East block up to Z=-26.80!)
             List<Vector2> gardSouthIn = OffsetSpinePts(net.gardSpine, x => -(EvalGardHalfWidth(x) + 1.60f));
             List<Vector2> azNorthIn = OffsetSpinePts(net.azSpine, _ => 3.80f + 1.60f);
             bool hasInTip = FindPolylinePolylineIntersection(gardSouthIn, azNorthIn, 14, 0, out Vector2 inTip, out int giCut, out int aiCut);
             int giLim = hasInTip ? giCut : gardSouthIn.Count - 1;
             int aiLim = hasInTip ? aiCut : azNorthIn.Count - 1;
-            net.manzanaLotPoly = new List<Vector2> { new Vector2(12.00f, -21.50f), new Vector2(24.00f, -21.50f), new Vector2(24.00f, 20.50f) };
+            net.manzanaLotPoly = new List<Vector2> { new Vector2(24.00f, -26.80f), new Vector2(24.00f, 20.50f) };
             Vector2 giTip = gardSouthIn[14];
             Vector2 aiMatchPt = azNorthIn[aiLim];
             int aiMatch = Mathf.Max(0, aiLim - 1);
@@ -1857,9 +1880,9 @@ namespace MyVirtualCommunity.Editor
             for (int j = aiMatch; j >= 0; j--)
             {
                 Vector2 p = azNorthIn[j];
-                if (p.x >= 12.00f && Vector2.Distance(p, aiMatchPt) > 0.08f) net.manzanaLotPoly.Add(p);
+                if (p.x >= 24.00f && Vector2.Distance(p, aiMatchPt) > 0.08f) net.manzanaLotPoly.Add(p);
             }
-            net.manzanaLotPoly.Add(new Vector2(12.00f, -21.50f));
+            net.manzanaLotPoly.Add(new Vector2(24.00f, -26.80f));
 
             // 2. CentralBlock_NE (between Abasolo South wall/curb and Service North, Plaza seam X=23.50, rounded SE nose)
             List<Vector2> abaSouth = OffsetSpinePts(net.abaSpine, x => x <= 55.0f ? -5.34f : EvalAbaEastHalfRight(x));
@@ -3023,19 +3046,8 @@ namespace MyVirtualCommunity.Editor
             CreateBox("Curb_East_SouthOfAzucenas", envRoot,
                 new Vector3(6.90f, 0.10f, southCenterZ), new Vector3(0.20f, 0.20f, southSegLen), curbMat, keepCollider: false);
 
-            // Lane markings on Av. Juarez south of Azucenas
-            List<Vector3> verts = new List<Vector3>();
-            List<int> tris = new List<int>();
-            List<Vector2> uvs = new List<Vector2>();
-            AddMarkQuadXZ(verts, tris, uvs, new Vector2(-2.32f, -59.5f), new Vector2(-2.32f, swSouthCutZ + 1.5f), new Vector2(-2.24f, swSouthCutZ + 1.5f), new Vector2(-2.24f, -59.5f), MarkingsY);
-            AddMarkQuadXZ(verts, tris, uvs, new Vector2(6.44f, -59.5f), new Vector2(6.44f, swSouthCutZ), new Vector2(6.52f, swSouthCutZ), new Vector2(6.52f, -59.5f), MarkingsY);
-            for (float z = -58.5f; z < swSouthCutZ + 1.0f; z += 5.5f)
-            {
-                float zEnd = Mathf.Min(z + 2.6f, swSouthCutZ + 1.2f);
-                if (zEnd - z < 0.8f) continue;
-                AddMarkQuadXZ(verts, tris, uvs, new Vector2(2.04f, z), new Vector2(2.04f, zEnd), new Vector2(2.16f, zEnd), new Vector2(2.16f, z), MarkingsY);
-            }
-            CreateMeshChild("Road_AvenidaJuarez_SouthMarkings", envRoot, verts, tris, uvs, whiteStripeMat);
+            // Continuous solid white 3-lane no-lane-change bridge approach markings on Av. Juarez
+            EastSidewalkBlockBuilder.RebuildAvJuarezContinuousSolidLaneLines();
         }
 
         private static void BuildEastOsmMarkings(Transform root, OsmNetworkData net, Material whiteStripeMat, Material yellowStripeMat)

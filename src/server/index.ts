@@ -23,6 +23,7 @@ import { PASO_DEL_NORTE_CORRIDOR } from '../domain/spatial-corridor.js';
 import { CbpBorderWaitTimeAdapter } from '../adapters/cbp-border-wait-time-adapter.js';
 import { LocalArchMediaAdapter } from '../adapters/local-arch-media-adapter.js';
 import { OpenMeteoWeatherAdapter } from '../adapters/open-meteo-weather-adapter.js';
+import { PublicExchangeRateAdapter } from '../adapters/public-exchange-rate-adapter.js';
 import { GetBorderWaitTimesUseCase } from '../application/get-border-wait-times.js';
 import {
   InvalidWitnessMessageError,
@@ -72,6 +73,7 @@ import {
 } from '../domain/border-lane-barriers.js';
 import { ArchMediaPort } from '../ports/arch-media-port.js';
 import { BorderCrossingPort } from '../ports/border-crossing-port.js';
+import { ExchangeRatePort } from '../ports/exchange-rate-port.js';
 import { MetaModelPort } from '../ports/meta-model-port.js';
 import { WeatherPort } from '../ports/weather-port.js';
 import { WorldCorePort } from '../ports/world-core-port.js';
@@ -82,6 +84,7 @@ export interface AssistantServerOptions {
   readonly metaModel?: MetaModelPort;
   readonly borderCrossingPort?: BorderCrossingPort;
   readonly weatherPort?: WeatherPort;
+  readonly exchangeRatePort?: ExchangeRatePort;
   readonly archMediaPort?: ArchMediaPort;
   readonly archMediaDir?: string;
   readonly witnessUseCase?: TalkToSyntheticWitnessUseCase;
@@ -138,6 +141,9 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
 
   const weatherPort: WeatherPort =
     options.weatherPort ?? new OpenMeteoWeatherAdapter();
+
+  const exchangeRatePort: ExchangeRatePort =
+    options.exchangeRatePort ?? new PublicExchangeRateAdapter();
 
   const archMediaPort: ArchMediaPort =
     options.archMediaPort ?? new LocalArchMediaAdapter({ mediaDir: options.archMediaDir });
@@ -1088,6 +1094,18 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
         sendJson(res, 200, {
           success: true,
           weather,
+        });
+        return;
+      }
+
+      // 6A-1. GET /api/world/exchange-rate (Authoritative USD -> MXN Border Cash Exchange Rate)
+      if (method === 'GET' && pathname === '/api/world/exchange-rate') {
+        const refreshParam = parsedUrl.searchParams.get('refresh') ?? parsedUrl.searchParams.get('bypassCache');
+        const bypassCache = refreshParam === 'true' || refreshParam === '1';
+        const exchangeRate = await exchangeRatePort.getCurrentExchangeRate(bypassCache);
+        sendJson(res, 200, {
+          success: true,
+          exchangeRate,
         });
         return;
       }

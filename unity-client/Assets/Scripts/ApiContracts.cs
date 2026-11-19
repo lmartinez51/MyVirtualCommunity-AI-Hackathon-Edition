@@ -720,6 +720,35 @@ namespace MyVirtualCommunity.Client.Api
     }
 
     [Serializable]
+    public class WorldExchangeRateObservationDto
+    {
+        public string status; // available | unavailable
+        public string freshness; // live | cached | unavailable
+        public string baseCurrency; // USD
+        public string quoteCurrency; // MXN
+        public float midMarketRate;
+        public float buyRate;
+        public float sellRate;
+        public float spreadMxn;
+        public string spreadBasis;
+        public string observedAt;
+        public string fetchedAt;
+        public string source;
+        public string errorDetail;
+
+        [NonSerialized] public bool hasBuyRate = true;
+        [NonSerialized] public bool hasSellRate = true;
+    }
+
+    [Serializable]
+    public class WorldExchangeRateResponseDto
+    {
+        public bool success;
+        public WorldExchangeRateObservationDto exchangeRate;
+        public ApiErrorDto error;
+    }
+
+    [Serializable]
     public class ArchMediaCampaignWindowDto
     {
         public string startAt;

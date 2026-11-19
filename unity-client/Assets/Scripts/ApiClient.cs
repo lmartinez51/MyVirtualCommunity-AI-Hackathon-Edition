@@ -246,6 +246,20 @@ namespace MyVirtualCommunity.Client.Api
         }
 
         /// <summary>
+        /// Retrieves the authoritative USD -> MXN border cash exchange rate observation from the backend.
+        /// </summary>
+        public void GetWorldExchangeRate(bool bypassCache, Action<WorldExchangeRateResponseDto> onSuccess, Action<string> onError)
+        {
+            string endpoint = bypassCache ? "/api/world/exchange-rate?refresh=true" : "/api/world/exchange-rate";
+            StartCoroutine(SendGetRequest<WorldExchangeRateResponseDto>(endpoint, onSuccess, onError, postProcessAction: (dto, rawJson) =>
+            {
+                if (dto?.exchangeRate == null || string.IsNullOrEmpty(rawJson)) return;
+                dto.exchangeRate.hasBuyRate = !rawJson.Contains("\"buyRate\":null") && !rawJson.Contains("\"buyRate\": null");
+                dto.exchangeRate.hasSellRate = !rawJson.Contains("\"sellRate\":null") && !rawJson.Contains("\"sellRate\": null");
+            }));
+        }
+
+        /// <summary>
         /// Retrieves the authoritative Gateway Arch billboard video playlist from the backend.
         /// </summary>
         public void GetArchPlaylist(Action<ArchPlaylistResponseDto> onSuccess, Action<string> onError)

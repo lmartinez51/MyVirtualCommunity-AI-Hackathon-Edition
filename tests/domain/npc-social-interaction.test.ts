@@ -372,7 +372,7 @@ describe('Autonomous NPC Social Interaction Lifecycle Domain (Increment 5.21.0)'
     // Fixed anchor coordinates remain intact
     const primaryMov = evaluateRosterMovement(NPC_MOVEMENT_PROFILES, DAYTIME_NORMAL_INSTANT);
     assert.deepStrictEqual(primaryMov.npcs['elena-border-concierge']!.position, { x: 19.2, y: 0.2, z: 39.5 });
-    assert.deepStrictEqual(primaryMov.npcs['patricia-citizen-rep']!.position, { x: -10.8, y: 0.0, z: 18.55 });
+    assert.deepStrictEqual(primaryMov.npcs['patricia-citizen-rep']!.position, { x: -7.6, y: 0.0, z: 18.8 });
     assert.ok(socialSnap.evaluatedAt === duringPlazaIso);
   });
 });

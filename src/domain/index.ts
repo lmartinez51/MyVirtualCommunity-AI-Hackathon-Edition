@@ -20,3 +20,4 @@ export * from './npc-social-interaction.js';
 export * from './player-movement.js';
 export * from './npc-interaction-validation.js';
 export * from './border-lane-barriers.js';
+export * from './exchange-rate.js';

@@ -247,63 +247,8 @@ namespace MyVirtualCommunity.Editor
             }
 
             // 3. Remove any prior East Parking Lanes root
-            GameObject oldParking = GameObject.Find("Parking_Lanes_East");
-            if (oldParking != null) UnityEngine.Object.DestroyImmediate(oldParking);
-
-            // 4. Construct Authentic Parallel Parking Stalls along the East Sidewalk of Av. Benito Juárez
-            // Block spans Z = -21.5m (Atención Dental) to Z = +22.0m (Curiosidades Azteca) -> Total 43.50m
-            // 6 standard parallel stalls of 5.50m length x 2.40m width (Mexican NOM / Urban Standard)
-            // Total parking bay length: 6 * 5.50m = 33.00m
-            // Spans Z = -16.50m to Z = +16.50m
-            // Corner clearances:
-            //   - North corner (Calle Gardenias mouth @ Z = 22.0m): 22.0m - 16.5m = 5.50m buffer
-            //   - South corner (South corridor boundary @ Z = -21.5m): -16.5m - (-21.5m) = 5.00m buffer
-            // Both satisfy official traffic regulations requiring >= 5.0m setback from intersections/crossings.
-            // Width: From East curb face (X = 6.80m) to X = 4.40m (2.40m wide stall).
-            // Leaves 11.20m of open roadway (from X = -6.80m to X = +4.40m), perfectly fitting 2 wide circulation lanes.
-            GameObject parkingRoot = new GameObject("Parking_Lanes_East");
-            parkingRoot.transform.SetParent(envRoot);
-            parkingRoot.transform.position = Vector3.zero;
-
-            float curbFaceX = AveJuarezEastCurbX - 0.10f; // 6.80m (curb center is 6.90m, width 0.20m, inner street face is 6.80m)
-            float stallWidth = 2.40f;
-            float outerLineX = curbFaceX - stallWidth; // 4.40m
-            float stallLength = 5.50f;
-            int numStalls = 6;
-            float totalLength = numStalls * stallLength; // 33.00f
-            float startZ = -16.50f;
-            float endZ = 16.50f;
-            float dividerCenterX = (curbFaceX + outerLineX) * 0.5f; // 5.60f
-            float stripeThickness = 0.12f;
-            float stripeHeight = 0.012f;
-
-            // Outer continuous longitudinal line separating parking from through-traffic lane
-            GameObject longStripe = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            longStripe.name = "Stall_Boundary_Longitudinal";
-            longStripe.transform.SetParent(parkingRoot.transform);
-            longStripe.transform.position = new Vector3(outerLineX, MarkingsY, (startZ + endZ) * 0.5f);
-            longStripe.transform.localScale = new Vector3(stripeThickness, stripeHeight, totalLength);
-            SetMaterial(longStripe, whiteStripeMat);
-            UnityEngine.Object.DestroyImmediate(longStripe.GetComponent<Collider>());
-
-            // Transverse dividing lines
-            for (int i = 0; i <= numStalls; i++)
-            {
-                float z = startZ + i * stallLength;
-                string divName = (i == 0) ? "Stall_EndCap_South" : (i == numStalls ? "Stall_EndCap_North" : $"Stall_Divider_{i}");
-                GameObject div = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                div.name = divName;
-                div.transform.SetParent(parkingRoot.transform);
-                div.transform.position = new Vector3(dividerCenterX, MarkingsY, z);
-                div.transform.localScale = new Vector3(stallWidth, stripeHeight, stripeThickness);
-                SetMaterial(div, whiteStripeMat);
-                UnityEngine.Object.DestroyImmediate(div.GetComponent<Collider>());
-            }
-
-            Debug.Log($"[CalleGardeniasBuilder] Configured {numStalls} East sidewalk parallel parking stalls (Z = [{startZ:F1}m, {endZ:F1}m]) with 5.5m North setback and 5.0m South setback.");
-
-            // 5. Construct Authentic Dual-Head Parking Meters (Parquímetros Dobles) on the East Sidewalk
-            ConstructEastSidewalkParkingMeters(envRoot);
+            // 4. Remove legacy East parallel parking stalls & parking meters and enforce continuous solid white 3-lane bridge approach lines
+            EastSidewalkBlockBuilder.RebuildAvJuarezContinuousSolidLaneLines();
         }
 
         private static void ConstructEastSidewalkParkingMeters(Transform envRoot)

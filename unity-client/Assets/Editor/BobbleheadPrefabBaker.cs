@@ -374,8 +374,8 @@ namespace MyVirtualCommunity.Editor
                 deskRoot = new GameObject("CitizenServiceDesk");
             }
 
-            // Target location: close to west wall, in front of the white roll-up shutter (Building C / Dental Jarquin)
-            deskRoot.transform.position = new Vector3(-10.8f, 0.0f, 18.55f);
+            // Target location: forward on the wide West sidewalk (leaving Dental Jarquín recessed corner unobstructed behind it)
+            deskRoot.transform.position = new Vector3(-7.6f, 0.0f, 18.8f);
             // Target orientation: facing outward towards the street (East, +X)
             deskRoot.transform.rotation = Quaternion.Euler(0f, 90f, 0f);
 

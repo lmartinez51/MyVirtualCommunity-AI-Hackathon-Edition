@@ -542,7 +542,7 @@ namespace MyVirtualCommunity.Editor
             {
                 ("mateo-student", "wp_bridge_toll_plaza", new Vector3(15.2f, 0.35f, 47.0f), "wp_mateo_queue_entry", new Vector3(15.2f, 0.33f, 42.0f), new Vector3(15.2f, 0.33f, 42.0f)),
                 ("sofia-cross-border-retail", "wp_canopy_waiting", new Vector3(16.0f, 0.25f, 41.0f), "wp_sofia_queue_mid", new Vector3(15.2f, 0.38f, 45.5f), new Vector3(15.2f, 0.38f, 45.5f)),
-                ("patricia-citizen-rep", "wp_west_inspection", new Vector3(-7.5f, 0.0f, 26.0f), "wp_patricia_desk", new Vector3(-10.8f, 0.0f, 18.55f), new Vector3(-11.25f, 0.0f, 18.55f)),
+                ("patricia-citizen-rep", "wp_west_inspection", new Vector3(-7.5f, 0.0f, 26.0f), "wp_patricia_desk", new Vector3(-7.6f, 0.0f, 18.8f), new Vector3(-8.05f, 0.0f, 18.8f)),
                 ("valeria-optica-attendant", "wp_optica_workshop", new Vector3(-9.5f, 0.2f, 8.0f), "wp_valeria_storefront", new Vector3(-10.5f, 1.0f, 1.5f), new Vector3(-10.5f, 1.0f, 1.5f)),
                 ("hector-artisan", "wp_hector_bench", new Vector3(15.2f, 0.46f, 50.5f), "wp_hector_stand", new Vector3(15.2f, 0.44f, 49.0f), new Vector3(15.2f, 0.44f, 49.0f)),
                 ("carlos-farmacia-attendant", "wp_east_dining_benches", new Vector3(8.5f, 0.2f, 22.0f), "wp_carlos_counter", new Vector3(10.5f, 1.0f, 0.0f), new Vector3(10.5f, 1.0f, 0.0f))
