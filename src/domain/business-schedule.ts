@@ -14,6 +14,8 @@ export interface BusinessSchedule {
   readonly timeZone: string;
   readonly operatingDays: readonly number[]; // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
   readonly hours: BusinessOperatingHours;
+  readonly hoursByDay?: Readonly<Record<number, BusinessOperatingHours>>; // Optional per-day hours override (0=Sun..6=Sat)
+  readonly is24Hours?: boolean; // Optional 24/7 continuous operation flag
   readonly lastEntryCutoffMinutes: number; // e.g. 15 minutes before close
   readonly closureOverrides?: readonly string[]; // ISO date strings "YYYY-MM-DD"
 }
@@ -162,7 +164,71 @@ export function validateBusinessSchedule(raw: unknown): BusinessSchedule {
     );
   }
 
-  // 7. Closure Overrides (optional)
+  // 7. Optional per-day operating hours overrides (hoursByDay)
+  let hoursByDay: Readonly<Record<number, BusinessOperatingHours>> | undefined = undefined;
+  if (candidate.hoursByDay !== undefined) {
+    if (!candidate.hoursByDay || typeof candidate.hoursByDay !== 'object' || Array.isArray(candidate.hoursByDay)) {
+      throw new InvalidScheduleError('hoursByDay must be a map of day-of-week (0-6) to operating hours');
+    }
+    const rawMap = candidate.hoursByDay as Record<string, unknown>;
+    const normalizedMap: Record<number, BusinessOperatingHours> = {};
+    for (const [dayKey, dayRawHours] of Object.entries(rawMap)) {
+      const dayNum = Number(dayKey);
+      if (!Number.isInteger(dayNum) || dayNum < 0 || dayNum > 6) {
+        throw new InvalidScheduleError(
+          `Invalid hoursByDay key "${dayKey}": must be an integer 0 (Sunday) through 6 (Saturday)`
+        );
+      }
+      if (!dayRawHours || typeof dayRawHours !== 'object') {
+        throw new InvalidScheduleError(`Invalid hoursByDay entry for day ${dayNum}: must be an object`);
+      }
+      const dObj = dayRawHours as Record<string, unknown>;
+      const dOpenH = dObj.openHour;
+      const dOpenM = dObj.openMinute;
+      const dCloseH = dObj.closeHour;
+      const dCloseM = dObj.closeMinute;
+      if (
+        typeof dOpenH !== 'number' || !Number.isInteger(dOpenH) || dOpenH < 0 || dOpenH > 23 ||
+        typeof dOpenM !== 'number' || !Number.isInteger(dOpenM) || dOpenM < 0 || dOpenM > 59 ||
+        typeof dCloseH !== 'number' || !Number.isInteger(dCloseH) || dCloseH < 0 || dCloseH > 23 ||
+        typeof dCloseM !== 'number' || !Number.isInteger(dCloseM) || dCloseM < 0 || dCloseM > 59
+      ) {
+        throw new InvalidScheduleError(`Invalid operating hours in hoursByDay for day ${dayNum}`);
+      }
+      const dOpenTotal = dOpenH * 60 + dOpenM;
+      const dCloseTotal = dCloseH * 60 + dCloseM;
+      if (dCloseTotal <= dOpenTotal) {
+        throw new InvalidScheduleError(
+          `Closing time must be strictly after opening time in hoursByDay for day ${dayNum}`
+        );
+      }
+      if (cutoff >= dCloseTotal - dOpenTotal) {
+        throw new InvalidScheduleError(
+          `lastEntryCutoffMinutes (${cutoff}) must be strictly less than operating duration for day ${dayNum}`
+        );
+      }
+      normalizedMap[dayNum] = Object.freeze({
+        openHour: dOpenH,
+        openMinute: dOpenM,
+        closeHour: dCloseH,
+        closeMinute: dCloseM,
+      });
+    }
+    if (Object.keys(normalizedMap).length > 0) {
+      hoursByDay = Object.freeze(normalizedMap);
+    }
+  }
+
+  // 8. Optional 24/7 flag
+  let is24Hours: boolean | undefined = undefined;
+  if (candidate.is24Hours !== undefined) {
+    if (typeof candidate.is24Hours !== 'boolean') {
+      throw new InvalidScheduleError('is24Hours must be a boolean when provided');
+    }
+    is24Hours = candidate.is24Hours;
+  }
+
+  // 9. Closure Overrides (optional)
   let closureOverrides: readonly string[] | undefined = undefined;
   if (candidate.closureOverrides !== undefined) {
     if (!Array.isArray(candidate.closureOverrides)) {
@@ -190,6 +256,8 @@ export function validateBusinessSchedule(raw: unknown): BusinessSchedule {
       closeHour,
       closeMinute,
     }),
+    ...(hoursByDay ? { hoursByDay } : {}),
+    ...(is24Hours ? { is24Hours } : {}),
     lastEntryCutoffMinutes: cutoff,
     ...(closureOverrides ? { closureOverrides } : {}),
   });

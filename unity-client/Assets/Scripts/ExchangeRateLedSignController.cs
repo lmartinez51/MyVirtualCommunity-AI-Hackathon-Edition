@@ -17,8 +17,18 @@ namespace MyVirtualCommunity.Client.World
     /// Strictly respects single-source-of-truth architecture: polls the backend endpoint
     /// GET /api/world/exchange-rate via ApiClient and displays honest "--.--" when offline.
     /// </summary>
+    public enum ExchangeLedLayoutMode
+    {
+        AlternatingBuySell = 0,
+        DualSimultaneousGreenRed = 1,
+        AlternatingBuyGreenSellMagenta = 2
+    }
+
     public class ExchangeRateLedSignController : MonoBehaviour
     {
+        [Header("Layout Mode")]
+        public ExchangeLedLayoutMode layoutMode = ExchangeLedLayoutMode.AlternatingBuySell;
+
         [Header("Display Faces & Lighting (South & North)")]
         public Renderer[] displayFaceRenderers;
         [Tooltip("Serialized URP/Lit emissive template material so Unity never strips _EMISSION in standalone builds.")]
@@ -49,7 +59,7 @@ namespace MyVirtualCommunity.Client.World
         [SerializeField] private bool hasLiveQuote = false;
 
         private const int TexWidth = 512;
-        private const int TexHeight = 300;
+        private int activeTexHeight = 300;
 
         private Texture2D ledTexture;
         private Color32[] pixelBuffer;
@@ -73,9 +83,16 @@ namespace MyVirtualCommunity.Client.World
         private static readonly Color32 LedGreenGlow = new Color32(14, 158, 44, 255);
         private static readonly Color32 LedYellowBright = new Color32(255, 232, 36, 255);
         private static readonly Color32 LedYellowGlow = new Color32(178, 150, 16, 255);
+        private static readonly Color32 LedRedBright = new Color32(255, 36, 32, 255);
+        private static readonly Color32 LedRedGlow = new Color32(176, 16, 14, 255);
+        private static readonly Color32 LedMagentaBright = new Color32(244, 88, 252, 255);
+        private static readonly Color32 LedMagentaGlow = new Color32(162, 32, 184, 255);
+        private static readonly Color32 LedLilacHeader = new Color32(242, 214, 255, 255);
         private static readonly Color32 LedOfflineAmber = new Color32(228, 168, 48, 255);
         private static readonly Color LightGreenColor = new Color(0.18f, 1.0f, 0.36f, 1f);
         private static readonly Color LightYellowColor = new Color(1.0f, 0.88f, 0.16f, 1f);
+        private static readonly Color LightRedColor = new Color(1.0f, 0.18f, 0.14f, 1f);
+        private static readonly Color LightMagentaColor = new Color(0.94f, 0.28f, 1.0f, 1f);
         private static readonly Color LightOfflineAmberColor = new Color(1.0f, 0.68f, 0.18f, 1f);
 
         private void Awake()
@@ -235,15 +252,28 @@ namespace MyVirtualCommunity.Client.World
 
         private void EnsureRenderResources()
         {
-            if (ledTexture == null)
+            int desiredHeight = layoutMode == ExchangeLedLayoutMode.DualSimultaneousGreenRed ? 440 : 300;
+            if (ledTexture == null || activeTexHeight != desiredHeight)
             {
-                ledTexture = new Texture2D(TexWidth, TexHeight, TextureFormat.RGBA32, false)
+                if (ledTexture != null)
                 {
-                    name = "CambiosSantaFe_LiveLedTex",
+                    if (Application.isPlaying) Destroy(ledTexture);
+                    else DestroyImmediate(ledTexture);
+                }
+                activeTexHeight = desiredHeight;
+                ledTexture = new Texture2D(TexWidth, activeTexHeight, TextureFormat.RGBA32, false)
+                {
+                    name = $"{gameObject.name}_LiveLedTex",
                     filterMode = FilterMode.Bilinear,
                     wrapMode = TextureWrapMode.Clamp
                 };
-                pixelBuffer = new Color32[TexWidth * TexHeight];
+                pixelBuffer = new Color32[TexWidth * activeTexHeight];
+                if (runtimeLedMaterial != null)
+                {
+                    runtimeLedMaterial.SetTexture("_BaseMap", ledTexture);
+                    runtimeLedMaterial.SetTexture("_MainTex", ledTexture);
+                    runtimeLedMaterial.SetTexture("_EmissionMap", ledTexture);
+                }
             }
 
             if (runtimeLedMaterial == null)
@@ -304,9 +334,23 @@ namespace MyVirtualCommunity.Client.World
 
             if (glowLights != null)
             {
-                Color lightCol = !hasLiveQuote
-                    ? LightOfflineAmberColor
-                    : (showingSellSlide ? LightYellowColor : LightGreenColor);
+                Color lightCol;
+                if (!hasLiveQuote)
+                {
+                    lightCol = LightOfflineAmberColor;
+                }
+                else if (layoutMode == ExchangeLedLayoutMode.DualSimultaneousGreenRed)
+                {
+                    lightCol = LightRedColor;
+                }
+                else if (layoutMode == ExchangeLedLayoutMode.AlternatingBuyGreenSellMagenta)
+                {
+                    lightCol = showingSellSlide ? LightMagentaColor : LightGreenColor;
+                }
+                else
+                {
+                    lightCol = showingSellSlide ? LightYellowColor : LightGreenColor;
+                }
                 float lightInt = isNight ? nightLightIntensity : dayLightIntensity;
                 float lightRng = isNight ? nightLightRange : dayLightRange;
                 if (!hasLiveQuote) lightInt *= 0.55f;
@@ -327,7 +371,7 @@ namespace MyVirtualCommunity.Client.World
             if (ledTexture == null || pixelBuffer == null) return;
 
             // Fill subtle SMD LED matrix dark grid background
-            for (int y = 0; y < TexHeight; y++)
+            for (int y = 0; y < activeTexHeight; y++)
             {
                 bool rowLine = (y % 6) == 0;
                 int rowOff = y * TexWidth;
@@ -337,30 +381,78 @@ namespace MyVirtualCommunity.Client.World
                 }
             }
 
-            bool isSell = showingSellSlide;
-            string headerText = isSell ? "VENTA" : "COMPRA";
-            string valueText = hasLiveQuote
-                ? (isSell ? latestSellRate : latestBuyRate).ToString("0.00", CultureInfo.InvariantCulture)
-                : "--.--";
+            if (layoutMode == ExchangeLedLayoutMode.DualSimultaneousGreenRed)
+            {
+                string buyText = hasLiveQuote
+                    ? latestBuyRate.ToString("0.00", CultureInfo.InvariantCulture)
+                    : "--.--";
+                string sellText = hasLiveQuote
+                    ? latestSellRate.ToString("0.00", CultureInfo.InvariantCulture)
+                    : "--.--";
 
-            Color32 mainColor = !hasLiveQuote
-                ? LedOfflineAmber
-                : (isSell ? LedYellowBright : LedGreenBright);
-            Color32 glowColor = !hasLiveQuote
-                ? BgBlack
-                : (isSell ? LedYellowGlow : LedGreenGlow);
-            Color32 sideBarColor = isSell ? LedGreenBright : LedYellowBright;
-            Color32 sideBarGlow = isSell ? LedGreenGlow : LedYellowGlow;
+                Color32 numColor = hasLiveQuote ? LedRedBright : LedOfflineAmber;
+                Color32 numGlow = hasLiveQuote ? LedRedGlow : BgBlack;
 
-            // Side vertical LED accent bars flanking the big numbers (signature detail from reference video!)
-            FillLedRectWithGlow(16, 26, 14, 198, sideBarColor, sideBarGlow);
-            FillLedRectWithGlow(TexWidth - 30, 26, 14, 198, sideBarColor, sideBarGlow);
+                // Top Row: GREEN "COMPRA" + bright RED digits (Y = 236..424)
+                DrawSmallMatrixTextCentered("COMPRA", centerX: TexWidth / 2, baseY: 382, pixelScale: 6, letterSpacing: 14, LedGreenBright, LedGreenGlow);
+                DrawHugeDigitStringCentered(buyText, centerX: TexWidth / 2, baseY: 238, digitWidth: 80, digitHeight: 132, thickness: 16, spacing: 16, numColor, numGlow);
 
-            // Top small header text ("COMPRA" or "VENTA") in upper band (Y = 236..282 in Texture2D bottom-up coords)
-            DrawSmallMatrixTextCentered(headerText, centerX: TexWidth / 2, baseY: 238, pixelScale: 6, letterSpacing: 16, mainColor, glowColor);
+                // Subtle dim LED divider line separating COMPRA & VENTA
+                FillRectMax(24, 218, TexWidth - 48, 3, new Color32(28, 38, 30, 255));
 
-            // Huge tall bold numeric readout (Y = 26..218 -> 192px tall, >4x taller than header letters!)
-            DrawHugeDigitStringCentered(valueText, centerX: TexWidth / 2, baseY: 26, digitWidth: 82, digitHeight: 192, thickness: 18, spacing: 18, mainColor, glowColor);
+                // Bottom Row: GREEN "VENTA" + bright RED digits (Y = 18..204)
+                DrawSmallMatrixTextCentered("VENTA", centerX: TexWidth / 2, baseY: 164, pixelScale: 6, letterSpacing: 16, LedGreenBright, LedGreenGlow);
+                DrawHugeDigitStringCentered(sellText, centerX: TexWidth / 2, baseY: 20, digitWidth: 80, digitHeight: 132, thickness: 16, spacing: 16, numColor, numGlow);
+            }
+            else if (layoutMode == ExchangeLedLayoutMode.AlternatingBuyGreenSellMagenta)
+            {
+                bool isSell = showingSellSlide;
+                string headerText = isSell ? "VENTA" : "COMPRA";
+                string valueText = hasLiveQuote
+                    ? (isSell ? latestSellRate : latestBuyRate).ToString("0.00", CultureInfo.InvariantCulture)
+                    : "--.--";
+
+                Color32 headerColor = !hasLiveQuote
+                    ? LedOfflineAmber
+                    : (isSell ? LedLilacHeader : LedGreenBright);
+                Color32 mainColor = !hasLiveQuote
+                    ? LedOfflineAmber
+                    : (isSell ? LedMagentaBright : LedGreenBright);
+                Color32 glowColor = !hasLiveQuote
+                    ? BgBlack
+                    : (isSell ? LedMagentaGlow : LedGreenGlow);
+
+                // Clean full-width VENTA (lilac header + bright magenta digits) / COMPRA (bright green) matching real street photo
+                DrawSmallMatrixTextCentered(headerText, centerX: TexWidth / 2, baseY: 238, pixelScale: 6, letterSpacing: 18, headerColor, glowColor);
+                DrawHugeDigitStringCentered(valueText, centerX: TexWidth / 2, baseY: 24, digitWidth: 86, digitHeight: 192, thickness: 19, spacing: 18, mainColor, glowColor);
+            }
+            else
+            {
+                bool isSell = showingSellSlide;
+                string headerText = isSell ? "VENTA" : "COMPRA";
+                string valueText = hasLiveQuote
+                    ? (isSell ? latestSellRate : latestBuyRate).ToString("0.00", CultureInfo.InvariantCulture)
+                    : "--.--";
+
+                Color32 mainColor = !hasLiveQuote
+                    ? LedOfflineAmber
+                    : (isSell ? LedYellowBright : LedGreenBright);
+                Color32 glowColor = !hasLiveQuote
+                    ? BgBlack
+                    : (isSell ? LedYellowGlow : LedGreenGlow);
+                Color32 sideBarColor = isSell ? LedGreenBright : LedYellowBright;
+                Color32 sideBarGlow = isSell ? LedGreenGlow : LedYellowGlow;
+
+                // Side vertical LED accent bars flanking the big numbers (signature detail from reference video!)
+                FillLedRectWithGlow(16, 26, 14, 198, sideBarColor, sideBarGlow);
+                FillLedRectWithGlow(TexWidth - 30, 26, 14, 198, sideBarColor, sideBarGlow);
+
+                // Top small header text ("COMPRA" or "VENTA") in upper band (Y = 236..282 in Texture2D bottom-up coords)
+                DrawSmallMatrixTextCentered(headerText, centerX: TexWidth / 2, baseY: 238, pixelScale: 6, letterSpacing: 16, mainColor, glowColor);
+
+                // Huge tall bold numeric readout (Y = 26..218 -> 192px tall, >4x taller than header letters!)
+                DrawHugeDigitStringCentered(valueText, centerX: TexWidth / 2, baseY: 26, digitWidth: 82, digitHeight: 192, thickness: 18, spacing: 18, mainColor, glowColor);
+            }
 
             ledTexture.SetPixels32(pixelBuffer);
             ledTexture.Apply(false, false);
@@ -371,8 +463,8 @@ namespace MyVirtualCommunity.Client.World
         {
             int xMin = Mathf.Clamp(x0, 0, TexWidth);
             int xMax = Mathf.Clamp(x0 + w, 0, TexWidth);
-            int yMin = Mathf.Clamp(y0, 0, TexHeight);
-            int yMax = Mathf.Clamp(y0 + h, 0, TexHeight);
+            int yMin = Mathf.Clamp(y0, 0, activeTexHeight);
+            int yMax = Mathf.Clamp(y0 + h, 0, activeTexHeight);
             for (int y = yMin; y < yMax; y++)
             {
                 int row = y * TexWidth;
@@ -387,8 +479,8 @@ namespace MyVirtualCommunity.Client.World
         {
             int xMin = Mathf.Clamp(x0, 0, TexWidth);
             int xMax = Mathf.Clamp(x0 + w, 0, TexWidth);
-            int yMin = Mathf.Clamp(y0, 0, TexHeight);
-            int yMax = Mathf.Clamp(y0 + h, 0, TexHeight);
+            int yMin = Mathf.Clamp(y0, 0, activeTexHeight);
+            int yMax = Mathf.Clamp(y0 + h, 0, activeTexHeight);
             for (int y = yMin; y < yMax; y++)
             {
                 int row = y * TexWidth;

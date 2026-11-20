@@ -1328,4 +1328,32 @@ namespace MyVirtualCommunity.Client.Api
     }
 
     #endregion
+
+    #region Authoritative Business Operational Status DTOs
+
+    [Serializable]
+    public class BusinessOperationalStatusDto
+    {
+        public string businessId;
+        public string businessName;
+        public string status;
+        public string availabilityState;
+        public bool isOpen;
+        public bool admissionPermitted;
+        public string evaluatedAtUtc;
+        public string openTimeCivil;
+        public string closeTimeCivil;
+        public string timeZone;
+        public string summaryMessage;
+    }
+
+    [Serializable]
+    public class BusinessStatusResponseDto
+    {
+        public bool success;
+        public BusinessOperationalStatusDto status;
+        public ApiErrorDto error;
+    }
+
+    #endregion
 }

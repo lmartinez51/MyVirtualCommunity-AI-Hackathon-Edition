@@ -344,7 +344,10 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
               id: schedule.businessId,
               name: schedule.name,
               timeZone: schedule.timeZone,
+              operatingDays: schedule.operatingDays,
               hours: schedule.hours,
+              ...(schedule.hoursByDay ? { hoursByDay: schedule.hoursByDay } : {}),
+              ...(schedule.is24Hours ? { is24Hours: schedule.is24Hours } : {}),
             });
           }
         }

@@ -42,8 +42,13 @@ namespace MyVirtualCommunity.Client.Api
 
         private void Awake()
         {
-            QualitySettings.vSyncCount = 1;
-            Application.targetFrameRate = 60;
+            // Respect thermal-safe framerate cap configured by FirstPersonPlayer (do not override 30 FPS on laptop GPUs)
+            if (QualitySettings.vSyncCount == 0)
+            {
+                bool lowVramLaptopGpu = SystemInfo.graphicsMemorySize > 0 && SystemInfo.graphicsMemorySize <= 2560;
+                QualitySettings.vSyncCount = lowVramLaptopGpu ? 2 : 1;
+                Application.targetFrameRate = lowVramLaptopGpu ? 30 : 60;
+            }
             apiClient = GetComponent<ApiClient>();
         }
 

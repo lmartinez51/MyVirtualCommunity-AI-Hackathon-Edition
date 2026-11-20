@@ -82,17 +82,24 @@ export function evaluateBusinessOperationalStatus(
 
   const civil = deriveCivilTime(evaluatedAt, schedule.timeZone);
 
+  const effectiveHours = schedule.hoursByDay?.[civil.dayOfWeek] ?? schedule.hours;
   const pad2 = (n: number) => n.toString().padStart(2, '0');
-  const openTimeCivil = `${pad2(schedule.hours.openHour)}:${pad2(schedule.hours.openMinute)}`;
-  const closeTimeCivil = `${pad2(schedule.hours.closeHour)}:${pad2(schedule.hours.closeMinute)}`;
+  const openTimeCivil = schedule.is24Hours
+    ? '00:00'
+    : `${pad2(effectiveHours.openHour)}:${pad2(effectiveHours.openMinute)}`;
+  const closeTimeCivil = schedule.is24Hours
+    ? '24:00'
+    : `${pad2(effectiveHours.closeHour)}:${pad2(effectiveHours.closeMinute)}`;
 
-  const openMinutesOfDay = schedule.hours.openHour * 60 + schedule.hours.openMinute;
-  const closeMinutesOfDay = schedule.hours.closeHour * 60 + schedule.hours.closeMinute;
+  const openMinutesOfDay = effectiveHours.openHour * 60 + effectiveHours.openMinute;
+  const closeMinutesOfDay = effectiveHours.closeHour * 60 + effectiveHours.closeMinute;
   const cutoffMinutesOfDay = closeMinutesOfDay - schedule.lastEntryCutoffMinutes;
 
   const cutoffHour = Math.floor(cutoffMinutesOfDay / 60);
   const cutoffMinute = cutoffMinutesOfDay % 60;
-  const cutoffTimeCivil = `${pad2(cutoffHour)}:${pad2(cutoffMinute)}`;
+  const cutoffTimeCivil = schedule.is24Hours
+    ? '24:00'
+    : `${pad2(cutoffHour)}:${pad2(cutoffMinute)}`;
 
   const dayName = DAY_NAMES[civil.dayOfWeek] ?? 'Unknown';
   const dayNameEs = DAY_NAMES_ES[civil.dayOfWeek] ?? 'este día';
@@ -130,7 +137,30 @@ export function evaluateBusinessOperationalStatus(
     });
   }
 
-  // 2. Check operating days (e.g. closed on Sunday)
+  // 2. Check 24/7 continuous operation (after special closure overrides & operating day checks)
+  if (schedule.is24Hours && schedule.operatingDays.includes(civil.dayOfWeek)) {
+    return Object.freeze({
+      businessId: schedule.businessId,
+      businessName: schedule.name,
+      status: 'OPEN',
+      availabilityState: 'OPEN',
+      isOpen: true,
+      admissionPermitted: true,
+      evaluatedAtUtc,
+      civilTime: civil,
+      openTimeCivil: '00:00',
+      closeTimeCivil: '24:00',
+      cutoffTimeCivil: '24:00',
+      timeZone: schedule.timeZone,
+      summaryMessage: `${schedule.name} is open 24 hours (${schedule.timeZone}).`,
+      localizedSummary: Object.freeze({
+        en: `${schedule.name} is open 24 hours a day, 7 days a week (${schedule.timeZone}).`,
+        es: `${schedule.name} opera las 24 horas del día, los 7 días de la semana (${schedule.timeZone}).`,
+      }),
+    });
+  }
+
+  // 3. Check operating days (e.g. closed on Sunday)
   if (!schedule.operatingDays.includes(civil.dayOfWeek)) {
     return Object.freeze({
       businessId: schedule.businessId,

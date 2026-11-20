@@ -454,10 +454,12 @@ namespace MyVirtualCommunity.Client.World
         public void CloseSettingsDrawer() => isSettingsDrawerOpen = false;
 
         // Performance & Hardware Safety Settings (Thermal Emergency Protection)
-        private int targetFramerate = 60;
+        private int targetFramerate = 30;
         private float fpsMeasurementTimer = 0f;
         private int fpsFrameCount = 0;
-        private int currentFpsDisplay = 60;
+        private int currentFpsDisplay = 30;
+        private Vector3 lastMiniPreviewPlayerPos = new Vector3(9999f, 9999f, 9999f);
+        private float lastMiniPreviewForcedTime = -999f;
 
         public int TargetFramerate
         {
@@ -465,11 +467,19 @@ namespace MyVirtualCommunity.Client.World
             set
             {
                 targetFramerate = (value == 30) ? 30 : 60;
-                Application.targetFrameRate = targetFramerate;
-                QualitySettings.vSyncCount = 1;
+                ApplyThermalSafeFramerateCap(targetFramerate);
                 PlayerPrefs.SetInt("mvc_target_fps", targetFramerate);
+                PlayerPrefs.SetInt("mvc_target_fps_user_set", 1);
                 PlayerPrefs.Save();
             }
+        }
+
+        private static void ApplyThermalSafeFramerateCap(int fps)
+        {
+            // Unity ignores Application.targetFrameRate when vSyncCount == 1;
+            // vSyncCount = 2 locks cleanly to half refresh rate (30 FPS on 60 Hz laptop displays) with zero tearing.
+            QualitySettings.vSyncCount = (fps <= 30) ? 2 : 1;
+            Application.targetFrameRate = fps;
         }
         public int CurrentFpsDisplay => currentFpsDisplay;
 
@@ -567,14 +577,16 @@ namespace MyVirtualCommunity.Client.World
 
         private void Awake()
         {
-            // Hardware thermal safeguard: enforce VSync and cap framerate to 60 FPS
-            // Prevents uncapped render loops (500-1500+ FPS) from driving GPU/CPU TDP into thermal emergency shutdown (Event 41)
-            targetFramerate = PlayerPrefs.GetInt("mvc_target_fps", 60);
-            if (targetFramerate != 30 && targetFramerate != 45 && targetFramerate != 60) targetFramerate = 60;
+            // Hardware thermal safeguard: on <= 2.5 GB VRAM laptop GPUs (e.g. MX150 / Intel UHD),
+            // default to true 30 FPS (vSyncCount = 2) to cut GPU+CPU thermal load in half and prevent Event 41 cutoffs.
+            bool lowVramLaptopGpu = SystemInfo.graphicsMemorySize > 0 && SystemInfo.graphicsMemorySize <= 2560;
+            bool userExplicitlySetFps = PlayerPrefs.GetInt("mvc_target_fps_user_set", 0) == 1;
+            int defaultFps = lowVramLaptopGpu ? 30 : 60;
+            targetFramerate = userExplicitlySetFps ? PlayerPrefs.GetInt("mvc_target_fps", defaultFps) : defaultFps;
+            if (targetFramerate != 30 && targetFramerate != 60) targetFramerate = defaultFps;
             PlayerPrefs.SetInt("mvc_target_fps", targetFramerate);
             PlayerPrefs.Save();
-            QualitySettings.vSyncCount = 1;
-            Application.targetFrameRate = targetFramerate;
+            ApplyThermalSafeFramerateCap(targetFramerate);
 
             characterController = GetComponent<CharacterController>();
 
@@ -6616,8 +6628,16 @@ namespace MyVirtualCommunity.Client.World
             EnsurePlayerSelfAvatarProxy();
             UpdateFideicomisoPlayerSelfAvatarProxy();
 
-            if (Time.unscaledTime - lastMiniPreviewRenderTime < 0.28f) return;
-            lastMiniPreviewRenderTime = Time.unscaledTime;
+            // Thermal/GPU optimization: avoid re-rendering the entire 8,600+ renderer scene 3.6x/sec for a 192x192 thumbnail.
+            // Refresh at most every 1.25s when moving (> 2.5m) or every 4.0s while stationary, with shadows disabled during thumbnail capture.
+            float now = Time.unscaledTime;
+            if (now - lastMiniPreviewRenderTime < 1.25f) return;
+            bool movedEnough = Vector3.SqrMagnitude(transform.position - lastMiniPreviewPlayerPos) >= 6.25f; // 2.5m
+            if (!movedEnough && (now - lastMiniPreviewForcedTime) < 4.0f) return;
+
+            lastMiniPreviewRenderTime = now;
+            lastMiniPreviewForcedTime = now;
+            lastMiniPreviewPlayerPos = transform.position;
 
             if (aerialCamera == null || miniSatellitePreviewRT == null) return;
 
@@ -6626,19 +6646,25 @@ namespace MyVirtualCommunity.Client.World
             Vector3 prevPos = aerialCamera.transform.position;
             Quaternion prevRot = aerialCamera.transform.rotation;
             float prevFov = aerialCamera.fieldOfView;
+            float prevFar = aerialCamera.farClipPlane;
+            ShadowQuality prevShadows = QualitySettings.shadows;
 
             // Position overhead at 58m above the player looking straight down (North-Up) for the live Google Maps square preview!
             aerialCamera.enabled = false;
             aerialCamera.targetTexture = miniSatellitePreviewRT;
             aerialCamera.fieldOfView = 52f;
+            aerialCamera.farClipPlane = 95f;
             aerialCamera.transform.position = new Vector3(transform.position.x, 58f, transform.position.z);
             aerialCamera.transform.rotation = Quaternion.Euler(89.9f, 0f, 0f);
+            QualitySettings.shadows = ShadowQuality.Disable;
             aerialCamera.Render();
+            QualitySettings.shadows = prevShadows;
 
             aerialCamera.targetTexture = prevRT;
             aerialCamera.transform.position = prevPos;
             aerialCamera.transform.rotation = prevRot;
             aerialCamera.fieldOfView = prevFov;
+            aerialCamera.farClipPlane = prevFar;
             aerialCamera.enabled = prevEnabled;
         }
 

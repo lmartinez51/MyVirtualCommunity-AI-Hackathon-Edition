@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -79,10 +80,39 @@ namespace MyVirtualCommunity.Editor
             Material santaFeArmorSteelMat = CreateOrGetColorMaterial("Assets/Settings/West_SantaFeArmorSteel.mat", new Color(0.50f, 0.53f, 0.56f), 0.45f);
             Material clearGlassMat = CreateOrGetTransparentGlassMaterial("Assets/Settings/West_StorefrontClearGlass.mat", new Color(0.24f, 0.34f, 0.40f, 0.32f), 0.90f);
             Material cfeDomeGlassMat = CreateOrGetTransparentGlassMaterial("Assets/Settings/West_CFE_DomeGlass.mat", new Color(0.84f, 0.90f, 0.92f, 0.34f), 0.92f);
+            Material greenShopWallMat = CreateOrGetColorMaterial("Assets/Settings/West_GreenShopInterior.mat", new Color(0.28f, 0.62f, 0.34f), 0.14f);
+            Material dentalClinicBlueMat = CreateOrGetColorMaterial("Assets/Settings/West_DentalMexicoPosterBlue.mat", new Color(0.20f, 0.56f, 0.80f), 0.18f);
+            Material warmPeachStuccoMat = CreateOrGetColorMaterial("Assets/Settings/West_WarmPeachStucco.mat", new Color(0.84f, 0.72f, 0.60f), 0.08f);
+            Material bronzeShutterMat = CreateOrGetColorMaterial("Assets/Settings/West_BronzeShutterMetal.mat", new Color(0.46f, 0.30f, 0.22f), 0.36f);
+            Material doormatDarkMat = CreateOrGetColorMaterial("Assets/Settings/West_DoormatDark.mat", new Color(0.14f, 0.15f, 0.16f), 0.04f);
+
+            // Ensure RGBA textures import cleanly with alpha transparency & no compression artifacts
+            string[] alphaTexPaths = new string[]
+            {
+                "Assets/Textures/Environment/T_West_Sign_DentalMexico_3D.png",
+                "Assets/Textures/Environment/T_West_FarmaciaJuarez_Window.png"
+            };
+            foreach (string tp in alphaTexPaths)
+            {
+                if (AssetImporter.GetAtPath(tp) is TextureImporter ti)
+                {
+                    if (!ti.alphaIsTransparency || ti.wrapMode != TextureWrapMode.Clamp || ti.textureCompression != TextureImporterCompression.Uncompressed)
+                    {
+                        ti.alphaIsTransparency = true;
+                        ti.wrapMode = TextureWrapMode.Clamp;
+                        ti.textureCompression = TextureImporterCompression.Uncompressed;
+                        ti.SaveAndReimport();
+                    }
+                }
+            }
 
             // 2. Setup Texture Materials
-            Material signAVentaMat = CreateOrGetTextureMaterial("Assets/Settings/West_Sign_AVenta.mat", "Assets/Textures/Environment/T_West_Sign_AVenta.png");
-            Material signInternacionalMat = CreateOrGetTextureMaterial("Assets/Settings/West_Sign_Internacional.mat", "Assets/Textures/Environment/T_West_Sign_Internacional.png");
+            Material signFarmaciaJuarezMat = CreateOrGetEmissiveSignTextureMaterial("Assets/Settings/West_Sign_FarmaciaJuarez.mat", "Assets/Textures/Environment/T_West_Sign_FarmaciaJuarez.png", 0.35f);
+            Material farmaciaJuarezWindowMat = CreateOrGetTransparentTextureMaterial("Assets/Settings/West_FarmaciaJuarez_Window.mat", "Assets/Textures/Environment/T_West_FarmaciaJuarez_Window.png");
+            Material pilasterPharmacyVertMat = CreateOrGetTextureMaterial("Assets/Settings/West_Pilaster_PharmacyVertical.mat", "Assets/Textures/Environment/T_West_Pilaster_PharmacyVertical.png");
+            Material dentalDoorMat = CreateOrGetTextureMaterial("Assets/Settings/West_DentalMexico_Door.mat", "Assets/Textures/Environment/T_West_DentalMexico_Door.png");
+            Material dentalDividerMat = CreateOrGetTextureMaterial("Assets/Settings/West_DentalMexico_Divider.mat", "Assets/Textures/Environment/T_West_DentalMexico_Divider.png");
+            Material dentalWindowMat = CreateOrGetTextureMaterial("Assets/Settings/West_DentalMexico_Window.mat", "Assets/Textures/Environment/T_West_DentalMexico_Window.png");
             Material signPharmacyMat = CreateOrGetTextureMaterial("Assets/Settings/West_Sign_Pharmacy.mat", "Assets/Textures/Environment/T_West_Sign_Pharmacy.png");
             Material posterPharmacyMat = CreateOrGetTextureMaterial("Assets/Settings/West_Poster_Pharmacy.mat", "Assets/Textures/Environment/T_West_Poster_Pharmacy.png");
             Material signOpticaMat = CreateOrGetTextureMaterial("Assets/Settings/West_Sign_OpticaFashion.mat", "Assets/Textures/Environment/T_West_Sign_OpticaFashion.png");
@@ -93,6 +123,11 @@ namespace MyVirtualCommunity.Editor
             Material dentalBaseBoxMat = CreateOrGetTextureMaterial("Assets/Settings/West_Dental_BaseBox.mat", "Assets/Textures/Environment/T_West_Dental_BaseBox.png");
             Material archWindowMat = CreateOrGetTextureMaterial("Assets/Settings/West_ArchWindow.mat", "Assets/Textures/Environment/T_West_ArchWindow.png", alphaClip: true);
             Material metalShutterMat = CreateOrGetTextureMaterial("Assets/Settings/West_MetalShutter.mat", "Assets/Textures/Environment/T_West_MetalShutter.png");
+            Material whiteMetalShutterMat = CreateOrGetTextureMaterial("Assets/Settings/West_WhiteMetalShutter.mat", "Assets/Textures/Environment/T_West_MetalShutter.png");
+            whiteMetalShutterMat.SetColor("_BaseColor", new Color(0.98f, 0.99f, 1.0f, 1.0f));
+            whiteMetalShutterMat.SetColor("_Color", new Color(0.98f, 0.99f, 1.0f, 1.0f));
+            whiteMetalShutterMat.SetFloat("_Smoothness", 0.28f);
+            EditorUtility.SetDirty(whiteMetalShutterMat);
             Material ribbonWindowsMat = CreateOrGetTextureMaterial("Assets/Settings/West_RibbonWindows.mat", "Assets/Textures/Environment/T_West_RibbonWindows.png");
             Material openLedMat = CreateOrGetTextureMaterial("Assets/Settings/West_Sign_OpenLED.mat", "Assets/Textures/Environment/T_West_Sign_OpenLED.png", alphaClip: false, emissive: true);
             Material opticaPosterLentesMat = CreateOrGetTextureMaterial("Assets/Settings/West_Optica_PosterLentes.mat", "Assets/Textures/Environment/T_West_Optica_PosterLentes.png");
@@ -156,9 +191,10 @@ namespace MyVirtualCommunity.Editor
 
             // Required collider object for CorridorVerificationTest: "Optica_MainBuilding"
             // Recessed behind X = -14.40m so Bay 4 ("Óptica Fashion") has a genuine 2.40m-deep visible glass showroom!
-            // Front wall surround slabs (South, Above, North Pier) close flush at X = -12.00m.
+            // Compacted straight facade spans Z = -12.15m to +3.40m (Length = 15.55m, Center Z = -4.375m),
+            // flanked symmetrically by angled diagonal returns at BOTH South (Z = -13.55..-12.15m) & North (Z = +3.40..+6.00m)!
             GameObject optMain = CreateBox("Optica_MainBuilding", opticaRoot.transform,
-                new Vector3(-19.20f, 3.9f, -8.55f), new Vector3(9.60f, 7.8f, 23.90f), creamStuccoMat, keepCollider: true);
+                new Vector3(-19.20f, 3.9f, -4.375f), new Vector3(9.60f, 7.8f, 15.55f), creamStuccoMat, keepCollider: true);
 
             // Container for all West Block architectural details
             GameObject blockArch = new GameObject("WestBlock_HistoricArchitecture");
@@ -166,118 +202,363 @@ namespace MyVirtualCommunity.Editor
             blockArch.transform.localPosition = Vector3.zero;
 
             // Front structural wall surround around Bay 4's hollow glass showroom (X = -14.40..-12.00m)
+            // South of Óptica: upper wall (Y = 2.75..7.80m) flush at X = -12.00m, ground level recessed behind X = -12.45m
+            // so the green-interior shop, yellow corridor entry, Dental México, and Farma PHARMACY all have real depth!
+            CreateBox("BuildingA_FrontWall_SouthOfOptica_Upper", blockArch.transform,
+                new Vector3(-13.20f, 5.275f, -6.975f), new Vector3(2.40f, 5.05f, 10.35f), creamStuccoMat, keepCollider: true);
             CreateBox("BuildingA_FrontWall_SouthOfOptica", blockArch.transform,
-                new Vector3(-13.20f, 3.90f, -11.15f), new Vector3(2.40f, 7.80f, 18.70f), creamStuccoMat, keepCollider: true);
+                new Vector3(-13.425f, 1.375f, -6.975f), new Vector3(1.95f, 2.75f, 10.35f), creamStuccoMat, keepCollider: true);
+            CreateBox("BuildingA_FrontWall_SouthGroundFloor", blockArch.transform,
+                new Vector3(-12.22f, 0.10f, -6.975f), new Vector3(0.50f, 0.20f, 10.35f), concreteMat, keepCollider: true);
+            CreateBox("BuildingA_FrontWall_SouthGroundCeiling", blockArch.transform,
+                new Vector3(-12.22f, 2.74f, -6.975f), new Vector3(0.50f, 0.08f, 10.35f), whiteFrameMat);
             CreateBox("BuildingA_FrontWall_AboveOptica", blockArch.transform,
                 new Vector3(-13.20f, 5.26f, 0.80f), new Vector3(2.40f, 5.08f, 5.20f), creamStuccoMat, keepCollider: true);
             CreateBox("BuildingA_FrontWall_OpticaNorthPier", blockArch.transform,
                 new Vector3(-13.20f, 1.36f, 3.225f), new Vector3(2.40f, 2.72f, 0.35f), creamStuccoMat, keepCollider: true);
 
             // -------------------------------------------------------------------------
-            // BUILDING A: 2-STORY NEOCLASSICAL BUILDING WITH 4 STRAIGHT ARCHES + 1 ANGLED NORTH DIAGONAL ARCH
-            // Straight facade spans Z = -20.50m to +3.40m (Length = 23.90m, Center Z = -8.55m, Height = 7.8m)
+            // BUILDING A: 2-STORY NEOCLASSICAL BUILDING WITH SYMMETRICAL SOUTH & NORTH DIAGONAL RETURNS
+            // Straight facade spans Z = -12.15m to +3.40m (Length = 15.55m, Center Z = -4.375m, Height = 7.8m)
             // -------------------------------------------------------------------------
 
-            // Top Stepped Dark Grey Stone Parapet Cornice (Y = 7.05m to 7.85m, stops cleanly at Z = +3.45m for diagonal turn)
+            // Top Stepped Dark Grey Stone Parapet Cornice (Y = 7.05m to 7.85m, extending continuously across South storage-door bay to Z = -13.52m)
             CreateBox("BuildingA_Cornice_Band1", blockArch.transform,
-                new Vector3(-11.88f, 7.20f, -8.55f), new Vector3(0.28f, 0.26f, 24.00f), darkCorniceMat);
+                new Vector3(-11.88f, 7.20f, -5.035f), new Vector3(0.28f, 0.26f, 16.97f), darkCorniceMat);
             CreateBox("BuildingA_Cornice_Band2", blockArch.transform,
-                new Vector3(-11.84f, 7.48f, -8.55f), new Vector3(0.36f, 0.24f, 24.06f), stoneMasonryMat);
+                new Vector3(-11.84f, 7.48f, -5.035f), new Vector3(0.36f, 0.24f, 17.03f), stoneMasonryMat);
             CreateBox("BuildingA_Cornice_Band3", blockArch.transform,
-                new Vector3(-11.80f, 7.74f, -8.55f), new Vector3(0.42f, 0.22f, 24.12f), darkCorniceMat);
+                new Vector3(-11.80f, 7.74f, -5.035f), new Vector3(0.42f, 0.22f, 17.09f), darkCorniceMat);
 
             // Decorative Recessed Upper Wall Relief Panels (between arches and top cornice, Y = 6.18m)
-            float[] reliefCentersZ = new float[] { -16.2f, -8.3f, -0.4f };
-            float[] reliefWidthsZ = new float[] { 6.2f, 6.8f, 5.8f };
+            float[] reliefCentersZ = new float[] { -10.55f, -5.95f, 0.55f };
+            float[] reliefWidthsZ = new float[] { 2.60f, 4.60f, 4.50f };
             for (int i = 0; i < reliefCentersZ.Length; i++)
             {
                 CreateBox($"BuildingA_UpperReliefPanel_{i}", blockArch.transform,
                     new Vector3(-11.96f, 6.18f, reliefCentersZ[i]), new Vector3(0.06f, 0.92f, reliefWidthsZ[i]), weatheredCreamMat);
             }
 
-            // Horizontal Stringcourse Molding Below Arched Windows (Y = 3.85m, stops at Z = +3.45m)
+            // Horizontal Stringcourse Molding Below Arched Windows (Y = 3.85m, continuous across South bay to Z = -13.50m)
             CreateBox("BuildingA_ArchSillCourse", blockArch.transform,
-                new Vector3(-11.92f, 3.85f, -8.55f), new Vector3(0.18f, 0.10f, 24.00f), darkCorniceMat);
+                new Vector3(-11.92f, 3.85f, -5.025f), new Vector3(0.18f, 0.10f, 16.95f), darkCorniceMat);
 
-            // 4 Straight Semicircular Arched Lunette Windows on Upper Floor (5th arch sits on the diagonal north wall!)
-            CreateArchedLunette("ArchWindow_1_AVenta", blockArch.transform, centerZ: -17.6f, centerY: 4.60f, widthZ: 2.7f, heightY: 1.48f, archWindowMat, darkCorniceMat);
-            CreateArchedLunette("ArchWindow_2_Internacional", blockArch.transform, centerZ: -11.9f, centerY: 4.68f, widthZ: 4.6f, heightY: 1.65f, archWindowMat, darkCorniceMat);
-            CreateArchedLunette("ArchWindow_3_Pharmacy", blockArch.transform, centerZ: -5.4f, centerY: 4.70f, widthZ: 4.8f, heightY: 1.70f, archWindowMat, darkCorniceMat);
-            CreateArchedLunette("ArchWindow_4_Optica", blockArch.transform, centerZ: 0.85f, centerY: 4.74f, widthZ: 3.65f, heightY: 1.75f, archWindowMat, darkCorniceMat);
+            // 4 Straight Semicircular Arched Lunette Windows on Upper Floor (plus flush South bay arch & North diagonal arch!)
+            CreateArchedLunette("ArchWindow_2_GreenShop", blockArch.transform, centerZ: -10.75f, centerY: 4.66f, widthZ: 2.15f, heightY: 1.48f, archWindowMat, darkCorniceMat);
+            CreateArchedLunette("ArchWindow_3_DentalMexico", blockArch.transform, centerZ: -7.85f, centerY: 4.70f, widthZ: 3.15f, heightY: 1.62f, archWindowMat, darkCorniceMat);
+            CreateArchedLunette("ArchWindow_4_Pharmacy", blockArch.transform, centerZ: -4.25f, centerY: 4.72f, widthZ: 3.25f, heightY: 1.66f, archWindowMat, darkCorniceMat);
+            CreateArchedLunette("ArchWindow_5_Optica", blockArch.transform, centerZ: 0.85f, centerY: 4.74f, widthZ: 3.65f, heightY: 1.75f, archWindowMat, darkCorniceMat);
 
-            // --- Bay 1 (Far Left, Z = -20.2m to -15.1m, center Z = -17.65m): "A VENTA" ---
-            CreateBox("Bay1_StorefrontGlass", blockArch.transform,
-                new Vector3(-11.96f, 1.32f, -17.65f), new Vector3(0.08f, 2.25f, 4.2f), darkGlassMat);
-            // Aluminum Door & Window Mullions
-            float[] bay1Mullions = new float[] { -19.65f, -18.35f, -16.95f, -15.65f };
-            for (int i = 0; i < bay1Mullions.Length; i++)
+            // -------------------------------------------------------------------------
+            // BUILDING A SOUTH CONTINUOUS FLUSH WALL & STORAGE/UTILITY DOOR BAY (Z = -13.48..-12.15m)
+            // Closes the former recessed alcove flush with Building A's front plane (X = -12.00m)
+            // immediately North of México Mágico (Z = -13.45m), with the double-leaf metal storage door
+            // mounted directly onto the wall (no recessed hole, no blue trash drum).
+            // -------------------------------------------------------------------------
+            CreateBox("BuildingA_SouthBay_ContinuousWall", blockArch.transform,
+                new Vector3(-18.00f, 3.90f, -12.815f), new Vector3(12.00f, 7.80f, 1.33f), creamStuccoMat, keepCollider: true);
+
+            // 1st Smaller Semicircular Arched Lunette flush on the continuous South bay upper wall
+            CreateArchedLunette("ArchWindow_1_SouthDiag", blockArch.transform,
+                centerZ: -12.82f, centerY: 4.62f, widthZ: 1.12f, heightY: 1.24f, archWindowMat, darkCorniceMat);
+
+            // Double-leaf off-white metal storage/utility door ("puerta de bodega") mounted flush on the continuous wall
+            GameObject storageDoorRoot = new GameObject("BuildingA_SouthBay_StorageDoor");
+            storageDoorRoot.transform.SetParent(blockArch.transform, false);
+            storageDoorRoot.transform.localPosition = Vector3.zero;
+
+            // Outer thin dark-grey metal frame (Z = -13.30..-12.38m, width 0.92m, height 1.96m, Y = 0.20..2.16m)
+            CreateBox("StorageDoor_Frame_South", storageDoorRoot.transform,
+                new Vector3(-11.97f, 1.18f, -13.28f), new Vector3(0.06f, 1.96f, 0.04f), darkCorniceMat);
+            CreateBox("StorageDoor_Frame_North", storageDoorRoot.transform,
+                new Vector3(-11.97f, 1.18f, -12.40f), new Vector3(0.06f, 1.96f, 0.04f), darkCorniceMat);
+            CreateBox("StorageDoor_Frame_Top", storageDoorRoot.transform,
+                new Vector3(-11.97f, 2.14f, -12.84f), new Vector3(0.06f, 0.04f, 0.92f), darkCorniceMat);
+
+            // Two off-white painted sheet-metal leaves + crisp central vertical meeting seam
+            CreateBox("StorageDoor_Leaf_South", storageDoorRoot.transform,
+                new Vector3(-11.985f, 1.16f, -13.055f), new Vector3(0.03f, 1.92f, 0.41f), whiteFrameMat);
+            CreateBox("StorageDoor_Leaf_North", storageDoorRoot.transform,
+                new Vector3(-11.985f, 1.16f, -12.625f), new Vector3(0.03f, 1.92f, 0.41f), whiteFrameMat);
+            CreateBox("StorageDoor_CenterSeam", storageDoorRoot.transform,
+                new Vector3(-11.972f, 1.16f, -12.84f), new Vector3(0.018f, 1.92f, 0.018f), darkCorniceMat);
+
+            // Subtle horizontal reinforcement bars, outer hinges & central padlock hasp plate
+            CreateBox("StorageDoor_Rail_Top", storageDoorRoot.transform,
+                new Vector3(-11.968f, 1.84f, -12.84f), new Vector3(0.012f, 0.022f, 0.84f), stoneMasonryMat);
+            CreateBox("StorageDoor_Rail_Mid", storageDoorRoot.transform,
+                new Vector3(-11.968f, 1.12f, -12.84f), new Vector3(0.012f, 0.024f, 0.84f), stoneMasonryMat);
+            CreateBox("StorageDoor_Rail_Bottom", storageDoorRoot.transform,
+                new Vector3(-11.968f, 0.44f, -12.84f), new Vector3(0.012f, 0.022f, 0.84f), stoneMasonryMat);
+            CreateBox("StorageDoor_LatchPlate", storageDoorRoot.transform,
+                new Vector3(-11.958f, 1.12f, -12.84f), new Vector3(0.026f, 0.09f, 0.07f), darkZocaloMat);
+            CreateBox("StorageDoor_LatchBar", storageDoorRoot.transform,
+                new Vector3(-11.946f, 1.12f, -12.84f), new Vector3(0.016f, 0.025f, 0.055f), aluminumMat);
+            CreateBox("StorageDoor_Hinge_SLow", storageDoorRoot.transform,
+                new Vector3(-11.956f, 0.56f, -13.26f), new Vector3(0.022f, 0.06f, 0.024f), darkCorniceMat);
+            CreateBox("StorageDoor_Hinge_SHigh", storageDoorRoot.transform,
+                new Vector3(-11.956f, 1.76f, -13.26f), new Vector3(0.022f, 0.06f, 0.024f), darkCorniceMat);
+            CreateBox("StorageDoor_Hinge_NLow", storageDoorRoot.transform,
+                new Vector3(-11.956f, 0.56f, -12.42f), new Vector3(0.022f, 0.06f, 0.024f), darkCorniceMat);
+            CreateBox("StorageDoor_Hinge_NHigh", storageDoorRoot.transform,
+                new Vector3(-11.956f, 1.76f, -12.42f), new Vector3(0.022f, 0.06f, 0.024f), darkCorniceMat);
+
+            // Subtle flanking base zócalo strips meeting sidewalk cleanly on both sides of the storage door
+            CreateBox("BuildingA_SouthBay_Zocalo_S", blockArch.transform,
+                new Vector3(-11.985f, 0.33f, -13.355f), new Vector3(0.04f, 0.26f, 0.11f), stoneMasonryMat);
+            CreateBox("BuildingA_SouthBay_Zocalo_N", blockArch.transform,
+                new Vector3(-11.985f, 0.33f, -12.34f), new Vector3(0.04f, 0.26f, 0.08f), stoneMasonryMat);
+
+            // Corner vertical framing pier at Building A South bay transition (Z = -12.15m) with vertical "PHARMACY" text!
+            CreateBox("Pilaster_BuildingA_SouthCorner", blockArch.transform,
+                new Vector3(-11.95f, 2.335f, -12.15f), new Vector3(0.20f, 2.83f, 0.30f), weatheredCreamMat);
+            CreateBox("Pilaster_BuildingA_SouthCorner_Base", blockArch.transform,
+                new Vector3(-11.93f, 0.56f, -12.15f), new Vector3(0.24f, 0.72f, 0.34f), darkZocaloMat);
+            GameObject pharmacyVertQuad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            pharmacyVertQuad.name = "Pilaster_PharmacyVertical_Sign";
+            pharmacyVertQuad.transform.SetParent(blockArch.transform, false);
+            pharmacyVertQuad.transform.localPosition = new Vector3(-11.845f, 1.66f, -12.15f);
+            pharmacyVertQuad.transform.localRotation = Quaternion.Euler(0f, -90f, 0f);
+            pharmacyVertQuad.transform.localScale = new Vector3(0.24f, 1.44f, 1.0f);
+            SetMaterial(pharmacyVertQuad, pilasterPharmacyVertMat);
+            UnityEngine.Object.DestroyImmediate(pharmacyVertQuad.GetComponent<Collider>());
+
+            // =========================================================================
+            // 3 AUTHENTIC ESTABLISHMENTS (Z = -12.00m to -6.53m, total width 5.47m):
+            //   1. Farmacia Juárez                (Z = -12.00 .. -9.98m, 2.02m, own beige awning & white FJ Juárez lightbox)
+            //   Dividing Pier + Live LED Sign     (Z = -9.98  .. -9.76m, 0.22m, cantilevered COMPRA green / VENTA magenta LED)
+            //   2. Casa de Cambio (sin nombre)    (Z = -9.76  .. -8.28m, 1.48m, warm peach-cream plaster, bronze shutter & teller nook)
+            //   3. Dental México                  (Z = -8.28  .. -6.53m, 1.75m, black/gold storefront + 3D blue channel letters
+            //                                      "DENTAL MEXICO" invading the upper fascia across Casa de Cambio & Dental México!)
+            // =========================================================================
+
+            // --- ESTABLISHMENT 1 (Z = -12.00..-9.98m, center -10.99m): "Farmacia Juárez" ---
+            CreateBox("FarmaciaJuarez_InteriorBack", blockArch.transform,
+                new Vector3(-12.38f, 1.38f, -10.99f), new Vector3(0.08f, 2.36f, 2.00f), whiteFrameMat);
+            float[] fjShelfYs = new float[] { 0.84f, 1.34f, 1.84f };
+            for (int s = 0; s < fjShelfYs.Length; s++)
             {
-                CreateBox($"Bay1_Mullion_{i}", blockArch.transform,
-                    new Vector3(-11.93f, 1.32f, bay1Mullions[i]), new Vector3(0.12f, 2.25f, 0.08f), aluminumMat);
+                CreateBox($"FarmaciaJuarez_Shelf_{s}", blockArch.transform,
+                    new Vector3(-12.24f, fjShelfYs[s], -10.58f), new Vector3(0.24f, 0.04f, 1.08f), aluminumMat);
+                CreateBox($"FarmaciaJuarez_StockG_{s}", blockArch.transform,
+                    new Vector3(-12.22f, fjShelfYs[s] + 0.13f, -10.88f), new Vector3(0.14f, 0.22f, 0.28f), greenShopWallMat);
+                CreateBox($"FarmaciaJuarez_StockB_{s}", blockArch.transform,
+                    new Vector3(-12.22f, fjShelfYs[s] + 0.11f, -10.54f), new Vector3(0.14f, 0.18f, 0.24f), dentalClinicBlueMat);
+                CreateBox($"FarmaciaJuarez_StockW_{s}", blockArch.transform,
+                    new Vector3(-12.22f, fjShelfYs[s] + 0.12f, -10.22f), new Vector3(0.14f, 0.20f, 0.24f), weatheredCreamMat);
             }
-            CreateBox("Bay1_LowerKickplate", blockArch.transform,
-                new Vector3(-11.94f, 0.36f, -17.65f), new Vector3(0.10f, 0.32f, 4.2f), aluminumMat);
-            // Glowing Green "A VENTA" Sign clearly visible right below the Bay 1 Awning valance!
-            CreateWestSign("Sign_AVenta", blockArch.transform,
-                centerZ: -17.65f, centerY: 2.34f, widthZ: 3.7f, heightY: 0.46f, darkZocaloMat, signAVentaMat, frontOffsetX: -11.35f);
-            // Beige Wedge Awning for Bay 1
-            CreateWestWedgeAwning("Awning_Bay1_AVenta", blockArch.transform,
-                centerZ: -17.65f, topY: 3.24f, widthZ: 4.4f, projectionX: 1.18f, dropY: 0.54f, beigeAwningMat, awningValanceMat);
-
-            // Dividing Pilaster between Bay 1 & Bay 2 (Z = -15.1m)
-            CreateBox("Pilaster_Bay1_2", blockArch.transform,
-                new Vector3(-11.93f, 1.9f, -15.1f), new Vector3(0.16f, 3.4f, 0.38f), creamStuccoMat);
-            CreateBox("Pilaster_Bay1_2_Base", blockArch.transform,
-                new Vector3(-11.91f, 0.50f, -15.1f), new Vector3(0.18f, 0.60f, 0.42f), darkZocaloMat);
-
-            // --- Bay 2 (Mid-Left, Z = -14.9m to -8.8m, center Z = -11.85m): "Curiosidades Internacional" ---
-            CreateBox("Bay2_BackingFrame", blockArch.transform,
-                new Vector3(-11.96f, 1.40f, -11.85f), new Vector3(0.08f, 2.40f, 5.4f), darkGlassMat);
-            float[] yellowPanelZs = new float[] { -13.65f, -12.35f, -10.95f };
-            for (int i = 0; i < yellowPanelZs.Length; i++)
+            // Aluminum-framed glass entrance door (South) + display window (North)
+            CreateBox("FarmaciaJuarez_StorefrontGlass", blockArch.transform,
+                new Vector3(-11.96f, 1.38f, -10.99f), new Vector3(0.04f, 2.36f, 2.00f), clearGlassMat);
+            float[] fjMullions = new float[] { -11.98f, -11.16f, -10.00f };
+            for (int i = 0; i < fjMullions.Length; i++)
             {
-                CreateBox($"Bay2_YellowDoorPanel_{i}", blockArch.transform,
-                    new Vector3(-11.94f, 1.28f, yellowPanelZs[i]), new Vector3(0.10f, 2.15f, 1.05f), yellowPanelMat);
+                CreateBox($"FarmaciaJuarez_Mullion_{i}", blockArch.transform,
+                    new Vector3(-11.94f, 1.38f, fjMullions[i]), new Vector3(0.10f, 2.36f, 0.06f), aluminumMat);
             }
-            CreateBox("Bay2_RightGlassPane", blockArch.transform,
-                new Vector3(-11.94f, 1.28f, -9.75f), new Vector3(0.09f, 2.15f, 0.95f), darkGlassMat);
-            CreateBox("Bay2_ZocaloBase", blockArch.transform,
-                new Vector3(-11.92f, 0.32f, -9.75f), new Vector3(0.12f, 0.26f, 1.1f), darkZocaloMat);
-            // Beige Wedge Awning
-            CreateWestWedgeAwning("Awning_Bay2_Internacional", blockArch.transform,
-                centerZ: -11.85f, topY: 3.16f, widthZ: 5.7f, projectionX: 1.35f, dropY: 0.72f, beigeAwningMat, awningValanceMat);
-            // Terracotta Sign "Curiosidades Internacional"
-            CreateWestSign("Sign_Internacional", blockArch.transform,
-                centerZ: -11.85f, centerY: 3.48f, widthZ: 4.2f, heightY: 0.62f, terracottaPlaqueMat, signInternacionalMat);
+            CreateBox("FarmaciaJuarez_DoorMidRail", blockArch.transform,
+                new Vector3(-11.94f, 1.18f, -11.57f), new Vector3(0.07f, 0.05f, 0.80f), aluminumMat);
+            CreateBox("FarmaciaJuarez_DoorHandle", blockArch.transform,
+                new Vector3(-11.89f, 1.18f, -11.24f), new Vector3(0.04f, 0.42f, 0.03f), aluminumMat);
+            CreateBox("FarmaciaJuarez_DoorHeaderBar", blockArch.transform,
+                new Vector3(-11.91f, 2.48f, -11.57f), new Vector3(0.14f, 0.24f, 0.86f), opticaBlackFrameMat);
+            CreateBox("FarmaciaJuarez_LowerKickplate", blockArch.transform,
+                new Vector3(-11.94f, 0.34f, -10.99f), new Vector3(0.08f, 0.28f, 2.00f), aluminumMat);
+            // Green/white "FJ Farmacia Juárez" window vinyl graphic overlay on right display glass
+            GameObject fjWinDecal = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            fjWinDecal.name = "FarmaciaJuarez_WindowDecal";
+            fjWinDecal.transform.SetParent(blockArch.transform, false);
+            fjWinDecal.transform.localPosition = new Vector3(-11.93f, 1.46f, -10.58f);
+            fjWinDecal.transform.localRotation = Quaternion.Euler(0f, -90f, 0f);
+            fjWinDecal.transform.localScale = new Vector3(1.10f, 1.92f, 1.0f);
+            SetMaterial(fjWinDecal, farmaciaJuarezWindowMat);
+            UnityEngine.Object.DestroyImmediate(fjWinDecal.GetComponent<Collider>());
 
-            // Dividing Pilaster between Bay 2 & Bay 3 (Z = -8.75m)
+            // Independent Beige Wedge Awning covering ONLY Farmacia Juárez (clear of South corner pilaster!)
+            CreateWestWedgeAwning("Awning_FarmaciaJuarez", blockArch.transform,
+                centerZ: -10.97f, topY: 3.16f, widthZ: 1.98f, projectionX: 1.25f, dropY: 0.68f, beigeAwningMat, awningValanceMat);
+
+            // Illuminated White Lightbox Sign "FJ Juárez" directly above Farmacia Juárez's awning
+            CreateIlluminatedLightboxSign("Sign_FarmaciaJuarez", blockArch.transform,
+                centerZ: -10.98f, centerY: 3.48f, widthZ: 1.82f, heightY: 0.54f,
+                cabinetMat: whiteFrameMat, faceTexMat: signFarmaciaJuarezMat,
+                nightGlowColor: new Color(0.55f, 1.0f, 0.68f, 1f));
+
+            // Dynamic White Roll-Up Metal Shutter for Farmacia Juárez (synced to backend pharmacy:farmacia-juarez: Mon-Fri 8-20, Sun 8-16, Sat closed!)
+            CreateDynamicRollUpShutter("FarmaciaJuarez_RollUpShutter_Dynamic", blockArch.transform,
+                wallX: -11.88f, centerZ: -10.99f, widthZ: 1.98f, topY: 2.52f, fullDropHeight: 2.32f,
+                alwaysOpen: false, linkedInteractionPointName: "", openSignVisual: null,
+                trackMat: whiteFrameMat, housingMat: whiteFrameMat, shutterMat: whiteMetalShutterMat,
+                linkedBusinessId: "pharmacy:farmacia-juarez");
+
+            // --- DIVIDING PILASTER + CANTILEVERED LIVE EXCHANGE RATE LED SIGN (Z = -9.87m) ---
+            CreateBox("Pilaster_FarmaciaJuarez_Cambio", blockArch.transform,
+                new Vector3(-11.94f, 1.92f, -9.87f), new Vector3(0.18f, 3.45f, 0.22f), warmPeachStuccoMat);
+            CreateBox("Pilaster_FarmaciaJuarez_Cambio_Base", blockArch.transform,
+                new Vector3(-11.92f, 0.56f, -9.87f), new Vector3(0.22f, 0.72f, 0.26f), stoneMasonryMat);
+
+            // Cantilevered double-sided live LED sign (COMPRA green / VENTA magenta-purple as in current street photo!)
+            CreateExchangeRateLedSign("CasaCambio_Sur_ExchangeLedSign", blockArch.transform,
+                pos: new Vector3(-10.82f, 3.48f, -9.87f),
+                cabinetMat: opticaBlackFrameMat, armMat: aluminumMat, flangeMat: darkCorniceMat,
+                liveLedBaseMat: liveLedBaseMat,
+                layoutMode: ExchangeLedLayoutMode.AlternatingBuyGreenSellMagenta);
+
+            // --- ESTABLISHMENT 2 (Z = -9.76..-8.28m, width 1.48m): Unnamed "Casa de Cambio" ---
+            // Warm cream/peach-terracotta plastered entrance with rolled bronze shutter doorway (South) & teller alcove (North)
+            CreateBox("CasaCambio_Sur_SouthJamb", blockArch.transform,
+                new Vector3(-12.16f, 1.42f, -9.71f), new Vector3(0.50f, 2.48f, 0.12f), warmPeachStuccoMat);
+            CreateBox("CasaCambio_Sur_CenterDivider", blockArch.transform,
+                new Vector3(-12.16f, 1.42f, -9.06f), new Vector3(0.50f, 2.48f, 0.12f), warmPeachStuccoMat);
+            CreateBox("CasaCambio_Sur_NorthJamb", blockArch.transform,
+                new Vector3(-12.16f, 1.42f, -8.33f), new Vector3(0.50f, 2.48f, 0.12f), warmPeachStuccoMat);
+            // Left narrow doorway (Z = -9.65..-9.12m) with dark interior & rolled-up bronze metal shutter drum at top!
+            CreateBox("CasaCambio_Sur_DoorRecess", blockArch.transform,
+                new Vector3(-12.38f, 1.38f, -9.385f), new Vector3(0.08f, 2.36f, 0.56f), interiorDarkMat);
+            CreateBox("CasaCambio_Sur_DoorTrackS", blockArch.transform,
+                new Vector3(-11.96f, 1.24f, -9.63f), new Vector3(0.06f, 2.08f, 0.05f), bronzeShutterMat);
+            CreateBox("CasaCambio_Sur_DoorTrackN", blockArch.transform,
+                new Vector3(-11.96f, 1.24f, -9.14f), new Vector3(0.06f, 2.08f, 0.05f), bronzeShutterMat);
+            var cambioShutterRoll = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            cambioShutterRoll.name = "CasaCambio_Sur_RolledShutterDrum";
+            cambioShutterRoll.transform.SetParent(blockArch.transform, false);
+            cambioShutterRoll.transform.localPosition = new Vector3(-11.96f, 2.38f, -9.385f);
+            cambioShutterRoll.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            cambioShutterRoll.transform.localScale = new Vector3(0.24f, 0.30f, 0.24f);
+            SetMaterial(cambioShutterRoll, bronzeShutterMat);
+            UnityEngine.Object.DestroyImmediate(cambioShutterRoll.GetComponent<Collider>());
+            // Right walk-in recessed teller alcove (Z = -9.00..-8.39m) with cream wall, interior counter & dark teller window
+            CreateBox("CasaCambio_Sur_AlcoveBackWall", blockArch.transform,
+                new Vector3(-12.39f, 1.42f, -8.695f), new Vector3(0.08f, 2.44f, 0.64f), creamStuccoMat);
+            CreateBox("CasaCambio_Sur_TellerCounter", blockArch.transform,
+                new Vector3(-12.24f, 0.64f, -8.695f), new Vector3(0.28f, 0.88f, 0.60f), weatheredCreamMat);
+            CreateBox("CasaCambio_Sur_TellerLedge", blockArch.transform,
+                new Vector3(-12.22f, 1.10f, -8.695f), new Vector3(0.32f, 0.05f, 0.62f), darkZocaloMat);
+            CreateBox("CasaCambio_Sur_TellerWindow", blockArch.transform,
+                new Vector3(-12.34f, 1.56f, -8.78f), new Vector3(0.04f, 0.62f, 0.34f), interiorDarkMat);
+            CreateBox("CasaCambio_Sur_HeaderBeam", blockArch.transform,
+                new Vector3(-12.02f, 2.58f, -9.02f), new Vector3(0.22f, 0.14f, 1.48f), warmPeachStuccoMat);
+
+            // Dynamic White Roll-Up Metal Shutter for unnamed Casa de Cambio (installed raised/open 24/7 per alwaysOpen = true!)
+            CreateDynamicRollUpShutter("CasaCambio_Sur_RollUpShutter_Dynamic", blockArch.transform,
+                wallX: -11.88f, centerZ: -9.02f, widthZ: 1.44f, topY: 2.52f, fullDropHeight: 2.32f,
+                alwaysOpen: true, linkedInteractionPointName: "", openSignVisual: null,
+                trackMat: whiteFrameMat, housingMat: whiteFrameMat, shutterMat: whiteMetalShutterMat,
+                linkedBusinessId: "exchange:casa-cambio-juarez-sur");
+
+            // --- ESTABLISHMENT 3 (Z = -8.28..-6.53m, width 1.75m): "Dental México" ---
+            // Modern black/gold clinic facade with aluminum framing, bronze rolled-up overhead shutter & black entry doormat
+            CreateBox("DentalMexico_BackWall", blockArch.transform,
+                new Vector3(-12.14f, 1.38f, -7.405f), new Vector3(0.08f, 2.36f, 1.74f), interiorDarkMat);
+            // Left aluminum-framed glass door with modern black/gold HORARIO + tooth vinyl graphic
+            GameObject dentalDoorQuad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            dentalDoorQuad.name = "DentalMexico_DoorPanel";
+            dentalDoorQuad.transform.SetParent(blockArch.transform, false);
+            dentalDoorQuad.transform.localPosition = new Vector3(-11.95f, 1.32f, -7.87f);
+            dentalDoorQuad.transform.localRotation = Quaternion.Euler(0f, -90f, 0f);
+            dentalDoorQuad.transform.localScale = new Vector3(0.74f, 2.18f, 1.0f);
+            SetMaterial(dentalDoorQuad, dentalDoorMat);
+            UnityEngine.Object.DestroyImmediate(dentalDoorQuad.GetComponent<Collider>());
+            // Center vertical black divider strip reading "DENTAL MEXICO" vertically in gold
+            GameObject dentalDivQuad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            dentalDivQuad.name = "DentalMexico_VerticalDivider";
+            dentalDivQuad.transform.SetParent(blockArch.transform, false);
+            dentalDivQuad.transform.localPosition = new Vector3(-11.945f, 1.32f, -7.40f);
+            dentalDivQuad.transform.localRotation = Quaternion.Euler(0f, -90f, 0f);
+            dentalDivQuad.transform.localScale = new Vector3(0.16f, 2.18f, 1.0f);
+            SetMaterial(dentalDivQuad, dentalDividerMat);
+            UnityEngine.Object.DestroyImmediate(dentalDivQuad.GetComponent<Collider>());
+            // Right display window with modern black/gold services list & smile bands
+            GameObject dentalWinQuad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            dentalWinQuad.name = "DentalMexico_WindowPanel";
+            dentalWinQuad.transform.SetParent(blockArch.transform, false);
+            dentalWinQuad.transform.localPosition = new Vector3(-11.95f, 1.32f, -6.935f);
+            dentalWinQuad.transform.localRotation = Quaternion.Euler(0f, -90f, 0f);
+            dentalWinQuad.transform.localScale = new Vector3(0.73f, 2.18f, 1.0f);
+            SetMaterial(dentalWinQuad, dentalWindowMat);
+            UnityEngine.Object.DestroyImmediate(dentalWinQuad.GetComponent<Collider>());
+            // Crisp silver aluminum storefront mullions, threshold, header & bronze rolled-up security shutter drum
+            float[] dmMullions = new float[] { -8.25f, -7.49f, -7.31f, -6.56f };
+            for (int i = 0; i < dmMullions.Length; i++)
+            {
+                CreateBox($"DentalMexico_Mullion_{i}", blockArch.transform,
+                    new Vector3(-11.93f, 1.32f, dmMullions[i]), new Vector3(0.08f, 2.24f, 0.05f), aluminumMat);
+            }
+            CreateBox("DentalMexico_FrameTop", blockArch.transform,
+                new Vector3(-11.93f, 2.42f, -7.405f), new Vector3(0.08f, 0.06f, 1.74f), aluminumMat);
+            CreateBox("DentalMexico_Threshold", blockArch.transform,
+                new Vector3(-11.93f, 0.23f, -7.405f), new Vector3(0.09f, 0.06f, 1.74f), aluminumMat);
+            var dmShutterRoll = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            dmShutterRoll.name = "DentalMexico_RolledShutterDrum";
+            dmShutterRoll.transform.SetParent(blockArch.transform, false);
+            dmShutterRoll.transform.localPosition = new Vector3(-11.95f, 2.54f, -7.405f);
+            dmShutterRoll.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            dmShutterRoll.transform.localScale = new Vector3(0.20f, 0.86f, 0.20f);
+            SetMaterial(dmShutterRoll, bronzeShutterMat);
+            UnityEngine.Object.DestroyImmediate(dmShutterRoll.GetComponent<Collider>());
+            // Dark rubber welcome doormat in front of Dental México's door
+            CreateBox("DentalMexico_Doormat", blockArch.transform,
+                new Vector3(-11.60f, 0.208f, -7.87f), new Vector3(0.56f, 0.016f, 0.78f), doormatDarkMat);
+
+            // Dynamic White Roll-Up Metal Shutter for Dental México (synced to backend dental:dental-mexico: Mon-Fri 9-17, Sat 9-15, Sun closed!)
+            CreateDynamicRollUpShutter("DentalMexico_RollUpShutter_Dynamic", blockArch.transform,
+                wallX: -11.88f, centerZ: -7.405f, widthZ: 1.72f, topY: 2.52f, fullDropHeight: 2.32f,
+                alwaysOpen: false, linkedInteractionPointName: "", openSignVisual: null,
+                trackMat: whiteFrameMat, housingMat: whiteFrameMat, shutterMat: whiteMetalShutterMat,
+                linkedBusinessId: "dental:dental-mexico");
+
+            // Second Beige Wedge Awning covering Casa de Cambio (sin nombre) + Dental México together!
+            CreateWestWedgeAwning("Awning_Bay12_DentalMexico", blockArch.transform,
+                centerZ: -8.14f, topY: 3.16f, widthZ: 3.28f, projectionX: 1.32f, dropY: 0.70f, beigeAwningMat, awningValanceMat);
+
+            // NEW 3D Illuminated Channel-Letter Sign "DENTAL MEXICO" (bright electric sky-blue face + black 3D returns,
+            // spanning the ENTIRE upper fascia across BOTH the unnamed Casa de Cambio AND Dental México just like real life!)
+            CreateExtrudedChannelLetterSign(
+                name: "Sign_DentalMexico",
+                parent: blockArch.transform,
+                wallX: -12.00f,
+                centerY: 3.48f,
+                centerZ: -8.13f,
+                widthZ: 3.08f,
+                heightY: 0.50f,
+                extrudeDepthX: 0.11f,
+                texAssetPath: "Assets/Textures/Environment/T_West_Sign_DentalMexico_3D.png",
+                faceMatPath: "Assets/Settings/West_Sign_DentalMexico_3DFace.mat",
+                sideMatPath: "Assets/Settings/West_Sign_DentalMexico_3DSide.mat",
+                meshAssetPath: "Assets/Settings/DentalMexico_3DReturns_Mesh.asset",
+                sideReturnColor: new Color(0.08f, 0.09f, 0.11f),
+                nightGlowColor: new Color(0.10f, 0.62f, 1.0f, 1f));
+
+            // Dividing Pilaster between Dental México & Farma PHARMACY (Z = -6.35m) + authentic 3D CFE meter!
             CreateBox("Pilaster_Bay2_3", blockArch.transform,
-                new Vector3(-11.93f, 1.9f, -8.75f), new Vector3(0.16f, 3.4f, 0.40f), creamStuccoMat);
+                new Vector3(-11.93f, 1.9f, -6.35f), new Vector3(0.18f, 3.4f, 0.36f), warmPeachStuccoMat);
             CreateBox("Pilaster_Bay2_3_Base", blockArch.transform,
-                new Vector3(-11.91f, 0.50f, -8.75f), new Vector3(0.18f, 0.60f, 0.44f), darkZocaloMat);
+                new Vector3(-11.91f, 0.56f, -6.35f), new Vector3(0.20f, 0.72f, 0.40f), stoneMasonryMat);
+            CreateCfeMeter("CFE_Meter_DentalMexico", blockArch.transform,
+                new Vector3(-11.83f, 1.48f, -6.35f), aluminumMat, cfeDomeGlassMat, cfeMeterFaceMat);
 
-            // --- Bay 3 (Center-Left, Z = -8.5m to -2.3m, center Z = -5.4m): "Farma | PHARMACY" ---
+            // --- Bay 3 (Compacted to authentic width, Z = -6.15m to -2.45m, center Z = -4.30m): "Farma | PHARMACY" ---
             CreateBox("Bay3_OpenInteriorRecess", blockArch.transform,
-                new Vector3(-12.35f, 1.42f, -4.1f), new Vector3(0.8f, 2.45f, 3.2f), interiorDarkMat);
+                new Vector3(-12.35f, 1.42f, -3.45f), new Vector3(0.8f, 2.45f, 1.95f), interiorDarkMat);
             CreateBox("Bay3_InteriorCounter", blockArch.transform,
-                new Vector3(-12.25f, 0.68f, -3.9f), new Vector3(0.45f, 0.95f, 2.2f), terracottaPlaqueMat);
-            // Left Window with Large Yellow Promotional Poster (Z = -8.3m to -5.6m)
+                new Vector3(-12.25f, 0.68f, -3.40f), new Vector3(0.45f, 0.95f, 1.45f), terracottaPlaqueMat);
+            // Left Window with Yellow Promotional Poster (Z = -6.10m to -4.45m)
             CreateBox("Bay3_LeftWindowGlass", blockArch.transform,
-                new Vector3(-11.96f, 1.42f, -6.95f), new Vector3(0.08f, 2.40f, 2.6f), darkGlassMat);
+                new Vector3(-11.96f, 1.42f, -5.28f), new Vector3(0.08f, 2.40f, 1.65f), darkGlassMat);
             GameObject pharmPoster = GameObject.CreatePrimitive(PrimitiveType.Quad);
             pharmPoster.name = "Bay3_YellowPromotionalPoster";
             pharmPoster.transform.SetParent(blockArch.transform);
-            pharmPoster.transform.localPosition = new Vector3(-11.89f, 1.38f, -6.95f);
+            pharmPoster.transform.localPosition = new Vector3(-11.89f, 1.38f, -5.28f);
             pharmPoster.transform.localRotation = Quaternion.Euler(0f, -90f, 0f); // Faces East (+X)
-            pharmPoster.transform.localScale = new Vector3(1.55f, 1.65f, 1.0f);
+            pharmPoster.transform.localScale = new Vector3(1.25f, 1.55f, 1.0f);
             SetMaterial(pharmPoster, posterPharmacyMat);
             UnityEngine.Object.DestroyImmediate(pharmPoster.GetComponent<Collider>());
             // Beige Wedge Awning
             CreateWestWedgeAwning("Awning_Bay3_Pharmacy", blockArch.transform,
-                centerZ: -5.4f, topY: 3.16f, widthZ: 5.9f, projectionX: 1.38f, dropY: 0.74f, beigeAwningMat, awningValanceMat);
+                centerZ: -4.30f, topY: 3.16f, widthZ: 3.75f, projectionX: 1.38f, dropY: 0.74f, beigeAwningMat, awningValanceMat);
             // Two-Tone Terracotta & Bright Yellow Sign "Farma | PHARMACY"
             CreateWestSign("Sign_Pharmacy", blockArch.transform,
-                centerZ: -5.4f, centerY: 3.52f, widthZ: 4.1f, heightY: 0.68f, terracottaPlaqueMat, signPharmacyMat);
+                centerZ: -4.30f, centerY: 3.52f, widthZ: 3.25f, heightY: 0.64f, terracottaPlaqueMat, signPharmacyMat);
 
             // Dividing Pilaster between Bay 3 & Bay 4 (Z = -2.15m) + Twin CFE Electric Meters (visible on left edge of photo!)
             CreateBox("Pilaster_Bay3_4", blockArch.transform,
@@ -841,6 +1122,58 @@ namespace MyVirtualCommunity.Editor
                 ledCtrl.glowLights[1] != null;
             Check("LED sign cantilevered on dual metal arms with HDR emissive material & dual night glow lights", armsAndGlowOk);
 
+            Check("Building A South continuous flush wall & double-leaf storage door exist (alcove & blue barrel removed)",
+                GameObject.Find("BuildingA_SouthBay_ContinuousWall") != null &&
+                GameObject.Find("BuildingA_SouthBay_StorageDoor") != null &&
+                GameObject.Find("ArchWindow_1_SouthDiag") != null &&
+                GameObject.Find("BuildingA_SouthNook_BlueDrum") == null &&
+                GameObject.Find("BuildingA_SouthNook_BackWall") == null &&
+                GameObject.Find("Sign_DentalMexico") != null &&
+                GameObject.Find("Awning_Bay12_DentalMexico") != null);
+
+            var surCambioLed = GameObject.Find("CasaCambio_Sur_ExchangeLedSign")?.GetComponent<ExchangeRateLedSignController>();
+            bool surThreeShopsOk =
+                GameObject.Find("Sign_FarmaciaJuarez") != null &&
+                GameObject.Find("Awning_FarmaciaJuarez") != null &&
+                GameObject.Find("Pilaster_PharmacyVertical_Sign") != null &&
+                GameObject.Find("CasaCambio_Sur_RolledShutterDrum") != null &&
+                GameObject.Find("CasaCambio_Sur_TellerWindow") != null &&
+                surCambioLed != null &&
+                surCambioLed.layoutMode == ExchangeLedLayoutMode.AlternatingBuyGreenSellMagenta &&
+                GameObject.Find("Sign_DentalMexico")?.transform.Find("Sign_DentalMexico_3DReturns") != null &&
+                GameObject.Find("DentalMexico_DoorPanel") != null &&
+                GameObject.Find("DentalMexico_VerticalDivider") != null &&
+                GameObject.Find("DentalMexico_WindowPanel") != null &&
+                GameObject.Find("CFE_Meter_DentalMexico") != null;
+            Check("Farmacia Juárez, unnamed Casa de Cambio (live green/magenta LED), & 3D Dental México storefront built cleanly", surThreeShopsOk);
+
+            var fjShutter = GameObject.Find("FarmaciaJuarez_RollUpShutter_Dynamic")?.GetComponent<StorefrontShutterController>();
+            var ccShutter = GameObject.Find("CasaCambio_Sur_RollUpShutter_Dynamic")?.GetComponent<StorefrontShutterController>();
+            var dmShutter = GameObject.Find("DentalMexico_RollUpShutter_Dynamic")?.GetComponent<StorefrontShutterController>();
+            bool threeWhiteShuttersOk = false;
+            if (fjShutter != null && ccShutter != null && dmShutter != null &&
+                !fjShutter.alwaysOpen && ccShutter.alwaysOpen && !dmShutter.alwaysOpen &&
+                fjShutter.linkedBusinessId == "pharmacy:farmacia-juarez" &&
+                ccShutter.linkedBusinessId == "exchange:casa-cambio-juarez-sur" &&
+                dmShutter.linkedBusinessId == "dental:dental-mexico")
+            {
+                fjShutter.ApplyAuthoritativeBusinessStatus(new BusinessOperationalStatusDto { isOpen = false, status = "CLOSED" });
+                bool fjCloses = fjShutter.IsClosed;
+                fjShutter.ApplyAuthoritativeBusinessStatus(new BusinessOperationalStatusDto { isOpen = true, status = "OPEN" });
+                bool fjOpens = !fjShutter.IsClosed;
+
+                dmShutter.ApplyAuthoritativeBusinessStatus(new BusinessOperationalStatusDto { isOpen = false, status = "CLOSED" });
+                bool dmCloses = dmShutter.IsClosed;
+                dmShutter.ApplyAuthoritativeBusinessStatus(new BusinessOperationalStatusDto { isOpen = true, status = "OPEN" });
+                bool dmOpens = !dmShutter.IsClosed;
+
+                ccShutter.SetClosedImmediate(true); // alwaysOpen=true must keep 24/7 Casa de Cambio open!
+                bool ccStaysOpen = !ccShutter.IsClosed;
+
+                threeWhiteShuttersOk = fjCloses && fjOpens && dmCloses && dmOpens && ccStaysOpen;
+            }
+            Check("White roll-up metal shutters wired to backend schedules (Farmacia Juárez & Dental México auto-close; Casa de Cambio 24/7 open)", threeWhiteShuttersOk);
+
             Debug.Log($"[WestNorthVerify] SUMMARY: {passed}/{total} checks passed.");
             EditorApplication.Exit(passed == total ? 0 : 1);
         }
@@ -857,26 +1190,46 @@ namespace MyVirtualCommunity.Editor
             if (!Directory.Exists(outDir)) Directory.CreateDirectory(outDir);
 
             // Preview realistic live FX readout (17.50 / 18.50) during visual verification captures
+            var sampleFx = new WorldExchangeRateObservationDto
+            {
+                status = "available",
+                freshness = "live",
+                baseCurrency = "USD",
+                quoteCurrency = "MXN",
+                buyRate = 17.50f,
+                sellRate = 18.50f,
+                hasBuyRate = true,
+                hasSellRate = true
+            };
             var ledCtrl = GameObject.Find("CambiosSantaFe_ExchangeLedSign")?.GetComponent<ExchangeRateLedSignController>();
             if (ledCtrl != null)
             {
-                ledCtrl.ApplyAuthoritativeExchangeRate(new WorldExchangeRateObservationDto
-                {
-                    status = "available",
-                    freshness = "live",
-                    baseCurrency = "USD",
-                    quoteCurrency = "MXN",
-                    buyRate = 17.50f,
-                    sellRate = 18.50f,
-                    hasBuyRate = true,
-                    hasSellRate = true
-                });
+                ledCtrl.ApplyAuthoritativeExchangeRate(sampleFx);
                 ledCtrl.SetNightPreviewOverride(false);
                 ledCtrl.ForceSlide(false); // COMPRA (green)
+            }
+            var billemexLedCtrl = GameObject.Find("GrupoBillemex_ExchangeLedSign")?.GetComponent<ExchangeRateLedSignController>();
+            if (billemexLedCtrl != null)
+            {
+                billemexLedCtrl.ApplyAuthoritativeExchangeRate(sampleFx);
+                billemexLedCtrl.SetNightPreviewOverride(false);
+            }
+            var surCambioLedCtrl = GameObject.Find("CasaCambio_Sur_ExchangeLedSign")?.GetComponent<ExchangeRateLedSignController>();
+            if (surCambioLedCtrl != null)
+            {
+                surCambioLedCtrl.ApplyAuthoritativeExchangeRate(sampleFx);
+                surCambioLedCtrl.SetNightPreviewOverride(false);
+                surCambioLedCtrl.ForceSlide(true); // VENTA 18.50 in bright magenta matching real street photo!
             }
 
             var optShutter = GameObject.Find("Optica_RollUpShutter_Dynamic")?.GetComponent<StorefrontShutterController>();
             if (optShutter != null) optShutter.SetClosedImmediate(false);
+            var fjShutter = GameObject.Find("FarmaciaJuarez_RollUpShutter_Dynamic")?.GetComponent<StorefrontShutterController>();
+            var ccShutter = GameObject.Find("CasaCambio_Sur_RollUpShutter_Dynamic")?.GetComponent<StorefrontShutterController>();
+            var dmShutter = GameObject.Find("DentalMexico_RollUpShutter_Dynamic")?.GetComponent<StorefrontShutterController>();
+            if (fjShutter != null) fjShutter.SetClosedImmediate(false);
+            if (ccShutter != null) ccShutter.SetClosedImmediate(false);
+            if (dmShutter != null) dmShutter.SetClosedImmediate(false);
 
             GameObject camGo = new GameObject("WestBlockVerifyCam");
             Camera cam = camGo.AddComponent<Camera>();
@@ -900,11 +1253,75 @@ namespace MyVirtualCommunity.Editor
 
             try
             {
-                // Shot 1: Daytime Frontal Close-Up (confirms flagpole removed, dual arms holding LED sign out over sidewalk)
+                // Shot 1: Google Maps Frontal Match of the 4 Shops (Óptica MGR, Farmalivio, Cambios Bonanza, Grupo Billemex!)
+                cam.fieldOfView = 50f;
+                cam.transform.position = new Vector3(-0.6f, 1.85f, -21.8f);
+                cam.transform.LookAt(new Vector3(-12.0f, 2.35f, -21.6f));
+                RenderToFile(cam, 1600, 900, Path.Combine(outDir, "sw_four_shops_google_match.png")); // URP warmup pass
+                RenderToFile(cam, 1600, 900, Path.Combine(outDir, "sw_four_shops_google_match.png"));
+
+                // Shot 2: Oblique Close-Up of Farmalivio (double doors + 3-line quote), Bonanza white shutter, twin CFE & Billemex dual LED!
+                cam.fieldOfView = 46f;
+                cam.transform.position = new Vector3(-7.6f, 2.05f, -24.5f);
+                cam.transform.LookAt(new Vector3(-11.6f, 2.65f, -19.2f));
+                RenderToFile(cam, 1600, 900, Path.Combine(outDir, "sw_four_shops_detail_closeup.png"));
+
+                // Shot 3: Wide Street-View Match of Full South-West Block
+                cam.fieldOfView = 56f;
+                cam.transform.position = new Vector3(4.6f, 1.95f, -16.8f);
+                cam.transform.LookAt(new Vector3(-12.0f, 3.05f, -16.5f));
+                RenderToFile(cam, 1600, 900, Path.Combine(outDir, "west_south_block_match.png"));
+
+                // Shot 2: Close-Up on Building A South Continuous Wall & Storage Door + México Mágico / La Esquina de Chihuas
+                cam.fieldOfView = 50f;
+                cam.transform.position = new Vector3(-2.0f, 2.05f, -13.0f);
+                cam.transform.LookAt(new Vector3(-12.2f, 2.85f, -13.2f));
+                RenderToFile(cam, 1600, 900, Path.Combine(outDir, "west_south_diagonal_closeup.png"));
+
+                // Shot 2B: Sidewalk Close-Up of Flush South Bay Wall + Double-Leaf Metal Storage Door (verifying alcove & blue barrel removed!)
+                cam.fieldOfView = 46f;
+                cam.transform.position = new Vector3(-6.8f, 1.75f, -12.3f);
+                cam.transform.LookAt(new Vector3(-12.0f, 1.70f, -13.1f));
+                RenderToFile(cam, 1600, 900, Path.Combine(outDir, "west_south_storage_door_fix.png"));
+
+                // Shot 2C: Frontal Match of the 3 Updated Shops (Farmacia Juárez, unnamed Casa de Cambio + Magenta LED, & 3D Dental México!)
+                cam.fieldOfView = 48f;
+                cam.transform.position = new Vector3(-2.6f, 1.85f, -9.25f);
+                cam.transform.LookAt(new Vector3(-12.0f, 2.30f, -9.25f));
+                RenderToFile(cam, 1600, 900, Path.Combine(outDir, "farmacia_cambio_dental_day.png"));
+
+                // Shot 2D: Oblique Street Photo 1 Match (looking South-West from Dental México past 3D blue channel letters & magenta VENTA LED!)
+                cam.fieldOfView = 50f;
+                cam.transform.position = new Vector3(-8.4f, 1.85f, -5.2f);
+                cam.transform.LookAt(new Vector3(-11.4f, 2.45f, -9.6f));
+                RenderToFile(cam, 1600, 900, Path.Combine(outDir, "farmacia_cambio_dental_oblique.png"));
+
+                // Shot 3: Corner Transition at Calle Azucenas (Óptica MGR, Farmalivio 3D logo, Cambios Bonanza, & South Azucenas Wall)
+                cam.fieldOfView = 52f;
+                cam.transform.position = new Vector3(-1.5f, 1.95f, -29.8f);
+                cam.transform.LookAt(new Vector3(-12.5f, 2.40f, -22.0f));
+                RenderToFile(cam, 1600, 900, Path.Combine(outDir, "west_south_azucenas_corner.png"));
+
+                // Shot 3B: Oblique 3D Close-Up of Farmalivio Extruded Channel Letters flanked by Óptica MGR. & Cambios Bonanza!
+                var allGlowCtrls = UnityEngine.Object.FindObjectsByType<IlluminatedSignGlowController>(FindObjectsSortMode.None);
+                foreach (var gc in allGlowCtrls) gc.SetNightPreviewOverride(false);
+
+                // Shot 3C: Daytime South-Looking-North Angle (Photo 4 match: Grupo Billemex LED -> LA ESQ DE CH marquee -> MÉXICO MÁGICO circle!)
+                cam.fieldOfView = 50f;
+                cam.transform.position = new Vector3(-8.4f, 2.05f, -21.2f);
+                cam.transform.LookAt(new Vector3(-11.2f, 3.85f, -14.8f));
+                RenderToFile(cam, 1600, 900, Path.Combine(outDir, "chihuas_mexico_day_south.png"));
+
+                // Shot 3D: Daytime North-Looking-South Angle (Photos 1 & 5 match: Rosa Mexicano protruding wall + Circle Sign + LA ESQ DE CH marquee!)
+                cam.fieldOfView = 50f;
+                cam.transform.position = new Vector3(-8.8f, 2.05f, -9.2f);
+                cam.transform.LookAt(new Vector3(-11.2f, 3.65f, -14.6f));
+                RenderToFile(cam, 1600, 900, Path.Combine(outDir, "chihuas_mexico_day_north.png"));
+
+                // Shot 4: Daytime Frontal Close-Up of Óptica Fashion & Cambios Santa Fe (confirming North section untouched!)
                 cam.fieldOfView = 48f;
                 cam.transform.position = new Vector3(-4.5f, 1.85f, 2.2f);
                 cam.transform.LookAt(new Vector3(-12.2f, 2.15f, 2.6f));
-                RenderToFile(cam, 1600, 900, Path.Combine(outDir, "optica_santafe_detail_match.png")); // URP warmup pass
                 RenderToFile(cam, 1600, 900, Path.Combine(outDir, "optica_santafe_detail_match.png"));
 
                 // Shot 2: Daytime Sidewalk Angle matching real photo (shows BOTH metal arms + sign protruding past awning + COMPRA green)
@@ -944,6 +1361,56 @@ namespace MyVirtualCommunity.Editor
                 cam.transform.position = new Vector3(-4.8f, 1.95f, -0.8f);
                 cam.transform.LookAt(new Vector3(-11.6f, 2.55f, 2.6f));
                 RenderToFile(cam, 1600, 900, Path.Combine(outDir, "optica_closed_and_led_venta.png"));
+
+                // Shot 5: Nighttime Illuminated Farmalivio + Grupo Billemex + La Esquina de Chihuas + México Mágico + Dental México 3D!
+                foreach (var gc in allGlowCtrls) gc.SetNightPreviewOverride(true);
+                if (billemexLedCtrl != null) billemexLedCtrl.SetNightPreviewOverride(true);
+                if (surCambioLedCtrl != null)
+                {
+                    surCambioLedCtrl.SetNightPreviewOverride(true);
+                    surCambioLedCtrl.ForceSlide(true); // VENTA bright magenta glow at night!
+                }
+
+                // Shot 5A: Nighttime Frontal Close-Up of La Esquina de Chihuas (Photo 3) + México Mágico (Photo 2)!
+                cam.fieldOfView = 50f;
+                cam.transform.position = new Vector3(-6.2f, 2.15f, -14.9f);
+                cam.transform.LookAt(new Vector3(-11.8f, 2.60f, -14.9f));
+                RenderToFile(cam, 1600, 900, Path.Combine(outDir, "chihuas_mexico_frontal_night.png"));
+
+                // Shot 5B: Nighttime Photo 1 Match (Looking South: Glowing Circular MÉXICO MÁGICO + Rosa Wall + Neon Banner + LA ESQ DE CH Marquee!)
+                cam.fieldOfView = 50f;
+                cam.transform.position = new Vector3(-8.4f, 2.00f, -9.4f);
+                cam.transform.LookAt(new Vector3(-11.1f, 3.45f, -14.8f));
+                RenderToFile(cam, 1600, 900, Path.Combine(outDir, "chihuas_mexico_north_night.png"));
+
+                // Shot 5C: Nighttime Full SW Strip (Farmalivio turquoise -> Billemex red -> Chihuas amber -> México Mágico pink!)
+                cam.fieldOfView = 50f;
+                cam.transform.position = new Vector3(-6.8f, 2.10f, -25.8f);
+                cam.transform.LookAt(new Vector3(-11.4f, 3.15f, -18.2f));
+                RenderToFile(cam, 1600, 900, Path.Combine(outDir, "sw_four_shops_night_glow.png"));
+
+                // Shot 5D: Nighttime Illuminated Farmacia Juárez + Magenta VENTA LED + Electric-Blue 3D DENTAL MEXICO Channel Letters (with after-hours white shutters CLOSED on Farmacia & Dental, OPEN 24/7 on Casa de Cambio!)
+                if (fjShutter != null) fjShutter.SetClosedImmediate(true);
+                if (dmShutter != null) dmShutter.SetClosedImmediate(true);
+                if (ccShutter != null) ccShutter.SetClosedImmediate(true); // alwaysOpen=true stays open!
+                cam.fieldOfView = 50f;
+                cam.transform.position = new Vector3(-7.4f, 1.95f, -5.0f);
+                cam.transform.LookAt(new Vector3(-11.4f, 2.75f, -9.5f));
+                RenderToFile(cam, 1600, 900, Path.Combine(outDir, "farmacia_cambio_dental_night.png"));
+
+                // Shot 5E: Frontal After-Hours Verification (Farmacia Juárez & Dental México white shutters CLOSED; Casa de Cambio 24/7 OPEN!)
+                cam.fieldOfView = 48f;
+                cam.transform.position = new Vector3(-2.6f, 1.85f, -9.25f);
+                cam.transform.LookAt(new Vector3(-12.0f, 2.25f, -9.25f));
+                RenderToFile(cam, 1600, 900, Path.Combine(outDir, "farmacia_cambio_dental_shutters_closed.png"));
+
+                if (fjShutter != null) fjShutter.SetClosedImmediate(false);
+                if (dmShutter != null) dmShutter.SetClosedImmediate(false);
+                if (ccShutter != null) ccShutter.SetClosedImmediate(false);
+
+                foreach (var gc in allGlowCtrls) gc.SetNightPreviewOverride(null);
+                if (billemexLedCtrl != null) billemexLedCtrl.SetNightPreviewOverride(null);
+                if (surCambioLedCtrl != null) surCambioLedCtrl.SetNightPreviewOverride(null);
             }
             finally
             {
@@ -1172,7 +1639,7 @@ namespace MyVirtualCommunity.Editor
 
         private static void CreateDynamicRollUpShutter(string name, Transform parent, float wallX, float centerZ, float widthZ,
             float topY, float fullDropHeight, bool alwaysOpen, string linkedInteractionPointName, GameObject openSignVisual,
-            Material trackMat, Material housingMat, Material shutterMat)
+            Material trackMat, Material housingMat, Material shutterMat, string linkedBusinessId = "")
         {
             var root = new GameObject(name);
             root.transform.SetParent(parent, false);
@@ -1201,7 +1668,8 @@ namespace MyVirtualCommunity.Editor
 
             var ctrl = root.AddComponent<StorefrontShutterController>();
             ctrl.alwaysOpen = alwaysOpen;
-            ctrl.linkedInteractionPointName = linkedInteractionPointName;
+            ctrl.linkedBusinessId = linkedBusinessId ?? "";
+            ctrl.linkedInteractionPointName = linkedInteractionPointName ?? "";
             ctrl.shutterCurtain = curtain.transform;
             ctrl.openSignVisual = openSignVisual;
             ctrl.fullDropHeight = fullDropHeight;
@@ -1210,7 +1678,7 @@ namespace MyVirtualCommunity.Editor
             ctrl.SetClosedImmediate(false);
         }
 
-        private static void CreateExchangeRateLedSign(string name, Transform parent, Vector3 pos, Material cabinetMat, Material armMat, Material flangeMat, Material liveLedBaseMat)
+        private static void CreateExchangeRateLedSign(string name, Transform parent, Vector3 pos, Material cabinetMat, Material armMat, Material flangeMat, Material liveLedBaseMat, ExchangeLedLayoutMode layoutMode = ExchangeLedLayoutMode.AlternatingBuySell)
         {
             var root = new GameObject(name);
             root.transform.SetParent(parent, false);
@@ -1250,11 +1718,12 @@ namespace MyVirtualCommunity.Editor
             SetMaterial(northQuad, liveLedBaseMat);
             UnityEngine.Object.DestroyImmediate(northQuad.GetComponent<Collider>());
 
-            // Dual real-time URP PointLights casting vivid green (COMPRA) / yellow (VENTA) glow at night!
+            // Dual real-time URP PointLights casting vivid green (COMPRA) / yellow or magenta (VENTA) glow at night!
             Light southLight = CreateLedGlowLight("LED_GlowLight_South", root.transform, new Vector3(0f, -0.06f, -0.42f));
             Light northLight = CreateLedGlowLight("LED_GlowLight_North", root.transform, new Vector3(0f, -0.06f, 0.42f));
 
             var ctrl = root.AddComponent<ExchangeRateLedSignController>();
+            ctrl.layoutMode = layoutMode;
             ctrl.baseLedMaterial = liveLedBaseMat;
             ctrl.slideIntervalSeconds = 4.0f;
             ctrl.pollIntervalSeconds = 300.0f;
@@ -1278,7 +1747,7 @@ namespace MyVirtualCommunity.Editor
             light.range = 4.6f;
             light.enabled = false;
             light.shadows = LightShadows.None;
-            light.renderMode = LightRenderMode.ForcePixel;
+            light.renderMode = LightRenderMode.Auto;
             return light;
         }
 
@@ -1385,6 +1854,330 @@ namespace MyVirtualCommunity.Editor
                 mat.DisableKeyword("_ALPHATEST_ON");
                 mat.renderQueue = (int)RenderQueue.Geometry;
             }
+            EditorUtility.SetDirty(mat);
+            return mat;
+        }
+
+        private static void CreateIlluminatedLightboxSign(string name, Transform parent, float centerZ, float centerY,
+            float widthZ, float heightY, Material cabinetMat, Material faceTexMat, Color nightGlowColor, float frontOffsetX = -11.90f)
+        {
+            var signRoot = new GameObject(name);
+            signRoot.transform.SetParent(parent, false);
+            signRoot.transform.localPosition = new Vector3(frontOffsetX, centerY, centerZ);
+
+            var box = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            box.name = "Lightbox_Cabinet";
+            box.transform.SetParent(signRoot.transform, false);
+            box.transform.localPosition = Vector3.zero;
+            box.transform.localScale = new Vector3(0.14f, heightY, widthZ);
+            SetMaterial(box, cabinetMat);
+            UnityEngine.Object.DestroyImmediate(box.GetComponent<Collider>());
+
+            var quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            quad.name = "Lightbox_Face";
+            quad.transform.SetParent(signRoot.transform, false);
+            quad.transform.localPosition = new Vector3(0.075f, 0f, 0f);
+            quad.transform.localRotation = Quaternion.Euler(0f, -90f, 0f);
+            quad.transform.localScale = new Vector3(widthZ - 0.04f, heightY - 0.04f, 1.0f);
+            SetMaterial(quad, faceTexMat);
+            UnityEngine.Object.DestroyImmediate(quad.GetComponent<Collider>());
+
+            var lightGo = new GameObject($"{name}_NightLight");
+            lightGo.transform.SetParent(signRoot.transform, false);
+            lightGo.transform.localPosition = new Vector3(0.45f, -0.05f, 0f);
+            var ptLight = lightGo.AddComponent<Light>();
+            ptLight.type = LightType.Point;
+            ptLight.color = nightGlowColor;
+            ptLight.intensity = 0.0f;
+            ptLight.range = 3.6f;
+            ptLight.enabled = false;
+            ptLight.shadows = LightShadows.None;
+            ptLight.renderMode = LightRenderMode.Auto;
+
+            var glowCtrl = signRoot.AddComponent<IlluminatedSignGlowController>();
+            glowCtrl.baseEmissiveMaterial = faceTexMat;
+            glowCtrl.emissiveRenderers = new Renderer[] { quad.GetComponent<Renderer>() };
+            glowCtrl.nightGlowLights = new Light[] { ptLight };
+            glowCtrl.emissionTint = Color.white;
+            glowCtrl.dayEmissionIntensity = 0.25f;
+            glowCtrl.nightEmissionIntensity = 2.6f;
+            glowCtrl.nightLightColor = nightGlowColor;
+            glowCtrl.nightLightIntensity = 1.15f;
+            glowCtrl.nightLightRange = 3.6f;
+        }
+
+        private static void CreateExtrudedChannelLetterSign(
+            string name, Transform parent, float wallX, float centerY, float centerZ,
+            float widthZ, float heightY, float extrudeDepthX,
+            string texAssetPath, string faceMatPath, string sideMatPath, string meshAssetPath,
+            Color sideReturnColor, Color nightGlowColor)
+        {
+            Material faceMat = CreateOrGetAlphaEmissiveMaterial(faceMatPath, texAssetPath);
+            Material sideMat = CreateOrGetColorMaterial(sideMatPath, sideReturnColor, 0.34f);
+
+            var root = new GameObject(name);
+            root.transform.SetParent(parent, false);
+            root.transform.localPosition = new Vector3(wallX, centerY, centerZ);
+
+            // Lightweight solid 3D extruded channel-letter side returns (ShadowCastingMode.Off for GPU thermal safety!)
+            string fullPngPath = Path.Combine(Directory.GetParent(Application.dataPath).FullName, texAssetPath.Replace('/', Path.DirectorySeparatorChar));
+            Mesh returnsMesh = BuildExtrudedSilhouetteMesh(fullPngPath, meshAssetPath, widthZ, heightY, extrudeDepthX, gridW: 160, gridH: 38);
+            if (returnsMesh != null)
+            {
+                var returnsGo = new GameObject($"{name}_3DReturns");
+                returnsGo.transform.SetParent(root.transform, false);
+                var mf = returnsGo.AddComponent<MeshFilter>();
+                var mr = returnsGo.AddComponent<MeshRenderer>();
+                mf.sharedMesh = returnsMesh;
+                mr.sharedMaterial = sideMat;
+                mr.shadowCastingMode = ShadowCastingMode.Off;
+            }
+
+            // Razor-sharp alpha-clipped HDR emissive electric-blue acrylic front face
+            var frontQuad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            frontQuad.name = $"{name}_FrontFace";
+            frontQuad.transform.SetParent(root.transform, false);
+            frontQuad.transform.localPosition = new Vector3(extrudeDepthX + 0.002f, 0f, 0f);
+            frontQuad.transform.localRotation = Quaternion.Euler(0f, -90f, 0f);
+            frontQuad.transform.localScale = new Vector3(widthZ, heightY, 1.0f);
+            SetMaterial(frontQuad, faceMat);
+            UnityEngine.Object.DestroyImmediate(frontQuad.GetComponent<Collider>());
+
+            // Nighttime electric-blue glow light washing the facade & beige awning cleanly at night
+            var lightGo = new GameObject($"{name}_NightGlowLight");
+            lightGo.transform.SetParent(root.transform, false);
+            lightGo.transform.localPosition = new Vector3(extrudeDepthX + 0.45f, -0.05f, 0f);
+            var ptLight = lightGo.AddComponent<Light>();
+            ptLight.type = LightType.Point;
+            ptLight.color = nightGlowColor;
+            ptLight.intensity = 0.0f;
+            ptLight.range = 4.6f;
+            ptLight.enabled = false;
+            ptLight.shadows = LightShadows.None;
+            ptLight.renderMode = LightRenderMode.Auto;
+
+            var glowCtrl = root.AddComponent<IlluminatedSignGlowController>();
+            glowCtrl.baseEmissiveMaterial = faceMat;
+            glowCtrl.emissiveRenderers = new Renderer[] { frontQuad.GetComponent<Renderer>() };
+            glowCtrl.nightGlowLights = new Light[] { ptLight };
+            glowCtrl.emissionTint = Color.white;
+            glowCtrl.dayEmissionIntensity = 0.40f;
+            glowCtrl.nightEmissionIntensity = 3.8f;
+            glowCtrl.nightLightColor = nightGlowColor;
+            glowCtrl.nightLightIntensity = 1.65f;
+            glowCtrl.nightLightRange = 4.6f;
+        }
+
+        private static Mesh BuildExtrudedSilhouetteMesh(string fullPngPath, string meshAssetPath,
+            float widthZ, float heightY, float depthX, int gridW, int gridH)
+        {
+            if (!File.Exists(fullPngPath))
+            {
+                Debug.LogError($"[WestSidewalkBlockBuilder] Missing silhouette PNG: {fullPngPath}");
+                return null;
+            }
+
+            byte[] pngBytes = File.ReadAllBytes(fullPngPath);
+            var tmpTex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            if (!tmpTex.LoadImage(pngBytes))
+            {
+                UnityEngine.Object.DestroyImmediate(tmpTex);
+                return null;
+            }
+
+            int srcW = tmpTex.width;
+            int srcH = tmpTex.height;
+            Color32[] srcPixels = tmpTex.GetPixels32();
+            UnityEngine.Object.DestroyImmediate(tmpTex);
+
+            bool[,] solid = new bool[gridW, gridH];
+            for (int y = 0; y < gridH; y++)
+            {
+                int sy = Mathf.Clamp(Mathf.FloorToInt(((y + 0.5f) / gridH) * srcH), 0, srcH - 1);
+                for (int x = 0; x < gridW; x++)
+                {
+                    int sx = Mathf.Clamp(Mathf.FloorToInt(((x + 0.5f) / gridW) * srcW), 0, srcW - 1);
+                    solid[x, y] = srcPixels[sy * srcW + sx].a > 110;
+                }
+            }
+
+            var verts = new List<Vector3>(16384);
+            var norms = new List<Vector3>(16384);
+            var uvs = new List<Vector2>(16384);
+            var tris = new List<int>(24576);
+
+            void AddOrientedSideQuad(Vector3 p00, Vector3 p10, Vector3 p01, Vector3 p11, Vector3 expectedNormal)
+            {
+                int b = verts.Count;
+                verts.Add(p00); verts.Add(p10); verts.Add(p11); verts.Add(p01);
+                norms.Add(expectedNormal); norms.Add(expectedNormal); norms.Add(expectedNormal); norms.Add(expectedNormal);
+                uvs.Add(Vector2.zero); uvs.Add(Vector2.right); uvs.Add(Vector2.one); uvs.Add(Vector2.up);
+
+                Vector3 cross = Vector3.Cross(p10 - p00, p11 - p00);
+                if (Vector3.Dot(cross, expectedNormal) >= 0f)
+                {
+                    tris.Add(b); tris.Add(b + 1); tris.Add(b + 2);
+                    tris.Add(b); tris.Add(b + 2); tris.Add(b + 3);
+                }
+                else
+                {
+                    tris.Add(b); tris.Add(b + 2); tris.Add(b + 1);
+                    tris.Add(b); tris.Add(b + 3); tris.Add(b + 2);
+                }
+            }
+
+            float cellZ = widthZ / gridW;
+            float cellY = heightY / gridH;
+            float halfW = widthZ * 0.5f;
+            float halfH = heightY * 0.5f;
+
+            for (int y = 0; y < gridH; y++)
+            {
+                float y0 = y * cellY - halfH;
+                float y1 = (y + 1) * cellY - halfH;
+                for (int x = 0; x < gridW; x++)
+                {
+                    if (!solid[x, y]) continue;
+                    float z0 = x * cellZ - halfW;
+                    float z1 = (x + 1) * cellZ - halfW;
+
+                    if (x == 0 || !solid[x - 1, y])
+                    {
+                        AddOrientedSideQuad(
+                            new Vector3(0f, y0, z0), new Vector3(depthX, y0, z0),
+                            new Vector3(0f, y1, z0), new Vector3(depthX, y1, z0),
+                            Vector3.back);
+                    }
+                    if (x == gridW - 1 || !solid[x + 1, y])
+                    {
+                        AddOrientedSideQuad(
+                            new Vector3(0f, y0, z1), new Vector3(depthX, y0, z1),
+                            new Vector3(0f, y1, z1), new Vector3(depthX, y1, z1),
+                            Vector3.forward);
+                    }
+                    if (y == 0 || !solid[x, y - 1])
+                    {
+                        AddOrientedSideQuad(
+                            new Vector3(0f, y0, z0), new Vector3(depthX, y0, z0),
+                            new Vector3(0f, y0, z1), new Vector3(depthX, y0, z1),
+                            Vector3.down);
+                    }
+                    if (y == gridH - 1 || !solid[x, y + 1])
+                    {
+                        AddOrientedSideQuad(
+                            new Vector3(0f, y1, z0), new Vector3(depthX, y1, z0),
+                            new Vector3(0f, y1, z1), new Vector3(depthX, y1, z1),
+                            Vector3.up);
+                    }
+                }
+            }
+
+            Mesh existing = AssetDatabase.LoadAssetAtPath<Mesh>(meshAssetPath);
+            Mesh mesh = existing != null ? existing : new Mesh();
+            mesh.Clear();
+            mesh.name = Path.GetFileNameWithoutExtension(meshAssetPath);
+            if (verts.Count > 65000) mesh.indexFormat = IndexFormat.UInt32;
+            mesh.SetVertices(verts);
+            mesh.SetNormals(norms);
+            mesh.SetUVs(0, uvs);
+            mesh.SetTriangles(tris, 0);
+            mesh.RecalculateBounds();
+
+            if (existing == null) AssetDatabase.CreateAsset(mesh, meshAssetPath);
+            else EditorUtility.SetDirty(mesh);
+            AssetDatabase.SaveAssets();
+            return mesh;
+        }
+
+        private static Material CreateOrGetEmissiveSignTextureMaterial(string matPath, string texPath, float dayEmission = 0.25f)
+        {
+            Material mat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
+            Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            if (mat == null)
+            {
+                mat = new Material(shader);
+                AssetDatabase.CreateAsset(mat, matPath);
+            }
+            mat.shader = shader;
+            Texture2D tex = AssetDatabase.LoadAssetAtPath<Texture2D>(texPath);
+            if (tex != null)
+            {
+                mat.SetTexture("_BaseMap", tex);
+                mat.SetTexture("_MainTex", tex);
+                mat.SetTexture("_EmissionMap", tex);
+            }
+            mat.SetColor("_BaseColor", Color.white);
+            mat.SetColor("_Color", Color.white);
+            mat.SetColor("_EmissionColor", new Color(dayEmission, dayEmission, dayEmission, 1.0f));
+            mat.SetFloat("_Smoothness", 0.35f);
+            mat.SetFloat("_AlphaClip", 0.0f);
+            mat.DisableKeyword("_ALPHATEST_ON");
+            mat.EnableKeyword("_EMISSION");
+            mat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
+            mat.renderQueue = (int)RenderQueue.Geometry;
+            EditorUtility.SetDirty(mat);
+            return mat;
+        }
+
+        private static Material CreateOrGetAlphaEmissiveMaterial(string matPath, string texPath)
+        {
+            Material mat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
+            Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            if (mat == null)
+            {
+                mat = new Material(shader);
+                AssetDatabase.CreateAsset(mat, matPath);
+            }
+            mat.shader = shader;
+            Texture2D tex = AssetDatabase.LoadAssetAtPath<Texture2D>(texPath);
+            if (tex != null)
+            {
+                mat.SetTexture("_BaseMap", tex);
+                mat.SetTexture("_MainTex", tex);
+                mat.SetTexture("_EmissionMap", tex);
+            }
+            mat.SetColor("_BaseColor", Color.white);
+            mat.SetColor("_Color", Color.white);
+            mat.SetColor("_EmissionColor", new Color(0.40f, 0.40f, 0.40f, 1.0f));
+            mat.SetFloat("_Smoothness", 0.56f);
+            mat.SetFloat("_Metallic", 0.05f);
+            mat.SetFloat("_AlphaClip", 1.0f);
+            mat.SetFloat("_Cutoff", 0.42f);
+            mat.EnableKeyword("_ALPHATEST_ON");
+            mat.EnableKeyword("_EMISSION");
+            mat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
+            mat.renderQueue = (int)RenderQueue.AlphaTest;
+            EditorUtility.SetDirty(mat);
+            return mat;
+        }
+
+        private static Material CreateOrGetTransparentTextureMaterial(string matPath, string texPath)
+        {
+            Material mat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
+            Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            if (mat == null)
+            {
+                mat = new Material(shader);
+                AssetDatabase.CreateAsset(mat, matPath);
+            }
+            mat.shader = shader;
+            Texture2D tex = AssetDatabase.LoadAssetAtPath<Texture2D>(texPath);
+            if (tex != null)
+            {
+                mat.SetTexture("_BaseMap", tex);
+                mat.SetTexture("_MainTex", tex);
+            }
+            mat.SetColor("_BaseColor", Color.white);
+            mat.SetColor("_Color", Color.white);
+            mat.SetFloat("_Surface", 1.0f);
+            mat.SetFloat("_Blend", 0.0f);
+            mat.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
+            mat.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
+            mat.SetFloat("_ZWrite", 0.0f);
+            mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            mat.SetOverrideTag("RenderType", "Transparent");
+            mat.renderQueue = (int)RenderQueue.Transparent;
+            mat.SetFloat("_Smoothness", 0.25f);
             EditorUtility.SetDirty(mat);
             return mat;
         }

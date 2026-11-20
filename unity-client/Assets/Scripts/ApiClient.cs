@@ -268,6 +268,21 @@ namespace MyVirtualCommunity.Client.Api
         }
 
         /// <summary>
+        /// Retrieves authoritative business operational open/closed status from GET /api/businesses/:id/status.
+        /// Used by storefront roll-up shutters to stay synchronized with authoritative backend business hours.
+        /// </summary>
+        public void GetBusinessStatus(string businessId, Action<BusinessStatusResponseDto> onSuccess, Action<string> onError)
+        {
+            if (string.IsNullOrEmpty(businessId))
+            {
+                onError?.Invoke("businessId cannot be empty");
+                return;
+            }
+            string endpoint = $"/api/businesses/{Uri.EscapeDataString(businessId)}/status";
+            StartCoroutine(SendGetRequest<BusinessStatusResponseDto>(endpoint, onSuccess, onError));
+        }
+
+        /// <summary>
         /// Resolves a server-relative path (such as /api/media/arch/camila_loop.mp4) to a full URL.
         /// </summary>
         public string ResolveUrl(string relativeOrAbsoluteUrl)

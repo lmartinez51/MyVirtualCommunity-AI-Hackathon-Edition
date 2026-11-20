@@ -234,10 +234,62 @@ export class InMemoryWorldCoreAdapter implements WorldCorePort {
       lastEntryCutoffMinutes: 0,
     });
 
+    const farmaciaJuarez = validateBusinessSchedule({
+      businessId: 'pharmacy:farmacia-juarez',
+      name: 'Farmacia Juárez',
+      timeZone: 'America/Ciudad_Juarez',
+      operatingDays: [0, 1, 2, 3, 4, 5], // Mon-Fri & Sunday (closed Saturday)
+      hours: {
+        openHour: 8,
+        openMinute: 0,
+        closeHour: 20,
+        closeMinute: 0,
+      },
+      hoursByDay: {
+        0: { openHour: 8, openMinute: 0, closeHour: 16, closeMinute: 0 }, // Sunday 8AM-4PM
+      },
+      lastEntryCutoffMinutes: 0,
+    });
+
+    const dentalMexico = validateBusinessSchedule({
+      businessId: 'dental:dental-mexico',
+      name: 'Dental México',
+      timeZone: 'America/Ciudad_Juarez',
+      operatingDays: [1, 2, 3, 4, 5, 6], // Mon-Sat (closed Sunday)
+      hours: {
+        openHour: 9,
+        openMinute: 0,
+        closeHour: 17,
+        closeMinute: 0,
+      },
+      hoursByDay: {
+        6: { openHour: 9, openMinute: 0, closeHour: 15, closeMinute: 0 }, // Saturday 9AM-3PM
+      },
+      lastEntryCutoffMinutes: 0,
+    });
+
+    const casaCambioJuarezSur = validateBusinessSchedule({
+      businessId: 'exchange:casa-cambio-juarez-sur',
+      name: 'Casa de Cambio (Av. Juárez)',
+      timeZone: 'America/Ciudad_Juarez',
+      operatingDays: [0, 1, 2, 3, 4, 5, 6], // 24/7
+      hours: {
+        openHour: 0,
+        openMinute: 0,
+        closeHour: 23,
+        closeMinute: 59,
+      },
+      is24Hours: true,
+      lastEntryCutoffMinutes: 0,
+    });
+
     this.schedules.set(wingSpot.businessId, wingSpot);
     this.schedules.set(tiaLupe.businessId, tiaLupe);
     this.schedules.set(farmaciasBenavides.businessId, farmaciasBenavides);
     this.schedules.set(opticaFashion.businessId, opticaFashion);
+    this.schedules.set(farmaciaJuarez.businessId, farmaciaJuarez);
+    this.schedules.set(dentalMexico.businessId, dentalMexico);
+    this.schedules.set(casaCambioJuarezSur.businessId, casaCambioJuarezSur);
     this.simulatedWorldTime = null;
     this.players.clear();
     this.players.set(DEFAULT_PLAYER_ID, createInitialPlayerState(DEFAULT_PLAYER_ID, this.nowFn()));
