@@ -927,6 +927,7 @@ namespace MyVirtualCommunity.Client.World
                    string.Equals(_interactionAvailability, "unavailable", StringComparison.OrdinalIgnoreCase) ||
                    string.Equals(_activityState, "off_duty", StringComparison.OrdinalIgnoreCase) ||
                    string.Equals(_activityState, "unavailable", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(_autonomousBehaviorState, "off_duty_inside", StringComparison.OrdinalIgnoreCase) ||
                    string.Equals(_interactionMode, "off_duty_courtesy", StringComparison.OrdinalIgnoreCase) ||
                    string.Equals(_interactionMode, "closed", StringComparison.OrdinalIgnoreCase);
         }
@@ -1510,7 +1511,8 @@ namespace MyVirtualCommunity.Client.World
                         break;
 
                     case NpcAnimationRole.OpticsAttendant:
-                        if (string.Equals(_currentWaypointId, "wp_optica_workshop", StringComparison.OrdinalIgnoreCase) ||
+                        if (string.Equals(_currentWaypointId, "wp_optica_calibration_station", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(_currentWaypointId, "wp_optica_workshop", StringComparison.OrdinalIgnoreCase) ||
                             string.Equals(_interactionMode, "break_or_dwell", StringComparison.OrdinalIgnoreCase) ||
                             string.Equals(_interactionAvailability, "busy", StringComparison.OrdinalIgnoreCase))
                         {

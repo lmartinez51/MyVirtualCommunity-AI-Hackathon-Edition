@@ -522,13 +522,40 @@ export const VALERIA_SCHEDULE: NpcScheduleProfile = Object.freeze({
           {
             startHour: 9,
             startMinute: 0,
+            endHour: 13,
+            endMinute: 0,
+            state: 'available',
+            activityTitle: { en: 'Assisting optical customers', es: 'Atendiendo clientes de óptica' },
+            activityDescription: {
+              en: 'Providing schedule, eyewear fitting, and optical consultation inside and outside Óptica Fashion.',
+              es: 'Brindando atención en horarios, exhibición de armazones y consulta óptica dentro y fuera de Óptica Fashion.',
+            },
+          },
+          {
+            startHour: 13,
+            startMinute: 0,
+            endHour: 13,
+            endMinute: 45,
+            state: 'busy',
+            activityTitle: {
+              en: 'Equipment calibration & frame alignment',
+              es: 'Calibración de equipo y ajuste de armazones',
+            },
+            activityDescription: {
+              en: 'Sanitizing optical trial lenses and calibrating the rear-room lensometer.',
+              es: 'Desinfectando lentes de prueba y calibrando el lensómetro en el laboratorio trasero.',
+            },
+          },
+          {
+            startHour: 13,
+            startMinute: 45,
             endHour: 17,
             endMinute: 0,
             state: 'available',
             activityTitle: { en: 'Assisting optical customers', es: 'Atendiendo clientes de óptica' },
             activityDescription: {
-              en: 'Continuously staffing Óptica Fashion throughout operating hours (09:00 - 17:00 Mon-Sat) with zero breaks.',
-              es: 'Atendiendo Óptica Fashion de forma continua durante todo el horario comercial (09:00 - 17:00 Lun-Sáb) sin descansos.',
+              en: 'Resuming afternoon optical consultations and eyewear showroom assistance (09:00 - 17:00 Mon-Sat).',
+              es: 'Reanudando consultas ópticas vespertinas y atención en sala de exhibición (09:00 - 17:00 Lun-Sáb).',
             },
           },
         ],

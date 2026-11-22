@@ -36,16 +36,26 @@ import {
   BRIDGE_PATROL_PROFILES,
   BUSINESS_AUTONOMY_DOMAINS,
   BUSINESS_LOCAL_AUTONOMY_PROFILES,
+  BusinessLifecycleState,
   EvaluateAutonomousMovementOptions,
   NpcAutonomousBehaviorState,
   NpcBehaviorProfileType,
   NpcMovementControlMode,
   PassingEncounterType,
   PatrolDirection,
+  VALERIA_CALIBRATION_ARRIVAL_DWELL_SECONDS,
+  VALERIA_CALIBRATION_DAYS_OF_WEEK,
+  VALERIA_CALIBRATION_END_HOUR,
+  VALERIA_CALIBRATION_END_MINUTE,
+  VALERIA_CALIBRATION_START_HOUR,
+  VALERIA_CALIBRATION_START_MINUTE,
+  VALERIA_CALIBRATION_STATION_WAYPOINT_ID,
+  VALERIA_CALIBRATION_TASK_ID,
   applyRosterPersonalSpaceSeparation,
   evaluateBridgePatrolMovement,
   evaluateBusinessLocalAutonomyMovement,
   evaluatePassingEncounterPairStatus,
+  evaluateValeriaBusinessLifecycle,
   getNpcBehavioralAutonomyProfile,
   isPointInBridgePatrolDomain,
   isPointInBusinessDomain,
@@ -150,6 +160,14 @@ export interface NpcMovementSnapshot {
   readonly businessDomainId?: string | null;
   readonly withinAuthorizedDomain?: boolean;
   readonly activeSegmentEndPosition?: Vector3D;
+  // Increment 5.23.1 Multi-zone indoor/outdoor & scheduled calibration metadata
+  readonly currentZoneId?: string | null;
+  readonly activeTaskId?: string | null;
+  readonly taskDestinationReachable?: boolean;
+  readonly physicalCalibrationActive?: boolean;
+  // Increment 5.23.2 Business Opening/Closing Lifecycle & Shutter Synchronization
+  readonly businessLifecycleState?: BusinessLifecycleState;
+  readonly shutterClosedPermitted?: boolean;
 }
 
 export interface NpcRosterMovementSnapshot {
@@ -416,10 +434,194 @@ export const CORRIDOR_WAYPOINTS: Readonly<Record<string, Waypoint>> = Object.fre
       'wp_optica_north_window',
       'wp_optica_plaza_threshold',
       'wp_optica_south_window',
+      'wp_optica_door_approach',
       'wp_optica_entrance',
       'wp_optica_display_north',
       'wp_optica_display_south',
       'wp_optica_workshop',
+    ]),
+  }),
+
+  // --- Increment 5.23.1: Óptica Fashion Connected Entrance, Main Showroom & Rear Calibration Laboratory ---
+  wp_optica_door_approach: Object.freeze({
+    id: 'wp_optica_door_approach',
+    associatedPlaceId: 'optical:optica-fashion',
+    position: Object.freeze({ x: -11.2, y: 0.2, z: 1.2 }),
+    label: Object.freeze({
+      en: 'Óptica Fashion Storefront Door Approach',
+      es: 'Aproximación a la Puerta de Óptica Fashion',
+    }),
+    outgoingWaypointIds: Object.freeze([
+      'wp_valeria_storefront',
+      'wp_optica_door_threshold',
+    ]),
+  }),
+
+  wp_optica_door_threshold: Object.freeze({
+    id: 'wp_optica_door_threshold',
+    associatedPlaceId: 'optical:optica-fashion',
+    position: Object.freeze({ x: -12.02, y: 0.2, z: 1.2 }),
+    label: Object.freeze({
+      en: 'Óptica Fashion Open North Doorway Threshold',
+      es: 'Umbral de Puerta Norte Abierta de Óptica Fashion',
+    }),
+    outgoingWaypointIds: Object.freeze([
+      'wp_optica_door_approach',
+      'wp_optica_interior_entry',
+    ]),
+  }),
+
+  wp_optica_interior_entry: Object.freeze({
+    id: 'wp_optica_interior_entry',
+    associatedPlaceId: 'optical:optica-fashion',
+    position: Object.freeze({ x: -13.3, y: 0.2, z: 1.2 }),
+    label: Object.freeze({
+      en: 'Óptica Fashion Interior Entryway',
+      es: 'Acceso Interior de Óptica Fashion',
+    }),
+    outgoingWaypointIds: Object.freeze([
+      'wp_optica_door_threshold',
+      'wp_optica_showroom_counter_east',
+      'wp_optica_showroom_center',
+      'wp_optica_showroom_waiting',
+    ]),
+  }),
+
+  wp_optica_showroom_counter_east: Object.freeze({
+    id: 'wp_optica_showroom_counter_east',
+    associatedPlaceId: 'optical:optica-fashion',
+    position: Object.freeze({ x: -13.85, y: 0.2, z: 0.45 }),
+    label: Object.freeze({
+      en: 'Óptica Fashion Front Display Counter & Fitting Mirror',
+      es: 'Mostrador Frontal y Espejo de Prueba de Óptica Fashion',
+    }),
+    outgoingWaypointIds: Object.freeze([
+      'wp_optica_interior_entry',
+      'wp_optica_showroom_center',
+      'wp_optica_showroom_counter_west',
+    ]),
+  }),
+
+  wp_optica_showroom_center: Object.freeze({
+    id: 'wp_optica_showroom_center',
+    associatedPlaceId: 'optical:optica-fashion',
+    position: Object.freeze({ x: -14.7, y: 0.2, z: 0.9 }),
+    label: Object.freeze({
+      en: 'Óptica Fashion Main Showroom Aisle',
+      es: 'Pasillo Principal de Exhibición de Óptica Fashion',
+    }),
+    outgoingWaypointIds: Object.freeze([
+      'wp_optica_interior_entry',
+      'wp_optica_showroom_counter_east',
+      'wp_optica_showroom_counter_west',
+      'wp_optica_showroom_waiting',
+      'wp_optica_showroom_north_display',
+      'wp_valeria_off_duty_station',
+    ]),
+  }),
+
+  wp_optica_showroom_counter_west: Object.freeze({
+    id: 'wp_optica_showroom_counter_west',
+    associatedPlaceId: 'optical:optica-fashion',
+    position: Object.freeze({ x: -15.55, y: 0.2, z: 0.5 }),
+    label: Object.freeze({
+      en: 'Óptica Fashion Rear Display Showcase & Cabinet',
+      es: 'Vitrina Posterior y Gabinete de Óptica Fashion',
+    }),
+    outgoingWaypointIds: Object.freeze([
+      'wp_optica_showroom_counter_east',
+      'wp_optica_showroom_center',
+      'wp_optica_showroom_north_display',
+      'wp_valeria_off_duty_station',
+    ]),
+  }),
+
+  wp_optica_showroom_waiting: Object.freeze({
+    id: 'wp_optica_showroom_waiting',
+    associatedPlaceId: 'optical:optica-fashion',
+    position: Object.freeze({ x: -14.35, y: 0.2, z: 1.65 }),
+    label: Object.freeze({
+      en: 'Óptica Fashion Customer Waiting Area',
+      es: 'Área de Espera de Clientes de Óptica Fashion',
+    }),
+    outgoingWaypointIds: Object.freeze([
+      'wp_optica_interior_entry',
+      'wp_optica_showroom_center',
+      'wp_optica_showroom_north_display',
+    ]),
+  }),
+
+  wp_optica_showroom_north_display: Object.freeze({
+    id: 'wp_optica_showroom_north_display',
+    associatedPlaceId: 'optical:optica-fashion',
+    position: Object.freeze({ x: -15.75, y: 0.2, z: 1.85 }),
+    label: Object.freeze({
+      en: 'Óptica Fashion North Eyewear Shelving',
+      es: 'Estantería Norte de Armazones de Óptica Fashion',
+    }),
+    outgoingWaypointIds: Object.freeze([
+      'wp_optica_showroom_center',
+      'wp_optica_showroom_counter_west',
+      'wp_optica_showroom_waiting',
+      'wp_optica_rear_door_threshold',
+      'wp_valeria_off_duty_station',
+    ]),
+  }),
+
+  // Increment 5.23.2: Verified interior off-duty / overnight waiting station inside Óptica Fashion showroom
+  wp_valeria_off_duty_station: Object.freeze({
+    id: 'wp_valeria_off_duty_station',
+    associatedPlaceId: 'optical:optica-fashion',
+    position: Object.freeze({ x: -15.85, y: 0.2, z: 1.15 }),
+    label: Object.freeze({
+      en: 'Óptica Fashion Interior Staff Waiting Station',
+      es: 'Estación Interior de Espera de Óptica Fashion',
+    }),
+    outgoingWaypointIds: Object.freeze([
+      'wp_optica_showroom_center',
+      'wp_optica_showroom_counter_west',
+      'wp_optica_showroom_north_display',
+    ]),
+  }),
+
+  wp_optica_rear_door_threshold: Object.freeze({
+    id: 'wp_optica_rear_door_threshold',
+    associatedPlaceId: 'optical:optica-fashion',
+    position: Object.freeze({ x: -16.88, y: 0.2, z: 2.0 }),
+    label: Object.freeze({
+      en: 'Óptica Fashion Rear Consultation Doorway',
+      es: 'Puerta al Cuarto Trasero de Consulta de Óptica Fashion',
+    }),
+    outgoingWaypointIds: Object.freeze([
+      'wp_optica_showroom_north_display',
+      'wp_optica_rear_room_north',
+    ]),
+  }),
+
+  wp_optica_rear_room_north: Object.freeze({
+    id: 'wp_optica_rear_room_north',
+    associatedPlaceId: 'optical:optica-fashion',
+    position: Object.freeze({ x: -17.85, y: 0.2, z: 2.0 }),
+    label: Object.freeze({
+      en: 'Óptica Fashion Rear Laboratory Entry',
+      es: 'Acceso al Laboratorio Trasero de Óptica Fashion',
+    }),
+    outgoingWaypointIds: Object.freeze([
+      'wp_optica_rear_door_threshold',
+      'wp_optica_calibration_station',
+    ]),
+  }),
+
+  wp_optica_calibration_station: Object.freeze({
+    id: 'wp_optica_calibration_station',
+    associatedPlaceId: 'optical:optica-fashion',
+    position: Object.freeze({ x: -17.85, y: 0.2, z: -0.5 }),
+    label: Object.freeze({
+      en: 'Optical Calibration Workstation',
+      es: 'Estación de Calibración Óptica',
+    }),
+    outgoingWaypointIds: Object.freeze([
+      'wp_optica_rear_room_north',
     ]),
   }),
 
@@ -660,7 +862,7 @@ export const CORRIDOR_ROUTES: Readonly<Record<string, Route>> = Object.freeze({
     0.8
   ),
 
-  // 3. Valeria Domínguez: Óptica Counter <-> Workshop
+  // 3. Valeria Domínguez: Óptica Counter <-> Legacy Workshop (preserved) + Verified Rear Calibration Workstation (Increment 5.23.1)
   route_valeria_to_workshop: buildRoute(
     'route_valeria_to_workshop',
     ['wp_valeria_storefront', 'wp_optica_entrance', 'wp_optica_workshop'],
@@ -670,6 +872,36 @@ export const CORRIDOR_ROUTES: Readonly<Record<string, Route>> = Object.freeze({
     'route_valeria_to_counter',
     ['wp_optica_workshop', 'wp_optica_entrance', 'wp_valeria_storefront'],
     0.6
+  ),
+  route_valeria_to_calibration: buildRoute(
+    'route_valeria_to_calibration',
+    [
+      'wp_valeria_storefront',
+      'wp_optica_door_approach',
+      'wp_optica_door_threshold',
+      'wp_optica_interior_entry',
+      'wp_optica_showroom_center',
+      'wp_optica_showroom_north_display',
+      'wp_optica_rear_door_threshold',
+      'wp_optica_rear_room_north',
+      'wp_optica_calibration_station',
+    ],
+    1.1
+  ),
+  route_valeria_from_calibration: buildRoute(
+    'route_valeria_from_calibration',
+    [
+      'wp_optica_calibration_station',
+      'wp_optica_rear_room_north',
+      'wp_optica_rear_door_threshold',
+      'wp_optica_showroom_north_display',
+      'wp_optica_showroom_center',
+      'wp_optica_interior_entry',
+      'wp_optica_door_threshold',
+      'wp_optica_door_approach',
+      'wp_valeria_storefront',
+    ],
+    1.1
   ),
 
   // 4. Mateo Navarro: Queue Entry <-> Toll Plaza Approach
@@ -741,13 +973,33 @@ export const NPC_MOVEMENT_PROFILES: Readonly<Record<string, NpcMovementProfile>>
     transitions: Object.freeze([]),
   }),
 
-  // 3. Valeria Domínguez — Storefront Attendant (no external breaks or calibration walks during 09:00-17:00 operating hours)
+  // 3. Valeria Domínguez — Óptica Fashion Indoor/Outdoor Attendant & Rear-Room Calibration Lifecycle (Increment 5.23.1)
   'valeria-optica-attendant': Object.freeze({
     npcId: 'valeria-optica-attendant',
     canonicalName: 'Valeria Domínguez',
     primaryWaypointId: 'wp_valeria_storefront',
     timeZone: TZ_JUAREZ,
-    transitions: Object.freeze([]),
+    transitions: Object.freeze([
+      Object.freeze({
+        id: VALERIA_CALIBRATION_TASK_ID,
+        daysOfWeek: VALERIA_CALIBRATION_DAYS_OF_WEEK, // Mon-Sat
+        departureHour: VALERIA_CALIBRATION_START_HOUR,
+        departureMinute: VALERIA_CALIBRATION_START_MINUTE,
+        outboundRouteId: 'route_valeria_to_calibration',
+        outboundDurationSeconds: CORRIDOR_ROUTES['route_valeria_to_calibration']!.totalDurationSeconds,
+        destinationWaypointId: VALERIA_CALIBRATION_STATION_WAYPOINT_ID,
+        arrivalDwellSeconds: VALERIA_CALIBRATION_ARRIVAL_DWELL_SECONDS,
+        returnHour: VALERIA_CALIBRATION_END_HOUR,
+        returnMinute: VALERIA_CALIBRATION_END_MINUTE,
+        returnRouteId: 'route_valeria_from_calibration',
+        returnDurationSeconds: CORRIDOR_ROUTES['route_valeria_from_calibration']!.totalDurationSeconds,
+        isPhysicalDestinationVerified: true,
+        description: Object.freeze({
+          en: 'Entering the rear Óptica Fashion laboratory for lens sanitization and optical lensometer calibration.',
+          es: 'Ingresando al laboratorio trasero de Óptica Fashion para desinfección de lentes y calibración del lensómetro.',
+        }),
+      }),
+    ]),
   }),
 
   // 4. Mateo Navarro — Queue Advance
@@ -1013,12 +1265,93 @@ function evaluateSingleNpcMovementBase(
     autonomyProfile?.behaviorProfileType ?? 'fixed_anchor_scheduled';
   const pauseIntervals = options?.pauseIntervalsByNpcId?.[profile.npcId];
 
+  // Increment 5.23.1 & 5.23.2: Valeria Domínguez complete daily business lifecycle:
+  // - Overnight & Sunday off-duty inside at wp_valeria_off_duty_station (-15.85, 0.20, 1.15)
+  // - Daily opening transition (09:00) & indoor start of shift through open doorway
+  // - Midday scheduled rear-room optical calibration (13:00-13:45 Mon-Sat)
+  // - Pre-closing return (16:57), closing_pending player-interaction safety, & shutter sync
+  if (profile.npcId === 'valeria-optica-attendant') {
+    const valeriaLifecycleRes = evaluateValeriaBusinessLifecycle({
+      rawEvaluatedAtMs,
+      civil,
+      waypointsRegistry: CORRIDOR_WAYPOINTS,
+      pauseIntervals,
+      player: options?.player,
+    });
+    if (valeriaLifecycleRes) {
+      return Object.freeze({
+        npcId: profile.npcId,
+        canonicalName: profile.canonicalName,
+        actorArchetype,
+        isWitness,
+        witnessClassification,
+        witnessId,
+        movementState: valeriaLifecycleRes.movementState,
+        currentWaypointId: valeriaLifecycleRes.currentWaypointId,
+        destinationWaypointId: valeriaLifecycleRes.destinationWaypointId,
+        activeRouteId: valeriaLifecycleRes.activeRouteId,
+        position: Object.freeze(valeriaLifecycleRes.position),
+        forwardHeading: Object.freeze(valeriaLifecycleRes.forwardHeading),
+        progression: valeriaLifecycleRes.progression,
+        movementStartTime: valeriaLifecycleRes.movementStartTime,
+        expectedDurationSeconds: valeriaLifecycleRes.expectedDurationSeconds,
+        associatedPlaceId: valeriaLifecycleRes.associatedPlaceId,
+        activityState,
+        activityTitle,
+        evaluatedAt: evaluatedAtIso,
+        timeZone: profile.timeZone,
+        localCivilTime: civil.isoCivilString,
+        isDemonstrationMovement: true,
+        demonstrationNotice: SIMULATED_MOVEMENT_NOTICE,
+        behaviorProfileType: valeriaLifecycleRes.behaviorProfileType,
+        autonomousBehaviorState: valeriaLifecycleRes.autonomousBehaviorState,
+        controlMode: valeriaLifecycleRes.controlMode,
+        currentSpeedMps:
+          valeriaLifecycleRes.movementState === 'moving'
+            ? (valeriaLifecycleRes.actualSpeedMps ?? 1.1)
+            : 0,
+        patrolDirection: valeriaLifecycleRes.patrolDirection,
+        patrolCycleIndex: valeriaLifecycleRes.patrolCycleIndex,
+        isSuspendedByPlayerInteraction: valeriaLifecycleRes.isSuspendedByPlayerInteraction,
+        suspendedByPlayerId: valeriaLifecycleRes.suspendedByPlayerId,
+        passingEncounterPartnerNpcId: null,
+        passingEncounterSessionId: null,
+        passingEncounterType: null,
+        businessDomainId: valeriaLifecycleRes.businessDomainId,
+        withinAuthorizedDomain: valeriaLifecycleRes.withinAuthorizedDomain,
+        ...(valeriaLifecycleRes.activeSegmentEndPosition
+          ? { activeSegmentEndPosition: Object.freeze(valeriaLifecycleRes.activeSegmentEndPosition) }
+          : {}),
+        ...(valeriaLifecycleRes.currentZoneId !== undefined
+          ? { currentZoneId: valeriaLifecycleRes.currentZoneId }
+          : {}),
+        ...(valeriaLifecycleRes.activeTaskId !== undefined
+          ? { activeTaskId: valeriaLifecycleRes.activeTaskId }
+          : {}),
+        ...(valeriaLifecycleRes.taskDestinationReachable !== undefined
+          ? { taskDestinationReachable: valeriaLifecycleRes.taskDestinationReachable }
+          : {}),
+        ...(valeriaLifecycleRes.physicalCalibrationActive !== undefined
+          ? { physicalCalibrationActive: valeriaLifecycleRes.physicalCalibrationActive }
+          : {}),
+        ...(valeriaLifecycleRes.businessLifecycleState !== undefined
+          ? { businessLifecycleState: valeriaLifecycleRes.businessLifecycleState }
+          : {}),
+        ...(valeriaLifecycleRes.shutterClosedPermitted !== undefined
+          ? { shutterClosedPermitted: valeriaLifecycleRes.shutterClosedPermitted }
+          : {}),
+      });
+    }
+  }
+
   // Check matching scheduled transition for today
   let activeTransition: NpcMovementTransition | null = null;
-  for (const trans of profile.transitions) {
-    if (trans.daysOfWeek.includes(civil.dayOfWeek)) {
-      activeTransition = trans;
-      break;
+  if (profile.npcId !== 'valeria-optica-attendant') {
+    for (const trans of profile.transitions) {
+      if (trans.daysOfWeek.includes(civil.dayOfWeek)) {
+        activeTransition = trans;
+        break;
+      }
     }
   }
 
@@ -1346,6 +1679,20 @@ function evaluateSingleNpcMovementBase(
       withinAuthorizedDomain: bizRes.withinAuthorizedDomain,
       ...(bizRes.activeSegmentEndPosition
         ? { activeSegmentEndPosition: Object.freeze(bizRes.activeSegmentEndPosition) }
+        : {}),
+      ...(bizRes.currentZoneId !== undefined ? { currentZoneId: bizRes.currentZoneId } : {}),
+      ...(bizRes.activeTaskId !== undefined ? { activeTaskId: bizRes.activeTaskId } : {}),
+      ...(bizRes.taskDestinationReachable !== undefined
+        ? { taskDestinationReachable: bizRes.taskDestinationReachable }
+        : {}),
+      ...(bizRes.physicalCalibrationActive !== undefined
+        ? { physicalCalibrationActive: bizRes.physicalCalibrationActive }
+        : {}),
+      ...(bizRes.businessLifecycleState !== undefined
+        ? { businessLifecycleState: bizRes.businessLifecycleState }
+        : {}),
+      ...(bizRes.shutterClosedPermitted !== undefined
+        ? { shutterClosedPermitted: bizRes.shutterClosedPermitted }
         : {}),
     });
   }

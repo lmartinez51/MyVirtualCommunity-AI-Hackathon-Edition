@@ -31,6 +31,7 @@ import {
 import {
   EvaluateAutonomousMovementOptions,
   NpcInteractionPauseInterval,
+  isPlayerInsideOpticaInterior,
 } from '../domain/npc-autonomous-locomotion.js';
 import { MAX_INTERACTION_DISTANCE_METERS } from '../domain/npc-interaction-validation.js';
 import {
@@ -94,6 +95,10 @@ export class InMemoryWorldCoreAdapter implements WorldCorePort {
   public readonly mode = 'in-memory' as const;
   private schedules: Map<string, BusinessSchedule> = new Map();
   private simulatedWorldTime: string | null = null;
+  private simulatedClockStartMs: number | null = null;
+  private simulatedClockAnchorRealMs: number | null = null;
+  private simulatedClockScale: number = 0;
+  private simulatedClockPaused: boolean = false;
   private citizenReports: Map<string, CitizenReportRecord> = new Map();
   private persistenceFilePath: string | null = null;
   private laneBarriers: BorderLaneBarriersRoster = createDefaultBorderLaneBarriers();
@@ -291,15 +296,101 @@ export class InMemoryWorldCoreAdapter implements WorldCorePort {
     this.schedules.set(dentalMexico.businessId, dentalMexico);
     this.schedules.set(casaCambioJuarezSur.businessId, casaCambioJuarezSur);
     this.simulatedWorldTime = null;
+    this.simulatedClockStartMs = null;
+    this.simulatedClockAnchorRealMs = null;
+    this.simulatedClockScale = 0;
+    this.simulatedClockPaused = false;
     this.players.clear();
     this.players.set(DEFAULT_PLAYER_ID, createInitialPlayerState(DEFAULT_PLAYER_ID, this.nowFn()));
   }
 
   /**
-   * Allows setting a simulated authoritative world time for testing or demo purposes.
+   * Allows setting a simulated authoritative world time (frozen instant) for testing or demo purposes.
    */
   public setSimulatedWorldTime(isoString: string | null): void {
     this.simulatedWorldTime = isoString;
+    this.simulatedClockStartMs = null;
+    this.simulatedClockAnchorRealMs = null;
+    this.simulatedClockScale = 0;
+    this.simulatedClockPaused = false;
+  }
+
+  /**
+   * Configures a deterministic simulated World Clock for manual acceptance testing and accelerated
+   * test-day runs without modifying any authoritative business schedule or NPC routine definitions.
+   */
+  public setSimulatedClock(options: {
+    readonly simulatedTime: string | null;
+    readonly timeScale?: number;
+    readonly paused?: boolean;
+  }): {
+    readonly isSimulated: boolean;
+    readonly currentWorldTime: string;
+    readonly timeScale: number;
+    readonly paused: boolean;
+  } {
+    if (options.simulatedTime === null) {
+      this.setSimulatedWorldTime(null);
+      return {
+        isSimulated: false,
+        currentWorldTime: new Date(this.nowFn()).toISOString(),
+        timeScale: 1,
+        paused: false,
+      };
+    }
+
+    const parsedMs = Date.parse(options.simulatedTime);
+    if (Number.isNaN(parsedMs)) {
+      throw new Error(`Invalid simulatedTime timestamp: "${options.simulatedTime}"`);
+    }
+
+    const scale =
+      typeof options.timeScale === 'number' && Number.isFinite(options.timeScale) && options.timeScale >= 0
+        ? Math.min(3600, options.timeScale)
+        : 1;
+    const paused = Boolean(options.paused) || scale === 0;
+
+    this.simulatedWorldTime = null;
+    this.simulatedClockStartMs = parsedMs;
+    this.simulatedClockAnchorRealMs = this.nowFn();
+    this.simulatedClockScale = paused ? 0 : scale;
+    this.simulatedClockPaused = paused;
+
+    return this.getSimulatedClockStatus();
+  }
+
+  public getSimulatedClockStatus(): {
+    readonly isSimulated: boolean;
+    readonly currentWorldTime: string;
+    readonly timeScale: number;
+    readonly paused: boolean;
+  } {
+    if (this.simulatedClockStartMs !== null && this.simulatedClockAnchorRealMs !== null) {
+      const realElapsedMs = Math.max(0, this.nowFn() - this.simulatedClockAnchorRealMs);
+      const effectiveMs = this.simulatedClockPaused
+        ? this.simulatedClockStartMs
+        : this.simulatedClockStartMs + realElapsedMs * this.simulatedClockScale;
+      return {
+        isSimulated: true,
+        currentWorldTime: new Date(effectiveMs).toISOString(),
+        timeScale: this.simulatedClockScale,
+        paused: this.simulatedClockPaused,
+      };
+    }
+    if (this.simulatedWorldTime) {
+      return {
+        isSimulated: true,
+        currentWorldTime: this.simulatedWorldTime,
+        timeScale: 0,
+        paused: true,
+      };
+    }
+    return {
+      isSimulated: false,
+      currentWorldTime: new Date(this.nowFn()).toISOString(),
+      timeScale: 1,
+      paused: false,
+    };
   }
 
   /**
@@ -322,6 +413,13 @@ export class InMemoryWorldCoreAdapter implements WorldCorePort {
   }
 
   public async getCurrentWorldTime(): Promise<string> {
+    if (this.simulatedClockStartMs !== null && this.simulatedClockAnchorRealMs !== null) {
+      const realElapsedMs = Math.max(0, this.nowFn() - this.simulatedClockAnchorRealMs);
+      const effectiveMs = this.simulatedClockPaused
+        ? this.simulatedClockStartMs
+        : this.simulatedClockStartMs + realElapsedMs * this.simulatedClockScale;
+      return new Date(effectiveMs).toISOString();
+    }
     if (this.simulatedWorldTime) {
       return this.simulatedWorldTime;
     }
@@ -365,7 +463,44 @@ export class InMemoryWorldCoreAdapter implements WorldCorePort {
       effectiveTime = await this.getCurrentWorldTime();
     }
 
-    const operationalStatus = evaluateBusinessOperationalStatus(schedule, effectiveTime);
+    let operationalStatus = evaluateBusinessOperationalStatus(schedule, effectiveTime);
+
+    // Increment 5.23.2: Single authoritative business lifecycle & shutter synchronization for Óptica Fashion
+    if (businessId === 'optical:optica-fashion') {
+      const valeriaProfile = NPC_MOVEMENT_PROFILES['valeria-optica-attendant'];
+      if (valeriaProfile) {
+        const valeriaSnap = evaluateNpcMovement(
+          valeriaProfile,
+          effectiveTime,
+          this.buildMovementOptions(DEFAULT_PLAYER_ID)
+        );
+        const lifecycleState = valeriaSnap.businessLifecycleState;
+        const shutterClosedPermitted = valeriaSnap.shutterClosedPermitted ?? !operationalStatus.isOpen;
+
+        if (lifecycleState === 'closing_pending') {
+          operationalStatus = Object.freeze({
+            ...operationalStatus,
+            status: 'CLOSING_SOON',
+            availabilityState: 'CLOSING_SOON',
+            isOpen: false,
+            admissionPermitted: false,
+            businessLifecycleState: lifecycleState,
+            shutterClosedPermitted: false,
+            summaryMessage: `${schedule.name} is closing; shutter remains open until staff return inside and the storefront is clear.`,
+            localizedSummary: Object.freeze({
+              en: `${schedule.name} is closing; shutter remains open until staff return inside and the storefront is clear.`,
+              es: `${schedule.name} está cerrando; la cortina permanece abierta hasta que el personal regrese al interior y el acceso quede libre.`,
+            }),
+          });
+        } else {
+          operationalStatus = Object.freeze({
+            ...operationalStatus,
+            ...(lifecycleState !== undefined ? { businessLifecycleState: lifecycleState } : {}),
+            shutterClosedPermitted,
+          });
+        }
+      }
+    }
 
     return Object.freeze({
       businessId,
@@ -497,12 +632,14 @@ export class InMemoryWorldCoreAdapter implements WorldCorePort {
       this.interactionPauseIntervals.set(otherNpcId, updated);
     }
 
-    // Only autonomous bridge_patrol and autonomous_business_local modes suspend movement on player interaction
-    // (scheduled routine transitions like Carlos's lunch walk remain scheduled_routine_transition).
+    // Autonomous bridge_patrol, autonomous_business_local, and Valeria's full daily business
+    // lifecycle (including calibration, pre-closing return, closing_pending, and off_duty_inside)
+    // suspend movement on authorized player interaction while preserving exact position and progress.
     if (
       currentSnap.controlMode === 'autonomous_bridge_patrol' ||
       currentSnap.controlMode === 'autonomous_business_local' ||
-      currentSnap.controlMode === 'player_interaction_suspended'
+      currentSnap.controlMode === 'player_interaction_suspended' ||
+      cleanNpcId === 'valeria-optica-attendant'
     ) {
       const list = [...(this.interactionPauseIntervals.get(cleanNpcId) ?? [])];
       const alreadyActive = list.some(
@@ -819,10 +956,63 @@ export class InMemoryWorldCoreAdapter implements WorldCorePort {
     const effectiveNowMs =
       typeof serverTimeMs === 'number' && Number.isFinite(serverTimeMs) ? serverTimeMs : this.nowFn();
 
-    const stepResult = applyAuthoritativePlayerMovement(existing, movementIntent, effectiveNowMs);
+    let stepResult = applyAuthoritativePlayerMovement(existing, movementIntent, effectiveNowMs);
     if (stepResult.accepted) {
-      this.players.set(normalizedId, stepResult.player);
       const currentWorldIso = await this.getCurrentWorldTime();
+
+      // Increment 5.23.2: Never allow a player standing outside Óptica Fashion to walk through
+      // a closed storefront roller shutter in the abstract server integrator (which would otherwise
+      // falsely trigger the interior non-trap exit guard and pop the closed shutter open!).
+      if (!isPlayerInsideOpticaInterior(existing) && isPlayerInsideOpticaInterior(stepResult.player)) {
+        const valeriaProf = NPC_MOVEMENT_PROFILES['valeria-optica-attendant'];
+        if (valeriaProf) {
+          const preMoveSnap = evaluateNpcMovement(
+            valeriaProf,
+            currentWorldIso,
+            this.buildMovementOptions(normalizedId)
+          );
+          if (preMoveSnap.shutterClosedPermitted) {
+            const blockedPlayer: PlayerSpatialState = Object.freeze({
+              ...stepResult.player,
+              position: Object.freeze({
+                x: Math.max(stepResult.player.position.x, -11.55),
+                y: stepResult.player.position.y,
+                z: stepResult.player.position.z,
+              }),
+            });
+            stepResult = Object.freeze({
+              ...stepResult,
+              player: blockedPlayer,
+            });
+          }
+        }
+      } else if (isPlayerInsideOpticaInterior(existing) && stepResult.player.position.x < -12.02) {
+        // Keep authoritative server position strictly inside Óptica Fashion's physical interior
+        // perimeter walls (DeepBackWall X=-19.17, SouthWall Z=-1.78, NorthWall Z=+3.03) with
+        // player capsule clearance so bumping against interior walls never advances serverPos
+        // into the void outside the interior floor.
+        const clampedX = Math.max(stepResult.player.position.x, -18.80);
+        const clampedZ = Math.max(-1.42, Math.min(2.68, stepResult.player.position.z));
+        if (
+          clampedX !== stepResult.player.position.x ||
+          clampedZ !== stepResult.player.position.z
+        ) {
+          const containedPlayer: PlayerSpatialState = Object.freeze({
+            ...stepResult.player,
+            position: Object.freeze({
+              x: clampedX,
+              y: stepResult.player.position.y,
+              z: clampedZ,
+            }),
+          });
+          stepResult = Object.freeze({
+            ...stepResult,
+            player: containedPlayer,
+          });
+        }
+      }
+
+      this.players.set(normalizedId, stepResult.player);
       for (const [npcId, intervals] of this.interactionPauseIntervals.entries()) {
         const hasOpen = intervals.some((iv) => iv.playerId === normalizedId && iv.endedAtMs === null);
         if (!hasOpen) continue;

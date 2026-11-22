@@ -114,9 +114,12 @@ namespace MyVirtualCommunity.Client.World
         private bool isMovementIntentInFlight = false;
         private bool wasMovingLastTick = false;
         private Vector2 lastPlanarMoveDirection = Vector2.zero;
+        private Vector2 lastActualPlanarMoveDirection = Vector2.zero;
         private bool lastSprintState = false;
         private Vector3 lastReconciledServerPosition = new Vector3(0f, 1f, -15f);
         private bool hasReconciledServerPosition = false;
+        private Vector3 lastSafeGroundedPosition = new Vector3(0f, 1f, -15f);
+        private bool hasSafeGroundedPosition = false;
 
         // Live Border Intelligence Cache (Elena's Kiosk)
         private BorderWaitTimesResponseDto liveBorderWaitTimes = null;
@@ -828,14 +831,46 @@ namespace MyVirtualCommunity.Client.World
             if (characterController.isGrounded)
             {
                 verticalVelocity = -1.5f; // Snap to ground and curbs
+                if (transform.position.y >= -0.5f)
+                {
+                    lastSafeGroundedPosition = transform.position;
+                    hasSafeGroundedPosition = true;
+                }
             }
             else
             {
                 verticalVelocity -= gravity * Time.deltaTime;
             }
 
+            Vector3 preMovePos = transform.position;
             Vector3 finalVelocity = (moveDirection * currentSpeed) + (Vector3.up * verticalVelocity);
             characterController.Move(finalVelocity * Time.deltaTime);
+
+            // Compute actual collision-resolved horizontal displacement so pushing against solid walls
+            // never sends phantom forward movement intent to the backend integrator.
+            Vector2 actualDeltaXZ = new Vector2(transform.position.x - preMovePos.x, transform.position.z - preMovePos.z);
+            float expectedMoveDist = moveDirection.magnitude * currentSpeed * Time.deltaTime;
+            if (expectedMoveDist > 0.0001f && actualDeltaXZ.magnitude > expectedMoveDist * 0.15f)
+            {
+                float ratio = Mathf.Clamp01(actualDeltaXZ.magnitude / expectedMoveDist);
+                lastActualPlanarMoveDirection = actualDeltaXZ.normalized * ratio;
+            }
+            else
+            {
+                lastActualPlanarMoveDirection = Vector2.zero;
+            }
+
+            // Void-fall recovery safety guard: if the player ever falls below corridor ground level,
+            // restore them safely to the last verified grounded position.
+            if (transform.position.y < -3.0f && hasSafeGroundedPosition && characterController != null)
+            {
+                bool wasEnabled = characterController.enabled;
+                characterController.enabled = false;
+                transform.position = lastSafeGroundedPosition + Vector3.up * 0.1f;
+                verticalVelocity = 0f;
+                lastActualPlanarMoveDirection = Vector2.zero;
+                characterController.enabled = wasEnabled;
+            }
         }
 
         private void HandleLook()
@@ -870,7 +905,7 @@ namespace MyVirtualCommunity.Client.World
 
             foreach (var point in points)
             {
-                if (point == null) continue;
+                if (point == null || point.IsSuppressedOutsideServiceHours()) continue;
                 float dist = Vector3.Distance(point.transform.position, playerPos);
                 float radius = Mathf.Max(point.interactionRadius, maxInteractionDistance);
 
@@ -895,7 +930,7 @@ namespace MyVirtualCommunity.Client.World
 
         public void OpenInteractionModal(InteractionPoint point)
         {
-            if (point == null) return;
+            if (point == null || point.IsSuppressedOutsideServiceHours()) return;
             if (currentState == PrimaryUIState.PauseMenu || currentState == PrimaryUIState.ControlsGuide) return;
 
             if (point.category == InteractionCategory.Informational || string.IsNullOrEmpty(point.characterId))
@@ -1117,15 +1152,10 @@ namespace MyVirtualCommunity.Client.World
         {
             if (apiClient == null || isMovementIntentInFlight) return;
 
-            Vector2 rawInput = GetMovementInput();
             bool isSprinting = IsSprintPressed();
-            Vector3 worldDir = transform.forward * rawInput.y + transform.right * rawInput.x;
-            if (worldDir.sqrMagnitude > 1.0f)
-            {
-                worldDir.Normalize();
-            }
-
-            Vector2 planarDir = new Vector2(worldDir.x, worldDir.z);
+            // Use collision-resolved horizontal motion from CharacterController.Move so pushing
+            // against any solid wall (e.g. inside Óptica Fashion) sends zero movement intent.
+            Vector2 planarDir = lastActualPlanarMoveDirection;
             bool isMovingNow = planarDir.sqrMagnitude > 0.0001f;
 
             // Transition idle -> moving: send zero-direction anchor to start server delta measurement accurately
@@ -1211,10 +1241,33 @@ namespace MyVirtualCommunity.Client.World
 
             if (planarDrift > MaxServerReconciliationDriftMeters && characterController != null)
             {
-                bool wasEnabled = characterController.enabled;
-                characterController.enabled = false;
-                transform.position = new Vector3(serverPos.x, transform.position.y, serverPos.z);
-                characterController.enabled = wasEnabled;
+                // Safety guards: NEVER teleport the player through a solid wall or onto empty void
+                // (e.g. if server drift occurred while pushing against an interior room wall).
+                Vector3 candidateGroundProbe = new Vector3(serverPos.x, transform.position.y + 1.0f, serverPos.z);
+                bool hasSolidGround = Physics.Raycast(
+                    candidateGroundProbe,
+                    Vector3.down,
+                    out RaycastHit groundHit,
+                    2.5f,
+                    ~0,
+                    QueryTriggerInteraction.Ignore);
+
+                Vector3 currentChest = transform.position + Vector3.up * 0.9f;
+                Vector3 targetChest = new Vector3(serverPos.x, transform.position.y + 0.9f, serverPos.z);
+                bool pathBlockedByWall = Physics.Linecast(
+                    currentChest,
+                    targetChest,
+                    ~0,
+                    QueryTriggerInteraction.Ignore);
+
+                if (hasSolidGround && !pathBlockedByWall)
+                {
+                    bool wasEnabled = characterController.enabled;
+                    characterController.enabled = false;
+                    float safeY = Mathf.Max(groundHit.point.y + 0.05f, transform.position.y);
+                    transform.position = new Vector3(serverPos.x, safeY, serverPos.z);
+                    characterController.enabled = wasEnabled;
+                }
             }
         }
 
@@ -2479,7 +2532,7 @@ namespace MyVirtualCommunity.Client.World
 
             foreach (var pt in points)
             {
-                if (pt == null) continue;
+                if (pt == null || pt.IsSuppressedOutsideServiceHours()) continue;
                 Vector3 targetPos = pt.transform.position + Vector3.up * 2.15f;
                 float dist = Vector3.Distance(camPos, targetPos);
                 if (dist > 25f) continue; // Visible within 25 meters
@@ -2502,7 +2555,24 @@ namespace MyVirtualCommunity.Client.World
                 string actBadge = "";
                 Color nameplateTextColor;
 
-                if (pt.interactionAvailability == "available_in_transit" || pt.movementState == "moving")
+                bool isOffDutyOrClosed = !pt.IsCommunityPlayerProxy() &&
+                    (pt.interactionAvailability == "off_duty" || pt.activityState == "off_duty" ||
+                     pt.interactionAvailability == "unavailable" || pt.activityState == "unavailable");
+
+                if (pt.IsStorefrontAttendant() && !isOffDutyOrClosed)
+                {
+                    if (pt.IsStorefrontAttendantServingCustomer())
+                    {
+                        actBadge = isEs ? " [Ocupado]" : " [Busy]";
+                        nameplateTextColor = isNearby ? new Color(1f, 0.95f, 0.2f) : new Color(1f, 0.85f, 0.35f);
+                    }
+                    else
+                    {
+                        actBadge = isEs ? " [Disponible]" : " [Available]";
+                        nameplateTextColor = isNearby ? new Color(0.35f, 1f, 0.45f) : new Color(0.9f, 0.95f, 1f, 0.92f);
+                    }
+                }
+                else if (pt.interactionAvailability == "available_in_transit" || pt.movementState == "moving")
                 {
                     actBadge = isEs ? " [En tránsito]" : " [In Transit]";
                     nameplateTextColor = isNearby ? new Color(0.4f, 0.95f, 1f) : new Color(0.5f, 0.85f, 0.95f);
@@ -3021,7 +3091,7 @@ namespace MyVirtualCommunity.Client.World
 
             foreach (var pt in points)
             {
-                if (pt == null) continue;
+                if (pt == null || pt.IsSuppressedOutsideServiceHours()) continue;
                 float dist = Vector3.Distance(playerPos, pt.transform.position);
 
                 Vector3 toTarget = pt.transform.position - playerPos;
@@ -3105,7 +3175,22 @@ namespace MyVirtualCommunity.Client.World
                 string rangeHint = inRange ? " <color=#44ffbb>[E: Hablar]</color>" : $" <color=#bbccdd>({(int)dist}m)</color>";
 
                 string actBadge = "";
-                if (pt.activityState == "busy")
+                if (pt.IsStorefrontAttendant())
+                {
+                    if (pt.activityState == "off_duty" || pt.activityState == "unavailable")
+                    {
+                        actBadge = " <color=#8899aa>[Fuera]</color>";
+                    }
+                    else if (pt.IsStorefrontAttendantServingCustomer())
+                    {
+                        actBadge = " <color=#ffd700>[Ocupado]</color>";
+                    }
+                    else
+                    {
+                        actBadge = " <color=#55ff77>[Disp]</color>";
+                    }
+                }
+                else if (pt.activityState == "busy")
                 {
                     actBadge = " <color=#ffd700>[Ocupado]</color>";
                 }
@@ -3492,16 +3577,36 @@ namespace MyVirtualCommunity.Client.World
                         statusColor = new Color(0.4f, 0.95f, 1f);
                         break;
                     case "available_contextual":
-                        actStatusText = isEs
-                            ? $"[*] DEMEANOR AUTORITATIVO: [DESCANSO / ACTIVIDAD] {actTitle}"
-                            : $"[*] AUTHORITATIVE DEMEANOR: [BREAK / DWELL] {actTitle}";
-                        statusColor = new Color(1f, 0.85f, 0.35f);
+                        if (point.IsStorefrontAttendant())
+                        {
+                            actStatusText = isEs
+                                ? $"[*] ESTADO EN SERVICIO: [EN SERVICIO] {actTitle}"
+                                : $"[*] SERVICE STATUS: [ON DUTY] {actTitle}";
+                            statusColor = new Color(0.35f, 0.95f, 0.45f);
+                        }
+                        else
+                        {
+                            actStatusText = isEs
+                                ? $"[*] DEMEANOR AUTORITATIVO: [DESCANSO / ACTIVIDAD] {actTitle}"
+                                : $"[*] AUTHORITATIVE DEMEANOR: [BREAK / DWELL] {actTitle}";
+                            statusColor = new Color(1f, 0.85f, 0.35f);
+                        }
                         break;
                     case "busy":
-                        actStatusText = isEs
-                            ? $"[*] DEMEANOR AUTORITATIVO: [OCUPADO EN PRIORIDAD] {actTitle}"
-                            : $"[*] AUTHORITATIVE DEMEANOR: [BUSY WITH PRIORITY] {actTitle}";
-                        statusColor = new Color(1f, 0.85f, 0.25f);
+                        if (point.IsStorefrontAttendant())
+                        {
+                            actStatusText = isEs
+                                ? $"[*] ESTADO EN SERVICIO: [EN SERVICIO] {actTitle}"
+                                : $"[*] SERVICE STATUS: [ON DUTY] {actTitle}";
+                            statusColor = new Color(0.35f, 0.95f, 0.45f);
+                        }
+                        else
+                        {
+                            actStatusText = isEs
+                                ? $"[*] DEMEANOR AUTORITATIVO: [OCUPADO EN PRIORIDAD] {actTitle}"
+                                : $"[*] AUTHORITATIVE DEMEANOR: [BUSY WITH PRIORITY] {actTitle}";
+                            statusColor = new Color(1f, 0.85f, 0.25f);
+                        }
                         break;
                     case "off_duty":
                         if (point.IsCommunityPlayerProxy())

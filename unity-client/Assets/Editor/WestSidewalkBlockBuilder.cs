@@ -73,9 +73,14 @@ namespace MyVirtualCommunity.Editor
             Material concreteMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Settings/ConcreteMaterial.mat") ?? weatheredCreamMat;
             Material liveLedBaseMat = CreateOrGetEmissiveLedBaseMaterial("Assets/Settings/West_CambiosSantaFe_LiveLed.mat");
             Material opticaBlackFrameMat = CreateOrGetColorMaterial("Assets/Settings/West_OpticaBlackFrame.mat", new Color(0.09f, 0.10f, 0.11f), 0.38f);
-            Material opticaFloorMat = CreateOrGetColorMaterial("Assets/Settings/West_OpticaInteriorFloor.mat", new Color(0.76f, 0.77f, 0.78f), 0.22f);
+            Material opticaBronzeFrameMat = CreateOrGetColorMaterial("Assets/Settings/West_OpticaBronzeFrame.mat", new Color(0.16f, 0.11f, 0.09f), 0.42f);
             Material opticaCounterMat = CreateOrGetColorMaterial("Assets/Settings/West_OpticaCounterGrey.mat", new Color(0.45f, 0.48f, 0.51f), 0.28f);
-            Material opticaPinkNoteMat = CreateOrGetColorMaterial("Assets/Settings/West_OpticaPinkNote.mat", new Color(0.95f, 0.24f, 0.52f), 0.10f);
+            Material opticaChairBlueMat = CreateOrGetColorMaterial("Assets/Settings/West_OpticaChairBlue.mat", new Color(0.16f, 0.42f, 0.74f), 0.24f);
+            Material opticaTubeLightMat = CreateOrGetColorMaterial("Assets/Settings/West_OpticaTubeLight.mat", new Color(0.98f, 0.99f, 1.0f), 0.40f);
+            opticaTubeLightMat.EnableKeyword("_EMISSION");
+            opticaTubeLightMat.SetColor("_EmissionColor", new Color(1.9f, 2.0f, 2.1f, 1.0f));
+            opticaTubeLightMat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
+            EditorUtility.SetDirty(opticaTubeLightMat);
             Material santaFeFloorRedMat = CreateOrGetColorMaterial("Assets/Settings/West_SantaFeFloorRed.mat", new Color(0.56f, 0.11f, 0.09f), 0.16f);
             Material santaFeArmorSteelMat = CreateOrGetColorMaterial("Assets/Settings/West_SantaFeArmorSteel.mat", new Color(0.50f, 0.53f, 0.56f), 0.45f);
             Material clearGlassMat = CreateOrGetTransparentGlassMaterial("Assets/Settings/West_StorefrontClearGlass.mat", new Color(0.24f, 0.34f, 0.40f, 0.32f), 0.90f);
@@ -90,7 +95,8 @@ namespace MyVirtualCommunity.Editor
             string[] alphaTexPaths = new string[]
             {
                 "Assets/Textures/Environment/T_West_Sign_DentalMexico_3D.png",
-                "Assets/Textures/Environment/T_West_FarmaciaJuarez_Window.png"
+                "Assets/Textures/Environment/T_West_FarmaciaJuarez_Window.png",
+                "Assets/Textures/Environment/T_West_Optica_Horario.png"
             };
             foreach (string tp in alphaTexPaths)
             {
@@ -130,8 +136,12 @@ namespace MyVirtualCommunity.Editor
             EditorUtility.SetDirty(whiteMetalShutterMat);
             Material ribbonWindowsMat = CreateOrGetTextureMaterial("Assets/Settings/West_RibbonWindows.mat", "Assets/Textures/Environment/T_West_RibbonWindows.png");
             Material openLedMat = CreateOrGetTextureMaterial("Assets/Settings/West_Sign_OpenLED.mat", "Assets/Textures/Environment/T_West_Sign_OpenLED.png", alphaClip: false, emissive: true);
-            Material opticaPosterLentesMat = CreateOrGetTextureMaterial("Assets/Settings/West_Optica_PosterLentes.mat", "Assets/Textures/Environment/T_West_Optica_PosterLentes.png");
-            Material opticaAbiertoMat = CreateOrGetTextureMaterial("Assets/Settings/West_Optica_Abierto.mat", "Assets/Textures/Environment/T_West_Optica_Abierto.png");
+            Material opticaFloorMat = CreateOrGetTextureMaterial("Assets/Settings/West_OpticaInteriorFloor.mat", "Assets/Textures/Environment/T_West_Optica_TileFloor.png");
+            opticaFloorMat.mainTextureScale = new Vector2(3.5f, 6.0f);
+            opticaFloorMat.SetFloat("_Smoothness", 0.30f);
+            EditorUtility.SetDirty(opticaFloorMat);
+            Material opticaAbiertoMat = CreateOrGetEmissiveSignTextureMaterial("Assets/Settings/West_Optica_Abierto.mat", "Assets/Textures/Environment/T_West_Optica_Abierto.png", 1.85f);
+            Material opticaHorarioMat = CreateOrGetTransparentTextureMaterial("Assets/Settings/West_Optica_Horario.mat", "Assets/Textures/Environment/T_West_Optica_Horario.png");
             Material cfeMeterFaceMat = CreateOrGetTextureMaterial("Assets/Settings/West_CFE_MeterFace.mat", "Assets/Textures/Environment/T_West_CFE_MeterFace.png");
 
             // 3. Locate Buildings_Corridor & Storefront_OpticaFashion
@@ -189,21 +199,29 @@ namespace MyVirtualCommunity.Editor
             // Front wall plane sits at X = -12.0m (flush with back edge of Sidewalk_West)
             // =========================================================================
 
-            // Required collider object for CorridorVerificationTest: "Optica_MainBuilding"
-            // Recessed behind X = -14.40m so Bay 4 ("Óptica Fashion") has a genuine 2.40m-deep visible glass showroom!
-            // Compacted straight facade spans Z = -12.15m to +3.40m (Length = 15.55m, Center Z = -4.375m),
-            // flanked symmetrically by angled diagonal returns at BOTH South (Z = -13.55..-12.15m) & North (Z = +3.40..+6.00m)!
+            // Required collider object for CorridorVerificationTest & VerifyWestNorthBlock: "Optica_MainBuilding"
+            // Increment 5.23.0: Recessed behind X = -19.20m so Bay 4 ("Óptica Fashion") has a genuine hollow
+            // 7.18m-deep walkable retail showroom + rear consultation/calibration room (X = -19.20..-12.02m,
+            // Z = -1.80..+3.05m, Y = 0.20..3.04m), while preserving the full exterior structural envelope and
+            // solid colliders around neighboring shops and upper floor!
             GameObject optMain = CreateBox("Optica_MainBuilding", opticaRoot.transform,
-                new Vector3(-19.20f, 3.9f, -4.375f), new Vector3(9.60f, 7.8f, 15.55f), creamStuccoMat, keepCollider: true);
+                new Vector3(-21.60f, 3.9f, -4.375f), new Vector3(4.80f, 7.8f, 15.55f), creamStuccoMat, keepCollider: true);
 
             // Container for all West Block architectural details
             GameObject blockArch = new GameObject("WestBlock_HistoricArchitecture");
             blockArch.transform.SetParent(opticaRoot.transform);
             blockArch.transform.localPosition = Vector3.zero;
 
+            // Structural masonry surrounding the deepened Óptica Fashion hollow cavity (X = -19.20..-14.40m)
+            CreateBox("Optica_MainBuilding_SouthWing", blockArch.transform,
+                new Vector3(-16.80f, 3.90f, -6.975f), new Vector3(4.80f, 7.80f, 10.35f), creamStuccoMat, keepCollider: true);
+            CreateBox("Optica_MainBuilding_NorthPier", blockArch.transform,
+                new Vector3(-16.80f, 3.90f, 3.225f), new Vector3(4.80f, 7.80f, 0.35f), creamStuccoMat, keepCollider: true);
+            CreateBox("Optica_MainBuilding_UpperAboveStore", blockArch.transform,
+                new Vector3(-16.80f, 5.46f, 0.625f), new Vector3(4.80f, 4.68f, 4.85f), creamStuccoMat, keepCollider: true);
+
             // Front structural wall surround around Bay 4's hollow glass showroom (X = -14.40..-12.00m)
             // South of Óptica: upper wall (Y = 2.75..7.80m) flush at X = -12.00m, ground level recessed behind X = -12.45m
-            // so the green-interior shop, yellow corridor entry, Dental México, and Farma PHARMACY all have real depth!
             CreateBox("BuildingA_FrontWall_SouthOfOptica_Upper", blockArch.transform,
                 new Vector3(-13.20f, 5.275f, -6.975f), new Vector3(2.40f, 5.05f, 10.35f), creamStuccoMat, keepCollider: true);
             CreateBox("BuildingA_FrontWall_SouthOfOptica", blockArch.transform,
@@ -212,10 +230,11 @@ namespace MyVirtualCommunity.Editor
                 new Vector3(-12.22f, 0.10f, -6.975f), new Vector3(0.50f, 0.20f, 10.35f), concreteMat, keepCollider: true);
             CreateBox("BuildingA_FrontWall_SouthGroundCeiling", blockArch.transform,
                 new Vector3(-12.22f, 2.74f, -6.975f), new Vector3(0.50f, 0.08f, 10.35f), whiteFrameMat);
+            // Upper story above Óptica starts at Y = 3.12m so the reconstructed interior attains 2.84m clear ceiling height (Y=0.20..3.04m)!
             CreateBox("BuildingA_FrontWall_AboveOptica", blockArch.transform,
-                new Vector3(-13.20f, 5.26f, 0.80f), new Vector3(2.40f, 5.08f, 5.20f), creamStuccoMat, keepCollider: true);
+                new Vector3(-13.20f, 5.46f, 0.80f), new Vector3(2.40f, 4.68f, 5.20f), creamStuccoMat, keepCollider: true);
             CreateBox("BuildingA_FrontWall_OpticaNorthPier", blockArch.transform,
-                new Vector3(-13.20f, 1.36f, 3.225f), new Vector3(2.40f, 2.72f, 0.35f), creamStuccoMat, keepCollider: true);
+                new Vector3(-13.20f, 1.56f, 3.225f), new Vector3(2.40f, 3.12f, 0.35f), creamStuccoMat, keepCollider: true);
 
             // -------------------------------------------------------------------------
             // BUILDING A: 2-STORY NEOCLASSICAL BUILDING WITH SYMMETRICAL SOUTH & NORTH DIAGONAL RETURNS
@@ -568,108 +587,25 @@ namespace MyVirtualCommunity.Editor
             CreateCfeMeter("CFE_Meter_South_1", blockArch.transform, new Vector3(-11.82f, 1.40f, -2.01f), aluminumMat, cfeDomeGlassMat, cfeMeterFaceMat);
             CreateCfeMeter("CFE_Meter_South_2", blockArch.transform, new Vector3(-11.82f, 1.40f, -2.29f), aluminumMat, cfeDomeGlassMat, cfeMeterFaceMat);
 
-            // --- Bay 4 (Z = -1.80m to +3.05m): "Óptica Fashion" — Full Glass Push/Pull Storefront + Visible Interior + Dynamic Shutter ---
-            // 1. Hollow Visible Showroom Interior (X = -14.40..-12.00m, Z = -1.80..+3.05m)
-            CreateBox("Optica_InteriorFloor", blockArch.transform,
-                new Vector3(-13.20f, 0.10f, 0.625f), new Vector3(2.44f, 0.20f, 4.90f), opticaFloorMat, keepCollider: true);
-            CreateBox("Optica_InteriorBackWall", blockArch.transform,
-                new Vector3(-14.34f, 1.46f, 0.625f), new Vector3(0.10f, 2.52f, 4.85f), weatheredCreamMat);
-            CreateBox("Optica_InteriorCeiling", blockArch.transform,
-                new Vector3(-13.20f, 2.70f, 0.625f), new Vector3(2.42f, 0.08f, 4.88f), whiteFrameMat);
-            // Back eyewear display shelves (3 rows)
-            for (int s = 0; s < 3; s++)
-            {
-                CreateBox($"Optica_DisplayShelf_{s}", blockArch.transform,
-                    new Vector3(-14.12f, 1.05f + s * 0.45f, 0.35f), new Vector3(0.28f, 0.05f, 2.60f), whiteFrameMat);
-                CreateBox($"Optica_FramesRow_{s}", blockArch.transform,
-                    new Vector3(-14.10f, 1.13f + s * 0.45f, 0.35f), new Vector3(0.14f, 0.08f, 2.35f), opticaBlackFrameMat);
-            }
-            // Right geometric grey fitting counter + circular tabletop mirror (visible through glass in reference photo!)
-            CreateBox("Optica_InteriorCounter", blockArch.transform,
-                new Vector3(-13.05f, 0.68f, 1.85f), new Vector3(1.05f, 0.96f, 1.38f), opticaCounterMat);
-            CreateBox("Optica_CounterTop", blockArch.transform,
-                new Vector3(-13.05f, 1.18f, 1.85f), new Vector3(1.10f, 0.06f, 1.42f), whiteFrameMat);
-            var mirrorStand = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            mirrorStand.name = "Optica_TableMirror_Stand";
-            mirrorStand.transform.SetParent(blockArch.transform, false);
-            mirrorStand.transform.localPosition = new Vector3(-12.78f, 1.32f, 1.82f);
-            mirrorStand.transform.localScale = new Vector3(0.06f, 0.12f, 0.06f);
-            SetMaterial(mirrorStand, opticaBlackFrameMat);
-            UnityEngine.Object.DestroyImmediate(mirrorStand.GetComponent<Collider>());
-            var mirrorDisc = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            mirrorDisc.name = "Optica_TableMirror_Disc";
-            mirrorDisc.transform.SetParent(blockArch.transform, false);
-            mirrorDisc.transform.localPosition = new Vector3(-12.78f, 1.50f, 1.82f);
-            mirrorDisc.transform.localRotation = Quaternion.Euler(0f, 0f, 80f);
-            mirrorDisc.transform.localScale = new Vector3(0.26f, 0.02f, 0.26f);
-            SetMaterial(mirrorDisc, aluminumMat);
-            UnityEngine.Object.DestroyImmediate(mirrorDisc.GetComponent<Collider>());
-            // Left illuminated eyewear display tower (visible in left glass sidelight)
-            CreateBox("Optica_LeftDisplayTower", blockArch.transform,
-                new Vector3(-12.65f, 1.18f, -1.20f), new Vector3(0.60f, 1.92f, 0.72f), whiteFrameMat);
-            CreateBox("Optica_LeftTower_ShelfAccent", blockArch.transform,
-                new Vector3(-12.34f, 1.32f, -1.20f), new Vector3(0.04f, 1.35f, 0.56f), yellowPanelMat);
+            // --- Bay 4 (Z = -1.80m to +3.05m, center Z = +0.625m): "Óptica Fashion" ---
+            // Delegated to dedicated idempotent OpticaFashionInteriorBuilder (Increment 5.23.0:
+            // full 7.18m-deep walkable showroom + rear consultation/calibration room + inward-swinging accessible door!)
+            GameObject abiertoQuad = OpticaFashionInteriorBuilder.BuildOpticaFashionInteriorAndStorefront(
+                blockArch.transform, opticaRoot.transform);
 
-            // 2. Full-Height Glass & Black Metal Storefront + Double Push/Pull Doors (X = -12.02m, Z = -1.80..+3.05m)
-            // Outer black perimeter frame
-            CreateBox("Optica_Frame_Top", blockArch.transform,
-                new Vector3(-12.02f, 2.66f, 0.625f), new Vector3(0.10f, 0.09f, 4.86f), opticaBlackFrameMat);
-            CreateBox("Optica_Frame_Bottom", blockArch.transform,
-                new Vector3(-12.02f, 0.24f, 0.625f), new Vector3(0.10f, 0.08f, 4.86f), opticaBlackFrameMat);
-            // Vertical black mullions separating Left Sidelight | Left Door | Right Door | Right Sidelight
-            float[] opticaFrameZs = new float[] { -1.78f, -0.52f, 0.60f, 1.72f, 3.02f };
-            for (int i = 0; i < opticaFrameZs.Length; i++)
-            {
-                CreateBox($"Optica_Frame_Mullion_{i}", blockArch.transform,
-                    new Vector3(-12.02f, 1.45f, opticaFrameZs[i]), new Vector3(0.10f, 2.46f, 0.08f), opticaBlackFrameMat);
-            }
-            // Horizontal mid-rail across doors & sidelights + door top transom
-            CreateBox("Optica_Door_MidRail", blockArch.transform,
-                new Vector3(-12.02f, 1.24f, 0.60f), new Vector3(0.08f, 0.07f, 2.24f), opticaBlackFrameMat);
-            CreateBox("Optica_Door_Transom", blockArch.transform,
-                new Vector3(-12.02f, 2.24f, 0.625f), new Vector3(0.08f, 0.07f, 4.80f), opticaBlackFrameMat);
-            // Push/Pull vertical aluminum handles on center double glass doors
-            CreateBox("Optica_DoorHandle_Left", blockArch.transform,
-                new Vector3(-11.94f, 1.25f, 0.48f), new Vector3(0.05f, 0.42f, 0.035f), aluminumMat);
-            CreateBox("Optica_DoorHandle_Right", blockArch.transform,
-                new Vector3(-11.94f, 1.25f, 0.72f), new Vector3(0.05f, 0.42f, 0.035f), aluminumMat);
-            // Transparent glossy glass panes (sidelights + double doors) allowing full interior visibility!
-            CreateBox("Optica_GlassPane_Full", blockArch.transform,
-                new Vector3(-12.02f, 1.45f, 0.625f), new Vector3(0.025f, 2.38f, 4.76f), clearGlassMat, keepCollider: true);
-
-            // Door signage: hanging "ABIERTO" plaque, small pink notice, and "LENTES DEPORTIVOS" poster (exact photo match!)
-            GameObject abiertoQuad = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            abiertoQuad.name = "Optica_AbiertoSign";
-            abiertoQuad.transform.SetParent(blockArch.transform, false);
-            abiertoQuad.transform.localPosition = new Vector3(-11.98f, 2.02f, 0.05f);
-            abiertoQuad.transform.localRotation = Quaternion.Euler(0f, -90f, 0f);
-            abiertoQuad.transform.localScale = new Vector3(0.42f, 0.16f, 1.0f);
-            SetMaterial(abiertoQuad, opticaAbiertoMat);
-            UnityEngine.Object.DestroyImmediate(abiertoQuad.GetComponent<Collider>());
-
-            CreateBox("Optica_PinkNotice", blockArch.transform,
-                new Vector3(-11.98f, 1.66f, 0.30f), new Vector3(0.015f, 0.24f, 0.20f), opticaPinkNoteMat);
-
-            GameObject posterLentes = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            posterLentes.name = "Optica_PosterLentes";
-            posterLentes.transform.SetParent(blockArch.transform, false);
-            posterLentes.transform.localPosition = new Vector3(-11.98f, 0.86f, 0.05f);
-            posterLentes.transform.localRotation = Quaternion.Euler(0f, -90f, 0f);
-            posterLentes.transform.localScale = new Vector3(0.68f, 0.84f, 1.0f);
-            SetMaterial(posterLentes, opticaPosterLentesMat);
-            UnityEngine.Object.DestroyImmediate(posterLentes.GetComponent<Collider>());
-
-            // 3. Dynamic Roll-Up Metal Shutter for Óptica Fashion (automatically lowers when World Core reports off_duty/closed!)
+            // 3. Dynamic WHITE Roll-Up Metal Shutter for Óptica Fashion (uniformed in white; lowers automatically when World Core reports off_duty/closed!)
             CreateDynamicRollUpShutter("Optica_RollUpShutter_Dynamic", blockArch.transform,
-                wallX: -11.90f, centerZ: 0.625f, widthZ: 4.86f, topY: 2.68f, fullDropHeight: 2.48f,
+                wallX: -11.88f, centerZ: 0.625f, widthZ: 4.86f, topY: 2.66f, fullDropHeight: 2.46f,
                 alwaysOpen: false, linkedInteractionPointName: "InteractionPoint_OpticaFashion",
-                openSignVisual: abiertoQuad, trackMat: aluminumMat, housingMat: darkCorniceMat, shutterMat: metalShutterMat);
+                openSignVisual: abiertoQuad, trackMat: whiteFrameMat, housingMat: whiteFrameMat, shutterMat: whiteMetalShutterMat);
 
-            // Beige Wedge Awning ("Optica_Awning") & Terracotta Sign ("Optica_Signboard")
+            // Centered Beige Wedge Awning ("Optica_Awning"), Overhead White Fluorescent Lamp & Smooth Copper-Brown Sign ("Optica_Signboard")
             CreateWestWedgeAwning("Optica_Awning", opticaRoot.transform,
-                centerZ: 0.85f, topY: 3.22f, widthZ: 4.8f, projectionX: 1.35f, dropY: 0.74f, beigeAwningMat, awningValanceMat);
+                centerZ: 0.625f, topY: 3.22f, widthZ: 4.86f, projectionX: 1.35f, dropY: 0.74f, beigeAwningMat, awningValanceMat);
+            CreateBox("Optica_EntryFluorescentTube", opticaRoot.transform,
+                new Vector3(-11.62f, 2.74f, 0.625f), new Vector3(0.05f, 0.05f, 1.85f), opticaTubeLightMat);
             CreateWestSign("Optica_Signboard", opticaRoot.transform,
-                centerZ: 0.85f, centerY: 3.58f, widthZ: 4.3f, heightY: 0.68f, terracottaPlaqueMat, signOpticaMat);
+                centerZ: 0.625f, centerY: 3.58f, widthZ: 4.74f, heightY: 0.68f, terracottaPlaqueMat, signOpticaMat);
 
             // Dividing Corner Pilaster at Building A's diagonal break (Z = +3.30m) + Central CFE Electric Meter!
             CreateBox("Pilaster_Bay4_5", blockArch.transform,
@@ -692,9 +628,12 @@ namespace MyVirtualCommunity.Editor
             diagRoot.transform.localPosition = new Vector3(-13.10f, 0f, 4.70f);
             diagRoot.transform.localRotation = Quaternion.Euler(0f, -40.236f, 0f);
 
-            // Upper angled structural body (Y = 2.75..7.80m, leaving Y = 0.20..2.75m open for the Cambios Santa Fe vestibule!)
+            // Upper angled structural body (split cleanly at Y=3.12m so nothing protrudes into Óptica Fashion's 2.84m interior ceiling
+            // while keeping Cambios Santa Fe's exterior facade 100% solid down to Y=2.74m!)
             CreateBox("BuildingA_DiagonalMass", diagRoot.transform,
-                new Vector3(-2.40f, 5.28f, 0f), new Vector3(4.80f, 5.06f, 3.48f), creamStuccoMat, keepCollider: true);
+                new Vector3(-2.40f, 5.46f, 0f), new Vector3(4.80f, 4.68f, 3.48f), creamStuccoMat, keepCollider: true);
+            CreateBox("BuildingA_DiagonalFrontSkirt", diagRoot.transform,
+                new Vector3(-0.21f, 2.93f, 0f), new Vector3(0.42f, 0.38f, 3.48f), creamStuccoMat, keepCollider: true);
             // Rear solid core closing behind the vestibule & diagonal return (X = -24.00..-13.70m, Z = +3.40..+6.00m)
             CreateBox("BuildingA_NorthRearFill", blockArch.transform,
                 new Vector3(-18.85f, 3.90f, 4.70f), new Vector3(10.30f, 7.80f, 2.65f), creamStuccoMat, keepCollider: true);
@@ -1059,10 +998,18 @@ namespace MyVirtualCommunity.Editor
                 GameObject.Find("SantaFe_CashTray_MetalLip") != null &&
                 GameObject.Find("SantaFe_OpenLED_Sign") != null);
 
-            Check("Óptica Fashion full-glass Push/Pull storefront & interior exist (legacy opaque green removed)",
-                GameObject.Find("Optica_GlassPane_Full") != null &&
+            Check("Óptica Fashion segmented accessible glass storefront, interior, LED ABIERTO & Bienvenidos/HORARIO exist (monolithic glass & posters removed)",
+                GameObject.Find("Optica_GlassPane_Full") == null &&
+                GameObject.Find("Optica_Glass_SouthSidelight") != null &&
+                GameObject.Find("Optica_DoorLeaf_North_Pivot") != null &&
                 GameObject.Find("Optica_InteriorCounter") != null &&
-                GameObject.Find("Optica_PosterLentes") != null &&
+                GameObject.Find("Optica_AbiertoSign") != null &&
+                GameObject.Find("Optica_HorarioSign") != null &&
+                GameObject.Find("Optica_DoorPushBar_Left") != null &&
+                GameObject.Find("Optica_DoorPushBar_Right") != null &&
+                GameObject.Find("Optica_CalibrationStation") != null &&
+                GameObject.Find("Optica_PosterLentes") == null &&
+                GameObject.Find("Optica_PinkNotice") == null &&
                 GameObject.Find("Optica_TealPanel_Left") == null);
 
             var optShutter = GameObject.Find("Optica_RollUpShutter_Dynamic")?.GetComponent<StorefrontShutterController>();
@@ -1318,7 +1265,13 @@ namespace MyVirtualCommunity.Editor
                 cam.transform.LookAt(new Vector3(-11.2f, 3.65f, -14.6f));
                 RenderToFile(cam, 1600, 900, Path.Combine(outDir, "chihuas_mexico_day_north.png"));
 
-                // Shot 4: Daytime Frontal Close-Up of Óptica Fashion & Cambios Santa Fe (confirming North section untouched!)
+                // Shot 4: Daytime Frontal Close-Up of Óptica Fashion (Photo 2 match: centered sans-serif sign, wide double doors, LED ABIERTO, Bienvenidos/HORARIO & Empuje!)
+                cam.fieldOfView = 46f;
+                cam.transform.position = new Vector3(-5.0f, 1.85f, 0.625f);
+                cam.transform.LookAt(new Vector3(-12.0f, 2.00f, 0.625f));
+                RenderToFile(cam, 1600, 900, Path.Combine(outDir, "optica_fashion_frontal_match.png"));
+
+                // Shot 4B: Daytime Frontal Overview of Óptica Fashion & Cambios Santa Fe
                 cam.fieldOfView = 48f;
                 cam.transform.position = new Vector3(-4.5f, 1.85f, 2.2f);
                 cam.transform.LookAt(new Vector3(-12.2f, 2.15f, 2.6f));

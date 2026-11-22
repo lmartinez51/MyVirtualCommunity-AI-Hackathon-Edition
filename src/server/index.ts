@@ -113,7 +113,22 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
     isExplicitRemoteWorldCore = true;
   } else {
     const defaultReportsPath = resolve(process.cwd(), '.runtime', 'citizen-reports.json');
-    worldCore = new InMemoryWorldCoreAdapter({ persistenceFilePath: defaultReportsPath });
+    const inMemoryWorldCore = new InMemoryWorldCoreAdapter({ persistenceFilePath: defaultReportsPath });
+    const envSimulatedTime = process.env.WORLD_SIMULATED_TIME?.trim();
+    if (envSimulatedTime) {
+      const envScaleRaw = process.env.WORLD_TIME_SCALE?.trim();
+      const envScale = envScaleRaw ? Number(envScaleRaw) : 1;
+      try {
+        inMemoryWorldCore.setSimulatedClock({
+          simulatedTime: envSimulatedTime,
+          timeScale: Number.isFinite(envScale) && envScale >= 0 ? envScale : 1,
+          paused: envScale === 0,
+        });
+      } catch {
+        // Ignore invalid optional env simulated clock override and keep real clock
+      }
+    }
+    worldCore = inMemoryWorldCore;
     isExplicitRemoteWorldCore = false;
   }
 
@@ -454,6 +469,75 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
           });
         }
         return;
+      }
+
+      // 4d-2. GET/POST /api/world/clock (Dev/Demo Simulated World Clock Control — never alters schedules)
+      if (pathname === '/api/world/clock' || pathname === '/api/clock') {
+        if (method === 'GET') {
+          if (worldCore instanceof InMemoryWorldCoreAdapter) {
+            const clockStatus = worldCore.getSimulatedClockStatus();
+            sendJson(res, 200, { success: true, clock: clockStatus });
+          } else {
+            const currentWorldTime = await worldCore.getCurrentWorldTime();
+            sendJson(res, 200, {
+              success: true,
+              clock: { isSimulated: false, currentWorldTime, timeScale: 1, paused: false },
+            });
+          }
+          return;
+        }
+        if (method === 'POST') {
+          if (!(worldCore instanceof InMemoryWorldCoreAdapter)) {
+            sendJson(res, 501, {
+              success: false,
+              error: {
+                code: 'not-supported',
+                message: 'Simulated World Clock control is only available on in-memory World Core.',
+              },
+            });
+            return;
+          }
+          const rawBody = await readBody(req);
+          if (!rawBody || typeof rawBody !== 'object' || Array.isArray(rawBody)) {
+            sendJson(res, 400, {
+              success: false,
+              error: { code: 'invalid-request', message: 'Request body must be a JSON object.' },
+            });
+            return;
+          }
+          const body = rawBody as Record<string, unknown>;
+          const simulatedTime =
+            body.simulatedTime === null || body.reset === true
+              ? null
+              : typeof body.simulatedTime === 'string' && body.simulatedTime.trim() !== ''
+              ? body.simulatedTime.trim()
+              : undefined;
+          if (simulatedTime === undefined) {
+            sendJson(res, 400, {
+              success: false,
+              error: {
+                code: 'invalid-simulated-time',
+                message: 'Provide "simulatedTime" (ISO-8601 string or null) or "reset": true.',
+              },
+            });
+            return;
+          }
+          const timeScale = typeof body.timeScale === 'number' ? body.timeScale : undefined;
+          const paused = typeof body.paused === 'boolean' ? body.paused : undefined;
+          try {
+            const clockStatus = worldCore.setSimulatedClock({ simulatedTime, timeScale, paused });
+            sendJson(res, 200, { success: true, clock: clockStatus });
+          } catch (err) {
+            sendJson(res, 400, {
+              success: false,
+              error: {
+                code: 'invalid-simulated-time',
+                message: err instanceof Error ? err.message : String(err),
+              },
+            });
+          }
+          return;
+        }
       }
 
       // 4e. GET /api/world/npcs/movement (Authoritative Roster NPC Waypoint Movement)

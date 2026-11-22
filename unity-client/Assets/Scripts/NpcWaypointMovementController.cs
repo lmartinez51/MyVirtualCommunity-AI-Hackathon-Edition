@@ -81,6 +81,9 @@ namespace MyVirtualCommunity.Client.World
             public string passingEncounterType = "";
             public string businessDomainId = "";
             public bool withinAuthorizedDomain = true;
+            public string businessLifecycleState = "";
+            public bool shutterClosedPermitted = false;
+            public bool hasAuthoritativeLifecycleShutter = false;
             public float authoritativeSpeedMps = 0f;
             public float secondsSinceTargetUpdate = 0f;
             public Vector3 activeSegmentEndPosition = Vector3.zero;
@@ -89,7 +92,27 @@ namespace MyVirtualCommunity.Client.World
             public Vector3 lastVisualWorldPos;
             public bool hasLastVisualPos = false;
             public bool hasReceivedAuthoritativeSnapshot = false;
+            public bool isVisualHiddenAwaitingInitialSync = false;
             public bool hasValidTarget = false;
+        }
+
+        private static void SetTargetVisualRenderersVisible(NpcPresentationTarget target, bool visible)
+        {
+            if (target == null) return;
+            Transform root = target.visualTransform != null ? target.visualTransform : (target.point != null ? target.point.transform : null);
+            if (root != null)
+            {
+                Renderer[] renderers = root.GetComponentsInChildren<Renderer>(true);
+                for (int i = 0; i < renderers.Length; i++)
+                {
+                    if (renderers[i] != null) renderers[i].enabled = visible;
+                }
+            }
+            if (target.point != null)
+            {
+                target.point.isHiddenUntilAuthoritativeSync = !visible;
+            }
+            target.isVisualHiddenAwaitingInitialSync = !visible;
         }
 
         private static readonly RaycastHit[] GroundHitBuffer = new RaycastHit[16];
@@ -152,11 +175,6 @@ namespace MyVirtualCommunity.Client.World
                 candidate.x = Mathf.Clamp(candidate.x, 7.80f, 11.40f);
                 candidate.z = Mathf.Clamp(candidate.z, -3.20f, 4.40f);
             }
-            else if (string.Equals(npcId, "valeria-optica-attendant", StringComparison.OrdinalIgnoreCase))
-            {
-                candidate.x = Mathf.Clamp(candidate.x, -11.40f, -7.40f);
-                candidate.z = Mathf.Clamp(candidate.z, -4.50f, 8.20f);
-            }
             return candidate;
         }
 
@@ -175,16 +193,21 @@ namespace MyVirtualCommunity.Client.World
 
                 if (target.hasActiveSegmentEnd)
                 {
-                    // Strictly bounded to active authoritative segment endpoint (zero overshoot past turns or domain bounds)
+                    // Strictly bounded to active authoritative segment endpoint (zero overshoot past turns, doorways, furniture, or domain bounds)
                     goal = Vector3.MoveTowards(target.targetPosition, target.activeSegmentEndPosition, leadDist);
                 }
                 else
                 {
-                    Vector3 flatHeading = new Vector3(target.targetHeading.x, 0f, target.targetHeading.z).normalized;
-                    goal += flatHeading * leadDist;
-                    if (string.Equals(target.behaviorProfileType, "business_local_autonomy", StringComparison.OrdinalIgnoreCase))
+                    string npcId = target.point != null ? target.point.characterId : "";
+                    // Never extrapolate off-segment for multi-zone indoor/outdoor NPCs (Valeria); rely strictly on authoritative segment endpoints
+                    if (!string.Equals(npcId, "valeria-optica-attendant", StringComparison.OrdinalIgnoreCase))
                     {
-                        goal = ClampBusinessDomainPresentationBoundsXZ(target.point != null ? target.point.characterId : "", goal);
+                        Vector3 flatHeading = new Vector3(target.targetHeading.x, 0f, target.targetHeading.z).normalized;
+                        goal += flatHeading * leadDist;
+                        if (string.Equals(target.behaviorProfileType, "business_local_autonomy", StringComparison.OrdinalIgnoreCase))
+                        {
+                            goal = ClampBusinessDomainPresentationBoundsXZ(npcId, goal);
+                        }
                     }
                 }
             }
@@ -287,7 +310,7 @@ namespace MyVirtualCommunity.Client.World
                         animationControllersByNpcId[pt.characterId] = animCtrl;
                     }
 
-                    managedNpcs[pt.characterId] = new NpcPresentationTarget
+                    var presentationTarget = new NpcPresentationTarget
                     {
                         point = pt,
                         visualTransform = visualT,
@@ -310,6 +333,16 @@ namespace MyVirtualCommunity.Client.World
                         hasLastVisualPos = true,
                         hasValidTarget = true
                     };
+                    managedNpcs[pt.characterId] = presentationTarget;
+
+                    // Increment 5.23.2: In Play Mode, keep Valeria's renderers & UI hidden until the first
+                    // authoritative backend snapshot snaps her to her actual interior/exterior position so
+                    // she NEVER flashes outside on the sidewalk and disappears when launching at night.
+                    if (Application.isPlaying &&
+                        string.Equals(pt.characterId, "valeria-optica-attendant", StringComparison.OrdinalIgnoreCase))
+                    {
+                        SetTargetVisualRenderersVisible(presentationTarget, false);
+                    }
                 }
             }
         }
@@ -425,7 +458,8 @@ namespace MyVirtualCommunity.Client.World
                     string.Equals(target.autonomousBehaviorState, "passing_encounter", StringComparison.OrdinalIgnoreCase) ||
                     (string.Equals(target.behaviorProfileType, "business_local_autonomy", StringComparison.OrdinalIgnoreCase) &&
                      !target.isSuspendedByPlayerInteraction &&
-                     !string.Equals(target.autonomousBehaviorState, "off_duty", StringComparison.OrdinalIgnoreCase));
+                     (!string.Equals(target.autonomousBehaviorState, "off_duty", StringComparison.OrdinalIgnoreCase) ||
+                      string.Equals(target.currentWaypointId, "wp_valeria_off_duty_station", StringComparison.OrdinalIgnoreCase)));
 
                 // Position interpolation (keep fixed physical kiosk booth anchored at its plaza foundation)
                 if (isFixedBorderKiosk)
@@ -574,6 +608,9 @@ namespace MyVirtualCommunity.Client.World
                 target.point.passingEncounterType = target.passingEncounterType;
                 target.point.businessDomainId = target.businessDomainId;
                 target.point.withinAuthorizedDomain = target.withinAuthorizedDomain;
+                target.point.businessLifecycleState = target.businessLifecycleState;
+                target.point.shutterClosedPermitted = target.shutterClosedPermitted;
+                target.point.hasAuthoritativeLifecycleShutter = target.hasAuthoritativeLifecycleShutter;
 
                 if (target.animationController != null)
                 {
@@ -600,8 +637,8 @@ namespace MyVirtualCommunity.Client.World
 
         private IEnumerator PollMovementRosterRoutine()
         {
-            // Initial wait for backend startup
-            yield return new WaitForSeconds(1.5f);
+            // Minimal startup wait so initial authoritative snapshot arrives before player sees stale baked positions
+            yield return new WaitForSeconds(0.15f);
 
             while (true)
             {
@@ -648,7 +685,7 @@ namespace MyVirtualCommunity.Client.World
                     );
                 }
 
-                yield return new WaitForSeconds(pollIntervalSeconds);
+                yield return new WaitForSeconds(hasReceivedInitialPollRoster ? pollIntervalSeconds : 0.35f);
             }
         }
 
@@ -741,6 +778,18 @@ namespace MyVirtualCommunity.Client.World
                 target.passingEncounterType = dto.passingEncounterType ?? "";
                 target.businessDomainId = dto.businessDomainId ?? "";
                 target.withinAuthorizedDomain = dto.withinAuthorizedDomain;
+                if (!string.IsNullOrEmpty(dto.businessLifecycleState))
+                {
+                    target.businessLifecycleState = dto.businessLifecycleState;
+                    target.shutterClosedPermitted = dto.shutterClosedPermitted;
+                    target.hasAuthoritativeLifecycleShutter = true;
+                }
+                else
+                {
+                    target.businessLifecycleState = "";
+                    target.shutterClosedPermitted = false;
+                    target.hasAuthoritativeLifecycleShutter = false;
+                }
                 target.hasValidTarget = true;
 
                 if (target.point != null)
@@ -755,6 +804,9 @@ namespace MyVirtualCommunity.Client.World
                     target.point.passingEncounterType = target.passingEncounterType;
                     target.point.businessDomainId = target.businessDomainId;
                     target.point.withinAuthorizedDomain = target.withinAuthorizedDomain;
+                    target.point.businessLifecycleState = target.businessLifecycleState;
+                    target.point.shutterClosedPermitted = target.shutterClosedPermitted;
+                    target.point.hasAuthoritativeLifecycleShutter = target.hasAuthoritativeLifecycleShutter;
                     if (!string.IsNullOrEmpty(dto.activityState))
                     {
                         target.point.activityState = dto.activityState;
@@ -796,6 +848,12 @@ namespace MyVirtualCommunity.Client.World
                         target.isSuspendedByPlayerInteraction,
                         target.passingEncounterPartnerNpcId,
                         target.passingEncounterType);
+                }
+
+                // Reveal Valeria's visual renderers only AFTER her transform has snapped to the authoritative position
+                if (target.isVisualHiddenAwaitingInitialSync)
+                {
+                    SetTargetVisualRenderersVisible(target, true);
                 }
             }
         }
@@ -842,7 +900,11 @@ namespace MyVirtualCommunity.Client.World
                 Vector3 snappedPos = target.targetPosition;
                 snappedPos.y = ResolveGroundedSurfaceY(snappedPos);
                 target.point.transform.position = snappedPos;
-                if (target.movementState == "moving" && target.targetHeading.sqrMagnitude > 0.001f)
+                bool snapHeading =
+                    (target.movementState == "moving" ||
+                     string.Equals(target.behaviorProfileType, "business_local_autonomy", StringComparison.OrdinalIgnoreCase)) &&
+                    target.targetHeading.sqrMagnitude > 0.001f;
+                if (snapHeading)
                 {
                     Vector3 flatHeading = new Vector3(target.targetHeading.x, 0, target.targetHeading.z).normalized;
                     if (flatHeading.sqrMagnitude > 0.001f)
@@ -886,7 +948,11 @@ namespace MyVirtualCommunity.Client.World
                         Vector3 visSnap = target.targetPosition;
                         visSnap.y = ResolveGroundedSurfaceY(visSnap);
                         target.visualTransform.position = visSnap;
-                        if (target.movementState == "moving" && target.targetHeading.sqrMagnitude > 0.001f)
+                        bool snapVisHeading =
+                            (target.movementState == "moving" ||
+                             string.Equals(target.behaviorProfileType, "business_local_autonomy", StringComparison.OrdinalIgnoreCase)) &&
+                            target.targetHeading.sqrMagnitude > 0.001f;
+                        if (snapVisHeading)
                         {
                             Vector3 flatHeading = new Vector3(target.targetHeading.x, 0f, target.targetHeading.z).normalized;
                             if (flatHeading.sqrMagnitude > 0.001f)
@@ -1046,6 +1112,15 @@ namespace MyVirtualCommunity.Client.World
                     target.point.interactionMode = ctx.interactionMode ?? "normal_service";
                     target.point.isAvailableForNormalService = ctx.isAvailableForNormalService;
                     target.point.canInteract = ctx.canInitiateConversation;
+                    if (!string.IsNullOrEmpty(ctx.businessLifecycleState))
+                    {
+                        target.businessLifecycleState = ctx.businessLifecycleState;
+                        target.shutterClosedPermitted = ctx.shutterClosedPermitted;
+                        target.hasAuthoritativeLifecycleShutter = true;
+                        target.point.businessLifecycleState = ctx.businessLifecycleState;
+                        target.point.shutterClosedPermitted = ctx.shutterClosedPermitted;
+                        target.point.hasAuthoritativeLifecycleShutter = true;
+                    }
                     if (!string.IsNullOrEmpty(ctx.activityState))
                     {
                         target.point.activityState = ctx.activityState;
@@ -1368,6 +1443,15 @@ namespace MyVirtualCommunity.Client.World
                 return target.isSuspendedByPlayerInteraction;
             }
             return false;
+        }
+
+        public string GetNpcBusinessLifecycleState(string characterId)
+        {
+            if (managedNpcs.TryGetValue(characterId, out NpcPresentationTarget target) && target != null)
+            {
+                return target.businessLifecycleState;
+            }
+            return "";
         }
     }
 }

@@ -105,10 +105,19 @@ describe('Deterministic NPC Activity, Routines & World Presence Domain', () => {
     assert.strictEqual(carlosSunday.activityTitle.es, 'Sucursal cerrada en domingo');
     assert.strictEqual(carlosSunday.canInteract, false);
 
-    // Valeria (Óptica Fashion: 09:00-17:00 Mon-Sat, continuously available with zero breaks)
-    const valeriaNoCalib = evaluateNpcActivity(VALERIA_SCHEDULE, '2026-11-04T20:10:00.000Z'); // 13:10 Juárez
-    assert.strictEqual(valeriaNoCalib.state, 'available');
-    assert.strictEqual(valeriaNoCalib.canInteract, true);
+    // Valeria (Óptica Fashion: 09:00-17:00 Mon-Sat with 13:00-13:45 rear-room optical calibration window)
+    const valeriaMorning = evaluateNpcActivity(VALERIA_SCHEDULE, '2026-11-04T17:00:00.000Z'); // 10:00 Juárez
+    assert.strictEqual(valeriaMorning.state, 'available');
+    assert.strictEqual(valeriaMorning.canInteract, true);
+
+    const valeriaCalib = evaluateNpcActivity(VALERIA_SCHEDULE, '2026-11-04T20:10:00.000Z'); // 13:10 Juárez
+    assert.strictEqual(valeriaCalib.state, 'busy');
+    assert.strictEqual(valeriaCalib.canInteract, true);
+    assert.strictEqual(valeriaCalib.activityTitle.es, 'Calibración de equipo y ajuste de armazones');
+
+    const valeriaAfternoon = evaluateNpcActivity(VALERIA_SCHEDULE, '2026-11-04T21:00:00.000Z'); // 14:00 Juárez
+    assert.strictEqual(valeriaAfternoon.state, 'available');
+    assert.strictEqual(valeriaAfternoon.canInteract, true);
 
     const valeriaAfterClose = evaluateNpcActivity(VALERIA_SCHEDULE, '2026-11-05T00:05:00.000Z'); // 17:05 Juárez
     assert.strictEqual(valeriaAfterClose.state, 'off_duty');

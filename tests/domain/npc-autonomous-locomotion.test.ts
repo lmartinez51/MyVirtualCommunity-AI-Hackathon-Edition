@@ -941,21 +941,25 @@ describe('Autonomous NPC Locomotion, Bridge Patrols & Bounded Business Activity 
           `${npcId} exited safe roaming region at +${t}s: (${curSnap.position.x}, ${curSnap.position.z})`
         );
 
-        // Verify clearance >= 0.55m from outer domain edges where applicable
-        const marginMinX = curSnap.position.x - domain.bounds.minX;
-        const marginMaxX = domain.bounds.maxX - curSnap.position.x;
-        assert.ok(
-          marginMinX >= 0.54 && marginMaxX >= 0.54,
-          `${npcId} X=${curSnap.position.x} violated 0.55m clearance from X bounds [${domain.bounds.minX}, ${domain.bounds.maxX}]`
-        );
-
         if (npcId === 'valeria-optica-attendant') {
-          // Valeria never leaves Bay 4 Optica Fashion frontage Z = [-1.80, +3.40] during ordinary roaming
+          // Valeria never leaves Bay 4 Optica Fashion exterior/showroom Z = [-1.80, +3.05] during ordinary roaming
+          // and never enters the task-only rear laboratory (X < -15.96)
           assert.ok(
             curSnap.position.z >= -1.66 && curSnap.position.z <= 2.91,
-            `Valeria Z=${curSnap.position.z} wandered outside Optica Bay 4 frontage`
+            `Valeria Z=${curSnap.position.z} wandered outside Optica Bay 4 frontage/showroom`
+          );
+          assert.ok(
+            curSnap.position.x >= -15.96 && curSnap.position.x <= -7.99,
+            `Valeria X=${curSnap.position.x} exited authorized exterior/showroom zones during normal roaming`
           );
         } else {
+          // Verify clearance >= 0.55m from outer domain edges for single-zone Carlos
+          const marginMinX = curSnap.position.x - domain.bounds.minX;
+          const marginMaxX = domain.bounds.maxX - curSnap.position.x;
+          assert.ok(
+            marginMinX >= 0.54 && marginMaxX >= 0.54,
+            `${npcId} X=${curSnap.position.x} violated 0.55m clearance from X bounds [${domain.bounds.minX}, ${domain.bounds.maxX}]`
+          );
           // Carlos stays strictly inside Farmacias Benavides frontage
           assert.ok(
             curSnap.position.z >= -2.66 && curSnap.position.z <= 3.86,
@@ -1079,16 +1083,18 @@ describe('Autonomous NPC Locomotion, Bridge Patrols & Bounded Business Activity 
     assert.strictEqual(fallbackRes.currentWaypointId, 'wp_carlos_counter');
     assert.strictEqual(fallbackRes.actualSpeedMps, 0);
 
-    // D. Robotic zero-break business-hours rule & bridge patrol dense loop / segment-end verification
+    // D. Valeria scheduled rear-room calibration (13:00-13:45) & Carlos zero-break business-hours rule
     assert.strictEqual(CORRIDOR_WAYPOINTS['wp_valeria_storefront']!.position.y, 0.2);
     const valeriaMidday = evaluateNpcMovement(
       NPC_MOVEMENT_PROFILES['valeria-optica-attendant']!,
-      '2026-11-04T20:10:00.000Z' // Wed 13:10 MST: no calibration break, stays active inside Optica Bay 4
+      '2026-11-04T20:10:00.000Z' // Wed 13:10 MST: actively calibrating at Optica_CalibrationStation (-17.85, 0.20, -0.50)
     );
-    assert.strictEqual(valeriaMidday.activityState, 'available');
-    assert.strictEqual(valeriaMidday.controlMode, 'autonomous_business_local');
+    assert.strictEqual(valeriaMidday.activityState, 'busy');
+    assert.strictEqual(valeriaMidday.controlMode, 'scheduled_routine_transition');
+    assert.strictEqual(valeriaMidday.currentWaypointId, 'wp_optica_calibration_station');
     assert.strictEqual(valeriaMidday.withinAuthorizedDomain, true);
-    assert.ok(valeriaMidday.position.z >= -1.80 && valeriaMidday.position.z <= 3.40, 'Valeria must remain strictly inside Optica Bay 4 frontage');
+    assert.strictEqual(valeriaMidday.physicalCalibrationActive, true);
+    assert.deepStrictEqual(valeriaMidday.position, { x: -17.85, y: 0.2, z: -0.5 });
 
     // E. Carlos has zero lunch break at 14:00:05 and 14:30:00 MST (never walks to Calle Gardenias / wp_east_dining_benches) and turns off_duty at 22:05
     for (const openIso of ['2026-11-04T21:00:05.000Z', '2026-11-04T21:30:00.000Z']) {

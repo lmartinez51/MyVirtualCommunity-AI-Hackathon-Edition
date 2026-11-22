@@ -123,17 +123,49 @@ namespace MyVirtualCommunity.Client.World
             return !string.IsNullOrEmpty(decisionReasonEn) ? decisionReasonEn : decisionReasonEs;
         }
 
+        public bool IsStorefrontAttendant()
+        {
+            return category == InteractionCategory.StorefrontAttendant ||
+                   string.Equals(actorArchetype, "business_attendant", StringComparison.OrdinalIgnoreCase);
+        }
+
+        public bool IsStorefrontAttendantServingCustomer()
+        {
+            return IsStorefrontAttendant() &&
+                   (isSuspendedByPlayerInteraction ||
+                    string.Equals(autonomousBehaviorState, "customer_interaction", StringComparison.OrdinalIgnoreCase));
+        }
+
         public string GetInteractionAvailabilityBadge(string language)
         {
             bool isEs = string.Equals(language, "es", StringComparison.OrdinalIgnoreCase);
             bool isProxy = IsCommunityPlayerProxy();
+            bool isStoreAttendant = IsStorefrontAttendant();
             switch (interactionAvailability)
             {
                 case "available_in_transit":
+                    if (isStoreAttendant)
+                    {
+                        return IsStorefrontAttendantServingCustomer()
+                            ? (isEs ? "[Ocupado]" : "[Busy]")
+                            : (isEs ? "[En servicio]" : "[On Duty]");
+                    }
                     return isEs ? "[En tránsito]" : "[In Transit]";
                 case "available_contextual":
+                    if (isStoreAttendant)
+                    {
+                        return IsStorefrontAttendantServingCustomer()
+                            ? (isEs ? "[Ocupado]" : "[Busy]")
+                            : (isEs ? "[En servicio]" : "[On Duty]");
+                    }
                     return isEs ? "[Descanso / Actividad]" : "[Break / Activity]";
                 case "busy":
+                    if (isStoreAttendant)
+                    {
+                        return IsStorefrontAttendantServingCustomer()
+                            ? (isEs ? "[Ocupado]" : "[Busy]")
+                            : (isEs ? "[En servicio]" : "[On Duty]");
+                    }
                     return isEs ? "[Ocupado]" : "[Busy]";
                 case "off_duty":
                     if (isProxy)
@@ -152,6 +184,10 @@ namespace MyVirtualCommunity.Client.World
                     if (isProxy)
                     {
                         return isEs ? "[Disponible]" : "[Available]";
+                    }
+                    if (isStoreAttendant && IsStorefrontAttendantServingCustomer())
+                    {
+                        return isEs ? "[Ocupado]" : "[Busy]";
                     }
                     return isEs ? "[En servicio]" : "[On Duty]";
             }
@@ -258,6 +294,46 @@ namespace MyVirtualCommunity.Client.World
 
         [Tooltip("Assigned spatial domain identifier.")]
         public string businessDomainId = "";
+
+        [Header("Business Opening/Closing Lifecycle (Increment 5.23.2)")]
+        [Tooltip("Authoritative business lifecycle state: business_open | closing_preparation | returning_inside_for_close | closing_pending | off_duty_inside | opening_transition.")]
+        public string businessLifecycleState = "";
+
+        [Tooltip("Authoritative World Core shutter closure permission (true only when store is closed, NPC safely inside, and exit clear).")]
+        public bool shutterClosedPermitted = false;
+
+        [Tooltip("True once World Core has supplied explicit businessLifecycleState / shutterClosedPermitted.")]
+        public bool hasAuthoritativeLifecycleShutter = false;
+
+        [Tooltip("True while awaiting first authoritative backend movement snapshot at runtime so indoor-sheltered NPCs never flash outside.")]
+        public bool isHiddenUntilAuthoritativeSync = false;
+
+        /// <summary>
+        /// True when Valeria Domínguez (Óptica Fashion) is outside operating hours behind the closed shutter
+        /// or awaiting initial authoritative sync, suppressing [Off Duty] nameplates, [E] talk prompts, and radar hints.
+        /// </summary>
+        public bool IsSuppressedOutsideServiceHours()
+        {
+            if (isHiddenUntilAuthoritativeSync) return true;
+            if (!string.Equals(characterId, "valeria-optica-attendant", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            // Preserve visibility and interaction during an active closing_pending dialogue or return walk
+            if (string.Equals(businessLifecycleState, "closing_pending", StringComparison.OrdinalIgnoreCase) &&
+                (isSuspendedByPlayerInteraction || string.Equals(movementState, "moving", StringComparison.OrdinalIgnoreCase)))
+            {
+                return false;
+            }
+
+            return string.Equals(businessLifecycleState, "off_duty_inside", StringComparison.OrdinalIgnoreCase) ||
+                   shutterClosedPermitted ||
+                   string.Equals(interactionAvailability, "off_duty", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(interactionAvailability, "unavailable", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(activityState, "off_duty", StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(activityState, "unavailable", StringComparison.OrdinalIgnoreCase);
+        }
 
         [Tooltip("True when the authoritative position lies within the configured spatial domain.")]
         public bool withinAuthorizedDomain = true;

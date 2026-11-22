@@ -277,8 +277,9 @@ describe('Contextual Social Awareness API Integration Tests (Increment 5.20.0)',
       assert.strictEqual(valeriaCalibRes.status, 200);
       const valeriaCalibBody = (await valeriaCalibRes.json()) as any;
       const valeriaCalib = valeriaCalibBody.npcs['valeria-optica-attendant'];
-      assert.strictEqual(valeriaCalib.activityState, 'available');
-      assert.strictEqual(valeriaCalib.controlMode, 'autonomous_business_local');
+      assert.strictEqual(valeriaCalib.activityState, 'busy');
+      assert.strictEqual(valeriaCalib.controlMode, 'scheduled_routine_transition');
+      assert.strictEqual(valeriaCalib.currentWaypointId, 'wp_optica_calibration_station');
       assert.strictEqual(valeriaCalib.withinAuthorizedDomain, true);
     } finally {
       await serverInstance.stop();

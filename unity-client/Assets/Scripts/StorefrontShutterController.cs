@@ -32,6 +32,9 @@ namespace MyVirtualCommunity.Client.World
         [Tooltip("Optional InteractionPoint GameObject name synced with World Core open/closed status (used when linkedBusinessId is empty).")]
         public string linkedInteractionPointName = "InteractionPoint_OpticaFashion";
 
+        [Tooltip("Increment 5.23.2: Prevent shutter closure from trapping FirstPersonPlayer inside a walkable interior (e.g., Óptica Fashion).")]
+        public bool protectPlayerInteriorExit = true;
+
         [Header("Shutter Geometry")]
         public Transform shutterCurtain;
         public GameObject openSignVisual;
@@ -44,18 +47,29 @@ namespace MyVirtualCommunity.Client.World
         [SerializeField, Range(0f, 1f)] private float closedProgress = 0f;
         [SerializeField] private bool targetClosed = false;
         [SerializeField] private string latestBackendStatus = "unknown";
+        [SerializeField] private string latestBusinessLifecycleState = "";
+        [SerializeField] private bool heldOpenForPlayerExit = false;
 
         private InteractionPoint linkedPoint;
         private ApiClient apiClient;
         private Coroutine pollCoroutine;
         private float searchCooldown = 0f;
+        private FirstPersonPlayer cachedPlayer;
+        private Collider cachedCurtainCollider;
+        private bool hasAppliedInitialAuthoritativeState = false;
 
         public bool IsClosed => targetClosed;
         public float ClosedProgress => closedProgress;
         public string LatestBackendStatus => latestBackendStatus;
+        public string LatestBusinessLifecycleState => latestBusinessLifecycleState;
+        public bool HeldOpenForPlayerExit => heldOpenForPlayerExit;
 
         private void Awake()
         {
+            if (shutterCurtain != null)
+            {
+                cachedCurtainCollider = shutterCurtain.GetComponent<Collider>();
+            }
             if (alwaysOpen)
             {
                 targetClosed = false;
@@ -130,27 +144,53 @@ namespace MyVirtualCommunity.Client.World
             {
                 targetClosed = false;
                 latestBackendStatus = "OPEN_24H";
+                latestBusinessLifecycleState = "business_open";
                 return;
             }
 
             if (status == null) return;
             latestBackendStatus = !string.IsNullOrEmpty(status.status) ? status.status : (status.isOpen ? "OPEN" : "CLOSED");
-            targetClosed = !status.isOpen;
+            if (!string.IsNullOrEmpty(status.businessLifecycleState))
+            {
+                latestBusinessLifecycleState = status.businessLifecycleState;
+                targetClosed = status.shutterClosedPermitted;
+            }
+            else
+            {
+                targetClosed = !status.isOpen;
+            }
         }
 
         private void Update()
         {
             if (!Application.isPlaying) return;
+            StepShutter(Time.deltaTime, playerTransformOverride: null);
+        }
+
+        /// <summary>
+        /// Deterministically evaluates shutter target and advances curtain animation by dt seconds.
+        /// Exposed for Increment 5.23.2 batchmode verification suites alongside runtime Update().
+        /// </summary>
+        public void StepShutterForVerification(float dt, Transform playerTransformOverride = null)
+        {
+            StepShutter(dt, playerTransformOverride);
+        }
+
+        private void StepShutter(float dt, Transform playerTransformOverride)
+        {
+            if (dt < 0f) dt = 0f;
+            heldOpenForPlayerExit = false;
 
             if (alwaysOpen)
             {
                 targetClosed = false;
+                latestBusinessLifecycleState = "business_open";
             }
             else if (string.IsNullOrEmpty(linkedBusinessId))
             {
                 if (linkedPoint == null && !string.IsNullOrEmpty(linkedInteractionPointName))
                 {
-                    searchCooldown -= Time.deltaTime;
+                    searchCooldown -= dt;
                     if (searchCooldown <= 0f)
                     {
                         searchCooldown = 2.0f;
@@ -161,16 +201,90 @@ namespace MyVirtualCommunity.Client.World
 
                 if (linkedPoint != null)
                 {
-                    targetClosed = EvaluateClosedFromAvailability(linkedPoint.interactionAvailability);
+                    if (linkedPoint.hasAuthoritativeLifecycleShutter)
+                    {
+                        // Single authoritative World Core decision: shutter never closes while Valeria is outside/closing_pending
+                        latestBusinessLifecycleState = linkedPoint.businessLifecycleState ?? "";
+                        latestBackendStatus = latestBusinessLifecycleState;
+                        targetClosed = linkedPoint.shutterClosedPermitted;
+
+                        // Snap closed immediately on first authoritative Play-mode sync when store is closed
+                        if (Application.isPlaying && !hasAppliedInitialAuthoritativeState)
+                        {
+                            hasAppliedInitialAuthoritativeState = true;
+                            if (targetClosed && !IsPlayerInsideWalkableStoreInterior(playerTransformOverride))
+                            {
+                                SetClosedImmediate(true);
+                                return;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        targetClosed = EvaluateClosedFromAvailability(linkedPoint.interactionAvailability);
+                    }
                 }
+            }
+
+            // Player non-trap safety guard: only hold/raise shutter if the player is genuinely DEEP inside
+            // Óptica Fashion's interior behind the storefront glass plane (X < -12.33m). A player walking
+            // up to or pushing against the closed exterior shutter (X >= -11.88m) NEVER opens it!
+            bool playerInside = IsPlayerInsideWalkableStoreInterior(playerTransformOverride);
+            if (playerInside)
+            {
+                heldOpenForPlayerExit = true;
+                targetClosed = false;
+            }
+
+            if (cachedCurtainCollider == null && shutterCurtain != null)
+            {
+                cachedCurtainCollider = shutterCurtain.GetComponent<Collider>();
+            }
+            if (cachedCurtainCollider != null)
+            {
+                // Disable solid shutter collider ONLY while player is genuinely inside so exit is guaranteed;
+                // keep solid collider active whenever shutter is lowered (even 2%+) so outside players cannot enter.
+                cachedCurtainCollider.enabled = !playerInside && closedProgress > 0.02f;
             }
 
             float goal = targetClosed ? 1f : 0f;
             if (!Mathf.Approximately(closedProgress, goal))
             {
-                closedProgress = Mathf.MoveTowards(closedProgress, goal, transitionSpeed * Time.deltaTime);
+                closedProgress = Mathf.MoveTowards(closedProgress, goal, transitionSpeed * dt);
                 ApplyCurtainVisual(closedProgress);
             }
+        }
+
+        private bool IsPlayerInsideWalkableStoreInterior(Transform playerTransformOverride)
+        {
+            if (!protectPlayerInteriorExit) return false;
+            // Applies specifically to walkable storefront interiors on the West block (Óptica Fashion, wallX = -11.88, glass plane X = -12.02, interior X = -19.2..-12.02)
+            bool isOpticaShutter =
+                string.Equals(linkedInteractionPointName, "InteractionPoint_OpticaFashion", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(gameObject.name, "Optica_RollUpShutter_Dynamic", StringComparison.OrdinalIgnoreCase);
+            if (!isOpticaShutter) return false;
+
+            Transform playerT = playerTransformOverride;
+            if (playerT == null)
+            {
+                if (cachedPlayer == null)
+                {
+                    cachedPlayer = FindAnyObjectByType<FirstPersonPlayer>();
+                }
+                if (cachedPlayer != null)
+                {
+                    playerT = cachedPlayer.transform;
+                }
+            }
+            if (playerT == null) return false;
+
+            Vector3 p = playerT.position;
+            float shutterX = transform.position.x; // -11.88m
+            float shutterZ = transform.position.z; // +0.625m
+            // Player must be strictly behind the storefront glass plane (-12.02m) with margin: X < -12.33m
+            return p.x < shutterX - 0.45f &&
+                   p.x > shutterX - 8.20f &&
+                   Mathf.Abs(p.z - shutterZ) <= 2.40f;
         }
 
         public static bool EvaluateClosedFromAvailability(string availability)
@@ -186,6 +300,14 @@ namespace MyVirtualCommunity.Client.World
             targetClosed = alwaysOpen ? false : closed;
             closedProgress = targetClosed ? 1f : 0f;
             ApplyCurtainVisual(closedProgress);
+            if (cachedCurtainCollider == null && shutterCurtain != null)
+            {
+                cachedCurtainCollider = shutterCurtain.GetComponent<Collider>();
+            }
+            if (cachedCurtainCollider != null)
+            {
+                cachedCurtainCollider.enabled = targetClosed && !heldOpenForPlayerExit;
+            }
         }
 
         private void ApplyCurtainVisual(float t)

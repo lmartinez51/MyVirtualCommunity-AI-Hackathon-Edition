@@ -66,12 +66,22 @@ export type BridgePatrolBehaviorState =
   | 'player_interaction_paused'
   | 'resuming';
 
+export type BusinessLifecycleState =
+  | 'business_open'
+  | 'closing_preparation'
+  | 'returning_inside_for_close'
+  | 'closing_pending'
+  | 'off_duty_inside'
+  | 'opening_transition';
+
 export type BusinessAutonomyBehaviorState =
   | 'working_stationary'
   | 'local_roaming'
   | 'idle_observation'
   | 'customer_awareness'
   | 'returning_to_station'
+  | 'returning_inside_for_close'
+  | 'off_duty_inside'
   | 'customer_interaction'
   | 'off_duty';
 
@@ -324,6 +334,24 @@ export const BRIDGE_PATROL_DOMAIN: AuthorizedBridgePatrolDomain = Object.freeze(
   }),
 });
 
+export type BusinessSpatialZoneKind =
+  | 'exterior_frontage'
+  | 'entrance_threshold'
+  | 'main_showroom'
+  | 'task_only_room';
+
+export interface BusinessSpatialZone {
+  readonly zoneId: string;
+  readonly kind: BusinessSpatialZoneKind;
+  readonly taskOnly: boolean;
+  readonly authorizedTaskIds?: readonly string[];
+  readonly bounds: SpatialDomainBounds3D;
+  readonly polygonXZ: readonly Point2DXZ[];
+  readonly toleranceMeters: number;
+  readonly waypointIds: readonly string[];
+  readonly provenance: BilingualText;
+}
+
 export interface BusinessMovementDomain {
   readonly domainId: string;
   readonly npcId: string;
@@ -338,6 +366,7 @@ export interface BusinessMovementDomain {
   readonly safeRoamingToleranceMeters: number;
   readonly authorizedWaypointIds: readonly string[];
   readonly authorizedExternalTaskTransitionIds: readonly string[];
+  readonly connectedZones?: readonly BusinessSpatialZone[];
   readonly provenance: BilingualText;
 }
 
@@ -401,12 +430,195 @@ export const FARMACIA_BENAVIDES_AUTONOMY_DOMAIN: BusinessMovementDomain = Object
 });
 
 /**
+ * Verified Óptica Fashion multi-zone spatial topology (`valeria-optica-attendant`, Increment 5.23.1).
+ * Derived directly from Increment 5.23.0 `OpticaFashionInteriorBuilder.cs` and `WestSidewalkBlockBuilder.cs`:
+ * - Zone A (`zone:optica-exterior-frontage`): Preserved Bay 4 exterior frontage on Sidewalk_West
+ *   (`X = -11.30..-8.00m, Z = -1.65..+2.90m`; legacy exterior safeRoamingBounds `[-10.85, -8.00] x [-1.65, 2.90]`).
+ * - Zone B (`zone:optica-front-entrance`): Narrow verified passage centered on the 1.087m open inward-swinging
+ *   north storefront door (`X = -13.35..-11.15m, Z = +1.02..+1.38m`, >=0.35m capsule clearance from south mullion
+ *   at Z=+0.660m and open north door leaf at Z=+1.747m).
+ * - Zone C (`zone:optica-main-showroom`): Strictly convex 5-vertex clear showroom circulation polygon
+ *   (`X = -15.95..-13.20m, Z = +0.30..+1.92m` chamfered around the open door leaf swing), maintaining >=0.38m
+ *   clearance from the long south glass display counter (Z=-0.21m), north waiting chairs (Z=+2.31m),
+ *   north eyewear shelving (Z=+2.81m), and rear burgundy cabinet (X=-16.34m).
+ * - Zone D1 (`zone:optica-rear-doorway`, task-only): Verified passage through the 1.22m open rear doorway
+ *   (`X = -17.95..-15.70m, Z = +1.72..+2.28m`, authorized ONLY for `valeria_calibration_walk`).
+ * - Zone D2 (`zone:optica-rear-calibration-room`, task-only): Rear consultation/calibration standing corridor
+ *   (`X = -18.02..-17.35m, Z = -1.25..+2.30m`, clear of workbench at X=-18.42m and rear partition at X=-16.96m,
+ *   containing verified `Optica_CalibrationStation` at (-17.85, 0.20, -0.50), authorized ONLY for `valeria_calibration_walk`).
+ */
+export const OPTICA_EXTERIOR_FRONTAGE_ZONE: BusinessSpatialZone = Object.freeze({
+  zoneId: 'zone:optica-exterior-frontage',
+  kind: 'exterior_frontage',
+  taskOnly: false,
+  bounds: Object.freeze({
+    minX: -11.30,
+    maxX: -8.00,
+    minY: 0.15,
+    maxY: 1.05,
+    minZ: -1.65,
+    maxZ: 2.90,
+  }),
+  polygonXZ: Object.freeze([
+    Object.freeze({ x: -11.30, z: -1.65 }),
+    Object.freeze({ x: -8.00, z: -1.65 }),
+    Object.freeze({ x: -8.00, z: 2.90 }),
+    Object.freeze({ x: -11.30, z: 2.90 }),
+  ]),
+  toleranceMeters: 0.02,
+  waypointIds: Object.freeze([
+    'wp_valeria_storefront',
+    'wp_optica_north_window',
+    'wp_optica_plaza_threshold',
+    'wp_optica_south_promenade',
+    'wp_optica_south_window',
+    'wp_optica_door_approach',
+  ]),
+  provenance: Object.freeze({
+    en: 'Zone A: Verified Óptica Fashion Bay 4 exterior sidewalk frontage (X=-11.30..-8.00m, Z=-1.65..+2.90m).',
+    es: 'Zona A: Frente exterior verificado de Óptica Fashion en acera poniente (X=-11.30..-8.00m, Z=-1.65..+2.90m).',
+  }),
+});
+
+export const OPTICA_FRONT_ENTRANCE_ZONE: BusinessSpatialZone = Object.freeze({
+  zoneId: 'zone:optica-front-entrance',
+  kind: 'entrance_threshold',
+  taskOnly: false,
+  bounds: Object.freeze({
+    minX: -13.35,
+    maxX: -11.15,
+    minY: 0.15,
+    maxY: 1.05,
+    minZ: 1.02,
+    maxZ: 1.38,
+  }),
+  polygonXZ: Object.freeze([
+    Object.freeze({ x: -13.35, z: 1.02 }),
+    Object.freeze({ x: -11.15, z: 1.02 }),
+    Object.freeze({ x: -11.15, z: 1.38 }),
+    Object.freeze({ x: -13.35, z: 1.38 }),
+  ]),
+  toleranceMeters: 0.02,
+  waypointIds: Object.freeze([
+    'wp_optica_door_approach',
+    'wp_optica_door_threshold',
+    'wp_optica_interior_entry',
+  ]),
+  provenance: Object.freeze({
+    en: 'Zone B: Open inward-swinging north storefront doorway passage (1.087m clear Z=+0.660..+1.747m, centered Z=+1.20m).',
+    es: 'Zona B: Acceso por puerta norte abatible hacia adentro (claro libre 1.087m Z=+0.660..+1.747m, centrado en Z=+1.20m).',
+  }),
+});
+
+export const OPTICA_MAIN_SHOWROOM_ZONE: BusinessSpatialZone = Object.freeze({
+  zoneId: 'zone:optica-main-showroom',
+  kind: 'main_showroom',
+  taskOnly: false,
+  bounds: Object.freeze({
+    minX: -15.95,
+    maxX: -13.20,
+    minY: 0.15,
+    maxY: 1.05,
+    minZ: 0.30,
+    maxZ: 1.92,
+  }),
+  polygonXZ: Object.freeze([
+    Object.freeze({ x: -15.95, z: 0.30 }),
+    Object.freeze({ x: -13.20, z: 0.30 }),
+    Object.freeze({ x: -13.20, z: 1.38 }),
+    Object.freeze({ x: -13.70, z: 1.92 }),
+    Object.freeze({ x: -15.95, z: 1.92 }),
+  ]),
+  toleranceMeters: 0.02,
+  waypointIds: Object.freeze([
+    'wp_optica_interior_entry',
+    'wp_optica_showroom_counter_east',
+    'wp_optica_showroom_center',
+    'wp_optica_showroom_counter_west',
+    'wp_optica_showroom_waiting',
+    'wp_optica_showroom_north_display',
+    'wp_valeria_off_duty_station',
+  ]),
+  provenance: Object.freeze({
+    en: 'Zone C: Convex main showroom circulation area clear of south glass counter (Z=-0.21m), north waiting chairs (Z=+2.31m), north shelving, rear burgundy cabinet (X=-16.34m), and open door leaf.',
+    es: 'Zona C: Área convexa de circulación del showroom principal libre del mostrador sur (Z=-0.21m), sillas de espera norte (Z=+2.31m), estantería norte, gabinete borgoña trasero (X=-16.34m) y hoja abierta.',
+  }),
+});
+
+export const OPTICA_REAR_DOORWAY_ZONE: BusinessSpatialZone = Object.freeze({
+  zoneId: 'zone:optica-rear-doorway',
+  kind: 'task_only_room',
+  taskOnly: true,
+  authorizedTaskIds: Object.freeze(['valeria_calibration_walk']),
+  bounds: Object.freeze({
+    minX: -17.95,
+    maxX: -15.70,
+    minY: 0.15,
+    maxY: 1.05,
+    minZ: 1.72,
+    maxZ: 2.28,
+  }),
+  polygonXZ: Object.freeze([
+    Object.freeze({ x: -17.95, z: 1.72 }),
+    Object.freeze({ x: -15.70, z: 1.72 }),
+    Object.freeze({ x: -15.70, z: 2.28 }),
+    Object.freeze({ x: -17.95, z: 2.28 }),
+  ]),
+  toleranceMeters: 0.02,
+  waypointIds: Object.freeze([
+    'wp_optica_showroom_north_display',
+    'wp_optica_rear_door_threshold',
+    'wp_optica_rear_room_north',
+  ]),
+  provenance: Object.freeze({
+    en: 'Zone D1 (Task-Only): Open rear consultation doorway passage (1.22m clear Z=+1.35..+2.65m, centered Z=+2.00m).',
+    es: 'Zona D1 (Solo tarea): Paso de puerta abierta al laboratorio trasero (claro libre 1.22m Z=+1.35..+2.65m, centrado en Z=+2.00m).',
+  }),
+});
+
+export const OPTICA_REAR_CALIBRATION_ROOM_ZONE: BusinessSpatialZone = Object.freeze({
+  zoneId: 'zone:optica-rear-calibration-room',
+  kind: 'task_only_room',
+  taskOnly: true,
+  authorizedTaskIds: Object.freeze(['valeria_calibration_walk']),
+  bounds: Object.freeze({
+    minX: -18.02,
+    maxX: -17.35,
+    minY: 0.15,
+    maxY: 1.05,
+    minZ: -1.25,
+    maxZ: 2.30,
+  }),
+  polygonXZ: Object.freeze([
+    Object.freeze({ x: -18.02, z: -1.25 }),
+    Object.freeze({ x: -17.35, z: -1.25 }),
+    Object.freeze({ x: -17.35, z: 2.30 }),
+    Object.freeze({ x: -18.02, z: 2.30 }),
+  ]),
+  toleranceMeters: 0.02,
+  waypointIds: Object.freeze([
+    'wp_optica_rear_room_north',
+    'wp_optica_calibration_station',
+  ]),
+  provenance: Object.freeze({
+    en: 'Zone D2 (Task-Only): Rear calibration room corridor clear of workbench (X=-18.42m) and rear partition (X=-16.96m), containing Optica_CalibrationStation (-17.85, 0.20, -0.50).',
+    es: 'Zona D2 (Solo tarea): Corredor del cuarto trasero de calibración libre de mesa de trabajo (X=-18.42m) y muro divisorio (X=-16.96m), con Optica_CalibrationStation (-17.85, 0.20, -0.50).',
+  }),
+});
+
+export const OPTICA_FASHION_CONNECTED_ZONES: readonly BusinessSpatialZone[] = Object.freeze([
+  OPTICA_EXTERIOR_FRONTAGE_ZONE,
+  OPTICA_FRONT_ENTRANCE_ZONE,
+  OPTICA_MAIN_SHOWROOM_ZONE,
+  OPTICA_REAR_DOORWAY_ZONE,
+  OPTICA_REAR_CALIBRATION_ROOM_ZONE,
+]);
+
+/**
  * Verified Óptica Fashion business movement domain (`valeria-optica-attendant`).
- * Derived from `WestSidewalkBlockBuilder.cs` (Bay 4 `Óptica Fashion` Z = -1.80m..+3.40m between
- * `Pilaster_Bay3_4` at Z = -2.15m and `Pilaster_Bay4_5` at Z = +3.40m; facade at X = -12.0m) and
- * `CorridorSceneSetup.cs` (`Sidewalk_West` X = -12.0m..-2.8m, street edge X = -7.0m).
- * Safe interior roaming region [-10.85, -8.00] x [-1.65, 2.90] keeps ordinary wandering strictly
- * inside Óptica Fashion's own frontage (>=0.55m from domain edges, clear of Pharmacy, Santa Fe, and Bar La Cucaracha).
+ * Preserves exact 5.22.3 exterior bounds/safeRoamingBounds (Zone A) and adds explicit connected
+ * interior zones (`connectedZones`) for the entrance threshold (Zone B), main showroom (Zone C),
+ * and task-only rear calibration laboratory (Zones D1/D2).
  */
 export const OPTICA_FASHION_AUTONOMY_DOMAIN: BusinessMovementDomain = Object.freeze({
   domainId: 'domain:optica-fashion',
@@ -450,11 +662,21 @@ export const OPTICA_FASHION_AUTONOMY_DOMAIN: BusinessMovementDomain = Object.fre
     'wp_optica_plaza_threshold',
     'wp_optica_south_promenade',
     'wp_optica_south_window',
+    'wp_optica_door_approach',
+    'wp_optica_door_threshold',
+    'wp_optica_interior_entry',
+    'wp_optica_showroom_counter_east',
+    'wp_optica_showroom_center',
+    'wp_optica_showroom_counter_west',
+    'wp_optica_showroom_waiting',
+    'wp_optica_showroom_north_display',
+    'wp_valeria_off_duty_station',
   ]),
-  authorizedExternalTaskTransitionIds: Object.freeze([]),
+  authorizedExternalTaskTransitionIds: Object.freeze(['valeria_calibration_walk']),
+  connectedZones: OPTICA_FASHION_CONNECTED_ZONES,
   provenance: Object.freeze({
-    en: 'Verified against WestSidewalkBlockBuilder.cs (Bay 4 Óptica Fashion Z=-1.80..+3.40m, facade X=-12.0m) and Sidewalk_West (X=-12.0..-7.0m). Safe roaming inset [-10.85, -8.00] x [-1.65, 2.90] stays strictly inside Óptica Fashion frontage with >=0.60m curb clearance, never entering Pharmacy (Z<-2.15), Santa Fe (Z>3.4), or Bar La Cucaracha (Z=6.1..11.4).',
-    es: 'Verificado contra WestSidewalkBlockBuilder.cs (Local 4 Óptica Fashion Z=-1.80..+3.40m, fachada X=-12.0m) y Sidewalk_West (X=-12.0..-7.0m). Zona interior segura [-10.85, -8.00] x [-1.65, 2.90] permanece frente a Óptica Fashion con >=0.60m de margen al borde, sin invadir Farma, Santa Fe ni Bar La Cucaracha.',
+    en: 'Verified against WestSidewalkBlockBuilder.cs and OpticaFashionInteriorBuilder.cs (Increment 5.23.0): Zone A exterior frontage [-11.30,-8.00]x[-1.65,2.90], Zone B open north door threshold [-13.35,-11.15]x[1.02,1.38], Zone C main showroom [-15.95,-13.20]x[0.30,1.92] chamfered clear of door swing/furniture, and task-only Zones D1/D2 rear doorway & calibration room (-17.85, 0.20, -0.50).',
+    es: 'Verificado contra WestSidewalkBlockBuilder.cs y OpticaFashionInteriorBuilder.cs (Incremento 5.23.0): Zona A frente exterior [-11.30,-8.00]x[-1.65,2.90], Zona B umbral puerta norte abierta [-13.35,-11.15]x[1.02,1.38], Zona C showroom principal [-15.95,-13.20]x[0.30,1.92] libre de mobiliario/hoja, y Zonas D1/D2 de solo tarea hacia estación de calibración (-17.85, 0.20, -0.50).',
   }),
 });
 
@@ -490,6 +712,10 @@ export interface BusinessLocalNodeSpec {
   readonly connectedWaypointIds: readonly string[];
   readonly observationHeading: { readonly x: number; readonly z: number };
   readonly isPrimaryStation?: boolean;
+  readonly isTransitOnly?: boolean;
+  readonly isOffDutyStation?: boolean;
+  readonly zoneId?: string;
+  readonly taskOnly?: boolean;
 }
 
 export interface BusinessLocalAutonomyProfile {
@@ -671,23 +897,33 @@ export const BUSINESS_LOCAL_AUTONOMY_PROFILES: Readonly<Record<string, BusinessL
     preferredSpeedMps: 1.10,
     workStationDwellSeconds: Object.freeze({ min: 11, max: 19 }),
     localInspectionDwellSeconds: Object.freeze({ min: 5, max: 8 }),
-    nominalCycleDurationSeconds: 75,
+    nominalCycleDurationSeconds: 85,
     secondaryWorkstationIds: Object.freeze([
+      // Zone A — Exterior business frontage
       'wp_optica_north_window',
       'wp_optica_plaza_threshold',
       'wp_optica_south_promenade',
       'wp_optica_south_window',
+      // Zone C — Main showroom interior (reached through Zone B open north door)
+      'wp_optica_showroom_counter_east',
+      'wp_optica_showroom_center',
+      'wp_optica_showroom_counter_west',
+      'wp_optica_showroom_waiting',
+      'wp_optica_showroom_north_display',
     ]),
     localNodes: Object.freeze({
+      // Zone A — Exterior business frontage
       wp_valeria_storefront: Object.freeze({
         waypointId: 'wp_valeria_storefront',
         connectedWaypointIds: Object.freeze([
           'wp_optica_north_window',
           'wp_optica_plaza_threshold',
           'wp_optica_south_window',
+          'wp_optica_door_approach',
         ]),
         observationHeading: Object.freeze({ x: 1, z: 0 }),
         isPrimaryStation: true,
+        zoneId: 'zone:optica-exterior-frontage',
       }),
       wp_optica_north_window: Object.freeze({
         waypointId: 'wp_optica_north_window',
@@ -696,6 +932,7 @@ export const BUSINESS_LOCAL_AUTONOMY_PROFILES: Readonly<Record<string, BusinessL
           'wp_optica_plaza_threshold',
         ]),
         observationHeading: Object.freeze({ x: -1, z: 0 }),
+        zoneId: 'zone:optica-exterior-frontage',
       }),
       wp_optica_plaza_threshold: Object.freeze({
         waypointId: 'wp_optica_plaza_threshold',
@@ -705,6 +942,7 @@ export const BUSINESS_LOCAL_AUTONOMY_PROFILES: Readonly<Record<string, BusinessL
           'wp_optica_south_promenade',
         ]),
         observationHeading: Object.freeze({ x: -1, z: 0 }),
+        zoneId: 'zone:optica-exterior-frontage',
       }),
       wp_optica_south_promenade: Object.freeze({
         waypointId: 'wp_optica_south_promenade',
@@ -713,6 +951,7 @@ export const BUSINESS_LOCAL_AUTONOMY_PROFILES: Readonly<Record<string, BusinessL
           'wp_optica_south_window',
         ]),
         observationHeading: Object.freeze({ x: -0.894, z: 0.447 }),
+        zoneId: 'zone:optica-exterior-frontage',
       }),
       wp_optica_south_window: Object.freeze({
         waypointId: 'wp_optica_south_window',
@@ -721,6 +960,111 @@ export const BUSINESS_LOCAL_AUTONOMY_PROFILES: Readonly<Record<string, BusinessL
           'wp_optica_south_promenade',
         ]),
         observationHeading: Object.freeze({ x: -1, z: 0 }),
+        zoneId: 'zone:optica-exterior-frontage',
+      }),
+
+      // Zone B — Front entrance & threshold (transit passage through open 1.087m north door)
+      wp_optica_door_approach: Object.freeze({
+        waypointId: 'wp_optica_door_approach',
+        connectedWaypointIds: Object.freeze([
+          'wp_valeria_storefront',
+          'wp_optica_door_threshold',
+        ]),
+        observationHeading: Object.freeze({ x: -1, z: 0 }),
+        isTransitOnly: true,
+        zoneId: 'zone:optica-front-entrance',
+      }),
+      wp_optica_door_threshold: Object.freeze({
+        waypointId: 'wp_optica_door_threshold',
+        connectedWaypointIds: Object.freeze([
+          'wp_optica_door_approach',
+          'wp_optica_interior_entry',
+        ]),
+        observationHeading: Object.freeze({ x: -1, z: 0 }),
+        isTransitOnly: true,
+        zoneId: 'zone:optica-front-entrance',
+      }),
+      wp_optica_interior_entry: Object.freeze({
+        waypointId: 'wp_optica_interior_entry',
+        connectedWaypointIds: Object.freeze([
+          'wp_optica_door_threshold',
+          'wp_optica_showroom_counter_east',
+          'wp_optica_showroom_center',
+          'wp_optica_showroom_waiting',
+        ]),
+        observationHeading: Object.freeze({ x: -1, z: 0 }),
+        isTransitOnly: true,
+        zoneId: 'zone:optica-main-showroom',
+      }),
+
+      // Zone C — Main showroom circulation nodes
+      wp_optica_showroom_counter_east: Object.freeze({
+        waypointId: 'wp_optica_showroom_counter_east',
+        connectedWaypointIds: Object.freeze([
+          'wp_optica_interior_entry',
+          'wp_optica_showroom_center',
+          'wp_optica_showroom_counter_west',
+        ]),
+        observationHeading: Object.freeze({ x: 0, z: -1 }),
+        zoneId: 'zone:optica-main-showroom',
+      }),
+      wp_optica_showroom_center: Object.freeze({
+        waypointId: 'wp_optica_showroom_center',
+        connectedWaypointIds: Object.freeze([
+          'wp_optica_interior_entry',
+          'wp_optica_showroom_counter_east',
+          'wp_optica_showroom_counter_west',
+          'wp_optica_showroom_waiting',
+          'wp_optica_showroom_north_display',
+          'wp_valeria_off_duty_station',
+        ]),
+        observationHeading: Object.freeze({ x: 0, z: -1 }),
+        zoneId: 'zone:optica-main-showroom',
+      }),
+      wp_optica_showroom_counter_west: Object.freeze({
+        waypointId: 'wp_optica_showroom_counter_west',
+        connectedWaypointIds: Object.freeze([
+          'wp_optica_showroom_counter_east',
+          'wp_optica_showroom_center',
+          'wp_optica_showroom_north_display',
+          'wp_valeria_off_duty_station',
+        ]),
+        observationHeading: Object.freeze({ x: -0.707, z: -0.707 }),
+        zoneId: 'zone:optica-main-showroom',
+      }),
+      wp_optica_showroom_waiting: Object.freeze({
+        waypointId: 'wp_optica_showroom_waiting',
+        connectedWaypointIds: Object.freeze([
+          'wp_optica_interior_entry',
+          'wp_optica_showroom_center',
+          'wp_optica_showroom_north_display',
+        ]),
+        observationHeading: Object.freeze({ x: 0, z: 1 }),
+        zoneId: 'zone:optica-main-showroom',
+      }),
+      wp_optica_showroom_north_display: Object.freeze({
+        waypointId: 'wp_optica_showroom_north_display',
+        connectedWaypointIds: Object.freeze([
+          'wp_optica_showroom_center',
+          'wp_optica_showroom_counter_west',
+          'wp_optica_showroom_waiting',
+          'wp_valeria_off_duty_station',
+        ]),
+        observationHeading: Object.freeze({ x: 0, z: 1 }),
+        zoneId: 'zone:optica-main-showroom',
+      }),
+      // Increment 5.23.2 — Dedicated verified interior off-duty / overnight station
+      // Strictly inside Zone C showroom (-15.85, 0.20, 1.15), distinct from calibration station & ordinary roaming stops
+      wp_valeria_off_duty_station: Object.freeze({
+        waypointId: 'wp_valeria_off_duty_station',
+        connectedWaypointIds: Object.freeze([
+          'wp_optica_showroom_center',
+          'wp_optica_showroom_counter_west',
+          'wp_optica_showroom_north_display',
+        ]),
+        observationHeading: Object.freeze({ x: 1, z: 0 }),
+        isOffDutyStation: true,
+        zoneId: 'zone:optica-main-showroom',
       }),
     }),
   }),
@@ -1059,11 +1403,76 @@ export function isPointInBridgePatrolDomain(point: Vector3D, tolerance = 0.05): 
   return false;
 }
 
+function isZoneAuthorized(
+  zone: BusinessSpatialZone,
+  activeTaskId?: string | null
+): boolean {
+  if (!zone.taskOnly) return true;
+  if (!activeTaskId) return false;
+  return Boolean(zone.authorizedTaskIds && zone.authorizedTaskIds.includes(activeTaskId));
+}
+
+function isPointInSpatialZone(
+  point: Vector3D,
+  zone: BusinessSpatialZone
+): boolean {
+  if (!isValidCorridorVector3(point)) return false;
+  const tol = zone.toleranceMeters;
+  const b = zone.bounds;
+  if (
+    point.x < b.minX - tol ||
+    point.x > b.maxX + tol ||
+    point.y < b.minY - tol ||
+    point.y > b.maxY + tol ||
+    point.z < b.minZ - tol ||
+    point.z > b.maxZ + tol
+  ) {
+    return false;
+  }
+  if (Math.abs(point.x) < 6.9) {
+    return false;
+  }
+  return isPointInPolygonXZ({ x: point.x, z: point.z }, zone.polygonXZ, tol);
+}
+
+/**
+ * Resolves the authorized spatial zone containing `point` for a multi-zone business domain.
+ * Returns null if `point` does not belong to any authorized zone for `activeTaskId`.
+ */
+export function resolveAuthorizedBusinessZone(
+  point: Vector3D,
+  domain: BusinessMovementDomain | null | undefined,
+  activeTaskId?: string | null
+): BusinessSpatialZone | null {
+  if (!domain || !domain.connectedZones || domain.connectedZones.length === 0) {
+    return null;
+  }
+  // Prefer most specific zone (task-only room / doorway / showroom / entrance / exterior)
+  for (let i = domain.connectedZones.length - 1; i >= 0; i--) {
+    const zone = domain.connectedZones[i]!;
+    if (!isZoneAuthorized(zone, activeTaskId)) continue;
+    if (isPointInSpatialZone(point, zone)) {
+      return zone;
+    }
+  }
+  return null;
+}
+
 export function isPointInBusinessDomain(
   point: Vector3D,
-  domain: BusinessMovementDomain | null | undefined
+  domain: BusinessMovementDomain | null | undefined,
+  activeTaskId?: string | null
 ): boolean {
   if (!domain || !isValidCorridorVector3(point)) return false;
+  // Never enter Avenida Juárez roadway / vehicle lanes (|x| < 6.9m)
+  if (Math.abs(point.x) < 6.9) {
+    return false;
+  }
+  if (domain.connectedZones && domain.connectedZones.length > 0) {
+    if (resolveAuthorizedBusinessZone(point, domain, activeTaskId) !== null) {
+      return true;
+    }
+  }
   const tol = domain.navigationToleranceMeters;
   const b = domain.bounds;
   if (
@@ -1076,36 +1485,57 @@ export function isPointInBusinessDomain(
   ) {
     return false;
   }
-  // Never enter Avenida Juárez roadway / vehicle lanes (|x| < 6.9m)
-  if (Math.abs(point.x) < 6.9) {
-    return false;
-  }
   return isPointInPolygonXZ({ x: point.x, z: point.z }, domain.polygonXZ, tol);
 }
 
 /**
  * Validates that the entire continuous 3D line segment `from -> to` remains inside `domain`.
- *
- * Mathematical guarantee:
- * 1. Both endpoints `from` and `to` are verified via `isPointInBusinessDomain`, which enforces:
- *    - 3D axis-aligned bounding box `[minX - tol, maxX + tol] x [minY - tol, maxY + tol] x [minZ - tol, maxZ + tol]` (convex).
- *    - Roadway exclusion `|x| >= 6.9`, plus `from.x * to.x > 0` below so both endpoints lie in the
- *      same single-sided half-space (`x >= 6.9` on East sidewalk or `x <= -6.9` on West sidewalk, each convex).
- * 2. In the XZ plane, `isSegmentInPolygonXZ` exploits proven polygon convexity (`isConvexPolygonXZ`)
- *    when `domain.polygonXZ` is convex (so endpoint containment implies full segment containment by
- *    convexity of the intersection of convex sets) and falls back to exact parametric edge-intersection
- *    and interior-interval partitioning when `domain.polygonXZ` is non-convex.
+ * For multi-zone domains (`domain.connectedZones`), both endpoints and the entire segment
+ * must lie inside the SAME authorized spatial zone (preventing illegal shortcuts through
+ * solid storefront glass, interior walls, or furniture).
  */
 export function isSegmentInBusinessDomain(
   from: Vector3D,
   to: Vector3D,
-  domain: BusinessMovementDomain | null | undefined
+  domain: BusinessMovementDomain | null | undefined,
+  activeTaskId?: string | null
 ): boolean {
-  if (!domain || !isPointInBusinessDomain(from, domain) || !isPointInBusinessDomain(to, domain)) {
+  if (
+    !domain ||
+    !isPointInBusinessDomain(from, domain, activeTaskId) ||
+    !isPointInBusinessDomain(to, domain, activeTaskId)
+  ) {
     return false;
   }
   // Both endpoints must lie on the same side of the Avenida Juárez roadway (never crossing |x| < 6.9m)
   if (from.x * to.x <= 0) {
+    return false;
+  }
+  if (domain.connectedZones && domain.connectedZones.length > 0) {
+    for (const zone of domain.connectedZones) {
+      if (!isZoneAuthorized(zone, activeTaskId)) continue;
+      if (
+        isPointInSpatialZone(from, zone) &&
+        isPointInSpatialZone(to, zone) &&
+        isSegmentInPolygonXZ({ x: from.x, z: from.z }, { x: to.x, z: to.z }, zone.polygonXZ, zone.toleranceMeters)
+      ) {
+        return true;
+      }
+    }
+  }
+  // Fallback to exterior domain polygon ONLY if both endpoints are inside the exterior bounding box
+  const tol = domain.navigationToleranceMeters;
+  const b = domain.bounds;
+  const bothInExteriorBox =
+    from.x >= b.minX - tol &&
+    from.x <= b.maxX + tol &&
+    from.z >= b.minZ - tol &&
+    from.z <= b.maxZ + tol &&
+    to.x >= b.minX - tol &&
+    to.x <= b.maxX + tol &&
+    to.z >= b.minZ - tol &&
+    to.z <= b.maxZ + tol;
+  if (!bothInExteriorBox) {
     return false;
   }
   return isSegmentInPolygonXZ(
@@ -1119,7 +1549,8 @@ export function isSegmentInBusinessDomain(
 export function validateBusinessCandidateRoute(
   waypointIds: readonly string[],
   domain: BusinessMovementDomain | null | undefined,
-  waypointsRegistry: Readonly<Record<string, { readonly position: Vector3D; readonly outgoingWaypointIds: readonly string[] }>>
+  waypointsRegistry: Readonly<Record<string, { readonly position: Vector3D; readonly outgoingWaypointIds: readonly string[] }>>,
+  activeTaskId?: string | null
 ): { readonly valid: boolean; readonly reason: string } {
   if (!domain) {
     return { valid: false, reason: 'missing_business_domain' };
@@ -1128,13 +1559,23 @@ export function validateBusinessCandidateRoute(
     return { valid: false, reason: 'insufficient_waypoints' };
   }
 
+  const authorizedZoneWaypoints = new Set<string>(domain.authorizedWaypointIds);
+  if (domain.connectedZones) {
+    for (const zone of domain.connectedZones) {
+      if (!isZoneAuthorized(zone, activeTaskId)) continue;
+      for (const id of zone.waypointIds) {
+        authorizedZoneWaypoints.add(id);
+      }
+    }
+  }
+
   for (let i = 0; i < waypointIds.length; i++) {
     const wpId = waypointIds[i]!;
-    if (!domain.authorizedWaypointIds.includes(wpId)) {
+    if (!authorizedZoneWaypoints.has(wpId)) {
       return { valid: false, reason: `unauthorized_waypoint:${wpId}` };
     }
     const wp = waypointsRegistry[wpId];
-    if (!wp || !isPointInBusinessDomain(wp.position, domain)) {
+    if (!wp || !isPointInBusinessDomain(wp.position, domain, activeTaskId)) {
       return { valid: false, reason: `waypoint_outside_domain:${wpId}` };
     }
     if (i > 0) {
@@ -1143,7 +1584,7 @@ export function validateBusinessCandidateRoute(
       if (!prevWp.outgoingWaypointIds.includes(wpId) && prevId !== wpId) {
         return { valid: false, reason: `disconnected_segment:${prevId}->${wpId}` };
       }
-      if (!isSegmentInBusinessDomain(prevWp.position, wp.position, domain)) {
+      if (!isSegmentInBusinessDomain(prevWp.position, wp.position, domain, activeTaskId)) {
         return { valid: false, reason: `segment_outside_domain:${prevId}->${wpId}` };
       }
     }
@@ -1153,15 +1594,20 @@ export function validateBusinessCandidateRoute(
 }
 
 /**
- * Validates that a 3D point falls within BOTH the narrow safe interior roaming region
- * (capsule radius + clearance inset inside walkable storefront geometry) AND the absolute business domain.
+ * Validates that a 3D point falls within the safe roaming region for `domain`
+ * (or within an authorized connected zone for multi-zone indoor/outdoor domains).
+ * Task-only rooms (e.g. Zone D rear calibration lab) are strictly excluded unless `activeTaskId` authorizes them.
  */
 export function isPointInSafeBusinessRoamingRegion(
   point: Vector3D,
-  domain: BusinessMovementDomain | null | undefined
+  domain: BusinessMovementDomain | null | undefined,
+  activeTaskId?: string | null
 ): boolean {
-  if (!domain || !isPointInBusinessDomain(point, domain)) {
+  if (!domain || !isPointInBusinessDomain(point, domain, activeTaskId)) {
     return false;
+  }
+  if (domain.connectedZones && domain.connectedZones.length > 0) {
+    return resolveAuthorizedBusinessZone(point, domain, activeTaskId) !== null;
   }
   const tol = domain.safeRoamingToleranceMeters;
   const sb = domain.safeRoamingBounds;
@@ -1180,19 +1626,33 @@ export function isPointInSafeBusinessRoamingRegion(
 
 /**
  * Validates that the entire continuous 3D line segment `from -> to` lies inside BOTH
- * the safe interior roaming region and the absolute business domain.
+ * the safe roaming region (same authorized convex zone for multi-zone domains) and the absolute business domain.
  */
 export function isSegmentInSafeBusinessRoamingRegion(
   from: Vector3D,
   to: Vector3D,
-  domain: BusinessMovementDomain | null | undefined
+  domain: BusinessMovementDomain | null | undefined,
+  activeTaskId?: string | null
 ): boolean {
   if (
     !domain ||
-    !isPointInSafeBusinessRoamingRegion(from, domain) ||
-    !isPointInSafeBusinessRoamingRegion(to, domain) ||
-    !isSegmentInBusinessDomain(from, to, domain)
+    !isPointInSafeBusinessRoamingRegion(from, domain, activeTaskId) ||
+    !isPointInSafeBusinessRoamingRegion(to, domain, activeTaskId) ||
+    !isSegmentInBusinessDomain(from, to, domain, activeTaskId)
   ) {
+    return false;
+  }
+  if (domain.connectedZones && domain.connectedZones.length > 0) {
+    for (const zone of domain.connectedZones) {
+      if (!isZoneAuthorized(zone, activeTaskId)) continue;
+      if (
+        isPointInSpatialZone(from, zone) &&
+        isPointInSpatialZone(to, zone) &&
+        isSegmentInPolygonXZ({ x: from.x, z: from.z }, { x: to.x, z: to.z }, zone.polygonXZ, zone.toleranceMeters)
+      ) {
+        return true;
+      }
+    }
     return false;
   }
   return isSegmentInPolygonXZ(
@@ -1205,15 +1665,16 @@ export function isSegmentInSafeBusinessRoamingRegion(
 
 /**
  * Validates a multi-node sequence in an establishment's connected local roaming graph
- * against both `safeRoamingPolygonXZ` and the absolute business domain.
+ * against both `safeRoamingPolygonXZ` (or authorized `connectedZones`) and the absolute business domain.
  */
 export function validateBusinessLocalGraphRoute(
   waypointIds: readonly string[],
   domain: BusinessMovementDomain | null | undefined,
   profile: BusinessLocalAutonomyProfile,
-  waypointsRegistry: Readonly<Record<string, { readonly position: Vector3D; readonly outgoingWaypointIds: readonly string[] }>>
+  waypointsRegistry: Readonly<Record<string, { readonly position: Vector3D; readonly outgoingWaypointIds: readonly string[] }>>,
+  activeTaskId?: string | null
 ): { readonly valid: boolean; readonly reason: string } {
-  const baseCheck = validateBusinessCandidateRoute(waypointIds, domain, waypointsRegistry);
+  const baseCheck = validateBusinessCandidateRoute(waypointIds, domain, waypointsRegistry, activeTaskId);
   if (!baseCheck.valid) {
     return baseCheck;
   }
@@ -1221,21 +1682,21 @@ export function validateBusinessLocalGraphRoute(
   for (let i = 0; i < waypointIds.length; i++) {
     const wpId = waypointIds[i]!;
     const node = profile.localNodes[wpId];
-    if (!node) {
+    if (!node && !activeTaskId) {
       return { valid: false, reason: `unregistered_local_node:${wpId}` };
     }
     const wp = waypointsRegistry[wpId]!;
-    if (!isPointInSafeBusinessRoamingRegion(wp.position, domain)) {
+    if (!isPointInSafeBusinessRoamingRegion(wp.position, domain, activeTaskId)) {
       return { valid: false, reason: `waypoint_outside_safe_roaming:${wpId}` };
     }
     if (i > 0) {
       const prevId = waypointIds[i - 1]!;
-      const prevNode = profile.localNodes[prevId]!;
+      const prevNode = profile.localNodes[prevId];
       const prevWp = waypointsRegistry[prevId]!;
-      if (!prevNode.connectedWaypointIds.includes(wpId)) {
+      if (!activeTaskId && (!prevNode || !prevNode.connectedWaypointIds.includes(wpId))) {
         return { valid: false, reason: `disconnected_local_graph_edge:${prevId}->${wpId}` };
       }
-      if (!isSegmentInSafeBusinessRoamingRegion(prevWp.position, wp.position, domain)) {
+      if (!isSegmentInSafeBusinessRoamingRegion(prevWp.position, wp.position, domain, activeTaskId)) {
         return { valid: false, reason: `segment_outside_safe_roaming:${prevId}->${wpId}` };
       }
     }
@@ -1420,6 +1881,13 @@ export interface AutonomousMovementEvaluationResult {
   readonly withinAuthorizedDomain: boolean;
   readonly actualSpeedMps?: number;
   readonly activeSegmentEndPosition?: Vector3D;
+  readonly currentZoneId?: string | null;
+  readonly activeTaskId?: string | null;
+  readonly taskDestinationReachable?: boolean;
+  readonly physicalCalibrationActive?: boolean;
+  // Increment 5.23.2 Business Opening/Closing Lifecycle & Shutter Synchronization
+  readonly businessLifecycleState?: BusinessLifecycleState;
+  readonly shutterClosedPermitted?: boolean;
 }
 
 interface BridgeLoopMetrics {
@@ -1777,21 +2245,85 @@ export function evaluateBridgePatrolMovement(params: {
 // 7. SUBSYSTEM B — BUSINESS ATTENDANT BOUNDED LOCAL AUTONOMY PLANNER
 // ---------------------------------------------------------------------------
 
+export const VALERIA_CALIBRATION_TASK_ID = 'valeria_calibration_walk' as const;
+export const VALERIA_CALIBRATION_STATION_WAYPOINT_ID = 'wp_optica_calibration_station' as const;
+export const VALERIA_CALIBRATION_STATION_HEADING: Readonly<{ x: number; z: number }> = Object.freeze({ x: -1, z: 0 });
+export const VALERIA_CALIBRATION_DAYS_OF_WEEK: readonly number[] = Object.freeze([1, 2, 3, 4, 5, 6]);
+export const VALERIA_CALIBRATION_START_HOUR = 13;
+export const VALERIA_CALIBRATION_START_MINUTE = 0;
+export const VALERIA_CALIBRATION_END_HOUR = 13;
+export const VALERIA_CALIBRATION_END_MINUTE = 45;
+export const VALERIA_CALIBRATION_ARRIVAL_DWELL_SECONDS = 15;
+export const VALERIA_CALIBRATION_RETURN_WINDOW_PADDING_SECONDS = 15;
+
+// Increment 5.23.2 — Valeria Opening/Closing Business Lifecycle Constants
+// Reuses the single authoritative Óptica Fashion schedule (Mon-Sat 09:00-17:00 America/Ciudad_Juarez; Sun closed)
+export const VALERIA_OFF_DUTY_STATION_WAYPOINT_ID = 'wp_valeria_off_duty_station' as const;
+export const VALERIA_OFF_DUTY_STATION_POSITION: Readonly<Vector3D> = Object.freeze({ x: -15.85, y: 0.2, z: 1.15 });
+export const VALERIA_OFF_DUTY_STATION_HEADING: Readonly<{ x: number; z: number }> = Object.freeze({ x: 1, z: 0 });
+export const VALERIA_BUSINESS_OPERATING_DAYS: readonly number[] = Object.freeze([1, 2, 3, 4, 5, 6]);
+export const VALERIA_BUSINESS_OPEN_HOUR = 9;
+export const VALERIA_BUSINESS_OPEN_MINUTE = 0;
+export const VALERIA_BUSINESS_CLOSE_HOUR = 17;
+export const VALERIA_BUSINESS_CLOSE_MINUTE = 0;
+/**
+ * Configurable pre-closing lead time before the established 17:00 close boundary.
+ * Target: 3 minutes (16:57 local America/Ciudad_Juarez).
+ * Longest validated return route (wp_optica_south_promenade -> wp_valeria_off_duty_station) is
+ * 9.68 m = 8.80 s at Valeria's actual walking speed (1.10 m/s), giving > 20x safety margin.
+ */
+export const VALERIA_CLOSING_PREP_LEAD_MINUTES = 3;
+/** Seconds Valeria remains inside while the roller shutter raises at 09:00:00 before stepping out. */
+export const VALERIA_OPENING_TRANSITION_SECONDS = 5;
+/** Padding before morning roaming epoch starts at 09:00:12 (5s shutter open + 5.43s indoor-to-frontage walk). */
+export const VALERIA_OPENING_WALK_PADDING_SECONDS = 12;
+
+/**
+ * Returns true if the player's authoritative position lies inside Óptica Fashion's interior
+ * footprint (west of the X = -11.85m shutter plane) so the shutter never traps the player inside.
+ */
+export function isPlayerInsideOpticaInterior(player: PlayerSpatialState | null | undefined): boolean {
+  if (!player || !isValidCorridorVector3(player.position)) return false;
+  const p = player.position;
+  return p.x < -11.85 && p.x > -19.5 && p.z >= -1.85 && p.z <= 3.1;
+}
+
+/**
+ * Returns true if Valeria's authoritative position is safely inside the approved Óptica Fashion
+ * interior and clear of the front doorway threshold (X = -12.02m) and door-swing volume.
+ */
+export function isValeriaSafelyInsideOptica(position: Vector3D): boolean {
+  if (!isValidCorridorVector3(position)) return false;
+  return position.x <= -13.1 && position.x >= -19.2 && position.z >= -1.7 && position.z <= 2.95;
+}
+
 function getBusinessStationAnchorWindows(npcId: string, dayOfWeek: number): TimeWindowSec[] {
   if (dayOfWeek === 0) {
     return [{ startSec: 0, endSec: 86400 }];
   }
 
-  // Robotic continuous-service schedule: storefront attendants remain active inside their
-  // business domain throughout 100% of operating hours and anchor ("power off") only when closed.
   const windows: TimeWindowSec[] = [];
 
   if (npcId === 'carlos-farmacia-attendant') {
+    // Carlos Méndez: preserved continuous zero-break operating hours (07:00-22:00 Mon-Sat)
     windows.push({ startSec: 0, endSec: 7 * 3600 });
     windows.push({ startSec: 22 * 3600, endSec: 24 * 3600 });
   } else if (npcId === 'valeria-optica-attendant') {
-    windows.push({ startSec: 0, endSec: 9 * 3600 });
-    windows.push({ startSec: 17 * 3600, endSec: 24 * 3600 });
+    // Valeria Domínguez: operating hours 09:00-17:00 Mon-Sat with:
+    // - 09:00:00..09:00:12 indoor opening transition & walk out from wp_valeria_off_duty_station
+    // - 13:00:00..13:45:15 scheduled rear-room optical calibration (+ smooth return handoff)
+    // - 16:57:00..17:00:00 pre-closing return to wp_valeria_off_duty_station & overnight closed period
+    const openSec = VALERIA_BUSINESS_OPEN_HOUR * 3600 + VALERIA_BUSINESS_OPEN_MINUTE * 60;
+    const closeSec = VALERIA_BUSINESS_CLOSE_HOUR * 3600 + VALERIA_BUSINESS_CLOSE_MINUTE * 60;
+    const preCloseSec = closeSec - VALERIA_CLOSING_PREP_LEAD_MINUTES * 60;
+    const calStartSec = VALERIA_CALIBRATION_START_HOUR * 3600 + VALERIA_CALIBRATION_START_MINUTE * 60;
+    const calEndSec =
+      VALERIA_CALIBRATION_END_HOUR * 3600 +
+      VALERIA_CALIBRATION_END_MINUTE * 60 +
+      VALERIA_CALIBRATION_RETURN_WINDOW_PADDING_SECONDS;
+    windows.push({ startSec: 0, endSec: openSec + VALERIA_OPENING_WALK_PADDING_SECONDS });
+    windows.push({ startSec: calStartSec, endSec: calEndSec });
+    windows.push({ startSec: preCloseSec, endSec: 24 * 3600 });
   }
 
   return mergeSortedWindows(windows);
@@ -1828,9 +2360,15 @@ function findShortestValidLocalPath(
   profile: BusinessLocalAutonomyProfile,
   waypointsRegistry: Readonly<
     Record<string, { readonly position: Vector3D; readonly associatedPlaceId: string; readonly outgoingWaypointIds: readonly string[] }>
-  >
+  >,
+  activeTaskId?: string | null
 ): string[] | null {
-  if (startId === goalId) return [startId];
+  if (startId === goalId) {
+    const startWp = waypointsRegistry[startId];
+    return startWp && isPointInSafeBusinessRoamingRegion(startWp.position, domain, activeTaskId)
+      ? [startId]
+      : null;
+  }
   const visited = new Set<string>([startId]);
   const queue: string[][] = [[startId]];
 
@@ -1838,15 +2376,19 @@ function findShortestValidLocalPath(
     const path = queue.shift()!;
     const current = path[path.length - 1]!;
     const nodeSpec = profile.localNodes[current];
-    if (!nodeSpec) continue;
+    const currentWp = waypointsRegistry[current];
+    const candidateNeighbors = activeTaskId
+      ? currentWp?.outgoingWaypointIds ?? []
+      : nodeSpec?.connectedWaypointIds ?? [];
 
-    for (const nextId of nodeSpec.connectedWaypointIds) {
+    for (const nextId of candidateNeighbors) {
       if (visited.has(nextId)) continue;
       const edgeCheck = validateBusinessLocalGraphRoute(
         [current, nextId],
         domain,
         profile,
-        waypointsRegistry
+        waypointsRegistry,
+        activeTaskId
       );
       if (!edgeCheck.valid) continue;
       const nextPath = [...path, nextId];
@@ -1881,7 +2423,133 @@ function selectDeterministicLocalRoamingTour(params: {
   const primaryNode = profile.localNodes[primaryId];
   if (!primaryNode) return null;
 
-  // Gather valid outgoing neighbors from primary station that also have a valid return path
+  const hasMultiZoneTransitNodes = Boolean(
+    domain.connectedZones &&
+    domain.connectedZones.length > 0 &&
+    Object.values(profile.localNodes).some((n) => n.isTransitOnly)
+  );
+
+  // Multi-zone connected indoor/outdoor tour selection (Valeria):
+  // Routes smoothly through transit doorway nodes without stopping inside thresholds,
+  // naturally alternating across both exterior frontage and main showroom stops while
+  // strictly excluding task-only rear laboratory nodes.
+  if (hasMultiZoneTransitNodes) {
+    const validFirstDestinations: Array<{
+      readonly stopId: string;
+      readonly pathFromPrimary: string[];
+      readonly returnPath: string[];
+    }> = [];
+
+    for (const candidateId of profile.secondaryWorkstationIds) {
+      if (candidateId === primaryId) continue;
+      const spec = profile.localNodes[candidateId];
+      if (!spec || spec.isTransitOnly || spec.taskOnly || spec.isOffDutyStation) continue;
+      const outPath = findShortestValidLocalPath(primaryId, candidateId, domain, profile, waypointsRegistry);
+      if (!outPath || outPath.length < 2) continue;
+      const retPath = findShortestValidLocalPath(candidateId, primaryId, domain, profile, waypointsRegistry);
+      if (!retPath || retPath.length < 2) continue;
+      validFirstDestinations.push({ stopId: candidateId, pathFromPrimary: outPath, returnPath: retPath });
+    }
+
+    if (validFirstDestinations.length === 0) {
+      return null;
+    }
+
+    // Partition into exterior-first vs interior-doorway-first pools so Valeria naturally alternates
+    // between frontage activity and showroom circulation without repeating the doorway edge on consecutive cycles
+    const exteriorPool = validFirstDestinations.filter(
+      (d) => !profile.localNodes[d.pathFromPrimary[1]!]?.isTransitOnly
+    );
+    const interiorPool = validFirstDestinations.filter(
+      (d) => Boolean(profile.localNodes[d.pathFromPrimary[1]!]?.isTransitOnly)
+    );
+
+    let activePool = validFirstDestinations;
+    let poolCycleIndex = cycleIndex;
+    let poolTag = 'all';
+    if (exteriorPool.length > 0 && interiorPool.length > 0) {
+      if (cycleIndex % 2 === 0) {
+        activePool = exteriorPool;
+        poolCycleIndex = Math.floor(cycleIndex / 2);
+        poolTag = 'ext';
+      } else {
+        activePool = interiorPool;
+        poolCycleIndex = Math.floor(cycleIndex / 2);
+        poolTag = 'int';
+      }
+    }
+
+    const k = activePool.length;
+    let chosenIdx = 0;
+    if (k >= 2) {
+      const superBlock = Math.floor(poolCycleIndex / k);
+      const slot = poolCycleIndex % k;
+      const blkPrefix = `${profile.npcId}|${dateKey}|${profile.profileId}|ep${epochIndex}|${poolTag}|blk`;
+      const perm = buildDeterministicPermutation(`${blkPrefix}${superBlock}`, k);
+      if (superBlock > 0) {
+        const prevPerm = buildDeterministicPermutation(`${blkPrefix}${superBlock - 1}`, k);
+        if (perm[0] === prevPerm[k - 1]) {
+          const tmp = perm[0]!;
+          perm[0] = perm[1]!;
+          perm[1] = tmp;
+        }
+      }
+      chosenIdx = perm[slot]!;
+    }
+
+    const firstChoice = activePool[chosenIdx]!;
+    const routeNodes: string[] = [...firstChoice.pathFromPrimary];
+    const stopIndices = new Set<number>([routeNodes.length - 1]);
+    const visitedMeaningful = new Set<string>([firstChoice.stopId]);
+    const desiredStops = (cycleSeed & 1) === 0 ? 2 : 3;
+    let returnTail: string[] = firstChoice.returnPath.slice(1);
+
+    for (let step = 1; step < desiredStops; step++) {
+      const curId = routeNodes[routeNodes.length - 1]!;
+      const curSpec = profile.localNodes[curId];
+      if (!curSpec) break;
+
+      // Prefer direct connected non-transit neighbors in the same zone for natural retail circulation
+      const nextCandidates: Array<{ readonly wpId: string; readonly stepPath: string[]; readonly retPath: string[] }> = [];
+      for (const neighborId of curSpec.connectedWaypointIds) {
+        if (neighborId === primaryId || visitedMeaningful.has(neighborId)) continue;
+        const nSpec = profile.localNodes[neighborId];
+        if (!nSpec || nSpec.isTransitOnly || nSpec.taskOnly || nSpec.isOffDutyStation) continue;
+        const edgeOk = validateBusinessLocalGraphRoute([curId, neighborId], domain, profile, waypointsRegistry);
+        if (!edgeOk.valid) continue;
+        const retPath = findShortestValidLocalPath(neighborId, primaryId, domain, profile, waypointsRegistry);
+        if (retPath && retPath.length >= 2) {
+          nextCandidates.push({ wpId: neighborId, stepPath: [curId, neighborId], retPath });
+        }
+      }
+
+      if (nextCandidates.length === 0) break;
+      const pickIdx = deterministicRangeInt(cycleSeed, 3 + step * 5, 0, nextCandidates.length - 1);
+      const picked = nextCandidates[pickIdx]!;
+      for (let p = 1; p < picked.stepPath.length; p++) {
+        routeNodes.push(picked.stepPath[p]!);
+      }
+      stopIndices.add(routeNodes.length - 1);
+      visitedMeaningful.add(picked.wpId);
+      returnTail = picked.retPath.slice(1);
+    }
+
+    const fullTour = [...routeNodes, ...returnTail];
+    const fullCheck = validateBusinessLocalGraphRoute(fullTour, domain, profile, waypointsRegistry);
+    if (fullCheck.valid) {
+      return { tourWaypoints: fullTour, stopIndices };
+    }
+
+    const simpleTour = [...firstChoice.pathFromPrimary, ...firstChoice.returnPath.slice(1)];
+    const simpleCheck = validateBusinessLocalGraphRoute(simpleTour, domain, profile, waypointsRegistry);
+    if (simpleCheck.valid) {
+      return { tourWaypoints: simpleTour, stopIndices: new Set<number>([firstChoice.pathFromPrimary.length - 1]) };
+    }
+
+    return null;
+  }
+
+  // Preserved single-zone local roaming planner (Carlos Méndez — 100% unchanged from Increment 5.22.3)
   const validFirstNeighbors: Array<{ readonly stopId: string; readonly returnPath: string[] }> = [];
   for (const neighborId of primaryNode.connectedWaypointIds) {
     if (neighborId === primaryId) continue;
@@ -1995,6 +2663,8 @@ export function evaluateBusinessLocalAutonomyMovement(params: {
 
   const actState = activitySnapshot?.state ?? 'available';
 
+  const primaryZone = resolveAuthorizedBusinessZone(primaryWp.position, domain, null);
+
   // 1. Off-duty or closed store guard: never roam, never represent active customer service
   if (actState === 'off_duty' || actState === 'unavailable') {
     return {
@@ -2022,6 +2692,10 @@ export function evaluateBusinessLocalAutonomyMovement(params: {
       withinAuthorizedDomain: isPointInBusinessDomain(primaryWp.position, domain),
       actualSpeedMps: 0,
       activeSegmentEndPosition: primaryWp.position,
+      ...(primaryZone ? { currentZoneId: primaryZone.zoneId } : {}),
+      activeTaskId: null,
+      taskDestinationReachable: true,
+      physicalCalibrationActive: false,
     };
   }
 
@@ -2052,6 +2726,10 @@ export function evaluateBusinessLocalAutonomyMovement(params: {
       withinAuthorizedDomain: isPointInBusinessDomain(primaryWp.position, domain),
       actualSpeedMps: 0,
       activeSegmentEndPosition: primaryWp.position,
+      ...(primaryZone ? { currentZoneId: primaryZone.zoneId } : {}),
+      activeTaskId: null,
+      taskDestinationReachable: true,
+      physicalCalibrationActive: false,
     };
   }
 
@@ -2079,8 +2757,8 @@ export function evaluateBusinessLocalAutonomyMovement(params: {
     const behaviorState: BusinessAutonomyBehaviorState = pauseEval.isSuspended
       ? 'customer_interaction'
       : playerNearby
-      ? 'customer_awareness'
-      : 'working_stationary';
+        ? 'customer_awareness'
+        : 'working_stationary';
     return {
       movementState: 'stationary',
       currentWaypointId: profile.primaryWaypointId,
@@ -2195,11 +2873,11 @@ export function evaluateBusinessLocalAutonomyMovement(params: {
     const isStopNode = tourPlan.stopIndices.has(i + 1);
     const inspectDwell = isStopNode
       ? deterministicRangeInt(
-          seed,
-          (i * 5 + 11) % 24,
-          profile.localInspectionDwellSeconds.min,
-          profile.localInspectionDwellSeconds.max
-        )
+        seed,
+        (i * 5 + 11) % 24,
+        profile.localInspectionDwellSeconds.min,
+        profile.localInspectionDwellSeconds.max
+      )
       : 0;
 
     totalRawWalk += rawWalkDur;
@@ -2356,6 +3034,8 @@ export function evaluateBusinessLocalAutonomyMovement(params: {
     activeSegmentEndPosition = pos;
   }
 
+  const resolvedZone = resolveAuthorizedBusinessZone(pos, domain, null);
+
   return {
     movementState,
     currentWaypointId,
@@ -2378,10 +3058,1005 @@ export function evaluateBusinessLocalAutonomyMovement(params: {
     passingEncounterSessionId: null,
     passingEncounterType: null,
     businessDomainId: domain.domainId,
-    withinAuthorizedDomain: isPointInBusinessDomain(pos, domain),
+    withinAuthorizedDomain: isPointInBusinessDomain(pos, domain, null),
     actualSpeedMps,
     activeSegmentEndPosition,
+    ...(resolvedZone ? { currentZoneId: resolvedZone.zoneId } : {}),
+    activeTaskId: null,
+    taskDestinationReachable: true,
+    physicalCalibrationActive: false,
+    ...(profile.npcId === 'valeria-optica-attendant'
+      ? { businessLifecycleState: 'business_open' as const, shutterClosedPermitted: false }
+      : {}),
   };
+}
+
+// ---------------------------------------------------------------------------
+// 7B. VALERIA SCHEDULED CALIBRATION LIFECYCLE (INCREMENT 5.23.1)
+// ---------------------------------------------------------------------------
+
+interface PolylineLeg {
+  readonly fromId: string;
+  readonly toId: string;
+  readonly fromPos: Vector3D;
+  readonly toPos: Vector3D;
+  readonly dist: number;
+  readonly durationSec: number;
+}
+
+interface PlannedPolyline {
+  readonly legs: readonly PolylineLeg[];
+  readonly totalDistance: number;
+  readonly totalDurationSec: number;
+  readonly finalWaypointId: string;
+  readonly finalPosition: Vector3D;
+}
+
+function buildValidatedPolylineFromPosition(params: {
+  readonly startPos: Vector3D;
+  readonly startWaypointId: string;
+  readonly startSegmentDestId?: string | null;
+  readonly goalWaypointId: string;
+  readonly domain: BusinessMovementDomain;
+  readonly profile: BusinessLocalAutonomyProfile;
+  readonly waypointsRegistry: Readonly<
+    Record<string, { readonly position: Vector3D; readonly associatedPlaceId: string; readonly outgoingWaypointIds: readonly string[] }>
+  >;
+  readonly speedMps: number;
+  readonly activeTaskId: string | null;
+}): PlannedPolyline | null {
+  const {
+    startPos,
+    startWaypointId,
+    startSegmentDestId,
+    goalWaypointId,
+    domain,
+    profile,
+    waypointsRegistry,
+    speedMps,
+    activeTaskId,
+  } = params;
+
+  const goalWp = waypointsRegistry[goalWaypointId];
+  if (!goalWp || !isPointInSafeBusinessRoamingRegion(goalWp.position, domain, activeTaskId)) {
+    return null;
+  }
+
+  // Candidate anchor nodes directly reachable from startPos inside the same authorized convex zone
+  const candidateFirstNodes: string[] = [];
+  if (startSegmentDestId && waypointsRegistry[startSegmentDestId]) {
+    candidateFirstNodes.push(startSegmentDestId);
+  }
+  if (waypointsRegistry[startWaypointId] && !candidateFirstNodes.includes(startWaypointId)) {
+    candidateFirstNodes.push(startWaypointId);
+  }
+  // Also consider neighbors of startWaypointId in case startPos sits on a connecting edge
+  const startWpObj = waypointsRegistry[startWaypointId];
+  if (startWpObj) {
+    for (const nId of startWpObj.outgoingWaypointIds) {
+      if (!candidateFirstNodes.includes(nId) && waypointsRegistry[nId]) {
+        candidateFirstNodes.push(nId);
+      }
+    }
+  }
+
+  let bestPolyline: PlannedPolyline | null = null;
+
+  for (const anchorId of candidateFirstNodes) {
+    const anchorWp = waypointsRegistry[anchorId];
+    if (!anchorWp) continue;
+    const distToAnchor = Math.hypot(
+      anchorWp.position.x - startPos.x,
+      anchorWp.position.y - startPos.y,
+      anchorWp.position.z - startPos.z
+    );
+    if (
+      distToAnchor > 1e-4 &&
+      !isSegmentInSafeBusinessRoamingRegion(startPos, anchorWp.position, domain, activeTaskId)
+    ) {
+      continue;
+    }
+
+    const graphPath = findShortestValidLocalPath(
+      anchorId,
+      goalWaypointId,
+      domain,
+      profile,
+      waypointsRegistry,
+      activeTaskId
+    );
+    if (!graphPath || graphPath.length === 0) continue;
+
+    // Validate complete graph path
+    if (graphPath.length >= 2) {
+      const routeCheck = validateBusinessLocalGraphRoute(
+        graphPath,
+        domain,
+        profile,
+        waypointsRegistry,
+        activeTaskId
+      );
+      if (!routeCheck.valid) continue;
+    }
+
+    const legs: PolylineLeg[] = [];
+    let totalDist = 0;
+    let totalDur = 0;
+
+    if (distToAnchor > 1e-4) {
+      const dur = distToAnchor / speedMps;
+      legs.push({
+        fromId: startWaypointId,
+        toId: anchorId,
+        fromPos: startPos,
+        toPos: anchorWp.position,
+        dist: distToAnchor,
+        durationSec: dur,
+      });
+      totalDist += distToAnchor;
+      totalDur += dur;
+    }
+
+    for (let i = 0; i < graphPath.length - 1; i++) {
+      const fId = graphPath[i]!;
+      const tId = graphPath[i + 1]!;
+      const fPos = waypointsRegistry[fId]!.position;
+      const tPos = waypointsRegistry[tId]!.position;
+      const d = Math.hypot(tPos.x - fPos.x, tPos.y - fPos.y, tPos.z - fPos.z);
+      if (d <= 1e-4) continue;
+      const dur = d / speedMps;
+      legs.push({
+        fromId: fId,
+        toId: tId,
+        fromPos: fPos,
+        toPos: tPos,
+        dist: d,
+        durationSec: dur,
+      });
+      totalDist += d;
+      totalDur += dur;
+    }
+
+    const candidate: PlannedPolyline = {
+      legs,
+      totalDistance: totalDist,
+      totalDurationSec: totalDur,
+      finalWaypointId: goalWaypointId,
+      finalPosition: goalWp.position,
+    };
+
+    if (!bestPolyline || candidate.totalDistance < bestPolyline.totalDistance - 1e-6) {
+      bestPolyline = candidate;
+    }
+  }
+
+  return bestPolyline;
+}
+
+function samplePolylineAtElapsed(
+  polyline: PlannedPolyline,
+  elapsedSec: number
+): {
+  readonly position: Vector3D;
+  readonly heading: { readonly x: number; readonly z: number };
+  readonly currentWaypointId: string;
+  readonly activeSegmentEndPosition: Vector3D;
+  readonly progression: number;
+} {
+  if (polyline.legs.length === 0 || polyline.totalDurationSec <= 1e-6) {
+    return {
+      position: polyline.finalPosition,
+      heading: VALERIA_CALIBRATION_STATION_HEADING,
+      currentWaypointId: polyline.finalWaypointId,
+      activeSegmentEndPosition: polyline.finalPosition,
+      progression: 1,
+    };
+  }
+
+  const clamped = Math.max(0, Math.min(polyline.totalDurationSec, elapsedSec));
+  let cursor = 0;
+  for (let i = 0; i < polyline.legs.length; i++) {
+    const leg = polyline.legs[i]!;
+    const legEnd = cursor + leg.durationSec;
+    if (clamped <= legEnd || i === polyline.legs.length - 1) {
+      const r = leg.durationSec > 1e-6 ? Math.max(0, Math.min(1, (clamped - cursor) / leg.durationSec)) : 1;
+      const pos: Vector3D = {
+        x: Math.round((leg.fromPos.x + (leg.toPos.x - leg.fromPos.x) * r) * 1000) / 1000,
+        y: Math.round((leg.fromPos.y + (leg.toPos.y - leg.fromPos.y) * r) * 1000) / 1000,
+        z: Math.round((leg.fromPos.z + (leg.toPos.z - leg.fromPos.z) * r) * 1000) / 1000,
+      };
+      const dx = leg.toPos.x - leg.fromPos.x;
+      const dz = leg.toPos.z - leg.fromPos.z;
+      const len = Math.hypot(dx, dz) || 1;
+      return {
+        position: pos,
+        heading: {
+          x: Math.round((dx / len) * 1000) / 1000,
+          z: Math.round((dz / len) * 1000) / 1000,
+        },
+        currentWaypointId: r < 0.5 ? leg.fromId : leg.toId,
+        activeSegmentEndPosition: leg.toPos,
+        progression: Math.round((clamped / polyline.totalDurationSec) * 1000) / 1000,
+      };
+    }
+    cursor = legEnd;
+  }
+
+  return {
+    position: polyline.finalPosition,
+    heading: VALERIA_CALIBRATION_STATION_HEADING,
+    currentWaypointId: polyline.finalWaypointId,
+    activeSegmentEndPosition: polyline.finalPosition,
+    progression: 1,
+  };
+}
+
+/**
+ * Evaluates Valeria Domínguez's continuous, C^0-continuous scheduled calibration lifecycle
+ * (`valeria_calibration_walk`, Mon-Sat 13:00-13:45 America/Ciudad_Juarez + smooth return walk).
+ *
+ * Guarantees:
+ * - Zero teleportation: plans the shortest validated multi-zone path from Valeria's exact
+ *   position at 13:00:00 (whether outside or already inside the showroom).
+ * - Strict Zone D task-only authorization: rear laboratory access unlocks ONLY for this task
+ *   and releases as soon as Valeria returns into the main showroom after 13:45:00.
+ * - Full player-interaction suspension & resumption during outbound transit, calibration dwell,
+ *   and return walk without restarting or duplicating the task.
+ * - Safe unreachable-destination fallback: if the station or route is invalid, stays safely in
+ *   authorized space and reports `taskDestinationReachable: false`, `physicalCalibrationActive: false`.
+ *
+ * Returns `null` when outside the active calibration + return lifecycle window so normal
+ * connected indoor/outdoor autonomy runs uninterrupted.
+ */
+export function evaluateValeriaCalibrationLifecycle(params: {
+  readonly rawEvaluatedAtMs: number;
+  readonly civil: CivilTime;
+  readonly waypointsRegistry: Readonly<
+    Record<string, { readonly position: Vector3D; readonly associatedPlaceId: string; readonly outgoingWaypointIds: readonly string[] }>
+  >;
+  readonly pauseIntervals?: readonly NpcInteractionPauseInterval[];
+  readonly player?: PlayerSpatialState | null;
+}): AutonomousMovementEvaluationResult | null {
+  const { rawEvaluatedAtMs, civil, waypointsRegistry, pauseIntervals } = params;
+
+  if (!VALERIA_CALIBRATION_DAYS_OF_WEEK.includes(civil.dayOfWeek)) {
+    return null;
+  }
+
+  const calStartSec = VALERIA_CALIBRATION_START_HOUR * 3600 + VALERIA_CALIBRATION_START_MINUTE * 60;
+  const calEndSec = VALERIA_CALIBRATION_END_HOUR * 3600 + VALERIA_CALIBRATION_END_MINUTE * 60;
+  const preCloseSec =
+    VALERIA_BUSINESS_CLOSE_HOUR * 3600 +
+    VALERIA_BUSINESS_CLOSE_MINUTE * 60 -
+    VALERIA_CLOSING_PREP_LEAD_MINUTES * 60;
+  const rawSecInDay =
+    civil.hour * 3600 + civil.minute * 60 + civil.second + civil.millisecond / 1000;
+
+  if (rawSecInDay < calStartSec || rawSecInDay >= preCloseSec) {
+    return null;
+  }
+
+  const profile = BUSINESS_LOCAL_AUTONOMY_PROFILES['valeria-optica-attendant']!;
+  const domain = OPTICA_FASHION_AUTONOMY_DOMAIN;
+  const primaryWp = waypointsRegistry[profile.primaryWaypointId]!;
+  const defaultHeading = profile.localNodes[profile.primaryWaypointId]?.observationHeading ?? { x: 1, z: 0 };
+
+  const dayStartUtcMs = rawEvaluatedAtMs - rawSecInDay * 1000;
+  const calStartUtcMs = dayStartUtcMs + calStartSec * 1000;
+  const calEndUtcMs = dayStartUtcMs + calEndSec * 1000;
+
+  // Determine Valeria's exact position at the instant calibration starts (12:59:59.999)
+  const preTaskCivil: CivilTime = {
+    ...civil,
+    hour: 12,
+    minute: 59,
+    second: 59,
+    millisecond: 999,
+  };
+  const preTaskPauses = pauseIntervals
+    ?.filter((iv) => iv.startedAtMs < calStartUtcMs)
+    .map((iv) => ({
+      ...iv,
+      endedAtMs: iv.endedAtMs === null ? calStartUtcMs - 1 : Math.min(iv.endedAtMs, calStartUtcMs - 1),
+    }));
+
+  const preTaskState = evaluateBusinessLocalAutonomyMovement({
+    profile,
+    rawEvaluatedAtMs: calStartUtcMs - 1,
+    civil: preTaskCivil,
+    activitySnapshot: null,
+    waypointsRegistry,
+    pauseIntervals: preTaskPauses,
+    player: null,
+  });
+
+  const calibWp = waypointsRegistry[VALERIA_CALIBRATION_STATION_WAYPOINT_ID];
+  const calibInsideRearRoom = Boolean(
+    calibWp && isPointInSpatialZone(calibWp.position, OPTICA_REAR_CALIBRATION_ROOM_ZONE)
+  );
+
+  const outboundPolyline = calibInsideRearRoom
+    ? buildValidatedPolylineFromPosition({
+      startPos: preTaskState.position,
+      startWaypointId: preTaskState.currentWaypointId,
+      startSegmentDestId: preTaskState.destinationWaypointId,
+      goalWaypointId: VALERIA_CALIBRATION_STATION_WAYPOINT_ID,
+      domain,
+      profile,
+      waypointsRegistry,
+      speedMps: profile.preferredSpeedMps,
+      activeTaskId: VALERIA_CALIBRATION_TASK_ID,
+    })
+    : null;
+
+  // Phase 1 & 2: During scheduled calibration window [13:00:00, 13:45:00)
+  if (rawEvaluatedAtMs < calEndUtcMs) {
+    const pauseEval = evaluateEffectiveAutonomousTime(rawEvaluatedAtMs, pauseIntervals, calStartUtcMs);
+
+    // Safe fallback if destination or route is invalid: never retry invalid edges or claim calibration
+    if (!outboundPolyline || !calibWp) {
+      const safeFallbackPos = isPointInSafeBusinessRoamingRegion(preTaskState.position, domain, null)
+        ? preTaskState.position
+        : primaryWp.position;
+      const safeFallbackWpId = isPointInSafeBusinessRoamingRegion(preTaskState.position, domain, null)
+        ? preTaskState.currentWaypointId
+        : profile.primaryWaypointId;
+      const fallbackZone = resolveAuthorizedBusinessZone(safeFallbackPos, domain, null);
+      return {
+        movementState: 'stationary',
+        currentWaypointId: safeFallbackWpId,
+        destinationWaypointId: null,
+        activeRouteId: null,
+        position: safeFallbackPos,
+        forwardHeading: defaultHeading,
+        progression: 0,
+        movementStartTime: null,
+        expectedDurationSeconds: 0,
+        associatedPlaceId: domain.associatedPlaceId,
+        behaviorProfileType: 'business_local_autonomy',
+        autonomousBehaviorState: pauseEval.isSuspended ? 'customer_interaction' : 'working_stationary',
+        controlMode: pauseEval.isSuspended ? 'player_interaction_suspended' : 'scheduled_routine_transition',
+        patrolDirection: 'none',
+        patrolCycleIndex: 0,
+        isSuspendedByPlayerInteraction: pauseEval.isSuspended,
+        suspendedByPlayerId: pauseEval.suspendedByPlayerId,
+        passingEncounterPartnerNpcId: null,
+        passingEncounterSessionId: null,
+        passingEncounterType: null,
+        businessDomainId: domain.domainId,
+        withinAuthorizedDomain: isPointInBusinessDomain(safeFallbackPos, domain, null),
+        actualSpeedMps: 0,
+        activeSegmentEndPosition: safeFallbackPos,
+        currentZoneId: fallbackZone?.zoneId ?? null,
+        activeTaskId: VALERIA_CALIBRATION_TASK_ID,
+        taskDestinationReachable: false,
+        physicalCalibrationActive: false,
+        businessLifecycleState: 'business_open',
+        shutterClosedPermitted: false,
+      };
+    }
+
+    const effElapsedSec = Math.max(0, (pauseEval.effectiveTimeMs - calStartUtcMs) / 1000);
+
+    // Outbound walk from exact current location to Optica_CalibrationStation
+    if (effElapsedSec < outboundPolyline.totalDurationSec) {
+      const sample = samplePolylineAtElapsed(outboundPolyline, effElapsedSec);
+      const zone = resolveAuthorizedBusinessZone(sample.position, domain, VALERIA_CALIBRATION_TASK_ID);
+      const isSuspended = pauseEval.isSuspended;
+
+      return {
+        movementState: isSuspended ? 'stationary' : 'moving',
+        currentWaypointId: sample.currentWaypointId,
+        destinationWaypointId: VALERIA_CALIBRATION_STATION_WAYPOINT_ID,
+        activeRouteId: 'route_valeria_to_calibration',
+        position: sample.position,
+        forwardHeading: sample.heading,
+        progression: sample.progression,
+        movementStartTime: new Date(calStartUtcMs).toISOString(),
+        expectedDurationSeconds: Math.round(outboundPolyline.totalDurationSec * 1000) / 1000,
+        associatedPlaceId: domain.associatedPlaceId,
+        behaviorProfileType: 'business_local_autonomy',
+        autonomousBehaviorState: isSuspended ? 'customer_interaction' : 'scheduled_transit',
+        controlMode: isSuspended ? 'player_interaction_suspended' : 'scheduled_routine_transition',
+        patrolDirection: 'none',
+        patrolCycleIndex: 0,
+        isSuspendedByPlayerInteraction: isSuspended,
+        suspendedByPlayerId: pauseEval.suspendedByPlayerId,
+        passingEncounterPartnerNpcId: null,
+        passingEncounterSessionId: null,
+        passingEncounterType: null,
+        businessDomainId: domain.domainId,
+        withinAuthorizedDomain: isPointInBusinessDomain(sample.position, domain, VALERIA_CALIBRATION_TASK_ID),
+        actualSpeedMps: isSuspended ? 0 : profile.preferredSpeedMps,
+        activeSegmentEndPosition: isSuspended ? sample.position : sample.activeSegmentEndPosition,
+        currentZoneId: zone?.zoneId ?? null,
+        activeTaskId: VALERIA_CALIBRATION_TASK_ID,
+        taskDestinationReachable: true,
+        physicalCalibrationActive: false,
+        businessLifecycleState: 'business_open',
+        shutterClosedPermitted: false,
+      };
+    }
+
+    // Arrived & performing calibration at Optica_CalibrationStation (-17.85, 0.20, -0.50), facing West (-1, 0)
+    const isArrivingDwell =
+      effElapsedSec < outboundPolyline.totalDurationSec + VALERIA_CALIBRATION_ARRIVAL_DWELL_SECONDS;
+    const isSuspended = pauseEval.isSuspended;
+    const stationZone = resolveAuthorizedBusinessZone(
+      calibWp.position,
+      domain,
+      VALERIA_CALIBRATION_TASK_ID
+    );
+
+    return {
+      movementState: isSuspended ? 'stationary' : isArrivingDwell ? 'arrived' : 'waiting',
+      currentWaypointId: VALERIA_CALIBRATION_STATION_WAYPOINT_ID,
+      destinationWaypointId: !isSuspended && isArrivingDwell ? VALERIA_CALIBRATION_STATION_WAYPOINT_ID : null,
+      activeRouteId: null,
+      position: calibWp.position,
+      forwardHeading: VALERIA_CALIBRATION_STATION_HEADING,
+      progression: !isSuspended && isArrivingDwell ? 1.0 : 0.0,
+      movementStartTime: null,
+      expectedDurationSeconds: isArrivingDwell
+        ? Math.round(outboundPolyline.totalDurationSec * 1000) / 1000
+        : 0,
+      associatedPlaceId: domain.associatedPlaceId,
+      behaviorProfileType: 'business_local_autonomy',
+      autonomousBehaviorState: isSuspended ? 'customer_interaction' : 'scheduled_station_task',
+      controlMode: isSuspended ? 'player_interaction_suspended' : 'scheduled_routine_transition',
+      patrolDirection: 'none',
+      patrolCycleIndex: 0,
+      isSuspendedByPlayerInteraction: isSuspended,
+      suspendedByPlayerId: pauseEval.suspendedByPlayerId,
+      passingEncounterPartnerNpcId: null,
+      passingEncounterSessionId: null,
+      passingEncounterType: null,
+      businessDomainId: domain.domainId,
+      withinAuthorizedDomain: isPointInBusinessDomain(calibWp.position, domain, VALERIA_CALIBRATION_TASK_ID),
+      actualSpeedMps: 0,
+      activeSegmentEndPosition: calibWp.position,
+      currentZoneId: stationZone?.zoneId ?? OPTICA_REAR_CALIBRATION_ROOM_ZONE.zoneId,
+      activeTaskId: VALERIA_CALIBRATION_TASK_ID,
+      taskDestinationReachable: true,
+      physicalCalibrationActive: !isSuspended,
+      businessLifecycleState: 'business_open',
+      shutterClosedPermitted: false,
+    };
+  }
+
+  // Phase 3: Task finished (13:45:00+) — continuous return from actual end-of-task position back to showroom/exterior
+  if (!outboundPolyline || !calibWp) {
+    // Task never entered rear room; immediately hand back to normal afternoon autonomy
+    return null;
+  }
+
+  // Compute exact position at 13:44:59.999 (normally Optica_CalibrationStation; handles rare prolonged pauses)
+  const endTaskPauseEval = evaluateEffectiveAutonomousTime(calEndUtcMs - 1, pauseIntervals, calStartUtcMs);
+  const effAtEndSec = Math.max(0, (endTaskPauseEval.effectiveTimeMs - calStartUtcMs) / 1000);
+  let returnStartPos: Vector3D = calibWp.position;
+  let returnStartWpId: string = VALERIA_CALIBRATION_STATION_WAYPOINT_ID;
+  if (effAtEndSec < outboundPolyline.totalDurationSec) {
+    const partialSample = samplePolylineAtElapsed(outboundPolyline, effAtEndSec);
+    returnStartPos = partialSample.position;
+    returnStartWpId = partialSample.currentWaypointId;
+  }
+
+  // Only authorize Zone D rear-room exit if Valeria is physically inside Zone D at 13:45:00;
+  // never re-enter rear lab if an extended dialogue held her outside/in showroom past 13:45:00 (Scenario B).
+  const startedReturnInPublicZone = resolveAuthorizedBusinessZone(returnStartPos, domain, null) !== null;
+  const returnAuthTaskId = startedReturnInPublicZone ? null : VALERIA_CALIBRATION_TASK_ID;
+
+  const returnPolyline = buildValidatedPolylineFromPosition({
+    startPos: returnStartPos,
+    startWaypointId: returnStartWpId,
+    startSegmentDestId: null,
+    goalWaypointId: profile.primaryWaypointId,
+    domain,
+    profile,
+    waypointsRegistry,
+    speedMps: profile.preferredSpeedMps,
+    activeTaskId: returnAuthTaskId,
+  });
+
+  if (!returnPolyline) {
+    return null;
+  }
+
+  const returnPauseEval = evaluateEffectiveAutonomousTime(rawEvaluatedAtMs, pauseIntervals, calEndUtcMs);
+  const effReturnSec = Math.max(0, (returnPauseEval.effectiveTimeMs - calEndUtcMs) / 1000);
+
+  if (effReturnSec < returnPolyline.totalDurationSec) {
+    const sample = samplePolylineAtElapsed(returnPolyline, effReturnSec);
+    // Release task-only rear laboratory authorization as soon as Valeria crosses into public showroom/frontage
+    const publicZone = resolveAuthorizedBusinessZone(sample.position, domain, null);
+    const activeExitTaskId = publicZone ? null : VALERIA_CALIBRATION_TASK_ID;
+    const currentZone = publicZone ?? resolveAuthorizedBusinessZone(sample.position, domain, VALERIA_CALIBRATION_TASK_ID);
+    const isSuspended = returnPauseEval.isSuspended;
+
+    return {
+      movementState: isSuspended ? 'stationary' : 'moving',
+      currentWaypointId: sample.currentWaypointId,
+      destinationWaypointId: profile.primaryWaypointId,
+      activeRouteId: 'route_valeria_from_calibration',
+      position: sample.position,
+      forwardHeading: sample.heading,
+      progression: sample.progression,
+      movementStartTime: new Date(calEndUtcMs).toISOString(),
+      expectedDurationSeconds: Math.round(returnPolyline.totalDurationSec * 1000) / 1000,
+      associatedPlaceId: domain.associatedPlaceId,
+      behaviorProfileType: 'business_local_autonomy',
+      autonomousBehaviorState: isSuspended ? 'customer_interaction' : 'returning_to_station',
+      controlMode: isSuspended ? 'player_interaction_suspended' : 'scheduled_routine_transition',
+      patrolDirection: 'none',
+      patrolCycleIndex: 0,
+      isSuspendedByPlayerInteraction: isSuspended,
+      suspendedByPlayerId: returnPauseEval.suspendedByPlayerId,
+      passingEncounterPartnerNpcId: null,
+      passingEncounterSessionId: null,
+      passingEncounterType: null,
+      businessDomainId: domain.domainId,
+      withinAuthorizedDomain: isPointInBusinessDomain(sample.position, domain, activeExitTaskId),
+      actualSpeedMps: isSuspended ? 0 : profile.preferredSpeedMps,
+      activeSegmentEndPosition: isSuspended ? sample.position : sample.activeSegmentEndPosition,
+      currentZoneId: currentZone?.zoneId ?? null,
+      activeTaskId: activeExitTaskId,
+      taskDestinationReachable: true,
+      physicalCalibrationActive: false,
+      businessLifecycleState: 'business_open',
+      shutterClosedPermitted: false,
+    };
+  }
+
+  // Brief arrival settle at primary station before afternoon roaming epoch starts at 13:45:15
+  if (rawSecInDay < calEndSec + VALERIA_CALIBRATION_RETURN_WINDOW_PADDING_SECONDS) {
+    const isSuspended = returnPauseEval.isSuspended;
+    const primaryZone = resolveAuthorizedBusinessZone(primaryWp.position, domain, null);
+    return {
+      movementState: 'stationary',
+      currentWaypointId: profile.primaryWaypointId,
+      destinationWaypointId: null,
+      activeRouteId: null,
+      position: primaryWp.position,
+      forwardHeading: defaultHeading,
+      progression: 0,
+      movementStartTime: null,
+      expectedDurationSeconds: 0,
+      associatedPlaceId: domain.associatedPlaceId,
+      behaviorProfileType: 'business_local_autonomy',
+      autonomousBehaviorState: isSuspended ? 'customer_interaction' : 'working_stationary',
+      controlMode: isSuspended ? 'player_interaction_suspended' : 'autonomous_business_local',
+      patrolDirection: 'none',
+      patrolCycleIndex: 0,
+      isSuspendedByPlayerInteraction: isSuspended,
+      suspendedByPlayerId: returnPauseEval.suspendedByPlayerId,
+      passingEncounterPartnerNpcId: null,
+      passingEncounterSessionId: null,
+      passingEncounterType: null,
+      businessDomainId: domain.domainId,
+      withinAuthorizedDomain: isPointInBusinessDomain(primaryWp.position, domain, null),
+      actualSpeedMps: 0,
+      activeSegmentEndPosition: primaryWp.position,
+      currentZoneId: primaryZone?.zoneId ?? OPTICA_EXTERIOR_FRONTAGE_ZONE.zoneId,
+      activeTaskId: null,
+      taskDestinationReachable: true,
+      physicalCalibrationActive: false,
+      businessLifecycleState: 'business_open',
+      shutterClosedPermitted: false,
+    };
+  }
+
+  // Return complete: hand off seamlessly to afternoon connected showroom/frontage autonomy
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// 7C. VALERIA DAILY BUSINESS OPENING / CLOSING LIFECYCLE (INCREMENT 5.23.2)
+// ---------------------------------------------------------------------------
+
+/**
+ * Evaluates Valeria Domínguez's complete deterministic daily business lifecycle
+ * (Óptica Fashion, Mon-Sat 09:00-17:00 America/Ciudad_Juarez; Sunday closed):
+ *
+ * 1. Closed Overnight & Sunday (`off_duty_inside`):
+ *    Valeria remains stationary at the verified interior off-duty station
+ *    `wp_valeria_off_duty_station (-15.85, 0.20, 1.15)` facing East (+1, 0),
+ *    with `shutterClosedPermitted: !playerInsideStore`.
+ * 2. Daily Opening (`09:00:00..09:00:05`, `opening_transition`):
+ *    Shutter opens (`shutterClosedPermitted: false`) while Valeria waits inside;
+ *    at `09:00:05`, she walks continuously out from `wp_valeria_off_duty_station`
+ *    through Zone C -> Zone B open doorway -> `wp_valeria_storefront` into normal autonomy.
+ * 3. Midday Calibration (`13:00:00..13:45:00+`):
+ *    Delegates to `evaluateValeriaCalibrationLifecycle` (`businessLifecycleState: 'business_open'`,
+ *    `shutterClosedPermitted: false`).
+ * 4. Pre-Closing Return (`16:57:00..17:00:00`, configurable lead time):
+ *    Suspends ordinary roaming from exact current position, routes through open doorway
+ *    (if outside) or showroom (if inside) to `wp_valeria_off_duty_station` at 1.10 m/s
+ *    without entering Zone D, and waits inside (`closing_preparation`) once arrived.
+ * 5. Closing Boundary & `closing_pending` (`>= 17:00:00`):
+ *    If Valeria is safely inside at `wp_valeria_off_duty_station` and player is not trapped
+ *    inside, enters `off_duty_inside` with `shutterClosedPermitted: true`.
+ *    If held outside or mid-return by an active player dialogue past 17:00:00, enters
+ *    `closing_pending` (`shutterClosedPermitted: false`), preserves the dialogue, gives
+ *    return-to-interior highest priority immediately on release at normal 1.10 m/s speed,
+ *    and completes closure only after physical arrival inside.
+ */
+export function evaluateValeriaBusinessLifecycle(params: {
+  readonly rawEvaluatedAtMs: number;
+  readonly civil: CivilTime;
+  readonly waypointsRegistry: Readonly<
+    Record<string, { readonly position: Vector3D; readonly associatedPlaceId: string; readonly outgoingWaypointIds: readonly string[] }>
+  >;
+  readonly pauseIntervals?: readonly NpcInteractionPauseInterval[];
+  readonly player?: PlayerSpatialState | null;
+  readonly closingPrepLeadMinutes?: number;
+}): AutonomousMovementEvaluationResult | null {
+  const {
+    rawEvaluatedAtMs,
+    civil,
+    waypointsRegistry,
+    pauseIntervals,
+    player,
+    closingPrepLeadMinutes = VALERIA_CLOSING_PREP_LEAD_MINUTES,
+  } = params;
+
+  const profile = BUSINESS_LOCAL_AUTONOMY_PROFILES['valeria-optica-attendant']!;
+  const domain = OPTICA_FASHION_AUTONOMY_DOMAIN;
+  const primaryWp = waypointsRegistry[profile.primaryWaypointId]!;
+  const defaultHeading = profile.localNodes[profile.primaryWaypointId]?.observationHeading ?? { x: 1, z: 0 };
+  const offDutyWp = waypointsRegistry[VALERIA_OFF_DUTY_STATION_WAYPOINT_ID] ?? {
+    position: VALERIA_OFF_DUTY_STATION_POSITION,
+    associatedPlaceId: domain.associatedPlaceId,
+    outgoingWaypointIds: [],
+  };
+  const offDutyZone =
+    resolveAuthorizedBusinessZone(offDutyWp.position, domain, null) ?? OPTICA_MAIN_SHOWROOM_ZONE;
+  const playerInsideStore = isPlayerInsideOpticaInterior(player);
+
+  const rawSecInDay =
+    civil.hour * 3600 + civil.minute * 60 + civil.second + civil.millisecond / 1000;
+  const dayStartUtcMs = rawEvaluatedAtMs - rawSecInDay * 1000;
+
+  const isOperatingDay = VALERIA_BUSINESS_OPERATING_DAYS.includes(civil.dayOfWeek);
+  const openSec = VALERIA_BUSINESS_OPEN_HOUR * 3600 + VALERIA_BUSINESS_OPEN_MINUTE * 60;
+  const closeSec = VALERIA_BUSINESS_CLOSE_HOUR * 3600 + VALERIA_BUSINESS_CLOSE_MINUTE * 60;
+  const safeLeadMinutes = Math.max(1, Math.min(30, closingPrepLeadMinutes));
+  const preCloseSec = closeSec - safeLeadMinutes * 60;
+  const calStartSec = VALERIA_CALIBRATION_START_HOUR * 3600 + VALERIA_CALIBRATION_START_MINUTE * 60;
+
+  // Helper to construct deterministic interior off-duty waiting snapshot
+  const buildOffDutyInsideSnapshot = (opts: {
+    readonly lifecycleState: BusinessLifecycleState;
+    readonly behaviorState: BusinessAutonomyBehaviorState;
+    readonly controlMode: NpcMovementControlMode;
+    readonly shutterClosedPermitted: boolean;
+    readonly isSuspended?: boolean;
+    readonly suspendedByPlayerId?: string | null;
+  }): AutonomousMovementEvaluationResult => ({
+    movementState: 'stationary',
+    currentWaypointId: VALERIA_OFF_DUTY_STATION_WAYPOINT_ID,
+    destinationWaypointId: null,
+    activeRouteId: null,
+    position: offDutyWp.position,
+    forwardHeading: VALERIA_OFF_DUTY_STATION_HEADING,
+    progression: 0,
+    movementStartTime: null,
+    expectedDurationSeconds: 0,
+    associatedPlaceId: domain.associatedPlaceId,
+    behaviorProfileType: 'business_local_autonomy',
+    autonomousBehaviorState: opts.behaviorState,
+    controlMode: opts.controlMode,
+    patrolDirection: 'none',
+    patrolCycleIndex: 0,
+    isSuspendedByPlayerInteraction: opts.isSuspended ?? false,
+    suspendedByPlayerId: opts.suspendedByPlayerId ?? null,
+    passingEncounterPartnerNpcId: null,
+    passingEncounterSessionId: null,
+    passingEncounterType: null,
+    businessDomainId: domain.domainId,
+    withinAuthorizedDomain: isPointInBusinessDomain(offDutyWp.position, domain, null),
+    actualSpeedMps: 0,
+    activeSegmentEndPosition: offDutyWp.position,
+    currentZoneId: offDutyZone.zoneId,
+    activeTaskId: null,
+    taskDestinationReachable: true,
+    physicalCalibrationActive: false,
+    businessLifecycleState: opts.lifecycleState,
+    shutterClosedPermitted: opts.shutterClosedPermitted,
+  });
+
+  // 1. Closed day (Sunday) OR before business opening (< 09:00:00)
+  // Always remains safely inside at wp_valeria_off_duty_station (Scenario E safe: pause/resume never starts roaming)
+  if (!isOperatingDay || rawSecInDay < openSec) {
+    const pauseEval = evaluateEffectiveAutonomousTime(rawEvaluatedAtMs, pauseIntervals, dayStartUtcMs);
+    const safelyInside = isValeriaSafelyInsideOptica(offDutyWp.position);
+    return buildOffDutyInsideSnapshot({
+      lifecycleState: playerInsideStore ? 'closing_pending' : 'off_duty_inside',
+      behaviorState: 'off_duty',
+      controlMode: 'fixed_station_anchor',
+      shutterClosedPermitted: safelyInside && !playerInsideStore,
+      isSuspended: pauseEval.isSuspended,
+      suspendedByPlayerId: pauseEval.suspendedByPlayerId,
+    });
+  }
+
+  // 2. Daily Opening Transition & Indoor Start of Shift (09:00:00 .. morning autonomy handoff)
+  if (rawSecInDay >= openSec && rawSecInDay < calStartSec) {
+    const openUtcMs = dayStartUtcMs + openSec * 1000;
+    const openWalkStartUtcMs = openUtcMs + VALERIA_OPENING_TRANSITION_SECONDS * 1000;
+
+    // 2a. [09:00:00, 09:00:05): Shutter opens while Valeria waits safely inside at wp_valeria_off_duty_station
+    if (rawEvaluatedAtMs < openWalkStartUtcMs) {
+      const pauseEval = evaluateEffectiveAutonomousTime(rawEvaluatedAtMs, pauseIntervals, openUtcMs);
+      return buildOffDutyInsideSnapshot({
+        lifecycleState: 'opening_transition',
+        behaviorState: pauseEval.isSuspended ? 'customer_interaction' : 'working_stationary',
+        controlMode: pauseEval.isSuspended ? 'player_interaction_suspended' : 'autonomous_business_local',
+        shutterClosedPermitted: false,
+        isSuspended: pauseEval.isSuspended,
+        suspendedByPlayerId: pauseEval.suspendedByPlayerId,
+      });
+    }
+
+    // 2b. [09:00:05+): Walk continuously from wp_valeria_off_duty_station -> open doorway -> wp_valeria_storefront
+    const openingPolyline = buildValidatedPolylineFromPosition({
+      startPos: offDutyWp.position,
+      startWaypointId: VALERIA_OFF_DUTY_STATION_WAYPOINT_ID,
+      startSegmentDestId: null,
+      goalWaypointId: profile.primaryWaypointId,
+      domain,
+      profile,
+      waypointsRegistry,
+      speedMps: profile.preferredSpeedMps,
+      activeTaskId: null,
+    });
+
+    if (openingPolyline) {
+      const openWalkPauseEval = evaluateEffectiveAutonomousTime(
+        rawEvaluatedAtMs,
+        pauseIntervals,
+        openWalkStartUtcMs
+      );
+      const effOpenWalkSec = Math.max(0, (openWalkPauseEval.effectiveTimeMs - openWalkStartUtcMs) / 1000);
+
+      if (effOpenWalkSec < openingPolyline.totalDurationSec) {
+        const sample = samplePolylineAtElapsed(openingPolyline, effOpenWalkSec);
+        const zone = resolveAuthorizedBusinessZone(sample.position, domain, null);
+        const isSuspended = openWalkPauseEval.isSuspended;
+        return {
+          movementState: isSuspended ? 'stationary' : 'moving',
+          currentWaypointId: sample.currentWaypointId,
+          destinationWaypointId: profile.primaryWaypointId,
+          activeRouteId: 'route_valeria_opening_shift',
+          position: sample.position,
+          forwardHeading: sample.heading,
+          progression: sample.progression,
+          movementStartTime: new Date(openWalkStartUtcMs).toISOString(),
+          expectedDurationSeconds: Math.round(openingPolyline.totalDurationSec * 1000) / 1000,
+          associatedPlaceId: domain.associatedPlaceId,
+          behaviorProfileType: 'business_local_autonomy',
+          autonomousBehaviorState: isSuspended ? 'customer_interaction' : 'local_roaming',
+          controlMode: isSuspended ? 'player_interaction_suspended' : 'autonomous_business_local',
+          patrolDirection: 'none',
+          patrolCycleIndex: 0,
+          isSuspendedByPlayerInteraction: isSuspended,
+          suspendedByPlayerId: openWalkPauseEval.suspendedByPlayerId,
+          passingEncounterPartnerNpcId: null,
+          passingEncounterSessionId: null,
+          passingEncounterType: null,
+          businessDomainId: domain.domainId,
+          withinAuthorizedDomain: isPointInBusinessDomain(sample.position, domain, null),
+          actualSpeedMps: isSuspended ? 0 : profile.preferredSpeedMps,
+          activeSegmentEndPosition: isSuspended ? sample.position : sample.activeSegmentEndPosition,
+          currentZoneId: zone?.zoneId ?? null,
+          activeTaskId: null,
+          taskDestinationReachable: true,
+          physicalCalibrationActive: false,
+          businessLifecycleState: 'business_open',
+          shutterClosedPermitted: false,
+        };
+      }
+
+      // Brief calm arrival settle at wp_valeria_storefront until morning roaming epoch opens at 09:00:12
+      if (rawSecInDay < openSec + VALERIA_OPENING_WALK_PADDING_SECONDS) {
+        const isSuspended = openWalkPauseEval.isSuspended;
+        const primaryZone = resolveAuthorizedBusinessZone(primaryWp.position, domain, null);
+        return {
+          movementState: 'stationary',
+          currentWaypointId: profile.primaryWaypointId,
+          destinationWaypointId: null,
+          activeRouteId: null,
+          position: primaryWp.position,
+          forwardHeading: defaultHeading,
+          progression: 0,
+          movementStartTime: null,
+          expectedDurationSeconds: 0,
+          associatedPlaceId: domain.associatedPlaceId,
+          behaviorProfileType: 'business_local_autonomy',
+          autonomousBehaviorState: isSuspended ? 'customer_interaction' : 'working_stationary',
+          controlMode: isSuspended ? 'player_interaction_suspended' : 'autonomous_business_local',
+          patrolDirection: 'none',
+          patrolCycleIndex: 0,
+          isSuspendedByPlayerInteraction: isSuspended,
+          suspendedByPlayerId: openWalkPauseEval.suspendedByPlayerId,
+          passingEncounterPartnerNpcId: null,
+          passingEncounterSessionId: null,
+          passingEncounterType: null,
+          businessDomainId: domain.domainId,
+          withinAuthorizedDomain: isPointInBusinessDomain(primaryWp.position, domain, null),
+          actualSpeedMps: 0,
+          activeSegmentEndPosition: primaryWp.position,
+          currentZoneId: primaryZone?.zoneId ?? OPTICA_EXTERIOR_FRONTAGE_ZONE.zoneId,
+          activeTaskId: null,
+          taskDestinationReachable: true,
+          physicalCalibrationActive: false,
+          businessLifecycleState: 'business_open',
+          shutterClosedPermitted: false,
+        };
+      }
+    }
+
+    // Morning normal indoor/outdoor autonomy
+    return null;
+  }
+
+  // 3. Midday Calibration & Afternoon Normal Autonomy [13:00:00, preCloseSec)
+  if (rawSecInDay >= calStartSec && rawSecInDay < preCloseSec) {
+    return evaluateValeriaCalibrationLifecycle({
+      rawEvaluatedAtMs,
+      civil,
+      waypointsRegistry,
+      pauseIntervals,
+      player,
+    });
+  }
+
+  // 4. Pre-Closing Preparation, Return Inside, Closing Pending & Overnight Off-Duty (rawSecInDay >= preCloseSec)
+  const preCloseUtcMs = dayStartUtcMs + preCloseSec * 1000;
+  const closeUtcMs = dayStartUtcMs + closeSec * 1000;
+  const isPastClosingBoundary = rawEvaluatedAtMs >= closeUtcMs;
+
+  // Determine Valeria's exact position at the instant pre-closing triggers (preCloseSec - 1ms)
+  const preClosePrevSec = Math.max(0, preCloseSec - 1);
+  const preCloseCivil: CivilTime = {
+    ...civil,
+    hour: Math.floor(preClosePrevSec / 3600),
+    minute: Math.floor((preClosePrevSec % 3600) / 60),
+    second: preClosePrevSec % 60,
+    millisecond: 999,
+  };
+  const preClosePauses = pauseIntervals
+    ?.filter((iv) => iv.startedAtMs < preCloseUtcMs)
+    .map((iv) => ({
+      ...iv,
+      endedAtMs: iv.endedAtMs === null ? preCloseUtcMs - 1 : Math.min(iv.endedAtMs, preCloseUtcMs - 1),
+    }));
+
+  // Respect any calibration return still active at preCloseUtcMs - 1 (e.g., prolonged pause from calibration past 16:57)
+  const preCloseCalibState = evaluateValeriaCalibrationLifecycle({
+    rawEvaluatedAtMs: preCloseUtcMs - 1,
+    civil: preCloseCivil,
+    waypointsRegistry,
+    pauseIntervals: preClosePauses,
+    player: null,
+  });
+
+  const preCloseState =
+    preCloseCalibState ??
+    evaluateBusinessLocalAutonomyMovement({
+      profile,
+      rawEvaluatedAtMs: preCloseUtcMs - 1,
+      civil: preCloseCivil,
+      activitySnapshot: null,
+      waypointsRegistry,
+      pauseIntervals: preClosePauses,
+      player: null,
+    });
+
+  // Never authorize Zone D entry during closing; ONLY allow Zone D exit if Valeria was already inside Zone D
+  const startedInPublicZone = resolveAuthorizedBusinessZone(preCloseState.position, domain, null) !== null;
+  const closingRouteAuthTaskId = startedInPublicZone ? null : VALERIA_CALIBRATION_TASK_ID;
+
+  const closingPolyline = buildValidatedPolylineFromPosition({
+    startPos: preCloseState.position,
+    startWaypointId: preCloseState.currentWaypointId,
+    startSegmentDestId: preCloseState.destinationWaypointId,
+    goalWaypointId: VALERIA_OFF_DUTY_STATION_WAYPOINT_ID,
+    domain,
+    profile,
+    waypointsRegistry,
+    speedMps: profile.preferredSpeedMps,
+    activeTaskId: closingRouteAuthTaskId,
+  });
+
+  const closePauseEval = evaluateEffectiveAutonomousTime(rawEvaluatedAtMs, pauseIntervals, preCloseUtcMs);
+  const effCloseSec = Math.max(0, (closePauseEval.effectiveTimeMs - preCloseUtcMs) / 1000);
+
+  // 4a. Valeria is still walking inside (or held outside/mid-return by an active player dialogue)
+  if (closingPolyline && effCloseSec < closingPolyline.totalDurationSec) {
+    const sample = samplePolylineAtElapsed(closingPolyline, effCloseSec);
+    const publicZone = resolveAuthorizedBusinessZone(sample.position, domain, null);
+    const activeExitTaskId = publicZone ? null : closingRouteAuthTaskId;
+    const currentZone =
+      publicZone ?? resolveAuthorizedBusinessZone(sample.position, domain, activeExitTaskId);
+    const isSuspended = closePauseEval.isSuspended;
+
+    const lifecycleState: BusinessLifecycleState = isPastClosingBoundary
+      ? 'closing_pending'
+      : isSuspended
+        ? 'closing_preparation'
+        : 'returning_inside_for_close';
+
+    return {
+      movementState: isSuspended ? 'stationary' : 'moving',
+      currentWaypointId: sample.currentWaypointId,
+      destinationWaypointId: VALERIA_OFF_DUTY_STATION_WAYPOINT_ID,
+      activeRouteId: 'route_valeria_return_for_close',
+      position: sample.position,
+      forwardHeading: sample.heading,
+      progression: sample.progression,
+      movementStartTime: new Date(preCloseUtcMs).toISOString(),
+      expectedDurationSeconds: Math.round(closingPolyline.totalDurationSec * 1000) / 1000,
+      associatedPlaceId: domain.associatedPlaceId,
+      behaviorProfileType: 'business_local_autonomy',
+      autonomousBehaviorState: isSuspended ? 'customer_interaction' : 'returning_inside_for_close',
+      controlMode: isSuspended ? 'player_interaction_suspended' : 'scheduled_routine_transition',
+      patrolDirection: 'none',
+      patrolCycleIndex: 0,
+      isSuspendedByPlayerInteraction: isSuspended,
+      suspendedByPlayerId: closePauseEval.suspendedByPlayerId,
+      passingEncounterPartnerNpcId: null,
+      passingEncounterSessionId: null,
+      passingEncounterType: null,
+      businessDomainId: domain.domainId,
+      withinAuthorizedDomain: isPointInBusinessDomain(sample.position, domain, activeExitTaskId),
+      actualSpeedMps: isSuspended ? 0 : profile.preferredSpeedMps,
+      activeSegmentEndPosition: isSuspended ? sample.position : sample.activeSegmentEndPosition,
+      currentZoneId: currentZone?.zoneId ?? null,
+      activeTaskId: activeExitTaskId,
+      taskDestinationReachable: true,
+      physicalCalibrationActive: false,
+      businessLifecycleState: lifecycleState,
+      // Shutter MUST stay open while Valeria is outside, in threshold, or still returning inside
+      shutterClosedPermitted: false,
+    };
+  }
+
+  // 4b. Valeria has physically reached wp_valeria_off_duty_station (-15.85, 0.20, 1.15)
+  const safelyInside = isValeriaSafelyInsideOptica(offDutyWp.position);
+
+  if (!isPastClosingBoundary) {
+    // Arrived inside during [16:57, 17:00): calm indoor resting/waiting until exact 17:00:00 shutter close
+    return buildOffDutyInsideSnapshot({
+      lifecycleState: 'closing_preparation',
+      behaviorState: closePauseEval.isSuspended ? 'customer_interaction' : 'off_duty_inside',
+      controlMode: closePauseEval.isSuspended ? 'player_interaction_suspended' : 'scheduled_routine_transition',
+      shutterClosedPermitted: false,
+      isSuspended: closePauseEval.isSuspended,
+      suspendedByPlayerId: closePauseEval.suspendedByPlayerId,
+    });
+  }
+
+  // Past 17:00:00 closing boundary and Valeria is confirmed safely inside:
+  // Only permit shutter closure if the player is NOT inside Óptica Fashion (never trap player!).
+  if (playerInsideStore) {
+    return buildOffDutyInsideSnapshot({
+      lifecycleState: 'closing_pending',
+      behaviorState: 'off_duty_inside',
+      controlMode: 'fixed_station_anchor',
+      shutterClosedPermitted: false,
+      isSuspended: closePauseEval.isSuspended,
+      suspendedByPlayerId: closePauseEval.suspendedByPlayerId,
+    });
+  }
+
+  return buildOffDutyInsideSnapshot({
+    lifecycleState: 'off_duty_inside',
+    behaviorState: 'off_duty',
+    controlMode: 'fixed_station_anchor',
+    shutterClosedPermitted: safelyInside,
+    isSuspended: closePauseEval.isSuspended,
+    suspendedByPlayerId: closePauseEval.suspendedByPlayerId,
+  });
 }
 
 // ---------------------------------------------------------------------------

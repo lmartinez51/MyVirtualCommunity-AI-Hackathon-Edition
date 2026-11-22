@@ -42,7 +42,10 @@ import {
   NpcActivitySnapshot,
   evaluateNpcActivity,
 } from './npc-activity.js';
-import type { EvaluateAutonomousMovementOptions } from './npc-autonomous-locomotion.js';
+import type {
+  BusinessLifecycleState,
+  EvaluateAutonomousMovementOptions,
+} from './npc-autonomous-locomotion.js';
 import {
   CORRIDOR_WAYPOINTS,
   NPC_MOVEMENT_PROFILES,
@@ -102,6 +105,8 @@ export interface NpcInteractionContext {
   readonly localCivilTime: string;
   readonly socialAwareness?: NpcSocialAwarenessContext;
   readonly socialInteraction?: NpcSocialInteractionParticipation;
+  readonly businessLifecycleState?: BusinessLifecycleState;
+  readonly shutterClosedPermitted?: boolean;
   readonly isDemonstrationContext: true;
   readonly demonstrationNotice: BilingualText;
 }
@@ -208,7 +213,11 @@ export function evaluateNpcInteractionContext(
   let dialogueGuidance: BilingualText;
   let contextualGreeting: BilingualText;
 
-  if (allowOffDuty && activitySnap.state === 'off_duty') {
+  const isValeriaClosingPendingActive =
+    movementSnap.businessLifecycleState === 'closing_pending' &&
+    (movementSnap.movementState === 'moving' || Boolean(movementSnap.isSuspendedByPlayerInteraction));
+
+  if (allowOffDuty && activitySnap.state === 'off_duty' && !isValeriaClosingPendingActive) {
     interactionAvailability = 'off_duty';
     interactionMode = 'off_duty_courtesy';
     canInitiateConversation = true;
@@ -249,16 +258,50 @@ export function evaluateNpcInteractionContext(
     isAvailableForNormalService = false;
     const destNameEn = destWp?.label.en ?? 'destination';
     const destNameEs = destWp?.label.es ?? 'su destino';
+    const isClosingReturn = movementSnap.activeRouteId === 'route_valeria_return_for_close';
 
+    decisionReason = isClosingReturn
+      ? Object.freeze({
+        en: `${scheduleProfile.canonicalName} is returning inside Óptica Fashion to prepare for closing.`,
+        es: `${scheduleProfile.canonicalName} está regresando al interior de Óptica Fashion para preparar el cierre.`,
+      })
+      : Object.freeze({
+        en: `${scheduleProfile.canonicalName} is currently walking along the corridor toward ${destNameEn}. Desk/counter service is paused during transit.`,
+        es: `${scheduleProfile.canonicalName} está caminando por el corredor hacia ${destNameEs}. La atención en mostrador está pausada durante el traslado.`,
+      });
+    dialogueGuidance = isClosingReturn
+      ? Object.freeze({
+        en: 'NPC is returning inside just before business closing. Responds courteously and notes that the store is about to close.',
+        es: 'El personaje regresa al interior justo antes del cierre. Responde con cortesía e indica que la óptica está por cerrar.',
+      })
+      : Object.freeze({
+        en: 'NPC is actively walking. Player may converse alongside them. Dialogue acknowledges their active transit and destination.',
+        es: 'El personaje va caminando. El jugador puede conversar a su paso. El diálogo reconoce su traslado y hacia dónde se dirige.',
+      });
+    contextualGreeting = isClosingReturn
+      ? Object.freeze({
+        en: 'Hello! We are just wrapping up and returning inside to close Óptica Fashion for the day, but feel free to ask a quick question.',
+        es: '¡Hola! Ya estamos regresando al interior para cerrar Óptica Fashion por hoy, pero con gusto te respondo una consulta breve.',
+      })
+      : getInTransitGreeting(npcId, destWp?.label);
+
+  } else if (isValeriaClosingPendingActive) {
+    interactionAvailability = 'available_contextual';
+    interactionMode = 'break_or_dwell';
+    canInitiateConversation = true;
+    isAvailableForNormalService = false;
     decisionReason = Object.freeze({
-      en: `${scheduleProfile.canonicalName} is currently walking along the corridor toward ${destNameEn}. Desk/counter service is paused during transit.`,
-      es: `${scheduleProfile.canonicalName} está caminando por el corredor hacia ${destNameEs}. La atención en mostrador está pausada durante el traslado.`,
+      en: `${scheduleProfile.canonicalName} is wrapping up a conversation before returning inside to close Óptica Fashion.`,
+      es: `${scheduleProfile.canonicalName} está concluyendo una conversación antes de regresar al interior para cerrar Óptica Fashion.`,
     });
     dialogueGuidance = Object.freeze({
-      en: 'NPC is actively walking. Player may converse alongside them. Dialogue acknowledges their active transit and destination.',
-      es: 'El personaje va caminando. El jugador puede conversar a su paso. El diálogo reconoce su traslado y hacia dónde se dirige.',
+      en: 'NPC is finishing a customer conversation at closing time before heading indoors to close the shutter.',
+      es: 'El personaje concluye una conversación con el cliente a la hora de cierre antes de entrar y bajar la cortina.',
     });
-    contextualGreeting = getInTransitGreeting(npcId, destWp?.label);
+    contextualGreeting = Object.freeze({
+      en: 'Of course—let me quickly finish helping you before I step inside to close Óptica Fashion for the evening.',
+      es: 'Con gusto te termino de atender brevemente antes de entrar para cerrar Óptica Fashion por la tarde.',
+    });
 
   } else if (movementSnap.movementState === 'arrived' || movementSnap.movementState === 'waiting') {
     interactionAvailability = 'available_contextual';
@@ -266,14 +309,20 @@ export function evaluateNpcInteractionContext(
     canInitiateConversation = true;
     isAvailableForNormalService = false;
 
+    const isBusinessAttendant = actorArchetype === 'business_attendant';
     decisionReason = Object.freeze({
       en: `${scheduleProfile.canonicalName} is at ${currentWp.label.en} (${activitySnap.activityTitle.en}). Receptive to contextual conversation.`,
       es: `${scheduleProfile.canonicalName} se encuentra en ${currentWp.label.es} (${activitySnap.activityTitle.es}). Receptivo a conversación contextual.`,
     });
-    dialogueGuidance = Object.freeze({
-      en: 'NPC is at a break or secondary workstation. Dialogue reflects their current activity rather than standard counter service.',
-      es: 'El personaje está en descanso o estación secundaria. El diálogo refleja su actividad actual en lugar del servicio regular de mostrador.',
-    });
+    dialogueGuidance = isBusinessAttendant
+      ? Object.freeze({
+        en: 'NPC is on duty at an internal store workstation and immediately welcomes and assists the customer.',
+        es: 'El personaje está en servicio en una estación interna del establecimiento y atiende de inmediato al cliente.',
+      })
+      : Object.freeze({
+        en: 'NPC is at a break or secondary workstation. Dialogue reflects their current activity rather than standard counter service.',
+        es: 'El personaje está en descanso o estación secundaria. El diálogo refleja su actividad actual en lugar del servicio regular de mostrador.',
+      });
     contextualGreeting = getContextualDwellGreeting(npcId, currentWp.label, activitySnap.activityTitle);
 
   } else if (activitySnap.state === 'busy') {
@@ -282,14 +331,20 @@ export function evaluateNpcInteractionContext(
     canInitiateConversation = true;
     isAvailableForNormalService = false;
 
+    const isBusinessAttendant = actorArchetype === 'business_attendant';
     decisionReason = Object.freeze({
-      en: `${scheduleProfile.canonicalName} is on duty at ${currentWp.label.en} but currently engaged in: ${activitySnap.activityTitle.en}.`,
-      es: `${scheduleProfile.canonicalName} está en turno en ${currentWp.label.es} pero realizando: ${activitySnap.activityTitle.es}.`,
+      en: `${scheduleProfile.canonicalName} is on duty at ${currentWp.label.en} (${activitySnap.activityTitle.en}).`,
+      es: `${scheduleProfile.canonicalName} está en servicio en ${currentWp.label.es} (${activitySnap.activityTitle.es}).`,
     });
-    dialogueGuidance = Object.freeze({
-      en: 'NPC is focused on a priority task (e.g. inventory audit, calibration). Receptive to brief queries with a focused, busy demeanor.',
-      es: 'El personaje está enfocado en una tarea prioritaria (ej. inventario, calibración). Receptivo a preguntas breves con tono ocupado.',
-    });
+    dialogueGuidance = isBusinessAttendant
+      ? Object.freeze({
+        en: 'NPC is on duty performing a routine store task and immediately pauses to assist the customer.',
+        es: 'El personaje está en servicio realizando una tarea interna y pausa de inmediato para atender al cliente.',
+      })
+      : Object.freeze({
+        en: 'NPC is focused on a priority task (e.g. inventory audit, calibration). Receptive to brief queries with a focused, busy demeanor.',
+        es: 'El personaje está enfocado en una tarea prioritaria (ej. inventario, calibración). Receptivo a preguntas breves con tono ocupado.',
+      });
     contextualGreeting = getBusyGreeting(npcId, activitySnap.activityTitle);
 
   } else {
@@ -301,22 +356,22 @@ export function evaluateNpcInteractionContext(
 
     decisionReason = !allowOffDuty
       ? Object.freeze({
-          en: `${scheduleProfile.canonicalName} is present as a simulated community player${isWitness ? ' and bridge witness' : ''} at ${currentWp.label.en}, open for conversation.`,
-          es: `${scheduleProfile.canonicalName} participa como jugador comunitario simulado${isWitness ? ' y testigo del cruce' : ''} en ${currentWp.label.es}, disponible para conversar.`,
-        })
+        en: `${scheduleProfile.canonicalName} is present as a simulated community player${isWitness ? ' and bridge witness' : ''} at ${currentWp.label.en}, open for conversation.`,
+        es: `${scheduleProfile.canonicalName} participa como jugador comunitario simulado${isWitness ? ' y testigo del cruce' : ''} en ${currentWp.label.es}, disponible para conversar.`,
+      })
       : Object.freeze({
-          en: `${scheduleProfile.canonicalName} is on active duty at ${currentWp.label.en} and fully available for normal service.`,
-          es: `${scheduleProfile.canonicalName} está en turno activo en ${currentWp.label.es} y totalmente disponible para atención normal.`,
-        });
+        en: `${scheduleProfile.canonicalName} is on active duty at ${currentWp.label.en} and fully available for normal service.`,
+        es: `${scheduleProfile.canonicalName} está en turno activo en ${currentWp.label.es} y totalmente disponible para atención normal.`,
+      });
     dialogueGuidance = !allowOffDuty
       ? Object.freeze({
-          en: 'Simulated community player (bridge queue witness). Converses naturally about the crossing queue and daily pedestrian perspective.',
-          es: 'Jugador comunitario simulado (testigo en la fila del puente). Conversa con naturalidad sobre la fila y su experiencia peatonal.',
-        })
+        en: 'Simulated community player (bridge queue witness). Converses naturally about the crossing queue and daily pedestrian perspective.',
+        es: 'Jugador comunitario simulado (testigo en la fila del puente). Conversa con naturalidad sobre la fila y su experiencia peatonal.',
+      })
       : Object.freeze({
-          en: 'NPC provides full standard assistance according to their professional role in the corridor.',
-          es: 'El personaje brinda atención completa de acuerdo con su función profesional en el corredor.',
-        });
+        en: 'NPC provides full standard assistance according to their professional role in the corridor.',
+        es: 'El personaje brinda atención completa de acuerdo con su función profesional en el corredor.',
+      });
     contextualGreeting = getStandardGreeting(npcId);
   }
 
@@ -352,6 +407,12 @@ export function evaluateNpcInteractionContext(
     evaluatedAt: instantIso,
     timeZone: scheduleProfile.timeZone,
     localCivilTime: civil.isoCivilString,
+    ...(movementSnap.businessLifecycleState !== undefined
+      ? { businessLifecycleState: movementSnap.businessLifecycleState }
+      : {}),
+    ...(movementSnap.shutterClosedPermitted !== undefined
+      ? { shutterClosedPermitted: movementSnap.shutterClosedPermitted }
+      : {}),
     isDemonstrationContext: true,
     demonstrationNotice: SIMULATED_CONTEXT_NOTICE,
   });

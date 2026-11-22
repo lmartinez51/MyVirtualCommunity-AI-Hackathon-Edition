@@ -237,13 +237,14 @@ describe('Deterministic NPC Social Awareness Domain Model (Increment 5.20.0)', (
     assert.strictEqual(nightSnap.npcs['carlos-farmacia-attendant']!.canOrientTowardTarget, false);
     assert.strictEqual(nightSnap.npcs['carlos-farmacia-attendant']!.socialEligible, false);
 
-    // At 13:05:00 CST: Don Héctor at wood carving workbench retains contextual focus; Valeria remains available_normal (zero calibration break)
+    // At 13:05:00 CST: Don Héctor at wood carving workbench & Valeria at rear optical calibration station retain contextual focus
     const contextualSnap = evaluateRosterSocialAwareness({
       evaluatedAt: CONTEXTUAL_WORKSHOP_INSTANT,
       player: null,
     });
-    assert.strictEqual(contextualSnap.npcs['valeria-optica-attendant']!.interactionAvailability, 'available_normal');
-    assert.strictEqual(contextualSnap.npcs['valeria-optica-attendant']!.socialEligible, true);
+    assert.strictEqual(contextualSnap.npcs['valeria-optica-attendant']!.interactionAvailability, 'available_contextual');
+    assert.strictEqual(contextualSnap.npcs['valeria-optica-attendant']!.socialEligible, false);
+    assert.strictEqual(contextualSnap.npcs['valeria-optica-attendant']!.retainsContextualActivity, true);
     assert.strictEqual(contextualSnap.npcs['hector-artisan']!.socialEligible, false);
     assert.strictEqual(contextualSnap.npcs['hector-artisan']!.retainsContextualActivity, true);
   });

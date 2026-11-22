@@ -844,6 +844,14 @@ namespace MyVirtualCommunity.Client.Api
         public string businessDomainId;
         public bool withinAuthorizedDomain;
         public Vector3Dto activeSegmentEndPosition;
+        // Increment 5.23.1 Multi-zone indoor/outdoor & calibration lifecycle fields
+        public string currentZoneId;
+        public string activeTaskId;
+        public bool taskDestinationReachable;
+        public bool physicalCalibrationActive;
+        // Increment 5.23.2 Business Opening/Closing Lifecycle & Shutter Synchronization
+        public string businessLifecycleState;
+        public bool shutterClosedPermitted;
     }
 
     [Serializable]
@@ -1029,6 +1037,8 @@ namespace MyVirtualCommunity.Client.Api
         public string localCivilTime;
         public NpcSocialAwarenessDto socialAwareness;
         public NpcSocialInteractionParticipationDto socialInteraction;
+        public string businessLifecycleState;
+        public bool shutterClosedPermitted;
         public bool isDemonstrationContext;
         public BilingualTextDto demonstrationNotice;
     }
@@ -1345,6 +1355,8 @@ namespace MyVirtualCommunity.Client.Api
         public string closeTimeCivil;
         public string timeZone;
         public string summaryMessage;
+        public string businessLifecycleState;
+        public bool shutterClosedPermitted;
     }
 
     [Serializable]

@@ -224,7 +224,10 @@ export function isContextualStationOccupiedForSocial(
 
   switch (npcId) {
     case 'valeria-optica-attendant':
-      return ctx.currentWaypointId === 'wp_optica_workshop';
+      return (
+        ctx.currentWaypointId === 'wp_optica_calibration_station' ||
+        ctx.currentWaypointId === 'wp_optica_workshop'
+      );
     case 'hector-artisan':
       return ctx.currentWaypointId === 'wp_hector_bench';
     case 'patricia-citizen-rep':

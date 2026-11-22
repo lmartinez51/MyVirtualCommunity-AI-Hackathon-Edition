@@ -96,6 +96,13 @@ describe('InMemoryWorldCoreAdapter Fixture', () => {
     const sunLate = '2026-11-22T23:05:00.000Z';
     assert.equal((await adapter.getBusinessOperationalStatus(fjId, sunLate))?.isOpen, false);
     assert.equal((await adapter.getBusinessOperationalStatus(ccId, sunLate))?.isOpen, true);
+
+    // Óptica Fashion (Mon-Sat 09:00-17:00, Sun CLOSED)
+    const opticaId = createBusinessId('optical:optica-fashion');
+    assert.equal((await adapter.getBusinessOperationalStatus(opticaId, satMorning))?.isOpen, true); // Sat 11:00
+    assert.equal((await adapter.getBusinessOperationalStatus(opticaId, satAfternoon))?.isOpen, true); // Sat 15:15 (open until 17:00)
+    assert.equal((await adapter.getBusinessOperationalStatus(opticaId, friEvening))?.isOpen, false); // Fri 19:30 (closed at 17:00)
+    assert.equal((await adapter.getBusinessOperationalStatus(opticaId, sunMorning))?.isOpen, false); // Sun 10:00 (closed Sundays)
   });
 });
 

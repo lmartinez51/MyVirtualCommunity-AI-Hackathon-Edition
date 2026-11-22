@@ -1,6 +1,7 @@
 import { BusinessId } from './business-id.js';
 import { BusinessSchedule } from './business-schedule.js';
 import { CivilTime, deriveCivilTime } from './civil-time.js';
+import type { BusinessLifecycleState } from './npc-autonomous-locomotion.js';
 
 export type BusinessAvailabilityState =
   | 'OPEN'
@@ -41,6 +42,9 @@ export interface BusinessOperationalStatus {
     readonly en: string;
     readonly es: string;
   };
+  // Increment 5.23.2 Authoritative business lifecycle & shutter synchronization fields
+  readonly businessLifecycleState?: BusinessLifecycleState;
+  readonly shutterClosedPermitted?: boolean;
 }
 
 const DAY_NAMES = [
