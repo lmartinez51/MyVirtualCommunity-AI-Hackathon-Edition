@@ -149,6 +149,7 @@ namespace MyVirtualCommunity.Client.World
 
             // Update traffic light indicators if present
             UpdateTrafficSignalLights(unit);
+            Physics.SyncTransforms();
         }
 
         private void UpdateTrafficSignalLights(LaneBarrierUnit unit)

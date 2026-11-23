@@ -83,6 +83,31 @@ namespace MyVirtualCommunity.Client.World
         private string keypadStatusMessage = "";
         private Color keypadStatusColor = new Color(0.95f, 0.30f, 0.30f);
         private float keypadStatusUntilTime = -1f;
+        private float keypadModalMeasuredHeight = 528f;
+        private SecretRoomDimensionVaultController cachedDimensionVault = null;
+        private SecretContainmentArtifactDescriptor currentAimedArtifact = null;
+        private SecretBackroomsTransitionController cachedBackroomsTransition = null;
+        private BackroomsExitDoorTrigger currentNearbyBackroomsExit = null;
+        private bool lastKnownInBackrooms = false;
+
+        private bool IsInBackroomsMode()
+        {
+            if (cachedBackroomsTransition == null)
+            {
+                cachedBackroomsTransition = FindFirstObjectByType<SecretBackroomsTransitionController>();
+            }
+            return cachedBackroomsTransition != null && cachedBackroomsTransition.IsPlayerInBackrooms;
+        }
+
+        private bool IsInBackroomsOrTransitioning()
+        {
+            if (cachedBackroomsTransition == null)
+            {
+                cachedBackroomsTransition = FindFirstObjectByType<SecretBackroomsTransitionController>();
+            }
+            return cachedBackroomsTransition != null &&
+                   (cachedBackroomsTransition.IsPlayerInBackrooms || cachedBackroomsTransition.IsTransitioning);
+        }
 
         // UI & State Machine (Authoritative mutually exclusive primary states)
         private PrimaryUIState currentState = PrimaryUIState.ControlsGuide; // Active on first launch
@@ -601,6 +626,13 @@ namespace MyVirtualCommunity.Client.World
             ApplyThermalSafeFramerateCap(targetFramerate);
 
             characterController = GetComponent<CharacterController>();
+            if (characterController != null)
+            {
+                // Realistic human shoulder clearance (0.28m radius + 0.04m skinWidth = 0.32m effective)
+                // so the player glides smoothly through historic doorways and deep inside the Cuarto Secreto.
+                characterController.radius = 0.28f;
+                characterController.skinWidth = 0.04f;
+            }
 
             if (playerCamera == null)
             {
@@ -739,7 +771,17 @@ namespace MyVirtualCommunity.Client.World
                         OpenControlsGuide(PrimaryUIState.Exploration);
                         return;
                     }
-                    if (WasDroneKeyPressed())
+                    bool inBackroomsNow = IsInBackroomsMode();
+                    if (inBackroomsNow != lastKnownInBackrooms)
+                    {
+                        lastKnownInBackrooms = inBackroomsNow;
+                        cachedKeypadDoors = null;
+                        cachedDimensionVault = null;
+                        currentAimedArtifact = null;
+                        currentNearbyBackroomsExit = null;
+                    }
+
+                    if (!inBackroomsNow && WasDroneKeyPressed())
                     {
                         if (currentAerialMode == AerialViewMode.DroneFreeFlight)
                         {
@@ -751,7 +793,7 @@ namespace MyVirtualCommunity.Client.World
                         }
                         return;
                     }
-                    if (WasSatelliteKeyPressed())
+                    if (!inBackroomsNow && WasSatelliteKeyPressed())
                     {
                         if (currentAerialMode == AerialViewMode.SatelliteTopDown)
                         {
@@ -780,7 +822,7 @@ namespace MyVirtualCommunity.Client.World
                         return;
                     }
 
-                    if (WasToggleMapPressed())
+                    if (!inBackroomsNow && WasToggleMapPressed())
                     {
                         ShowMinimap = !showMinimap;
                     }
@@ -819,16 +861,27 @@ namespace MyVirtualCommunity.Client.World
 
                     HandleLook();
                     HandleMovement();
-                    SyncAuthoritativeMovementIntentIfNeeded();
-                    UpdateFideicomisoPlayerSelfAvatarProxy();
-                    UpdateMiniSatellitePreviewRender();
+                    if (!IsInBackroomsOrTransitioning())
+                    {
+                        SyncAuthoritativeMovementIntentIfNeeded();
+                        UpdateFideicomisoPlayerSelfAvatarProxy();
+                        UpdateMiniSatellitePreviewRender();
+                    }
                     HandleInteractionProximity();
 
                     if (WasInteractPressed())
                     {
-                        if (currentNearbyPoint != null)
+                        if (inBackroomsNow && currentNearbyBackroomsExit != null && cachedBackroomsTransition != null)
+                        {
+                            cachedBackroomsTransition.RequestExitBackrooms();
+                        }
+                        else if (!inBackroomsNow && currentNearbyPoint != null)
                         {
                             OpenInteractionModal(currentNearbyPoint);
+                        }
+                        else if (TryHandleSecretVaultKeystoneOrPortalInteraction())
+                        {
+                            // Handled Astrolabe Keystone pickup or Dimensional Portal Socket activation
                         }
                         else if (currentNearbyKeypadDoor != null)
                         {
@@ -885,9 +938,8 @@ namespace MyVirtualCommunity.Client.World
                 lastActualPlanarMoveDirection = Vector2.zero;
             }
 
-            // Void-fall recovery safety guard: if the player ever falls below corridor ground level,
-            // restore them safely to the last verified grounded position.
-            if (transform.position.y < -3.0f && hasSafeGroundedPosition && characterController != null)
+            // Void-fall recovery safety guard (bypassed while exploring or transitioning into Backrooms Level 1 at Y = -50m!)
+            if (!IsInBackroomsOrTransitioning() && transform.position.y < -3.0f && hasSafeGroundedPosition && characterController != null)
             {
                 bool wasEnabled = characterController.enabled;
                 characterController.enabled = false;
@@ -948,23 +1000,100 @@ namespace MyVirtualCommunity.Client.World
                 if (currentNearbyPoint != null) currentNearbyPoint.SetHighlighted(true);
             }
 
-            // Detect nearby 6-digit electronic keypad doors (e.g. Building A South mysterious door)
+            // Detect nearby 6-digit electronic keypad doors & interior secret-vault artifacts
             if (cachedKeypadDoors == null || cachedKeypadDoors.Length == 0)
             {
                 cachedKeypadDoors = FindObjectsByType<SecretKeypadDoorController>(FindObjectsSortMode.None);
             }
-            SecretKeypadDoorController nearestDoor = null;
-            float nearestDoorDist = float.MaxValue;
-            if (cachedKeypadDoors != null)
+            if (cachedDimensionVault == null)
             {
+                cachedDimensionVault = FindFirstObjectByType<SecretRoomDimensionVaultController>();
+            }
+
+            // Player can inspect artifacts/safe only when inside Backrooms Level 1 OR inside the small secret room
+            bool inBackrooms = IsInBackroomsMode();
+            bool isInsideSecretRoom = inBackrooms || (playerPos.x < -12.02f && playerPos.z >= -13.52f && playerPos.z <= -11.15f);
+
+            currentNearbyBackroomsExit = null;
+            if (inBackrooms)
+            {
+                BackroomsExitDoorTrigger exitDoor = FindFirstObjectByType<BackroomsExitDoorTrigger>();
+                if (exitDoor != null && exitDoor.IsWithinRange(playerPos))
+                {
+                    currentNearbyBackroomsExit = exitDoor;
+                }
+            }
+
+            currentAimedArtifact = null;
+            SecretKeypadDoorController aimedDoor = null;
+            if (playerCamera != null)
+            {
+                Camera cam = playerCamera.GetComponent<Camera>();
+                if (cam != null)
+                {
+                    Ray centerRay = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
+
+                    // Measure closest solid obstacle along ray so triggers behind closed doors or walls can NEVER be seen or clicked!
+                    float maxSolidDist = 2.75f;
+                    if (Physics.Raycast(centerRay, out RaycastHit solidHit, 2.75f, ~0, QueryTriggerInteraction.Ignore))
+                    {
+                        maxSolidDist = solidHit.distance + 0.05f;
+                    }
+
+                    RaycastHit[] hits = Physics.RaycastAll(centerRay, 2.75f, ~0, QueryTriggerInteraction.Collide);
+                    float bestArtDist = float.MaxValue;
+                    float bestAimDoorDist = float.MaxValue;
+                    for (int i = 0; i < hits.Length; i++)
+                    {
+                        Collider c = hits[i].collider;
+                        if (c == null) continue;
+                        if (hits[i].distance > maxSolidDist) continue;
+
+                        // Containment artifact dossiers (EXP-01..13, Astrolabe, Portal) are ONLY visible once inside the secret room!
+                        if (isInsideSecretRoom)
+                        {
+                            var art = c.GetComponentInParent<SecretContainmentArtifactDescriptor>();
+                            if (art != null && hits[i].distance < bestArtDist)
+                            {
+                                if (art.artifactId == "artifact:ojo-del-umbral" &&
+                                    cachedDimensionVault != null && !cachedDimensionVault.IsSafeOpen)
+                                {
+                                    continue;
+                                }
+                                bestArtDist = hits[i].distance;
+                                currentAimedArtifact = art;
+                            }
+                        }
+
+                        var kd = c.GetComponentInParent<SecretKeypadDoorController>();
+                        if (kd != null && kd.IsWithinInteractionRange(playerPos) && hits[i].distance < bestAimDoorDist)
+                        {
+                            // Never target interior safes (allowInteriorSafetyBypass == false) while standing outside on the street
+                            if (!kd.allowInteriorSafetyBypass && !isInsideSecretRoom) continue;
+                            bestAimDoorDist = hits[i].distance;
+                            aimedDoor = kd;
+                        }
+                    }
+                }
+            }
+
+            SecretKeypadDoorController nearestDoor = aimedDoor;
+            if (nearestDoor == null && cachedKeypadDoors != null)
+            {
+                float bestScore = float.MaxValue;
+                Vector3 lookFwd = playerCamera != null ? playerCamera.forward : transform.forward;
                 foreach (var door in cachedKeypadDoors)
                 {
                     if (door == null) continue;
+                    if (!door.allowInteriorSafetyBypass && !isInsideSecretRoom) continue;
                     if (!door.IsWithinInteractionRange(playerPos)) continue;
                     float d = Vector3.Distance(door.keypadInteractionAnchor, playerPos);
-                    if (d < nearestDoorDist)
+                    Vector3 toDoor = (door.keypadInteractionAnchor - (playerPos + Vector3.up * 1.1f)).normalized;
+                    float alignmentBonus = Vector3.Dot(lookFwd, toDoor) > 0.35f ? -0.55f : 0f;
+                    float score = d + alignmentBonus;
+                    if (score < bestScore)
                     {
-                        nearestDoorDist = d;
+                        bestScore = score;
                         nearestDoor = door;
                     }
                 }
@@ -1268,6 +1397,10 @@ namespace MyVirtualCommunity.Client.World
 
         private void ApplyAuthoritativeMovementResponse(PlayerMovementIntentResponseDto res)
         {
+            if (IsInBackroomsOrTransitioning())
+            {
+                return;
+            }
             if (res == null || !res.accepted || res.outOfOrder || res.player?.position == null)
             {
                 return;
@@ -2406,11 +2539,15 @@ namespace MyVirtualCommunity.Client.World
 
                     DrawReticle();
                     DrawHUD();
-                    if (showCompass) DrawCompassStrip();
-                    if (showLandmarkHUD) DrawNearbyLandmarksHUD();
-                    if (showMinimap) DrawCorridorMinimap();
-                    DrawGoogleMapsLayerSwitcherCard();
-                    DrawWorldSpaceNPCNameplates();
+                    bool inBackroomsHud = IsInBackroomsMode();
+                    if (!inBackroomsHud)
+                    {
+                        if (showCompass) DrawCompassStrip();
+                        if (showLandmarkHUD) DrawNearbyLandmarksHUD();
+                        if (showMinimap) DrawCorridorMinimap();
+                        DrawGoogleMapsLayerSwitcherCard();
+                        DrawWorldSpaceNPCNameplates();
+                    }
                     if (activeKeypadDoor != null)
                     {
                         DrawModalScrim();
@@ -2418,13 +2555,25 @@ namespace MyVirtualCommunity.Client.World
                     }
                     else
                     {
-                        if (currentNearbyPoint != null && isCursorLocked)
+                        if (inBackroomsHud && currentNearbyBackroomsExit != null && isCursorLocked)
+                        {
+                            DrawBackroomsExitPrompt(currentNearbyBackroomsExit);
+                        }
+                        else if (!inBackroomsHud && currentNearbyPoint != null && isCursorLocked)
                         {
                             DrawInteractionPrompt(currentNearbyPoint);
+                        }
+                        else if (currentAimedArtifact != null && isCursorLocked)
+                        {
+                            DrawSecretVaultArtifactDossierHUD(currentAimedArtifact);
                         }
                         else if (currentNearbyKeypadDoor != null && isCursorLocked)
                         {
                             DrawKeypadDoorPrompt(currentNearbyKeypadDoor);
+                        }
+                        if (cachedDimensionVault != null && cachedDimensionVault.HasAstrolabeInInventory && isCursorLocked)
+                        {
+                            DrawEquippedAstrolabeBadgeHUD();
                         }
                     }
                     if (!string.IsNullOrEmpty(interactionFeedbackMessage) && Time.unscaledTime < interactionFeedbackUntilTime)
@@ -7763,11 +7912,53 @@ namespace MyVirtualCommunity.Client.World
                 ? cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f))
                 : cam.ScreenPointToRay(GetKeypadPointerScreenPosition());
 
-            if (Physics.Raycast(ray, out RaycastHit hit, 3.2f, ~0, QueryTriggerInteraction.Ignore) && hit.collider != null)
+            bool inBackroomsClick = IsInBackroomsMode();
+            bool isInsideSecretRoom = inBackroomsClick || (transform.position.x < -12.02f && transform.position.z >= -13.52f && transform.position.z <= -11.15f);
+            float maxSolidDist = 3.2f;
+            if (Physics.Raycast(ray, out RaycastHit solidHit, 3.2f, ~0, QueryTriggerInteraction.Ignore))
             {
-                SecretKeypadDoorController door = hit.collider.GetComponentInParent<SecretKeypadDoorController>();
+                maxSolidDist = solidHit.distance + 0.05f;
+            }
+
+            RaycastHit[] hits = Physics.RaycastAll(ray, 3.2f, ~0, QueryTriggerInteraction.Collide);
+            Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+            for (int i = 0; i < hits.Length; i++)
+            {
+                Collider col = hits[i].collider;
+                if (col == null) continue;
+                if (hits[i].distance > maxSolidDist) continue;
+
+                if (inBackroomsClick)
+                {
+                    BackroomsExitDoorTrigger exitDoor = col.GetComponentInParent<BackroomsExitDoorTrigger>();
+                    if (exitDoor != null && exitDoor.IsWithinRange(transform.position) && cachedBackroomsTransition != null)
+                    {
+                        cachedBackroomsTransition.RequestExitBackrooms();
+                        return true;
+                    }
+                }
+
+                if (isInsideSecretRoom)
+                {
+                    SecretContainmentArtifactDescriptor art = col.GetComponentInParent<SecretContainmentArtifactDescriptor>();
+                    if (art != null)
+                    {
+                        if (art.artifactId == "artifact:ojo-del-umbral" ||
+                            art.artifactId == "portal:cuenca-octagonal" ||
+                            art.artifactId == "portal:umbral-de-lasser")
+                        {
+                            if (TryHandleSecretVaultKeystoneOrPortalInteraction(art))
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                }
+
+                SecretKeypadDoorController door = col.GetComponentInParent<SecretKeypadDoorController>();
                 if (door != null && door.IsWithinInteractionRange(transform.position))
                 {
+                    if (!door.allowInteriorSafetyBypass && !isInsideSecretRoom) continue;
                     InteractWithKeypadDoor(door);
                     return true;
                 }
@@ -7775,12 +7966,224 @@ namespace MyVirtualCommunity.Client.World
             return false;
         }
 
+        private bool TryHandleSecretVaultKeystoneOrPortalInteraction(SecretContainmentArtifactDescriptor explicitArtifact = null)
+        {
+            if (cachedDimensionVault == null)
+            {
+                cachedDimensionVault = FindFirstObjectByType<SecretRoomDimensionVaultController>();
+            }
+            if (cachedDimensionVault == null) return false;
+
+            bool isEs = currentLanguage == "es";
+            SecretContainmentArtifactDescriptor art = explicitArtifact != null ? explicitArtifact : currentAimedArtifact;
+
+            // 1. Pick up "El Ojo del Umbral" (Dimensional Astrolabe Keystone) from inside the open Vault Safe
+            bool aimingAtAstrolabe = art != null && art.artifactId == "artifact:ojo-del-umbral";
+            bool nearSafeAstrolabe = cachedDimensionVault.IsSafeOpen &&
+                                     !cachedDimensionVault.HasAstrolabeInInventory &&
+                                     !cachedDimensionVault.IsPortalActivated &&
+                                     Vector2.Distance(
+                                         new Vector2(transform.position.x, transform.position.z),
+                                         new Vector2(cachedDimensionVault.safeAstrolabeAnchor.x, cachedDimensionVault.safeAstrolabeAnchor.z)) <= 1.25f;
+
+            if (aimingAtAstrolabe || (art == null && nearSafeAstrolabe && currentNearbyKeypadDoor == null))
+            {
+                if (cachedDimensionVault.TryTakeAstrolabeFromSafe())
+                {
+                    ShowInteractionFeedback(
+                        isEs
+                            ? "★ Reliquia obtenida: El Ojo del Umbral — Colócalo en la Cuenca Octagonal del Espejo-Portal."
+                            : "★ Relic acquired: The Eye of the Threshold — Place it in the Portal's Octagonal Socket.",
+                        new Color(0.32f, 0.94f, 1.0f),
+                        4.2f);
+                    return true;
+                }
+            }
+
+            // 2. Insert or remove "El Ojo del Umbral" in the Octagonal Socket on the Back-Wall Dimensional Mirror-Portal
+            bool aimingAtPortalOrSocket = art != null &&
+                                          (art.artifactId == "portal:cuenca-octagonal" || art.artifactId == "portal:umbral-de-lasser");
+            if (aimingAtPortalOrSocket)
+            {
+                if (cachedDimensionVault.HasAstrolabeInInventory || cachedDimensionVault.IsPortalActivated)
+                {
+                    if (cachedDimensionVault.TryToggleAstrolabeInPortalSocket())
+                    {
+                        if (cachedDimensionVault.IsPortalActivated)
+                        {
+                            ShowInteractionFeedback(
+                                isEs
+                                    ? "★ ¡El Ojo del Umbral encajó en la Cuenca Octagonal! Cadenas liberadas — PORTAL DIMENSIONAL ACTIVO."
+                                    : "★ The Eye of the Threshold locked into the Octagonal Socket! Chains released — DIMENSIONAL PORTAL ACTIVE.",
+                                new Color(0.45f, 0.92f, 1.0f),
+                                4.8f);
+                        }
+                        else
+                        {
+                            ShowInteractionFeedback(
+                                isEs
+                                    ? "El Ojo del Umbral retirado — Espejo-Portal sellado nuevamente."
+                                    : "The Eye of the Threshold removed — Mirror-Portal resealed.",
+                                new Color(0.85f, 0.68f, 1.0f),
+                                3.2f);
+                        }
+                        return true;
+                    }
+                }
+                else
+                {
+                    ShowInteractionFeedback(
+                        isEs
+                            ? "La Cuenca Octagonal requiere 'El Ojo del Umbral' (resguardado en la Caja Fuerte Nivel Ω • Pista en el muro de evidencias)."
+                            : "The Octagonal Socket requires 'The Eye of the Threshold' (locked in Level-Ω Vault Safe • Clue on evidence board).",
+                        new Color(1.0f, 0.78f, 0.32f),
+                        4.0f);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void DrawSecretVaultArtifactDossierHUD(SecretContainmentArtifactDescriptor art)
+        {
+            if (art == null) return;
+            bool isEs = currentLanguage == "es";
+
+            float width = 620f;
+            float height = 104f;
+            float x = (Screen.width - width) * 0.5f;
+            float y = Screen.height - 132f;
+
+            GUI.Box(new Rect(x, y, width, height), GUIContent.none, GetOpaquePromptStyle());
+            GUILayout.BeginArea(new Rect(x + 16f, y + 10f, width - 32f, height - 20f));
+
+            GUIStyle titleStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 14,
+                fontStyle = FontStyle.Bold,
+                normal = { textColor = art.accentColor }
+            };
+            GUILayout.Label(art.GetTitle(isEs), titleStyle);
+
+            GUIStyle loreStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 11,
+                wordWrap = true,
+                normal = { textColor = new Color(0.86f, 0.90f, 0.95f) }
+            };
+            GUILayout.Label(art.GetLore(isEs), loreStyle);
+
+            // Actionable [E] prompt for the Astrolabe Keystone or the Dimensional Portal Socket
+            string actionLine = "";
+            if (cachedDimensionVault != null)
+            {
+                if (art.artifactId == "artifact:ojo-del-umbral" && cachedDimensionVault.IsSafeOpen && !cachedDimensionVault.HasAstrolabeInInventory)
+                {
+                    actionLine = isEs
+                        ? "▶ Presiona [E] o Clic para tomar 'El Ojo del Umbral'"
+                        : "▶ Press [E] or Click to take 'The Eye of the Threshold'";
+                }
+                else if (art.artifactId == "portal:cuenca-octagonal" || art.artifactId == "portal:umbral-de-lasser")
+                {
+                    if (cachedDimensionVault.HasAstrolabeInInventory)
+                    {
+                        actionLine = isEs
+                            ? "▶ Presiona [E] o Clic para colocar 'El Ojo del Umbral' en la Cuenca Octagonal y ABRIR EL PORTAL"
+                            : "▶ Press [E] or Click to insert 'The Eye of the Threshold' into the Octagonal Socket and OPEN THE PORTAL";
+                    }
+                    else if (cachedDimensionVault.IsPortalActivated)
+                    {
+                        actionLine = isEs
+                            ? "★ PORTAL DIMENSIONAL ABIERTO • [E] Retirar El Ojo del Umbral"
+                            : "★ DIMENSIONAL PORTAL OPEN • [E] Remove The Eye of the Threshold";
+                    }
+                    else
+                    {
+                        actionLine = isEs
+                            ? "🔒 Sellado: Requiere 'El Ojo del Umbral' (dentro de la Caja Fuerte Nivel Ω)"
+                            : "🔒 Sealed: Requires 'The Eye of the Threshold' (inside Level-Ω Vault Safe)";
+                    }
+                }
+            }
+
+            if (!string.IsNullOrEmpty(actionLine))
+            {
+                GUIStyle actStyle = new GUIStyle(GUI.skin.label)
+                {
+                    fontSize = 12,
+                    fontStyle = FontStyle.Bold,
+                    normal = { textColor = new Color(0.38f, 0.98f, 0.68f) }
+                };
+                GUILayout.Label(actionLine, actStyle);
+            }
+
+            GUILayout.EndArea();
+        }
+
+        private void DrawBackroomsExitPrompt(BackroomsExitDoorTrigger exitDoor)
+        {
+            if (exitDoor == null) return;
+            bool isEs = currentLanguage == "es";
+            float w = 520f;
+            float h = 48f;
+            float x = (Screen.width - w) * 0.5f;
+            float y = Screen.height - 105f;
+
+            GUI.Box(new Rect(x, y, w, h), GUIContent.none, GetOpaquePromptStyle());
+            GUIStyle st = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 14,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = new Color(1f, 0.90f, 0.42f) }
+            };
+            GUI.Label(new Rect(x, y, w, h), exitDoor.GetPrompt(isEs), st);
+        }
+
+        private void DrawEquippedAstrolabeBadgeHUD()
+        {
+            bool isEs = currentLanguage == "es";
+            float w = 360f;
+            float h = 34f;
+            float x = (Screen.width - w) * 0.5f;
+            float y = Screen.height - 172f;
+
+            GUI.Box(new Rect(x, y, w, h), GUIContent.none, GetOpaquePromptStyle());
+            GUIStyle st = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 12,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = new Color(0.32f, 0.94f, 1.0f) }
+            };
+            GUI.Label(
+                new Rect(x, y, w, h),
+                isEs
+                    ? "۞ Reliquia en mano: El Ojo del Umbral (Astrolabio Dimensional)"
+                    : "۞ Relic in hand: The Eye of the Threshold (Dimensional Astrolabe)",
+                st);
+        }
+
         private void InteractWithKeypadDoor(SecretKeypadDoorController door)
         {
             if (door == null) return;
+            bool isEs = currentLanguage == "es";
+
+            if (door.IsOpen)
+            {
+                door.CloseAndRelock();
+                ShowInteractionFeedback(
+                    isEs
+                        ? "Puerta cerrada y bloqueada."
+                        : "Door closed and locked.",
+                    new Color(1f, 0.76f, 0.30f),
+                    2.6f);
+                return;
+            }
 
             // Safety exit: if player is already inside the secret room and the door is closed, open immediately
-            if (door.IsPlayerInsideRoom(transform.position) && !door.IsOpen)
+            if (door.IsPlayerInsideRoom(transform.position))
             {
                 door.OpenFromInside();
                 return;
@@ -7932,17 +8335,17 @@ namespace MyVirtualCommunity.Client.World
 
             string title = door.GetLocalizedTitle(isEs);
             string promptText;
-            if (door.IsPlayerInsideRoom(transform.position) && !door.IsOpen)
+            if (door.IsOpen)
+            {
+                promptText = isEs ? $"[E] Cerrar y bloquear ({title})" : $"[E] Close & Lock ({title})";
+            }
+            else if (door.IsPlayerInsideRoom(transform.position))
             {
                 promptText = isEs ? $"[E] Abrir desde adentro ({title})" : $"[E] Open from Inside ({title})";
             }
             else if (!door.IsUnlocked)
             {
                 promptText = isEs ? $"[E] Ingresar código secreto ({title})" : $"[E] Enter Secret Code ({title})";
-            }
-            else if (door.IsOpen)
-            {
-                promptText = isEs ? $"[E] Cerrar {title}" : $"[E] Close {title}";
             }
             else
             {
@@ -7973,8 +8376,9 @@ namespace MyVirtualCommunity.Client.World
             bool isEs = currentLanguage == "es";
             int reqLen = activeKeypadDoor.RequiredCodeLength;
 
-            float modalW = 340f;
-            float modalH = 445f;
+            float modalW = 356f;
+            float maxModalH = Mathf.Max(360f, Screen.height - 32f);
+            float modalH = Mathf.Clamp(keypadModalMeasuredHeight, 480f, maxModalH);
             float modalX = (Screen.width - modalW) * 0.5f;
             float modalY = (Screen.height - modalH) * 0.5f;
 
@@ -8021,7 +8425,7 @@ namespace MyVirtualCommunity.Client.World
                 alignment = TextAnchor.MiddleCenter,
                 normal = { textColor = new Color(0.32f, 0.96f, 0.62f) }
             };
-            GUILayout.Box(displayCode, displayBoxStyle, GUILayout.Height(48f), GUILayout.ExpandWidth(true));
+            GUILayout.Box(displayCode, displayBoxStyle, GUILayout.Height(46f), GUILayout.ExpandWidth(true));
 
             // Status / error line
             GUIStyle statusStyle = new GUIStyle(GUI.skin.label)
@@ -8058,7 +8462,7 @@ namespace MyVirtualCommunity.Client.World
                 for (int c = 0; c < 3; c++)
                 {
                     string key = rows[r, c];
-                    if (GUILayout.Button(key, keyBtnStyle, GUILayout.Height(46f)))
+                    if (GUILayout.Button(key, keyBtnStyle, GUILayout.Height(44f)))
                     {
                         if (key == "C")
                         {
@@ -8091,13 +8495,19 @@ namespace MyVirtualCommunity.Client.World
                 SubmitKeypadCode();
             }
 
-            GUILayout.Space(4f);
-            if (GUILayout.Button(isEs ? "Cerrar [Esc]" : "Close [Esc]", GUILayout.Height(28f)))
+            GUILayout.Space(6f);
+            GUIStyle closeBtnStyle = new GUIStyle(GUI.skin.button)
+            {
+                fontSize = 12,
+                fontStyle = FontStyle.Bold,
+                normal = { textColor = new Color(0.95f, 0.86f, 0.86f) }
+            };
+            if (GUILayout.Button(isEs ? "Cancelar / Cerrar [Esc]" : "Cancel / Close [Esc]", closeBtnStyle, GUILayout.Height(30f)))
             {
                 CloseKeypadModal();
             }
 
-            GUILayout.Space(4f);
+            GUILayout.Space(6f);
             GUIStyle hintStyle = new GUIStyle(GUI.skin.label)
             {
                 fontSize = 10,
@@ -8107,6 +8517,15 @@ namespace MyVirtualCommunity.Client.World
             GUILayout.Label(
                 isEs ? "Tip: También puedes escribir 0-9 en tu teclado" : "Tip: You can also type 0-9 on your keyboard",
                 hintStyle);
+
+            if (Event.current.type == EventType.Repaint)
+            {
+                Rect lastRect = GUILayoutUtility.GetLastRect();
+                if (lastRect.yMax > 100f)
+                {
+                    keypadModalMeasuredHeight = Mathf.Ceil(lastRect.yMax + 34f);
+                }
+            }
 
             GUILayout.EndArea();
         }

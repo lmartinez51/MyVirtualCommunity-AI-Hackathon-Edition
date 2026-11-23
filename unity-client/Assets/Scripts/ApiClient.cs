@@ -540,6 +540,41 @@ namespace MyVirtualCommunity.Client.Api
                 onError));
         }
 
+        public void GetSecretVaultStatus(string playerId, Action<SecretVaultStatusResponseDto> onSuccess, Action<string> onError)
+        {
+            string pid = string.IsNullOrEmpty(playerId) ? "player-1" : playerId;
+            StartCoroutine(SendGetRequest<SecretVaultStatusResponseDto>(
+                $"/api/secret-vault/status?playerId={Uri.EscapeDataString(pid)}",
+                onSuccess,
+                onError));
+        }
+
+        public void EnterSecretVault(string playerId, Action<SecretVaultStatusResponseDto> onSuccess, Action<string> onError)
+        {
+            var payload = new SecretVaultOccupancyRequestDto
+            {
+                playerId = string.IsNullOrEmpty(playerId) ? "player-1" : playerId
+            };
+            StartCoroutine(SendPostRequest<SecretVaultOccupancyRequestDto, SecretVaultStatusResponseDto>(
+                "/api/secret-vault/enter",
+                payload,
+                onSuccess,
+                onError));
+        }
+
+        public void LeaveSecretVault(string playerId, Action<SecretVaultStatusResponseDto> onSuccess = null, Action<string> onError = null)
+        {
+            var payload = new SecretVaultOccupancyRequestDto
+            {
+                playerId = string.IsNullOrEmpty(playerId) ? "player-1" : playerId
+            };
+            StartCoroutine(SendPostRequest<SecretVaultOccupancyRequestDto, SecretVaultStatusResponseDto>(
+                "/api/secret-vault/leave",
+                payload,
+                onSuccess,
+                onError));
+        }
+
         #endregion
 
         #region HTTP Request Pipeline

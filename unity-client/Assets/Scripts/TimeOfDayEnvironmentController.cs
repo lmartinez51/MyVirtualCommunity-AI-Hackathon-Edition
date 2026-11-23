@@ -64,6 +64,9 @@ namespace MyVirtualCommunity.Client.World
         // Material instance for non-destructive runtime skybox control
         private Material runtimeSkyboxMaterial;
 
+        // Cached reference to Backrooms transition controller so outdoor lighting/fog never overwrites Backrooms Level 0 atmosphere
+        private SecretBackroomsTransitionController backroomsTransition;
+
         // Current Authoritative State
         private AuthoritativeTimeState timeState = AuthoritativeTimeState.Unknown;
         private string canonicalUtcInstant = "";
@@ -151,6 +154,17 @@ namespace MyVirtualCommunity.Client.World
 
             // Smoothly interpolate visual presentation towards authoritative targets
             InterpolateParameters(Time.deltaTime);
+
+            // Never overwrite Backrooms Level 0 fluorescent lighting/fog while the player is inside or transitioning
+            if (backroomsTransition == null)
+            {
+                backroomsTransition = FindAnyObjectByType<SecretBackroomsTransitionController>();
+            }
+            if (backroomsTransition != null && (backroomsTransition.IsPlayerInBackrooms || backroomsTransition.IsTransitioning))
+            {
+                return;
+            }
+
             ApplyParametersToScene();
         }
 

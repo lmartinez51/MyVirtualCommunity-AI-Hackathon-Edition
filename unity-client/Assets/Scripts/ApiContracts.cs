@@ -1368,4 +1368,27 @@ namespace MyVirtualCommunity.Client.Api
     }
 
     #endregion
+
+    #region Secret Vault / Backrooms Occupancy DTOs
+
+    [Serializable]
+    public class SecretVaultOccupancyRequestDto
+    {
+        public string playerId;
+    }
+
+    [Serializable]
+    public class SecretVaultStatusResponseDto
+    {
+        public bool success;
+        public bool granted;
+        public bool released;
+        public bool occupied;
+        public bool occupiedByOther;
+        public string occupantPlayerId;
+        public string modeForPlayer;
+        public ApiErrorDto error;
+    }
+
+    #endregion
 }

@@ -2315,8 +2315,9 @@ namespace MyVirtualCommunity.Editor
 
         public static void VerifyWalkingColliders()
         {
-            Physics.simulationMode = SimulationMode.Script;
-            Physics.Simulate(0.02f);
+            // Never switch global Physics.simulationMode to Script (it serializes into DynamicsManager.asset
+            // and freezes runtime moving colliders such as doors, shutters, and toll barriers in Standalone builds!).
+            Physics.SyncTransforms();
 
             int voidCount = 0;
             int hitCount = 0;

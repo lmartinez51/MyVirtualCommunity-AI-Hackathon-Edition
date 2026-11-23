@@ -1949,13 +1949,34 @@ namespace MyVirtualCommunity.Editor
             AssignMat(faceN, faceMat);
             UnityEngine.Object.DestroyImmediate(faceN.GetComponent<Collider>());
 
-            // Signature Golden-Yellow "J"/"L" Marquee Border along street-facing (+X) & bottom (-Y) edges!
+            // Signature Golden-Yellow "J" Marquee Arrow wrapping East (+X) side, curving along bottom (-Y),
+            // and terminating in a pointed triangular ARROWHEAD pointing West (-X) toward the entrance (matching real photo)!
             MakeLocalBox("EsqChihuas_MarqueeBorder_East", new Vector3(0.58f, -0.08f, 0f), new Vector3(0.20f, 1.66f, 0.14f), yellowBorderMat);
-            MakeLocalBox("EsqChihuas_MarqueeBorder_Bot", new Vector3(0.10f, -0.82f, 0f), new Vector3(1.16f, 0.19f, 0.14f), yellowBorderMat);
+            MakeLocalBox("EsqChihuas_MarqueeBorder_Bot", new Vector3(0.11f, -0.82f, 0f), new Vector3(1.14f, 0.20f, 0.14f), yellowBorderMat);
             MakeLocalBox("EsqChihuas_MarqueeTrim_East", new Vector3(0.69f, -0.08f, 0f), new Vector3(0.03f, 1.70f, 0.17f), trussMat);
-            MakeLocalBox("EsqChihuas_MarqueeTrim_Bot", new Vector3(0.10f, -0.92f, 0f), new Vector3(1.20f, 0.03f, 0.17f), trussMat);
+            MakeLocalBox("EsqChihuas_MarqueeTrim_Bot", new Vector3(0.11f, -0.93f, 0f), new Vector3(1.18f, 0.03f, 0.17f), trussMat);
 
-            // 3D Warm Vintage Marquee Bulbs along the yellow "J" channel on BOTH South (-Z) and North (+Z) faces!
+            // Extruded 3D Triangular Arrowhead ("Punta de Flecha") at the West (-X) end of the bottom channel (X = -0.44 -> tip -0.88, Y = -0.82 ± 0.25)
+            GameObject arrowHeadGo = CreateMarqueeArrowheadMesh(
+                "EsqChihuas_MarqueeArrowhead",
+                root.transform,
+                baseX: -0.44f,
+                tipX: -0.88f,
+                centerY: -0.82f,
+                halfHeightY: 0.25f,
+                thicknessZ: 0.14f,
+                yellowBorderMat);
+            GameObject arrowTrimGo = CreateMarqueeArrowheadMesh(
+                "EsqChihuas_MarqueeArrowhead_Trim",
+                root.transform,
+                baseX: -0.425f,
+                tipX: -0.915f,
+                centerY: -0.82f,
+                halfHeightY: 0.275f,
+                thicknessZ: 0.12f,
+                trussMat);
+
+            // 3D Warm Vintage Marquee Bulbs along the yellow "J" arrow channel & arrowhead on BOTH South (-Z) and North (+Z) faces!
             var bulbRenderers = new List<Renderer>();
             void AddBulbPair(float bx, float by, int idx)
             {
@@ -1973,7 +1994,7 @@ namespace MyVirtualCommunity.Editor
                     bulbRenderers.Add(br);
                 }
             }
-            // 9 bulbs running vertically down the East golden edge + 5 bulbs along the bottom golden edge
+            // 9 bulbs running vertically down the East golden edge + 5 bulbs along the bottom shaft + 5 bulbs outlining the arrowhead
             for (int i = 0; i < 9; i++)
             {
                 AddBulbPair(0.58f, 0.64f - i * 0.18f, i);
@@ -1982,6 +2003,12 @@ namespace MyVirtualCommunity.Editor
             {
                 AddBulbPair(0.40f - j * 0.20f, -0.82f, 10 + j);
             }
+            // Arrowhead perimeter bulbs (upper wing, mid-upper, tip, mid-lower, lower wing)
+            AddBulbPair(-0.52f, -0.66f, 20);
+            AddBulbPair(-0.65f, -0.74f, 21);
+            AddBulbPair(-0.78f, -0.82f, 22);
+            AddBulbPair(-0.65f, -0.90f, 23);
+            AddBulbPair(-0.52f, -0.98f, 24);
 
             // Dual warm amber PointLights for marquee nighttime glow
             Light MakeMarqueeLight(string lName, Vector3 lPos)
@@ -2012,6 +2039,67 @@ namespace MyVirtualCommunity.Editor
             glowCtrl.nightLightColor = new Color(1.0f, 0.78f, 0.30f, 1f);
             glowCtrl.nightLightIntensity = 1.75f;
             glowCtrl.nightLightRange = 5.0f;
+        }
+
+        private static GameObject CreateMarqueeArrowheadMesh(
+            string name,
+            Transform parent,
+            float baseX,
+            float tipX,
+            float centerY,
+            float halfHeightY,
+            float thicknessZ,
+            Material mat)
+        {
+            float hz = thicknessZ * 0.5f;
+            // 3 triangle vertices in XY plane: 0 = Top-Base, 1 = Tip, 2 = Bottom-Base
+            Vector3 f0 = new Vector3(baseX, centerY + halfHeightY, -hz);
+            Vector3 f1 = new Vector3(tipX, centerY, -hz);
+            Vector3 f2 = new Vector3(baseX, centerY - halfHeightY, -hz);
+
+            Vector3 b0 = new Vector3(baseX, centerY + halfHeightY, +hz);
+            Vector3 b1 = new Vector3(tipX, centerY, +hz);
+            Vector3 b2 = new Vector3(baseX, centerY - halfHeightY, +hz);
+
+            var verts = new Vector3[]
+            {
+                // Front (-Z) face
+                f0, f2, f1,
+                // Back (+Z) face
+                b0, b1, b2,
+                // Upper bevel side (f0, f1, b1, b0)
+                f0, f1, b1, b0,
+                // Lower bevel side (f1, f2, b2, b1)
+                f1, f2, b2, b1,
+                // Base cap (f2, f0, b0, b2)
+                f2, f0, b0, b2
+            };
+            var tris = new int[]
+            {
+                0, 1, 2,
+                3, 4, 5,
+                6, 7, 8,  6, 8, 9,
+                10, 11, 12,  10, 12, 13,
+                14, 15, 16,  14, 16, 17
+            };
+
+            Mesh mesh = new Mesh { name = name + "_Mesh" };
+            mesh.vertices = verts;
+            mesh.triangles = tris;
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+
+            GameObject go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = Vector3.zero;
+            go.transform.localRotation = Quaternion.identity;
+            var mf = go.AddComponent<MeshFilter>();
+            mf.sharedMesh = mesh;
+            var mr = go.AddComponent<MeshRenderer>();
+            mr.sharedMaterial = mat;
+            mr.shadowCastingMode = ShadowCastingMode.On;
+            mr.receiveShadows = true;
+            return go;
         }
 
         private static void CreateMexicoMagicoCircularLightbox(string name, Transform parent, Vector3 pos,

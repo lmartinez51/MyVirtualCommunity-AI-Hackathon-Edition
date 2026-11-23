@@ -205,6 +205,19 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
       worldCore,
     });
 
+  // Authoritative Secret Vault / Backrooms Level 1 single-occupant session state
+  // When occupied by another player, newcomers see the small real room completely empty ("decoy_empty").
+  const SECRET_VAULT_STALE_MS = 20 * 60 * 1000;
+  let secretVaultOccupantPlayerId: string | null = null;
+  let secretVaultEnteredAtMs: number = 0;
+
+  const pruneStaleSecretVaultOccupant = () => {
+    if (secretVaultOccupantPlayerId && Date.now() - secretVaultEnteredAtMs > SECRET_VAULT_STALE_MS) {
+      secretVaultOccupantPlayerId = null;
+      secretVaultEnteredAtMs = 0;
+    }
+  };
+
   const sendJson = (res: ServerResponse, statusCode: number, payload: unknown) => {
     res.statusCode = statusCode;
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -1779,6 +1792,86 @@ export function createAssistantServer(options: AssistantServerOptions = {}) {
           success: true,
           count: reports.length,
           reports,
+        });
+        return;
+      }
+
+      // 17b. Secret Vault / Backrooms Level 1 Authoritative Occupancy API
+      if (method === 'GET' && pathname === '/api/secret-vault/status') {
+        pruneStaleSecretVaultOccupant();
+        const requesterId = (parsedUrl.searchParams.get('playerId') ?? DEFAULT_PLAYER_ID).trim() || DEFAULT_PLAYER_ID;
+        const occupiedByOther =
+          secretVaultOccupantPlayerId !== null && secretVaultOccupantPlayerId !== requesterId;
+        sendJson(res, 200, {
+          success: true,
+          occupied: secretVaultOccupantPlayerId !== null,
+          occupiedByOther,
+          occupantPlayerId: secretVaultOccupantPlayerId ?? '',
+          modeForPlayer: occupiedByOther ? 'decoy_empty' : 'backrooms',
+        });
+        return;
+      }
+
+      if (method === 'POST' && pathname === '/api/secret-vault/enter') {
+        pruneStaleSecretVaultOccupant();
+        const rawBody = await readBody(req);
+        const body = rawBody && typeof rawBody === 'object' && !Array.isArray(rawBody)
+          ? (rawBody as Record<string, unknown>)
+          : {};
+        const requesterId =
+          typeof body.playerId === 'string' && body.playerId.trim() !== ''
+            ? body.playerId.trim()
+            : DEFAULT_PLAYER_ID;
+
+        if (secretVaultOccupantPlayerId === null || secretVaultOccupantPlayerId === requesterId) {
+          secretVaultOccupantPlayerId = requesterId;
+          secretVaultEnteredAtMs = Date.now();
+          sendJson(res, 200, {
+            success: true,
+            granted: true,
+            occupied: true,
+            occupiedByOther: false,
+            occupantPlayerId: secretVaultOccupantPlayerId,
+            modeForPlayer: 'backrooms',
+          });
+        } else {
+          sendJson(res, 200, {
+            success: true,
+            granted: false,
+            occupied: true,
+            occupiedByOther: true,
+            occupantPlayerId: secretVaultOccupantPlayerId,
+            modeForPlayer: 'decoy_empty',
+          });
+        }
+        return;
+      }
+
+      if (method === 'POST' && pathname === '/api/secret-vault/leave') {
+        pruneStaleSecretVaultOccupant();
+        const rawBody = await readBody(req);
+        const body = rawBody && typeof rawBody === 'object' && !Array.isArray(rawBody)
+          ? (rawBody as Record<string, unknown>)
+          : {};
+        const requesterId =
+          typeof body.playerId === 'string' && body.playerId.trim() !== ''
+            ? body.playerId.trim()
+            : DEFAULT_PLAYER_ID;
+
+        const released =
+          secretVaultOccupantPlayerId === null || secretVaultOccupantPlayerId === requesterId;
+        if (released) {
+          secretVaultOccupantPlayerId = null;
+          secretVaultEnteredAtMs = 0;
+        }
+        sendJson(res, 200, {
+          success: true,
+          released,
+          occupied: secretVaultOccupantPlayerId !== null,
+          occupiedByOther:
+            secretVaultOccupantPlayerId !== null && secretVaultOccupantPlayerId !== requesterId,
+          occupantPlayerId: secretVaultOccupantPlayerId ?? '',
+          modeForPlayer: secretVaultOccupantPlayerId === null ? 'backrooms' : 'decoy_empty',
         });
         return;
       }

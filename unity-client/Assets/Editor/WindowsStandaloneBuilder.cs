@@ -26,7 +26,8 @@ namespace MyVirtualCommunity.Editor
             string[] scenes = new string[]
             {
                 "Assets/Scenes/BorderCorridorScene.unity",
-                "Assets/Scenes/HandshakeScene.unity"
+                "Assets/Scenes/HandshakeScene.unity",
+                "Assets/Scenes/BackroomsLevel1Scene.unity"
             };
 
             string destinationDir = Path.GetFullPath(Path.Combine(Application.dataPath, "..", BuildOutputFolder));

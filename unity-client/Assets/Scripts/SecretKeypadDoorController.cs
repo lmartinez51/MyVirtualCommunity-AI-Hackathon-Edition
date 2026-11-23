@@ -51,6 +51,9 @@ namespace MyVirtualCommunity.Client.World
         [Tooltip("Interior threshold X coordinate: player west of this X is inside the room and can always exit.")]
         public float interiorThresholdX = -12.04f;
 
+        [Tooltip("True for room entrance doors (allows safety exit from inside); false for interior safes/vaults that always require their code.")]
+        public bool allowInteriorSafetyBypass = true;
+
         [Tooltip("Renderer for the 3D status LED bar on the electronic keypad.")]
         public Renderer statusLedRenderer;
 
@@ -103,9 +106,10 @@ namespace MyVirtualCommunity.Client.World
 
         public bool IsPlayerInsideRoom(Vector3 playerWorldPos)
         {
+            if (!allowInteriorSafetyBypass) return false;
             return playerWorldPos.x < interiorThresholdX &&
                    playerWorldPos.z >= -13.55f &&
-                   playerWorldPos.z <= -12.10f;
+                   playerWorldPos.z <= -11.15f;
         }
 
         public bool IsWithinInteractionRange(Vector3 playerWorldPos)
@@ -157,12 +161,30 @@ namespace MyVirtualCommunity.Client.World
         }
 
         /// <summary>
-        /// Opens or closes the door once unlocked.
+        /// Closes the door and immediately relocks the electronic keypad so reopening from outside
+        /// requires entering the 6-digit access code again.
+        /// </summary>
+        public void CloseAndRelock()
+        {
+            isOpen = false;
+            isUnlocked = false;
+            errorFlashUntilTime = -1f;
+            UpdateLedVisuals();
+        }
+
+        /// <summary>
+        /// Closes and relocks the door when open. Re-opening from outside always requires re-entering the code.
         /// </summary>
         public void ToggleDoorOpen()
         {
+            if (isOpen)
+            {
+                CloseAndRelock();
+                return;
+            }
             if (!isUnlocked) return;
-            isOpen = !isOpen;
+            isOpen = true;
+            UpdateLedVisuals();
         }
 
         /// <summary>
@@ -217,6 +239,10 @@ namespace MyVirtualCommunity.Client.World
             {
                 closedDoorBlockerCollider.enabled = openProgress < 0.60f;
             }
+
+            // Immediately sync rotated door-leaf & keypad BoxColliders with PhysX so CharacterController.Move()
+            // never collides with stale closed-pose leaf colliders on the same frame.
+            Physics.SyncTransforms();
         }
 
         private void UpdateLedVisuals()

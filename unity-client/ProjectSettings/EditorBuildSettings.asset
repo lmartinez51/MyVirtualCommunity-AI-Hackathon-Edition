@@ -11,6 +11,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/HandshakeScene.unity
     guid: 601acf1bdb33bb446ae389114f953e3d
+  - enabled: 1
+    path: Assets/Scenes/BackroomsLevel1Scene.unity
+    guid: 49f48f6c358f12e4a99bb509876df31d
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0

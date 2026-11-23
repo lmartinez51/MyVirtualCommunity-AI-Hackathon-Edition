@@ -331,6 +331,8 @@ namespace MyVirtualCommunity.Client.World
             {
                 openSignVisual.SetActive(t < 0.35f);
             }
+
+            Physics.SyncTransforms();
         }
     }
 }
