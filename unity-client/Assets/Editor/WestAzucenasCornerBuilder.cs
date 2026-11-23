@@ -475,52 +475,38 @@ namespace MyVirtualCommunity.Editor
             bldgRoot.transform.SetParent(root);
             bldgRoot.transform.position = Vector3.zero;
 
-            // Main 1-story white stucco corner commercial block: X = -26..-12, Z = -26.80..-13.55 (Length = 13.25m, Center Z = -20.175m)
-            // South wall sits cleanly at Z = -26.80m — 100% symmetric with the East side corner building (-26.80m),
-            // leaving 2.31m free sidewalk to Calle Azucenas North curb (-29.11m)!
-            // Upper structural volume (Y = 2.68..4.24m) is flush at X = -12.00m;
-            // Ground level (Y = 0..2.68m) is recessed behind X = -13.10m so transparent glass storefronts & teller window have genuine physical depth!
+            // Main 1-story white stucco corner commercial block:
+            //   - Straight South section: X = -26.00..-12.00m, Z = -26.80..-16.35m (Length = 10.45m, Center Z = -21.575m)
+            //   - Angled North section ("La Esquina de Chihuas" & "México Mágico"): Z = -16.35..-13.45m, receding diagonally
+            //     from (-12.00, -16.35) to (-14.60, -13.45) to meet Building A's 2-story diagonal chamfer at the exact shared
+            //     junction vertex (-14.60, -13.45) and party wall Z = -13.45m (100% joined / "pegados" with zero gap!).
+            //   - Roof parapet height Y = 3.85m (matching Building A's first-floor stringcourse molding in real photo!)
             CreateBox("NWAnnex_MainVolume", bldgRoot.transform,
-                new Vector3(-19.55f, 1.34f, -20.175f), new Vector3(12.90f, 2.68f, 13.25f), creamStuccoMat, addCollider: true);
+                new Vector3(-20.30f, 1.92f, -20.125f), new Vector3(11.40f, 3.84f, 13.35f), creamStuccoMat, addCollider: true);
+            CreateBox("NWAnnex_SouthStraightBacking", bldgRoot.transform,
+                new Vector3(-13.85f, 1.19f, -21.575f), new Vector3(1.50f, 2.38f, 10.45f), creamStuccoMat, addCollider: true);
             CreateBox("NWAnnex_MainVolume_Upper", bldgRoot.transform,
-                new Vector3(-19.00f, 3.46f, -20.175f), new Vector3(14.00f, 1.56f, 13.25f), creamStuccoMat, addCollider: true);
+                new Vector3(-19.00f, 2.94f, -21.575f), new Vector3(14.00f, 1.12f, 10.45f), creamStuccoMat, addCollider: true);
             CreateBox("NWAnnex_GroundFloorPad", bldgRoot.transform,
-                new Vector3(-12.56f, 0.10f, -20.175f), new Vector3(1.16f, 0.20f, 13.25f), weatheredCreamMat, addCollider: true);
+                new Vector3(-12.56f, 0.10f, -21.575f), new Vector3(1.16f, 0.20f, 10.45f), weatheredCreamMat, addCollider: true);
             CreateBox("NWAnnex_GroundCeilingSoffit", bldgRoot.transform,
-                new Vector3(-12.56f, 2.68f, -20.175f), new Vector3(1.16f, 0.08f, 13.25f), whiteFrameMat, addCollider: false);
+                new Vector3(-12.56f, 2.38f, -21.575f), new Vector3(1.16f, 0.08f, 10.45f), whiteFrameMat, addCollider: false);
 
-            // Upper parapet band over South 4 shops (Z = -26.80..-16.65m, Length = 10.15m, Center Z = -21.725m, Y = 4.24..4.64m)
+            // Upper parapet band over South 4 shops (Z = -26.80..-16.35m, Length = 10.45m, Center Z = -21.575m, Y = 3.50..3.84m)
             CreateBox("NWAnnex_UpperParapet_Flat", bldgRoot.transform,
-                new Vector3(-19.00f, 4.44f, -21.725f), new Vector3(14.00f, 0.40f, 10.15f), creamStuccoMat, addCollider: false);
-            // Sloped stucco parapet wall over Shops 5 & 6 (Z = -16.65..-13.55m, len = 3.10m, center = -15.10m, pitch = +7.72 deg)
-            GameObject slopedParapet = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            slopedParapet.name = "NWAnnex_UpperParapet_Sloped";
-            slopedParapet.transform.SetParent(bldgRoot.transform);
-            slopedParapet.transform.position = new Vector3(-19.00f, 4.19f, -15.10f);
-            slopedParapet.transform.rotation = Quaternion.Euler(7.72f, 0f, 0f);
-            slopedParapet.transform.localScale = new Vector3(14.00f, 0.46f, 3.14f);
-            AssignMat(slopedParapet, creamStuccoMat);
-            UnityEngine.Object.DestroyImmediate(slopedParapet.GetComponent<Collider>());
+                new Vector3(-19.00f, 3.67f, -21.575f), new Vector3(14.00f, 0.34f, 10.45f), creamStuccoMat, addCollider: false);
 
-            // Dark grey-brown parapet coping wrapping South & East (straight from -26.80..-16.65, then sloped down toward Building A!)
+            // Dark grey-brown parapet coping wrapping South & East straight section (Y = 3.85m, aligned with Building A stringcourse!)
             CreateBox("NWAnnex_Cornice_East", bldgRoot.transform,
-                new Vector3(-11.93f, 4.68f, -21.725f), new Vector3(0.22f, 0.16f, 10.22f), darkCorniceMat, addCollider: false);
-            GameObject slopedCornice = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            slopedCornice.name = "NWAnnex_Cornice_EastSloped";
-            slopedCornice.transform.SetParent(bldgRoot.transform);
-            slopedCornice.transform.position = new Vector3(-11.93f, 4.47f, -15.10f);
-            slopedCornice.transform.rotation = Quaternion.Euler(7.72f, 0f, 0f);
-            slopedCornice.transform.localScale = new Vector3(0.22f, 0.16f, 3.16f);
-            AssignMat(slopedCornice, darkCorniceMat);
-            UnityEngine.Object.DestroyImmediate(slopedCornice.GetComponent<Collider>());
+                new Vector3(-11.93f, 3.86f, -21.575f), new Vector3(0.22f, 0.14f, 10.50f), darkCorniceMat, addCollider: false);
 
             // Terracotta / warm-brown parapet cornice along South face facing Calle Azucenas (Z = -26.80m)
             CreateBox("NWAnnex_Cornice_South", bldgRoot.transform,
-                new Vector3(-18.96f, 4.68f, -26.87f), new Vector3(14.16f, 0.22f, 0.22f), terracottaMat, addCollider: false);
+                new Vector3(-18.96f, 3.86f, -26.87f), new Vector3(14.16f, 0.18f, 0.22f), terracottaMat, addCollider: false);
 
-            // Subtle horizontal architectural molding band separating signage fascia from awnings along East facade
+            // Subtle horizontal architectural molding band separating signage fascia from awnings along East facade (Y = 2.80m)
             CreateBox("NWAnnex_East_MoldingBand", bldgRoot.transform,
-                new Vector3(-11.95f, 3.30f, -20.175f), new Vector3(0.10f, 0.08f, 13.26f), darkCorniceMat, addCollider: false);
+                new Vector3(-11.95f, 2.80f, -21.575f), new Vector3(0.10f, 0.07f, 10.46f), darkCorniceMat, addCollider: false);
 
             // Lower Dark Zocalo along South wall (Z = -26.80m)
             CreateBox("NWAnnex_Zocalo_South", bldgRoot.transform,
@@ -528,24 +514,24 @@ namespace MyVirtualCommunity.Editor
 
             // --- South Facade Facing Calle Azucenas (Z = -26.80m, symmetric with East corner!) ---
             CreateBox("NWAnnex_South_WindowGlass", bldgRoot.transform,
-                new Vector3(-18.00f, 1.80f, -26.83f), new Vector3(5.20f, 1.15f, 0.08f), darkGlassMat, addCollider: false);
+                new Vector3(-18.00f, 1.65f, -26.83f), new Vector3(5.20f, 1.05f, 0.08f), darkGlassMat, addCollider: false);
             float[] winMullionX = { -20.58f, -18.85f, -17.15f, -15.42f };
             for (int i = 0; i < winMullionX.Length; i++)
             {
                 CreateBox($"NWAnnex_South_Mullion_{i}", bldgRoot.transform,
-                    new Vector3(winMullionX[i], 1.80f, -26.85f), new Vector3(0.07f, 1.18f, 0.08f), aluminumMat, addCollider: false);
+                    new Vector3(winMullionX[i], 1.65f, -26.85f), new Vector3(0.07f, 1.08f, 0.08f), aluminumMat, addCollider: false);
             }
             CreateBox("NWAnnex_South_WindowSill", bldgRoot.transform,
-                new Vector3(-18.00f, 1.20f, -26.86f), new Vector3(5.34f, 0.08f, 0.12f), aluminumMat, addCollider: false);
+                new Vector3(-18.00f, 1.10f, -26.86f), new Vector3(5.34f, 0.08f, 0.12f), aluminumMat, addCollider: false);
 
             // Beige Sloped Wedge Awning projecting South (-Z) over Azucenas North sidewalk
             CreateSouthWedgeAwning("NWAnnex_South_BeigeAwning", bldgRoot.transform,
-                centerX: -18.00f, wallZ: -26.82f, topY: 3.18f, widthX: 5.50f, projectionZ: 1.15f, dropY: 0.58f,
+                centerX: -18.00f, wallZ: -26.82f, topY: 2.74f, widthX: 5.50f, projectionZ: 1.15f, dropY: 0.52f,
                 beigeAwningMat, awningValanceMat);
 
             // Corner shutter door near SE corner of South wall
             CreateBox("NWAnnex_South_CornerShutter", bldgRoot.transform,
-                new Vector3(-13.80f, 1.28f, -26.83f), new Vector3(1.55f, 2.10f, 0.08f), shutterMat, addCollider: false);
+                new Vector3(-13.80f, 1.22f, -26.83f), new Vector3(1.55f, 2.02f, 0.08f), shutterMat, addCollider: false);
 
             // Yellow corner gas pipe / meter riser on SE corner (signature detail in photo)
             CreateBox("NWAnnex_Corner_GasPipe", bldgRoot.transform,
@@ -554,132 +540,119 @@ namespace MyVirtualCommunity.Editor
                 new Vector3(-12.22f, 1.45f, -26.88f), new Vector3(0.28f, 0.34f, 0.14f), gasYellowMat, addCollider: false);
 
             // =========================================================================
-            // EAST FACADE FACING AV. BENITO JUÁREZ (X = -12.00m, Z = -26.80..-13.55m)
-            // Authentic 6-Establishment Division matching Google Maps + recent photos:
-            //   Corner Pier              (Z = -26.80 .. -26.25, 0.55m, white stucco + stone zócalo)
-            //   1. Óptica MGR.           (Z = -26.25 .. -23.95, 2.30m: South display window + North black Push/Pull door)
-            //   2. Farmalivio            (Z = -23.95 .. -21.15, 2.80m: Double aluminum Push/Pull doors + 3-line quote wall)
-            //   3. Cambios Bonanza       (Z = -21.15 .. -19.70, 1.45m: Permanently closed white corrugated roll-up shutter)
-            //   Dividing Pier + 2x CFE   (Z = -19.70 .. -19.05, 0.65m: Stone zócalo + twin 3D CFE meters + LED arms mount)
-            //   4. Grupo Billemex        (Z = -19.05 .. -16.65, 2.40m: White security door + long teller window + live dual LED)
-            //   5. Narrow Central Portal (Z = -16.65 .. -15.15, 1.50m: Dark blank upper frame box + recessed doorway)
-            //   6. [La Esquina — blank]  (Z = -15.15 .. -13.55, 1.60m: Dark flat canopy + black-framed doorway)
+            // EAST FACADE FACING AV. BENITO JUÁREZ (Straight section Z = -26.80..-16.35m, Angled section Z = -16.35..-13.70m)
+            // Harmonized door height Y = 0.20..2.24m (2.04m tall) and cornice height Y = 3.85m matching Building A stringcourse!
             // =========================================================================
 
             // --- SOUTH CORNER PIER (Z = -26.80..-26.25m, 0.55m clean stucco margin + stone zócalo!) ---
             CreateBox("NWAnnex_SouthCorner_PierWall", bldgRoot.transform,
-                new Vector3(-12.56f, 1.44f, -26.525f), new Vector3(1.16f, 2.48f, 0.56f), creamStuccoMat, addCollider: true);
+                new Vector3(-12.56f, 1.29f, -26.525f), new Vector3(1.16f, 2.18f, 0.56f), creamStuccoMat, addCollider: true);
             CreateBox("NWAnnex_SouthCorner_StoneZocalo", bldgRoot.transform,
-                new Vector3(-11.98f, 0.58f, -26.525f), new Vector3(0.14f, 0.80f, 0.58f), stoneZocaloMat, addCollider: false);
+                new Vector3(-11.98f, 0.56f, -26.525f), new Vector3(0.14f, 0.76f, 0.58f), stoneZocaloMat, addCollider: false);
 
             // --- SHOP 1 (Z = -26.25..-23.95m, center -25.10m, 2.30m): "Óptica MGR." ---
-            // Visible interior backing behind window & glass door
             CreateBox("NWAnnex_OpticaMGR_InteriorBack", bldgRoot.transform,
-                new Vector3(-13.02f, 1.44f, -25.10f), new Vector3(0.10f, 2.48f, 2.28f), weatheredCreamMat, addCollider: false);
+                new Vector3(-13.02f, 1.29f, -25.10f), new Vector3(0.10f, 2.18f, 2.28f), weatheredCreamMat, addCollider: false);
             CreateBox("NWAnnex_OpticaMGR_DisplayShelf", bldgRoot.transform,
-                new Vector3(-12.60f, 0.96f, -25.60f), new Vector3(0.45f, 0.06f, 1.08f), whiteFrameMat, addCollider: false);
+                new Vector3(-12.60f, 0.92f, -25.60f), new Vector3(0.45f, 0.06f, 1.08f), whiteFrameMat, addCollider: false);
 
             // South half (Z = -26.22..-25.00m): Display window above dark-grey stone zócalo + "LENTES" decal
             CreateBox("NWAnnex_OpticaMGR_WindowZocalo", bldgRoot.transform,
-                new Vector3(-12.02f, 0.58f, -25.61f), new Vector3(0.16f, 0.80f, 1.24f), stoneZocaloMat, addCollider: false);
+                new Vector3(-12.02f, 0.56f, -25.61f), new Vector3(0.16f, 0.76f, 1.24f), stoneZocaloMat, addCollider: false);
             CreateBox("NWAnnex_OpticaMGR_WindowSill", bldgRoot.transform,
-                new Vector3(-11.98f, 1.00f, -25.61f), new Vector3(0.18f, 0.06f, 1.26f), aluminumMat, addCollider: false);
+                new Vector3(-11.98f, 0.96f, -25.61f), new Vector3(0.18f, 0.06f, 1.26f), aluminumMat, addCollider: false);
             CreateBox("NWAnnex_OpticaMGR_WindowGlass", bldgRoot.transform,
-                new Vector3(-12.00f, 1.76f, -25.61f), new Vector3(0.03f, 1.48f, 1.20f), clearGlassMat, addCollider: false);
+                new Vector3(-12.00f, 1.60f, -25.61f), new Vector3(0.03f, 1.24f, 1.20f), clearGlassMat, addCollider: false);
             CreateBox("NWAnnex_OpticaMGR_WinFrameS", bldgRoot.transform,
-                new Vector3(-11.98f, 1.76f, -26.22f), new Vector3(0.08f, 1.54f, 0.06f), blackFrameMat, addCollider: false);
+                new Vector3(-11.98f, 1.60f, -26.22f), new Vector3(0.08f, 1.30f, 0.06f), blackFrameMat, addCollider: false);
             CreateBox("NWAnnex_OpticaMGR_WinFrameTop", bldgRoot.transform,
-                new Vector3(-11.98f, 2.52f, -25.61f), new Vector3(0.08f, 0.06f, 1.26f), blackFrameMat, addCollider: false);
-            // "LENTES" top window lettering quad
+                new Vector3(-11.98f, 2.24f, -25.61f), new Vector3(0.08f, 0.06f, 1.26f), blackFrameMat, addCollider: false);
             var lentesQuad = GameObject.CreatePrimitive(PrimitiveType.Quad);
             lentesQuad.name = "NWAnnex_OpticaMGR_WindowLentes";
             lentesQuad.transform.SetParent(bldgRoot.transform);
-            lentesQuad.transform.position = new Vector3(-11.96f, 2.26f, -25.62f);
+            lentesQuad.transform.position = new Vector3(-11.96f, 2.02f, -25.62f);
             lentesQuad.transform.rotation = Quaternion.Euler(0f, -90f, 0f);
-            lentesQuad.transform.localScale = new Vector3(0.86f, 0.26f, 1.0f);
+            lentesQuad.transform.localScale = new Vector3(0.86f, 0.24f, 1.0f);
             AssignMat(lentesQuad, opticaMgrLentesMat);
             UnityEngine.Object.DestroyImmediate(lentesQuad.GetComponent<Collider>());
 
-            // North half (Z = -25.00..-24.00m): Full-height black-framed glass Push/Pull entrance door!
+            // North half (Z = -25.00..-24.00m): Black-framed glass Push/Pull entrance door (harmonized top Y = 2.24m!)
             CreateBox("NWAnnex_OpticaMGR_BlackDoorGlass", bldgRoot.transform,
-                new Vector3(-12.00f, 1.38f, -24.50f), new Vector3(0.03f, 2.28f, 0.96f), clearGlassMat, addCollider: false);
+                new Vector3(-12.00f, 1.22f, -24.50f), new Vector3(0.03f, 2.02f, 0.96f), clearGlassMat, addCollider: false);
             CreateBox("NWAnnex_OpticaMGR_DoorJambS", bldgRoot.transform,
-                new Vector3(-11.97f, 1.38f, -24.99f), new Vector3(0.10f, 2.34f, 0.07f), blackFrameMat, addCollider: false);
+                new Vector3(-11.97f, 1.22f, -24.99f), new Vector3(0.10f, 2.08f, 0.07f), blackFrameMat, addCollider: false);
             CreateBox("NWAnnex_OpticaMGR_DoorJambN", bldgRoot.transform,
-                new Vector3(-11.97f, 1.38f, -24.01f), new Vector3(0.10f, 2.34f, 0.07f), blackFrameMat, addCollider: false);
+                new Vector3(-11.97f, 1.22f, -24.01f), new Vector3(0.10f, 2.08f, 0.07f), blackFrameMat, addCollider: false);
             CreateBox("NWAnnex_OpticaMGR_DoorHeader", bldgRoot.transform,
-                new Vector3(-11.97f, 2.52f, -24.50f), new Vector3(0.10f, 0.08f, 1.04f), blackFrameMat, addCollider: false);
+                new Vector3(-11.97f, 2.24f, -24.50f), new Vector3(0.10f, 0.07f, 1.04f), blackFrameMat, addCollider: false);
             CreateBox("NWAnnex_OpticaMGR_DoorMidRail", bldgRoot.transform,
-                new Vector3(-11.96f, 1.24f, -24.50f), new Vector3(0.07f, 0.05f, 0.94f), blackFrameMat, addCollider: false);
+                new Vector3(-11.96f, 1.14f, -24.50f), new Vector3(0.07f, 0.05f, 0.94f), blackFrameMat, addCollider: false);
             CreateBox("NWAnnex_OpticaMGR_DoorKick", bldgRoot.transform,
-                new Vector3(-11.97f, 0.30f, -24.50f), new Vector3(0.08f, 0.20f, 0.96f), blackFrameMat, addCollider: false);
+                new Vector3(-11.97f, 0.29f, -24.50f), new Vector3(0.08f, 0.18f, 0.96f), blackFrameMat, addCollider: false);
             CreateBox("NWAnnex_OpticaMGR_DoorHandle", bldgRoot.transform,
-                new Vector3(-11.91f, 1.26f, -24.16f), new Vector3(0.05f, 0.34f, 0.03f), aluminumMat, addCollider: false);
+                new Vector3(-11.91f, 1.16f, -24.16f), new Vector3(0.05f, 0.32f, 0.03f), aluminumMat, addCollider: false);
 
             CreateEastPlaqueSign("Sign_OpticaMGR", bldgRoot.transform,
-                centerZ: -25.10f, centerY: 3.88f, widthZ: 2.08f, heightY: 0.56f, terracottaMat, signOpticaMgrMat);
+                centerZ: -25.10f, centerY: 3.30f, widthZ: 2.08f, heightY: 0.48f, terracottaMat, signOpticaMgrMat);
             CreateEastWedgeAwning("NWAnnex_Shop1_Awning", bldgRoot.transform,
-                centerZ: -25.10f, wallX: -11.98f, topY: 3.12f, widthZ: 2.24f, projectionX: 1.18f, dropY: 0.62f,
+                centerZ: -25.10f, wallX: -11.98f, topY: 2.72f, widthZ: 2.24f, projectionX: 1.12f, dropY: 0.52f,
                 beigeAwningMat, awningValanceMat);
 
             // Narrow dividing pier between Óptica MGR. & Farmalivio (Z = -23.95m)
             CreateBox("NWAnnex_Pier_1_2", bldgRoot.transform,
-                new Vector3(-12.56f, 1.44f, -23.95f), new Vector3(1.16f, 2.48f, 0.14f), creamStuccoMat, addCollider: false);
+                new Vector3(-12.56f, 1.29f, -23.95f), new Vector3(1.16f, 2.18f, 0.14f), creamStuccoMat, addCollider: false);
 
             // --- SHOP 2 (Z = -23.95..-21.15m, center -22.55m, 2.80m): "Farmalivio" ---
-            // Bright pharmacy interior behind double aluminum glass doors
             CreateBox("NWAnnex_Farmalivio_InteriorBack", bldgRoot.transform,
-                new Vector3(-13.02f, 1.44f, -23.05f), new Vector3(0.10f, 2.48f, 1.76f), pharmacyInteriorMat, addCollider: false);
+                new Vector3(-13.02f, 1.29f, -23.05f), new Vector3(0.10f, 2.18f, 1.76f), pharmacyInteriorMat, addCollider: false);
             CreateBox("NWAnnex_Farmalivio_InteriorShelf1", bldgRoot.transform,
-                new Vector3(-12.82f, 1.10f, -23.05f), new Vector3(0.28f, 0.05f, 1.56f), whiteFrameMat, addCollider: false);
+                new Vector3(-12.82f, 1.02f, -23.05f), new Vector3(0.28f, 0.05f, 1.56f), whiteFrameMat, addCollider: false);
             CreateBox("NWAnnex_Farmalivio_InteriorShelf2", bldgRoot.transform,
-                new Vector3(-12.82f, 1.62f, -23.05f), new Vector3(0.28f, 0.05f, 1.56f), whiteFrameMat, addCollider: false);
+                new Vector3(-12.82f, 1.48f, -23.05f), new Vector3(0.28f, 0.05f, 1.56f), whiteFrameMat, addCollider: false);
 
-            // South module (Z = -23.88..-22.22m, 1.66m): Double transparent glass Push/Pull doors with natural aluminum frame!
+            // South module (Z = -23.88..-22.22m, 1.66m): Double transparent glass Push/Pull doors (top Y = 2.24m!)
             CreateBox("NWAnnex_Farmalivio_DoubleDoorGlass", bldgRoot.transform,
-                new Vector3(-12.00f, 1.38f, -23.05f), new Vector3(0.03f, 2.28f, 1.62f), clearGlassMat, addCollider: false);
+                new Vector3(-12.00f, 1.22f, -23.05f), new Vector3(0.03f, 2.02f, 1.62f), clearGlassMat, addCollider: false);
             CreateBox("NWAnnex_Farmalivio_FrameS", bldgRoot.transform,
-                new Vector3(-11.97f, 1.38f, -23.86f), new Vector3(0.10f, 2.34f, 0.07f), aluminumMat, addCollider: false);
+                new Vector3(-11.97f, 1.22f, -23.86f), new Vector3(0.10f, 2.08f, 0.07f), aluminumMat, addCollider: false);
             CreateBox("NWAnnex_Farmalivio_FrameN", bldgRoot.transform,
-                new Vector3(-11.97f, 1.38f, -22.24f), new Vector3(0.10f, 2.34f, 0.07f), aluminumMat, addCollider: false);
+                new Vector3(-11.97f, 1.22f, -22.24f), new Vector3(0.10f, 2.08f, 0.07f), aluminumMat, addCollider: false);
             CreateBox("NWAnnex_Farmalivio_FrameHeader", bldgRoot.transform,
-                new Vector3(-11.97f, 2.52f, -23.05f), new Vector3(0.10f, 0.08f, 1.68f), aluminumMat, addCollider: false);
+                new Vector3(-11.97f, 2.24f, -23.05f), new Vector3(0.10f, 0.07f, 1.68f), aluminumMat, addCollider: false);
             CreateBox("NWAnnex_Farmalivio_CenterStileS", bldgRoot.transform,
-                new Vector3(-11.97f, 1.38f, -23.09f), new Vector3(0.08f, 2.28f, 0.05f), aluminumMat, addCollider: false);
+                new Vector3(-11.97f, 1.22f, -23.09f), new Vector3(0.08f, 2.02f, 0.05f), aluminumMat, addCollider: false);
             CreateBox("NWAnnex_Farmalivio_CenterStileN", bldgRoot.transform,
-                new Vector3(-11.97f, 1.38f, -23.01f), new Vector3(0.08f, 2.28f, 0.05f), aluminumMat, addCollider: false);
+                new Vector3(-11.97f, 1.22f, -23.01f), new Vector3(0.08f, 2.02f, 0.05f), aluminumMat, addCollider: false);
             CreateBox("NWAnnex_Farmalivio_Kickplate", bldgRoot.transform,
-                new Vector3(-11.97f, 0.30f, -23.05f), new Vector3(0.08f, 0.20f, 1.62f), aluminumMat, addCollider: false);
-            // Twin vertical Push/Pull handles in brushed aluminum
+                new Vector3(-11.97f, 0.29f, -23.05f), new Vector3(0.08f, 0.18f, 1.62f), aluminumMat, addCollider: false);
             CreateBox("NWAnnex_Farmalivio_HandleS", bldgRoot.transform,
-                new Vector3(-11.91f, 1.26f, -23.16f), new Vector3(0.05f, 0.38f, 0.03f), aluminumMat, addCollider: false);
+                new Vector3(-11.91f, 1.16f, -23.16f), new Vector3(0.05f, 0.34f, 0.03f), aluminumMat, addCollider: false);
             CreateBox("NWAnnex_Farmalivio_HandleN", bldgRoot.transform,
-                new Vector3(-11.91f, 1.26f, -22.94f), new Vector3(0.05f, 0.38f, 0.03f), aluminumMat, addCollider: false);
+                new Vector3(-11.91f, 1.16f, -22.94f), new Vector3(0.05f, 0.34f, 0.03f), aluminumMat, addCollider: false);
 
             // North module (Z = -22.22..-21.15m, 1.07m): Solid white stucco wall painted with 3-line quote "El alivio / empieza / aquí"
             CreateBox("NWAnnex_Farmalivio_QuoteWallBlock", bldgRoot.transform,
-                new Vector3(-12.56f, 1.44f, -21.685f), new Vector3(1.16f, 2.48f, 1.08f), creamStuccoMat, addCollider: true);
+                new Vector3(-12.56f, 1.29f, -21.685f), new Vector3(1.16f, 2.18f, 1.08f), creamStuccoMat, addCollider: true);
             var quoteQuad = GameObject.CreatePrimitive(PrimitiveType.Quad);
             quoteQuad.name = "NWAnnex_Farmalivio_WallQuoteQuad";
             quoteQuad.transform.SetParent(bldgRoot.transform);
-            quoteQuad.transform.position = new Vector3(-11.97f, 1.48f, -21.685f);
+            quoteQuad.transform.position = new Vector3(-11.97f, 1.32f, -21.685f);
             quoteQuad.transform.rotation = Quaternion.Euler(0f, -90f, 0f);
-            quoteQuad.transform.localScale = new Vector3(0.96f, 1.48f, 1.0f);
+            quoteQuad.transform.localScale = new Vector3(0.92f, 1.32f, 1.0f);
             AssignMat(quoteQuad, farmalivioWallQuoteMat);
             UnityEngine.Object.DestroyImmediate(quoteQuad.GetComponent<Collider>());
 
             CreateEastWedgeAwning("NWAnnex_Shop2_Awning", bldgRoot.transform,
-                centerZ: -22.55f, wallX: -11.98f, topY: 3.12f, widthZ: 2.74f, projectionX: 1.18f, dropY: 0.62f,
+                centerZ: -22.55f, wallX: -11.98f, topY: 2.72f, widthZ: 2.74f, projectionX: 1.12f, dropY: 0.52f,
                 beigeAwningMat, awningValanceMat);
-            // 3D Extruded Illuminated Channel-Letter Logo centered cleanly across full 2.80m Farmalivio bay!
             CreateExtrudedChannelLetterLogo(
                 name: "Sign_Farmalivio_3DLogo",
                 parent: bldgRoot.transform,
                 wallX: -11.99f,
-                centerY: 3.92f,
+                centerY: 3.32f,
                 centerZ: -22.55f,
-                widthZ: 2.42f,
-                heightY: 0.68f,
+                widthZ: 2.36f,
+                heightY: 0.58f,
                 extrudeDepthX: 0.105f,
                 texAssetPath: "Assets/Textures/Environment/T_West_Sign_Farmalivio_Face.png",
                 faceMatPath: "Assets/Settings/West_Sign_Farmalivio_Face.mat",
@@ -690,79 +663,117 @@ namespace MyVirtualCommunity.Editor
 
             // --- SHOP 3 (Z = -21.15..-19.70m, center -20.425m, 1.45m): "Cambios Bonanza" — Permanently Closed White Metal Shutter ---
             CreateBox("NWAnnex_Bonanza_ClosedWhiteShutter", bldgRoot.transform,
-                new Vector3(-11.98f, 1.38f, -20.425f), new Vector3(0.08f, 2.34f, 1.34f), whiteShutterMat, addCollider: true);
+                new Vector3(-11.98f, 1.22f, -20.425f), new Vector3(0.08f, 2.04f, 1.34f), whiteShutterMat, addCollider: true);
             CreateBox("NWAnnex_Bonanza_ShutterTrackS", bldgRoot.transform,
-                new Vector3(-11.95f, 1.38f, -21.10f), new Vector3(0.08f, 2.38f, 0.06f), aluminumMat, addCollider: false);
+                new Vector3(-11.95f, 1.22f, -21.10f), new Vector3(0.08f, 2.08f, 0.06f), aluminumMat, addCollider: false);
             CreateBox("NWAnnex_Bonanza_ShutterTrackN", bldgRoot.transform,
-                new Vector3(-11.95f, 1.38f, -19.75f), new Vector3(0.08f, 2.38f, 0.06f), aluminumMat, addCollider: false);
+                new Vector3(-11.95f, 1.22f, -19.75f), new Vector3(0.08f, 2.08f, 0.06f), aluminumMat, addCollider: false);
             CreateBox("NWAnnex_Bonanza_ShutterBox", bldgRoot.transform,
-                new Vector3(-11.95f, 2.60f, -20.425f), new Vector3(0.18f, 0.20f, 1.44f), whiteFrameMat, addCollider: false);
+                new Vector3(-11.95f, 2.32f, -20.425f), new Vector3(0.18f, 0.18f, 1.44f), whiteFrameMat, addCollider: false);
             CreateEastPlaqueSign("Sign_CambiosBonanza", bldgRoot.transform,
-                centerZ: -20.425f, centerY: 3.88f, widthZ: 1.32f, heightY: 0.56f, terracottaMat, signCambiosBonanzaMat);
+                centerZ: -20.425f, centerY: 3.30f, widthZ: 1.32f, heightY: 0.48f, terracottaMat, signCambiosBonanzaMat);
             CreateEastWedgeAwning("NWAnnex_Shop3_Awning", bldgRoot.transform,
-                centerZ: -20.425f, wallX: -11.98f, topY: 3.12f, widthZ: 1.40f, projectionX: 1.14f, dropY: 0.60f,
+                centerZ: -20.425f, wallX: -11.98f, topY: 2.72f, widthZ: 1.40f, projectionX: 1.10f, dropY: 0.50f,
                 beigeAwningMat, awningValanceMat);
 
             // --- WIDE DIVIDING PILASTER BETWEEN CAMBIOS BONANZA & GRUPO BILLEMEX (Z = -19.70..-19.05m, 0.65m) ---
-            // Dark grey stone block zócalo + TWIN 3D CFE electric meters visible right above zócalo in Google Maps photo!
             CreateBox("NWAnnex_Pier_Bonanza_Billemex", bldgRoot.transform,
-                new Vector3(-12.56f, 1.44f, -19.375f), new Vector3(1.18f, 2.48f, 0.66f), creamStuccoMat, addCollider: true);
+                new Vector3(-12.56f, 1.29f, -19.375f), new Vector3(1.18f, 2.18f, 0.66f), creamStuccoMat, addCollider: true);
             CreateBox("NWAnnex_Pier_Bonanza_Billemex_Zocalo", bldgRoot.transform,
-                new Vector3(-11.96f, 0.62f, -19.375f), new Vector3(0.14f, 0.88f, 0.68f), stoneZocaloMat, addCollider: false);
-            CreateCfeMeter("CFE_Meter_Billemex_1", bldgRoot.transform, new Vector3(-11.94f, 1.46f, -19.50f), aluminumMat, cfeDomeGlassMat, cfeMeterFaceMat);
-            CreateCfeMeter("CFE_Meter_Billemex_2", bldgRoot.transform, new Vector3(-11.94f, 1.46f, -19.24f), aluminumMat, cfeDomeGlassMat, cfeMeterFaceMat);
+                new Vector3(-11.96f, 0.58f, -19.375f), new Vector3(0.14f, 0.80f, 0.68f), stoneZocaloMat, addCollider: false);
+            CreateCfeMeter("CFE_Meter_Billemex_1", bldgRoot.transform, new Vector3(-11.94f, 1.36f, -19.50f), aluminumMat, cfeDomeGlassMat, cfeMeterFaceMat);
+            CreateCfeMeter("CFE_Meter_Billemex_2", bldgRoot.transform, new Vector3(-11.94f, 1.36f, -19.24f), aluminumMat, cfeDomeGlassMat, cfeMeterFaceMat);
 
             // --- SHOP 4 (Z = -19.05..-16.65m, center -17.85m, 2.40m): "Grupo Billemex" ---
-            // Left side (Z = -19.02..-18.18m, 0.84m): White armored steel employee security door
             CreateBox("NWAnnex_Billemex_DoorFrameWall", bldgRoot.transform,
-                new Vector3(-12.56f, 1.44f, -18.60f), new Vector3(1.14f, 2.48f, 0.86f), creamStuccoMat, addCollider: true);
+                new Vector3(-12.56f, 1.29f, -18.60f), new Vector3(1.14f, 2.18f, 0.86f), creamStuccoMat, addCollider: true);
             CreateBox("NWAnnex_Billemex_WhiteSecurityDoor", bldgRoot.transform,
-                new Vector3(-11.97f, 1.28f, -18.60f), new Vector3(0.08f, 2.12f, 0.78f), whiteFrameMat, addCollider: false);
+                new Vector3(-11.97f, 1.20f, -18.60f), new Vector3(0.08f, 1.98f, 0.78f), whiteFrameMat, addCollider: false);
             CreateBox("NWAnnex_Billemex_DoorPerimeter", bldgRoot.transform,
-                new Vector3(-11.99f, 1.28f, -18.60f), new Vector3(0.06f, 2.20f, 0.84f), aluminumMat, addCollider: false);
+                new Vector3(-11.99f, 1.20f, -18.60f), new Vector3(0.06f, 2.04f, 0.84f), aluminumMat, addCollider: false);
             CreateBox("NWAnnex_Billemex_DoorHandle", bldgRoot.transform,
-                new Vector3(-11.92f, 1.18f, -18.29f), new Vector3(0.04f, 0.16f, 0.04f), darkZocaloMat, addCollider: false);
+                new Vector3(-11.92f, 1.12f, -18.29f), new Vector3(0.04f, 0.16f, 0.04f), darkZocaloMat, addCollider: false);
 
             // Right side (Z = -18.18..-16.68m, 1.50m): Long reinforced bulletproof glass teller window + cash tray + stone base!
             CreateBox("NWAnnex_Billemex_BoothInterior", bldgRoot.transform,
-                new Vector3(-12.88f, 1.65f, -17.43f), new Vector3(0.10f, 1.80f, 1.48f), weatheredCreamMat, addCollider: false);
+                new Vector3(-12.88f, 1.52f, -17.43f), new Vector3(0.10f, 1.68f, 1.48f), weatheredCreamMat, addCollider: false);
             CreateBox("NWAnnex_Billemex_BaseStoneWall", bldgRoot.transform,
-                new Vector3(-12.22f, 0.66f, -17.43f), new Vector3(0.56f, 0.96f, 1.52f), stoneZocaloMat, addCollider: true);
+                new Vector3(-12.22f, 0.62f, -17.43f), new Vector3(0.56f, 0.88f, 1.52f), stoneZocaloMat, addCollider: true);
             CreateBox("NWAnnex_Billemex_CashTray", bldgRoot.transform,
-                new Vector3(-11.94f, 1.16f, -17.43f), new Vector3(0.28f, 0.06f, 1.52f), aluminumMat, addCollider: false);
+                new Vector3(-11.94f, 1.08f, -17.43f), new Vector3(0.28f, 0.06f, 1.52f), aluminumMat, addCollider: false);
             CreateBox("NWAnnex_Billemex_CashSlot", bldgRoot.transform,
-                new Vector3(-11.96f, 1.24f, -17.43f), new Vector3(0.16f, 0.11f, 0.56f), interiorDarkMat, addCollider: false);
+                new Vector3(-11.96f, 1.16f, -17.43f), new Vector3(0.16f, 0.10f, 0.56f), interiorDarkMat, addCollider: false);
             CreateBox("NWAnnex_Billemex_BulletproofGlass", bldgRoot.transform,
-                new Vector3(-12.00f, 1.82f, -17.43f), new Vector3(0.04f, 1.24f, 1.44f), clearGlassMat, addCollider: false);
+                new Vector3(-12.00f, 1.66f, -17.43f), new Vector3(0.04f, 1.12f, 1.44f), clearGlassMat, addCollider: false);
             CreateBox("NWAnnex_Billemex_WinFrameS", bldgRoot.transform,
-                new Vector3(-11.97f, 1.82f, -18.15f), new Vector3(0.09f, 1.30f, 0.06f), aluminumMat, addCollider: false);
+                new Vector3(-11.97f, 1.66f, -18.15f), new Vector3(0.09f, 1.18f, 0.06f), aluminumMat, addCollider: false);
             CreateBox("NWAnnex_Billemex_WinFrameN", bldgRoot.transform,
-                new Vector3(-11.97f, 1.82f, -16.71f), new Vector3(0.09f, 1.30f, 0.06f), aluminumMat, addCollider: false);
+                new Vector3(-11.97f, 1.66f, -16.71f), new Vector3(0.09f, 1.18f, 0.06f), aluminumMat, addCollider: false);
             CreateBox("NWAnnex_Billemex_WinFrameTop", bldgRoot.transform,
-                new Vector3(-11.97f, 2.46f, -17.43f), new Vector3(0.09f, 0.07f, 1.50f), aluminumMat, addCollider: false);
+                new Vector3(-11.97f, 2.24f, -17.43f), new Vector3(0.09f, 0.07f, 1.50f), aluminumMat, addCollider: false);
 
             CreateEastPlaqueSign("Sign_GrupoBillemex", bldgRoot.transform,
-                centerZ: -17.85f, centerY: 3.92f, widthZ: 2.18f, heightY: 0.56f, terracottaMat, signGrupoBillemexMat);
+                centerZ: -17.85f, centerY: 3.30f, widthZ: 2.18f, heightY: 0.48f, terracottaMat, signGrupoBillemexMat);
             CreateEastWedgeAwning("NWAnnex_Shop4_Awning", bldgRoot.transform,
-                centerZ: -17.85f, wallX: -11.98f, topY: 3.16f, widthZ: 2.32f, projectionX: 1.18f, dropY: 0.66f,
+                centerZ: -17.85f, wallX: -11.98f, topY: 2.74f, widthZ: 2.32f, projectionX: 1.12f, dropY: 0.54f,
                 beigeAwningMat, awningValanceMat);
 
-            // Double-Sided Cantilevered Live LED Exchange Rate Sign (COMPRA + VENTA simultaneously in green/red on BOTH faces!)
             CreateDualSimultaneousExchangeLedSign("GrupoBillemex_ExchangeLedSign", bldgRoot.transform,
-                pos: new Vector3(-10.88f, 3.32f, -19.22f), frameMat: aluminumMat, bezelMat: blackFrameMat,
+                pos: new Vector3(-10.88f, 3.04f, -19.22f), frameMat: aluminumMat, bezelMat: blackFrameMat,
                 armMat: whiteFrameMat, liveLedBaseMat: liveLedBaseMat);
 
-            // Dividing pier with dark grey stone zócalo between Grupo Billemex & Shop 5 (Z = -16.65m)
+            // Corner Vertex Pier between Grupo Billemex & La Esquina de Chihuas (Z = -16.65..-16.35m)
             CreateBox("NWAnnex_Pier_4_5", bldgRoot.transform,
-                new Vector3(-12.56f, 1.44f, -16.52f), new Vector3(1.18f, 2.48f, 0.32f), creamStuccoMat, addCollider: true);
+                new Vector3(-12.56f, 1.29f, -16.50f), new Vector3(1.18f, 2.18f, 0.32f), creamStuccoMat, addCollider: true);
             CreateBox("NWAnnex_Pier_4_5_Zocalo", bldgRoot.transform,
-                new Vector3(-11.96f, 0.62f, -16.52f), new Vector3(0.14f, 0.88f, 0.34f), stoneZocaloMat, addCollider: false);
+                new Vector3(-11.96f, 0.58f, -16.50f), new Vector3(0.14f, 0.80f, 0.34f), stoneZocaloMat, addCollider: false);
 
             // =========================================================================
-            // SHOP 5 (Z = -16.36..-15.08m, width 1.28m, center -15.72m): "LA ESQUINA DE CHIHUAS · RESTO-BAR"
-            // Straightened white entrance fascia at X = -12.00m (compensating the diagonal), frameless double
-            // tempered glass doors with warm resto-bar interior, backlit amber wall sign & rooftop marquee "LA ESQ DE CH"!
+            // UPPER ORIGINAL DIAGONAL PARAPET vs. GROUND-FLOOR ALIGNED FRONTS (Shops 5 & 6)
+            //   - Upper original parapet & cornice (Y = 2.96..3.86m) recede diagonally
+            //     from (-12.00, -16.35) to (-14.60, -13.45), meeting Building A's 2-story diagonal chamfer
+            //     and lateral party wall at the exact shared junction vertex (-14.60, -13.45) with zero gap!
+            //   - Ground-floor storefronts of "La Esquina de Chihuas" (Z = -16.35..-15.05m) and
+            //     "México Mágico · Café Express-O" (Z = -15.05..-13.45m) are ALIGNED AT THE FRONT (X = -12.00m)
+            //     via false front walls, with México Mágico's signature protruding fuchsia/rosa mexicano
+            //     left & right side wing walls (salientes laterales out to X = -11.48m)!
             // =========================================================================
+            Vector2 bendStart = new Vector2(-12.00f, -16.35f);
+            Vector2 bendEnd = new Vector2(-14.60f, -13.45f);
+            Vector2 bendDelta = bendEnd - bendStart;
+            float bendLen = bendDelta.magnitude; // 3.895m
+            Vector2 bendDir = bendDelta / bendLen;
+
+            // Solid triangular upper building prism filling behind the diagonal parapet up to the shared party wall Z = -13.45m
+            CreateFlatPrism("NWAnnex_NorthDiagonalUpperPrism", bldgRoot.transform,
+                new List<Vector2>
+                {
+                    new Vector2(-14.65f, -16.38f),
+                    new Vector2(-12.00f, -16.35f),
+                    new Vector2(-14.60f, -13.45f)
+                },
+                2.88f, 3.84f, creamStuccoMat, addCollider: true);
+
+            GameObject angledWingRoot = new GameObject("NWAnnex_NorthAngledWing_Root");
+            angledWingRoot.transform.SetParent(bldgRoot.transform, false);
+            angledWingRoot.transform.localPosition = new Vector3(bendStart.x, 0f, bendStart.y);
+            angledWingRoot.transform.localRotation = Quaternion.LookRotation(new Vector3(bendDir.x, 0f, bendDir.y), Vector3.up);
+
+            // Recessed original diagonal upper parapet wall & dark-gray coping cornice (visible above the aligned false fronts!)
+            CreateBox("NWAnnex_UpperParapet_Sloped", angledWingRoot.transform,
+                new Vector3(-0.32f, 3.38f, bendLen * 0.5f), new Vector3(0.64f, 0.92f, bendLen + 0.08f), creamStuccoMat, addCollider: true);
+            CreateBox("NWAnnex_Cornice_EastSloped", angledWingRoot.transform,
+                new Vector3(0.06f, 3.86f, bendLen * 0.5f), new Vector3(0.22f, 0.14f, bendLen + 0.12f), darkCorniceMat, addCollider: false);
+
+            // Flat roof cap & ground floor pad bridging the triangular pocket between the aligned X = -12.00m fronts and the diagonal structure
+            CreateBox("NWAnnex_AngledGroundFloorPad", bldgRoot.transform,
+                new Vector3(-13.30f, 0.10f, -14.90f), new Vector3(2.64f, 0.20f, 2.94f), weatheredCreamMat, addCollider: true);
+            CreateBox("NWAnnex_FalseFront_RoofCap", bldgRoot.transform,
+                new Vector3(-13.30f, 2.94f, -14.90f), new Vector3(2.60f, 0.10f, 2.92f), creamStuccoMat, addCollider: false);
+            CreateBox("NWAnnex_Angled_MoldingBand", bldgRoot.transform,
+                new Vector3(-11.95f, 2.94f, -15.70f), new Vector3(0.10f, 0.08f, 1.32f), darkCorniceMat, addCollider: false);
+
+            // --- SHOP 5 (Aligned at X = -12.00m, Z = -16.35..-15.05m, width 1.30m, center -15.70m): "LA ESQUINA DE CHIHUAS · RESTO-BAR" ---
             Material chihuasWallMat = CreateOrGetSeparateEmissiveMat(
                 "Assets/Settings/West_Sign_EsqChihuas_Wall.mat",
                 "Assets/Textures/Environment/T_West_Sign_EsqChihuas_Wall.png",
@@ -775,45 +786,43 @@ namespace MyVirtualCommunity.Editor
             Material chihuasBulbMat = CreateOrGetSolidEmissiveMat("Assets/Settings/West_EsqChihuas_BulbWarm.mat", new Color(1.0f, 0.94f, 0.78f), new Color(1.0f, 0.78f, 0.32f));
             Material chihuasWarmWoodMat = CreateOrGetMat("Assets/Settings/West_EsqChihuas_InteriorWood.mat", new Color(0.42f, 0.25f, 0.14f), 0.25f, 0.0f);
 
-            // Warm Resto-Bar visible interior behind glass doors
             CreateBox("EsqChihuas_InteriorBackWall", bldgRoot.transform,
-                new Vector3(-13.02f, 1.44f, -15.72f), new Vector3(0.10f, 2.48f, 1.26f), chihuasWarmWoodMat, addCollider: false);
+                new Vector3(-13.02f, 1.29f, -15.70f), new Vector3(0.10f, 2.18f, 1.26f), chihuasWarmWoodMat, addCollider: false);
             CreateBox("EsqChihuas_InteriorBarCounter", bldgRoot.transform,
-                new Vector3(-12.68f, 0.68f, -15.58f), new Vector3(0.45f, 0.96f, 0.88f), darkZocaloMat, addCollider: false);
+                new Vector3(-12.68f, 0.66f, -15.62f), new Vector3(0.45f, 0.92f, 0.86f), darkZocaloMat, addCollider: false);
             CreateBox("EsqChihuas_InteriorCeilingGlow", bldgRoot.transform,
-                new Vector3(-12.50f, 2.58f, -15.72f), new Vector3(0.86f, 0.05f, 1.02f), chihuasBulbMat, addCollider: false);
+                new Vector3(-12.50f, 2.34f, -15.70f), new Vector3(0.84f, 0.05f, 0.98f), chihuasBulbMat, addCollider: false);
 
-            // Clean white flanking entrance framing compensating diagonal so portal faces straight East (X = -12.00m)
+            // Aligned white false-front portal framing at X = -12.00m
             CreateBox("EsqChihuas_PortalFrame_S", bldgRoot.transform,
-                new Vector3(-12.02f, 1.38f, -16.29f), new Vector3(0.14f, 2.38f, 0.14f), creamStuccoMat, addCollider: false);
+                new Vector3(-12.02f, 1.48f, -16.28f), new Vector3(0.14f, 2.56f, 0.14f), creamStuccoMat, addCollider: false);
             CreateBox("EsqChihuas_PortalFrame_N", bldgRoot.transform,
-                new Vector3(-12.02f, 1.38f, -15.15f), new Vector3(0.14f, 2.38f, 0.14f), creamStuccoMat, addCollider: false);
+                new Vector3(-12.02f, 1.48f, -15.12f), new Vector3(0.14f, 2.56f, 0.14f), creamStuccoMat, addCollider: false);
+            CreateBox("EsqChihuas_UpperFasciaWall", bldgRoot.transform,
+                new Vector3(-12.01f, 2.59f, -15.70f), new Vector3(0.10f, 0.66f, 1.30f), creamStuccoMat, addCollider: false);
             CreateBox("EsqChihuas_DoorHeader", bldgRoot.transform,
-                new Vector3(-11.98f, 2.50f, -15.72f), new Vector3(0.10f, 0.07f, 1.06f), aluminumMat, addCollider: false);
+                new Vector3(-11.98f, 2.24f, -15.70f), new Vector3(0.10f, 0.07f, 1.06f), aluminumMat, addCollider: false);
 
-            // Frameless Double Tempered Glass Doors + Twin Tall Vertical Chrome Handles (Photo 3!)
             CreateBox("EsqChihuas_DoubleGlassDoors", bldgRoot.transform,
-                new Vector3(-12.00f, 1.34f, -15.72f), new Vector3(0.03f, 2.26f, 0.98f), clearGlassMat, addCollider: false);
+                new Vector3(-12.00f, 1.22f, -15.70f), new Vector3(0.03f, 2.02f, 1.02f), clearGlassMat, addCollider: false);
             CreateBox("EsqChihuas_DoorGapSeam", bldgRoot.transform,
-                new Vector3(-11.985f, 1.34f, -15.72f), new Vector3(0.02f, 2.24f, 0.015f), darkZocaloMat, addCollider: false);
+                new Vector3(-11.985f, 1.22f, -15.70f), new Vector3(0.02f, 2.00f, 0.015f), darkZocaloMat, addCollider: false);
             CreateBox("EsqChihuas_Handle_S", bldgRoot.transform,
-                new Vector3(-11.93f, 1.18f, -15.79f), new Vector3(0.04f, 0.72f, 0.028f), aluminumMat, addCollider: false);
+                new Vector3(-11.93f, 1.14f, -15.77f), new Vector3(0.04f, 0.68f, 0.028f), aluminumMat, addCollider: false);
             CreateBox("EsqChihuas_Handle_N", bldgRoot.transform,
-                new Vector3(-11.93f, 1.18f, -15.65f), new Vector3(0.04f, 0.72f, 0.028f), aluminumMat, addCollider: false);
+                new Vector3(-11.93f, 1.14f, -15.63f), new Vector3(0.04f, 0.68f, 0.028f), aluminumMat, addCollider: false);
             CreateBox("EsqChihuas_DoorSticker", bldgRoot.transform,
-                new Vector3(-11.97f, 1.66f, -15.72f), new Vector3(0.01f, 0.24f, 0.18f), whiteFrameMat, addCollider: false);
+                new Vector3(-11.97f, 1.54f, -15.70f), new Vector3(0.01f, 0.22f, 0.18f), whiteFrameMat, addCollider: false);
 
-            // Backlit Front Wall Sign directly above door ("LA ESQUINA DE CHIHUAS / RESTO-BAR" with warm amber backlit halo!)
-            // Positioned cleanly below NWAnnex_East_MoldingBand (Y = 3.30m) and above door header (Y = 2.50m) with zero clipping!
             var chihuasWallRoot = new GameObject("Sign_EsqChihuas_Wall");
             chihuasWallRoot.transform.SetParent(bldgRoot.transform, false);
-            chihuasWallRoot.transform.position = new Vector3(-11.95f, 2.90f, -15.72f);
+            chihuasWallRoot.transform.localPosition = new Vector3(-11.95f, 2.58f, -15.70f);
             var chihuasWallQuad = GameObject.CreatePrimitive(PrimitiveType.Quad);
             chihuasWallQuad.name = "EsqChihuas_WallFace";
             chihuasWallQuad.transform.SetParent(chihuasWallRoot.transform, false);
             chihuasWallQuad.transform.localPosition = Vector3.zero;
             chihuasWallQuad.transform.localRotation = Quaternion.Euler(0f, -90f, 0f);
-            chihuasWallQuad.transform.localScale = new Vector3(1.14f, 0.60f, 1.0f);
+            chihuasWallQuad.transform.localScale = new Vector3(1.14f, 0.50f, 1.0f);
             AssignMat(chihuasWallQuad, chihuasWallMat);
             UnityEngine.Object.DestroyImmediate(chihuasWallQuad.GetComponent<Collider>());
 
@@ -839,18 +848,18 @@ namespace MyVirtualCommunity.Editor
             chihuasWallGlow.nightLightIntensity = 1.45f;
             chihuasWallGlow.nightLightRange = 3.8f;
 
-            // Iconic Rooftop Double-Sided Vintage Marquee Sign ("LA ESQ DE CH") with black steel truss & yellow J-border bulbs!
+            // Rooftop Double-Sided Vintage Marquee Sign ("LA ESQ DE CH") mounted on the upper structure
             CreateEsqChihuasRooftopMarquee("Sign_EsqChihuas_RooftopMarquee", bldgRoot.transform,
-                pos: new Vector3(-10.88f, 5.55f, -15.25f),
+                pos: new Vector3(-11.05f, 4.72f, -15.65f),
                 trussMat: blackFrameMat, cabinetMat: terracottaMat, faceMat: chihuasMarqueeMat,
                 yellowBorderMat: chihuasYellowMat, bulbMat: chihuasBulbMat);
 
-            // =========================================================================
-            // SHOP 6 (Z = -15.08..-13.45m, width 1.63m, center -14.265m): "MÉXICO MÁGICO · CAFÉ EXPRESS-O"
-            // Cubic entrance pavilion PROTRUDING +0.48m East (X = -11.52m) past Building A & La Esquina de Chihuas!
-            // Vibrant Rosa Mexicano north side wall & roof screen, neon pink banner, 4-bay black glass coffee bar,
-            // side arrow box, & cantilevered circular cutout lightbox "MÉXICO MÁGICO · CAFÉ EXPRESS-O"!
-            // =========================================================================
+            // --- SHOP 6 (Aligned at X = -12.00m, Z = -15.05..-13.45m, width 1.60m, center -14.25m): "MÉXICO MÁGICO · CAFÉ EXPRESS-O" ---
+            // Features:
+            //   1. Storefront glass & black/pink banner aligned at the front (X = -11.96m) with Chihuas & the Mystery Door false wall!
+            //   2. Two protruding fuchsia / rosa mexicano side wing walls (salientes laterales out to X = -11.48m on right/North
+            //      and X = -11.58m on left/South) rising to Y = 3.02m to frame the entrance, exactly as shown in video Image 1 & 2!
+            //   3. Recessed pink openwork lattice screen (celosía rosa) sitting back on the original diagonal roof edge (Y = 3.44m)!
             Material rosaMexicanoMat = CreateOrGetMat("Assets/Settings/West_MexicoMagico_RosaMexicano.mat", new Color(0.84f, 0.06f, 0.44f), 0.52f, 0.05f);
             Material mexicoBannerMat = CreateOrGetSeparateEmissiveMat(
                 "Assets/Settings/West_Sign_MexicoMagico_Banner.mat",
@@ -870,70 +879,77 @@ namespace MyVirtualCommunity.Editor
             Material blueCoolerMat = CreateOrGetSolidEmissiveMat("Assets/Settings/West_MexicoMagico_BlueCooler.mat", new Color(0.18f, 0.36f, 0.95f), new Color(0.22f, 0.44f, 1.0f));
             Material neonRedCupMat = CreateOrGetSolidEmissiveMat("Assets/Settings/West_MexicoMagico_NeonRed.mat", new Color(1.0f, 0.16f, 0.16f), new Color(1.0f, 0.16f, 0.16f));
 
-            // Protruding pavilion floor, roof slab, South transition wall & iconic vibrant ROSA MEXICANO North side wall!
+            float mmCenterZ = -14.25f;
+
+            // Threshold pad & top black canopy bar between the two protruding fuchsia side wings
             CreateBox("MexicoMagico_ProtrudingFloor", bldgRoot.transform,
-                new Vector3(-11.76f, 0.10f, -14.265f), new Vector3(0.56f, 0.20f, 1.63f), weatheredCreamMat, addCollider: true);
+                new Vector3(-11.76f, 0.10f, mmCenterZ), new Vector3(0.54f, 0.20f, 1.62f), weatheredCreamMat, addCollider: true);
             CreateBox("MexicoMagico_ProtrudingRoof", bldgRoot.transform,
-                new Vector3(-11.76f, 3.32f, -14.265f), new Vector3(0.58f, 0.12f, 1.66f), blackFrameMat, addCollider: false);
+                new Vector3(-11.74f, 3.04f, mmCenterZ), new Vector3(0.54f, 0.09f, 1.64f), blackFrameMat, addCollider: false);
+
+            // Saliente Izquierda (South protruding fuchsia/rosa mexicano wing wall at Z = -15.04m, X = -12.02..-11.56m, Y = 0.20..3.02m)
             CreateBox("MexicoMagico_SouthReturnWall", bldgRoot.transform,
-                new Vector3(-12.30f, 1.76f, -15.08f), new Vector3(1.62f, 3.12f, 0.08f), rosaMexicanoMat, addCollider: true);
-            CreateBox("MexicoMagico_RosaSideWall", bldgRoot.transform,
-                new Vector3(-11.76f, 1.76f, -13.45f), new Vector3(0.54f, 3.12f, 0.08f), rosaMexicanoMat, addCollider: true);
-            CreateBox("MexicoMagico_InteriorNorthPartition", bldgRoot.transform,
-                new Vector3(-12.56f, 1.44f, -13.49f), new Vector3(1.16f, 2.48f, 0.10f), creamStuccoMat, addCollider: true);
-            // Narrow vertical rosa mexicano front accent strips flanking the black glass pavilion (Photo 2!)
+                new Vector3(-11.79f, 1.61f, -15.04f), new Vector3(0.46f, 2.82f, 0.08f), rosaMexicanoMat, addCollider: true);
             CreateBox("MexicoMagico_FrontRosaTrim_S", bldgRoot.transform,
-                new Vector3(-11.51f, 1.76f, -15.05f), new Vector3(0.06f, 3.12f, 0.07f), rosaMexicanoMat, addCollider: false);
+                new Vector3(-11.55f, 1.61f, -15.01f), new Vector3(0.06f, 2.82f, 0.09f), rosaMexicanoMat, addCollider: false);
+
+            // Saliente Derecha (North protruding fuchsia/rosa mexicano wing wall at Z = -13.47m, X = -12.02..-11.48m, Y = 0.20..3.02m)
+            // Meets the flat Mystery-Door false wall (X = -12.00m) at a clean 90° corner, with black front metal post!
+            CreateBox("MexicoMagico_RosaSideWall", bldgRoot.transform,
+                new Vector3(-11.75f, 1.61f, -13.47f), new Vector3(0.54f, 2.82f, 0.08f), rosaMexicanoMat, addCollider: true);
             CreateBox("MexicoMagico_FrontRosaTrim_N", bldgRoot.transform,
-                new Vector3(-11.51f, 1.76f, -13.48f), new Vector3(0.06f, 3.12f, 0.07f), rosaMexicanoMat, addCollider: false);
-            // Decorative rosa mexicano parapet lattice screen on rooftop above pavilion (Photo 5!)
-            CreateBox("MexicoMagico_RosaRoofScreen", bldgRoot.transform,
-                new Vector3(-11.96f, 3.84f, -14.265f), new Vector3(0.10f, 0.56f, 1.54f), rosaMexicanoMat, addCollider: false);
+                new Vector3(-11.49f, 1.61f, -13.50f), new Vector3(0.06f, 2.82f, 0.09f), blackFrameMat, addCollider: false);
+            CreateBox("MexicoMagico_InteriorNorthPartition", bldgRoot.transform,
+                new Vector3(-12.56f, 1.48f, -13.49f), new Vector3(1.10f, 2.56f, 0.08f), creamStuccoMat, addCollider: true);
 
-            // Coffee Bar Interior visible behind the 4-bay glass storefront (Photo 2: counter, shelves, blue cooler, red neon cup!)
+            // Recessed pink perforated lattice screen (celosía rosa) sitting back on the original diagonal parapet (visible in Image 1 & 2!)
+            CreateBox("MexicoMagico_RosaRoofScreen", angledWingRoot.transform,
+                new Vector3(0.04f, 4.18f, 2.82f), new Vector3(0.08f, 0.52f, 2.05f), rosaMexicanoMat, addCollider: false);
+
+            // Coffee Bar Interior visible behind the aligned 4-bay glass storefront
             CreateBox("MexicoMagico_InteriorBackWall", bldgRoot.transform,
-                new Vector3(-13.00f, 1.44f, -14.265f), new Vector3(0.10f, 2.48f, 1.58f), weatheredCreamMat, addCollider: false);
+                new Vector3(-13.02f, 1.48f, mmCenterZ), new Vector3(0.10f, 2.56f, 1.56f), weatheredCreamMat, addCollider: false);
             CreateBox("MexicoMagico_CounterBar", bldgRoot.transform,
-                new Vector3(-12.32f, 0.68f, -14.42f), new Vector3(0.60f, 0.96f, 1.05f), counterGreyMat, addCollider: false);
+                new Vector3(-12.42f, 0.66f, -14.38f), new Vector3(0.52f, 0.92f, 1.02f), counterGreyMat, addCollider: false);
             CreateBox("MexicoMagico_CounterTop", bldgRoot.transform,
-                new Vector3(-12.32f, 1.18f, -14.42f), new Vector3(0.64f, 0.05f, 1.08f), aluminumMat, addCollider: false);
+                new Vector3(-12.42f, 1.14f, -14.38f), new Vector3(0.56f, 0.05f, 1.06f), aluminumMat, addCollider: false);
             CreateBox("MexicoMagico_SyrupShelf1", bldgRoot.transform,
-                new Vector3(-12.82f, 1.56f, -14.55f), new Vector3(0.24f, 0.04f, 0.72f), whiteFrameMat, addCollider: false);
+                new Vector3(-12.84f, 1.48f, -14.50f), new Vector3(0.22f, 0.04f, 0.70f), whiteFrameMat, addCollider: false);
             CreateBox("MexicoMagico_SyrupShelf2", bldgRoot.transform,
-                new Vector3(-12.82f, 1.92f, -14.55f), new Vector3(0.24f, 0.04f, 0.72f), whiteFrameMat, addCollider: false);
+                new Vector3(-12.84f, 1.82f, -14.50f), new Vector3(0.22f, 0.04f, 0.70f), whiteFrameMat, addCollider: false);
             CreateBox("MexicoMagico_BlueCooler", bldgRoot.transform,
-                new Vector3(-12.80f, 1.68f, -13.95f), new Vector3(0.26f, 0.76f, 0.36f), blueCoolerMat, addCollider: false);
+                new Vector3(-12.82f, 1.58f, -13.92f), new Vector3(0.24f, 0.72f, 0.36f), blueCoolerMat, addCollider: false);
             CreateBox("MexicoMagico_InteriorNeonCup", bldgRoot.transform,
-                new Vector3(-11.72f, 1.48f, -14.80f), new Vector3(0.03f, 0.16f, 0.18f), neonRedCupMat, addCollider: false);
+                new Vector3(-12.02f, 1.40f, -14.76f), new Vector3(0.03f, 0.16f, 0.18f), neonRedCupMat, addCollider: false);
 
-            // 4-Bay Black-Framed Glass Storefront protruding at X = -11.52m (3 fixed panes left + 1 entrance door right!)
+            // 4-Bay Black-Framed Glass Storefront aligned at the front (X = -11.96m, between the protruding fuchsia fins!)
             CreateBox("MexicoMagico_StorefrontGlass", bldgRoot.transform,
-                new Vector3(-11.54f, 1.40f, -14.265f), new Vector3(0.03f, 2.36f, 1.48f), clearGlassMat, addCollider: false);
-            float[] mmMullionsZ = new float[] { -15.00f, -14.64f, -14.28f, -13.92f, -13.53f };
+                new Vector3(-11.96f, 1.28f, mmCenterZ), new Vector3(0.03f, 2.12f, 1.48f), clearGlassMat, addCollider: false);
+            float[] mmMullionsZ = new float[] { -14.96f, -14.60f, -14.25f, -13.90f, -13.54f };
             for (int i = 0; i < mmMullionsZ.Length; i++)
             {
                 CreateBox($"MexicoMagico_Mullion_{i}", bldgRoot.transform,
-                    new Vector3(-11.52f, 1.40f, mmMullionsZ[i]), new Vector3(0.08f, 2.40f, 0.055f), blackFrameMat, addCollider: false);
+                    new Vector3(-11.94f, 1.28f, mmMullionsZ[i]), new Vector3(0.08f, 2.16f, 0.055f), blackFrameMat, addCollider: false);
             }
             CreateBox("MexicoMagico_FrameTop", bldgRoot.transform,
-                new Vector3(-11.52f, 2.60f, -14.265f), new Vector3(0.09f, 0.07f, 1.54f), blackFrameMat, addCollider: false);
+                new Vector3(-11.94f, 2.36f, mmCenterZ), new Vector3(0.09f, 0.07f, 1.52f), blackFrameMat, addCollider: false);
             CreateBox("MexicoMagico_FrameBot", bldgRoot.transform,
-                new Vector3(-11.52f, 0.24f, -14.265f), new Vector3(0.09f, 0.08f, 1.54f), blackFrameMat, addCollider: false);
+                new Vector3(-11.94f, 0.23f, mmCenterZ), new Vector3(0.09f, 0.06f, 1.52f), blackFrameMat, addCollider: false);
             CreateBox("MexicoMagico_DoorHandle", bldgRoot.transform,
-                new Vector3(-11.47f, 1.24f, -13.86f), new Vector3(0.04f, 0.34f, 0.025f), aluminumMat, addCollider: false);
+                new Vector3(-11.89f, 1.18f, -13.84f), new Vector3(0.04f, 0.32f, 0.025f), aluminumMat, addCollider: false);
 
-            // Hot-Pink Neon Horizontal Banner ("CAFÉ PREMIUM • CAFÉ DE OLLA / PAN DE MUERTO") across top of protruding pavilion!
+            // Hot-Pink Neon Horizontal Banner ("CAFÉ PREMIUM • CAFÉ DE OLLA / PAN DE MUERTO") framed between the fuchsia side fins (Y = 2.68m)
             var mmBannerRoot = new GameObject("Sign_MexicoMagico_Banner");
             mmBannerRoot.transform.SetParent(bldgRoot.transform, false);
-            mmBannerRoot.transform.position = new Vector3(-11.51f, 2.96f, -14.265f);
+            mmBannerRoot.transform.localPosition = new Vector3(-11.82f, 2.68f, mmCenterZ);
             CreateBox("MexicoMagico_BannerBox", mmBannerRoot.transform,
-                new Vector3(-11.56f, 2.96f, -14.265f), new Vector3(0.10f, 0.56f, 1.52f), blackFrameMat, addCollider: false);
+                new Vector3(-0.05f, 0f, 0f), new Vector3(0.10f, 0.54f, 1.50f), blackFrameMat, addCollider: false);
             var mmBannerQuad = GameObject.CreatePrimitive(PrimitiveType.Quad);
             mmBannerQuad.name = "MexicoMagico_BannerFace";
             mmBannerQuad.transform.SetParent(mmBannerRoot.transform, false);
             mmBannerQuad.transform.localPosition = new Vector3(0.006f, 0f, 0f);
             mmBannerQuad.transform.localRotation = Quaternion.Euler(0f, -90f, 0f);
-            mmBannerQuad.transform.localScale = new Vector3(1.50f, 0.52f, 1.0f);
+            mmBannerQuad.transform.localScale = new Vector3(1.46f, 0.50f, 1.0f);
             AssignMat(mmBannerQuad, mexicoBannerMat);
             UnityEngine.Object.DestroyImmediate(mmBannerQuad.GetComponent<Collider>());
 
@@ -959,10 +975,10 @@ namespace MyVirtualCommunity.Editor
             mmBannerGlow.nightLightIntensity = 1.60f;
             mmBannerGlow.nightLightRange = 4.2f;
 
-            // Small Protruding Entrance Arrow Sign Box at top-right (North) corner of pavilion (Photos 1 & 2!)
+            // Small Protruding Entrance Arrow Sign Box mounted on the front post of the North fuchsia wing (Image 1!)
             var arrowRoot = new GameObject("Sign_MexicoMagico_ArrowBox");
             arrowRoot.transform.SetParent(bldgRoot.transform, false);
-            arrowRoot.transform.position = new Vector3(-11.34f, 2.40f, -13.48f);
+            arrowRoot.transform.localPosition = new Vector3(-11.42f, 2.15f, -13.52f);
             var arrowBody = GameObject.CreatePrimitive(PrimitiveType.Cube);
             arrowBody.name = "Arrow_Housing";
             arrowBody.transform.SetParent(arrowRoot.transform, false);
@@ -996,9 +1012,9 @@ namespace MyVirtualCommunity.Editor
             arrowGlow.dayEmissionIntensity = 0.70f;
             arrowGlow.nightEmissionIntensity = 3.6f;
 
-            // Large Cantilevered Double-Sided Circular Cutout Lightbox ("MÉXICO MÁGICO · CAFÉ EXPRESS-O")!
+            // Cantilevered Double-Sided Circular Cutout Lightbox ("MÉXICO MÁGICO · CAFÉ EXPRESS-O")
             CreateMexicoMagicoCircularLightbox("Sign_MexicoMagico_CircleSign", bldgRoot.transform,
-                pos: new Vector3(-10.65f, 4.22f, -14.15f),
+                pos: new Vector3(-10.85f, 3.82f, -14.20f),
                 armMat: blackFrameMat, drumMat: blackFrameMat, circleFaceMat: mexicoCircleMat);
 
             // Secondary West Azucenas Neighbor Block (shifted cleanly to align with Z = -26.80m!)
@@ -1603,8 +1619,9 @@ namespace MyVirtualCommunity.Editor
         {
             var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
             go.name = name;
-            go.transform.SetParent(parent);
-            go.transform.position = pos;
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = pos;
+            go.transform.localRotation = Quaternion.identity;
             go.transform.localScale = scale;
             AssignMat(go, mat);
             if (!addCollider)

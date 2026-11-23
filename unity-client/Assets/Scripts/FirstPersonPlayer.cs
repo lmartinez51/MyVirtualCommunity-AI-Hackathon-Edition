@@ -75,6 +75,15 @@ namespace MyVirtualCommunity.Client.World
         private InteractionPoint currentNearbyPoint = null;
         private InteractionPoint activeModalPoint = null;
 
+        // Secret Keypad Door State (6-Digit Electronic Code Lock)
+        private SecretKeypadDoorController[] cachedKeypadDoors = null;
+        private SecretKeypadDoorController currentNearbyKeypadDoor = null;
+        private SecretKeypadDoorController activeKeypadDoor = null;
+        private string keypadEnteredDigits = "";
+        private string keypadStatusMessage = "";
+        private Color keypadStatusColor = new Color(0.95f, 0.30f, 0.30f);
+        private float keypadStatusUntilTime = -1f;
+
         // UI & State Machine (Authoritative mutually exclusive primary states)
         private PrimaryUIState currentState = PrimaryUIState.ControlsGuide; // Active on first launch
         private PrimaryUIState controlsGuideOrigin = PrimaryUIState.Exploration;
@@ -705,6 +714,11 @@ namespace MyVirtualCommunity.Client.World
 
                 case PrimaryUIState.Exploration:
                 default:
+                    if (activeKeypadDoor != null)
+                    {
+                        HandleActiveKeypadKeyboardInput();
+                        return;
+                    }
                     if (WasEscapePressed())
                     {
                         if (currentAerialMode != AerialViewMode.GroundFirstPerson)
@@ -783,6 +797,10 @@ namespace MyVirtualCommunity.Client.World
                         {
                             break;
                         }
+                        if (TryTriggerKeypadDoorClick())
+                        {
+                            break;
+                        }
 
                         if (!isCursorLocked)
                         {
@@ -806,9 +824,16 @@ namespace MyVirtualCommunity.Client.World
                     UpdateMiniSatellitePreviewRender();
                     HandleInteractionProximity();
 
-                    if (currentNearbyPoint != null && WasInteractPressed())
+                    if (WasInteractPressed())
                     {
-                        OpenInteractionModal(currentNearbyPoint);
+                        if (currentNearbyPoint != null)
+                        {
+                            OpenInteractionModal(currentNearbyPoint);
+                        }
+                        else if (currentNearbyKeypadDoor != null)
+                        {
+                            InteractWithKeypadDoor(currentNearbyKeypadDoor);
+                        }
                     }
                     break;
             }
@@ -922,6 +947,29 @@ namespace MyVirtualCommunity.Client.World
                 currentNearbyPoint = nearest;
                 if (currentNearbyPoint != null) currentNearbyPoint.SetHighlighted(true);
             }
+
+            // Detect nearby 6-digit electronic keypad doors (e.g. Building A South mysterious door)
+            if (cachedKeypadDoors == null || cachedKeypadDoors.Length == 0)
+            {
+                cachedKeypadDoors = FindObjectsByType<SecretKeypadDoorController>(FindObjectsSortMode.None);
+            }
+            SecretKeypadDoorController nearestDoor = null;
+            float nearestDoorDist = float.MaxValue;
+            if (cachedKeypadDoors != null)
+            {
+                foreach (var door in cachedKeypadDoors)
+                {
+                    if (door == null) continue;
+                    if (!door.IsWithinInteractionRange(playerPos)) continue;
+                    float d = Vector3.Distance(door.keypadInteractionAnchor, playerPos);
+                    if (d < nearestDoorDist)
+                    {
+                        nearestDoorDist = d;
+                        nearestDoor = door;
+                    }
+                }
+            }
+            currentNearbyKeypadDoor = nearestDoor;
         }
 
         #endregion
@@ -2363,9 +2411,21 @@ namespace MyVirtualCommunity.Client.World
                     if (showMinimap) DrawCorridorMinimap();
                     DrawGoogleMapsLayerSwitcherCard();
                     DrawWorldSpaceNPCNameplates();
-                    if (currentNearbyPoint != null && isCursorLocked)
+                    if (activeKeypadDoor != null)
                     {
-                        DrawInteractionPrompt(currentNearbyPoint);
+                        DrawModalScrim();
+                        DrawSecretKeypadModal();
+                    }
+                    else
+                    {
+                        if (currentNearbyPoint != null && isCursorLocked)
+                        {
+                            DrawInteractionPrompt(currentNearbyPoint);
+                        }
+                        else if (currentNearbyKeypadDoor != null && isCursorLocked)
+                        {
+                            DrawKeypadDoorPrompt(currentNearbyKeypadDoor);
+                        }
                     }
                     if (!string.IsNullOrEmpty(interactionFeedbackMessage) && Time.unscaledTime < interactionFeedbackUntilTime)
                     {
@@ -7675,6 +7735,380 @@ namespace MyVirtualCommunity.Client.World
                 Destroy(droneVisualModel);
                 droneVisualModel = null;
             }
+        }
+
+        #endregion
+
+        #region Secret Keypad Door Interaction (6-Digit Electronic Code Lock)
+
+        private Vector2 GetKeypadPointerScreenPosition()
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (Mouse.current != null) return Mouse.current.position.ReadValue();
+#endif
+#if ENABLE_LEGACY_INPUT_MANAGER
+            return Input.mousePosition;
+#else
+            return new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
+#endif
+        }
+
+        private bool TryTriggerKeypadDoorClick()
+        {
+            if (playerCamera == null) return false;
+            Camera cam = playerCamera.GetComponent<Camera>();
+            if (cam == null) return false;
+
+            Ray ray = isCursorLocked
+                ? cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f))
+                : cam.ScreenPointToRay(GetKeypadPointerScreenPosition());
+
+            if (Physics.Raycast(ray, out RaycastHit hit, 3.2f, ~0, QueryTriggerInteraction.Ignore) && hit.collider != null)
+            {
+                SecretKeypadDoorController door = hit.collider.GetComponentInParent<SecretKeypadDoorController>();
+                if (door != null && door.IsWithinInteractionRange(transform.position))
+                {
+                    InteractWithKeypadDoor(door);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private void InteractWithKeypadDoor(SecretKeypadDoorController door)
+        {
+            if (door == null) return;
+
+            // Safety exit: if player is already inside the secret room and the door is closed, open immediately
+            if (door.IsPlayerInsideRoom(transform.position) && !door.IsOpen)
+            {
+                door.OpenFromInside();
+                return;
+            }
+
+            if (!door.IsUnlocked)
+            {
+                OpenKeypadModal(door);
+                return;
+            }
+
+            door.ToggleDoorOpen();
+        }
+
+        private void OpenKeypadModal(SecretKeypadDoorController door)
+        {
+            if (door == null) return;
+            activeKeypadDoor = door;
+            keypadEnteredDigits = "";
+            keypadStatusMessage = "";
+            keypadStatusUntilTime = -1f;
+            LockCursor(false);
+        }
+
+        private void CloseKeypadModal()
+        {
+            activeKeypadDoor = null;
+            keypadEnteredDigits = "";
+            keypadStatusMessage = "";
+            keypadStatusUntilTime = -1f;
+            LockCursor(true);
+        }
+
+        private void AppendKeypadDigit(char digit)
+        {
+            if (activeKeypadDoor == null) return;
+            int maxLen = activeKeypadDoor.RequiredCodeLength;
+            if (keypadEnteredDigits.Length < maxLen)
+            {
+                keypadEnteredDigits += digit;
+            }
+        }
+
+        private void BackspaceKeypadDigit()
+        {
+            if (keypadEnteredDigits.Length > 0)
+            {
+                keypadEnteredDigits = keypadEnteredDigits.Substring(0, keypadEnteredDigits.Length - 1);
+            }
+        }
+
+        private void SubmitKeypadCode()
+        {
+            if (activeKeypadDoor == null) return;
+            bool isEs = currentLanguage == "es";
+            int reqLen = activeKeypadDoor.RequiredCodeLength;
+
+            if (keypadEnteredDigits.Length < reqLen)
+            {
+                keypadStatusMessage = isEs
+                    ? $"Ingresa los {reqLen} dígitos del código."
+                    : $"Enter all {reqLen} digits of the code.";
+                keypadStatusColor = new Color(1f, 0.78f, 0.22f);
+                keypadStatusUntilTime = Time.unscaledTime + 2.0f;
+                return;
+            }
+
+            if (activeKeypadDoor.TrySubmitCode(keypadEnteredDigits))
+            {
+                ShowInteractionFeedback(
+                    isEs
+                        ? "Código correcto — Puerta desbloqueada."
+                        : "Code accepted — Door unlocked.",
+                    new Color(0.32f, 0.96f, 0.48f),
+                    3.5f);
+                CloseKeypadModal();
+            }
+            else
+            {
+                keypadStatusMessage = isEs
+                    ? "Código incorrecto. Intenta de nuevo."
+                    : "Incorrect code. Try again.";
+                keypadStatusColor = new Color(1f, 0.32f, 0.30f);
+                keypadStatusUntilTime = Time.unscaledTime + 2.2f;
+                keypadEnteredDigits = "";
+            }
+        }
+
+        private void HandleActiveKeypadKeyboardInput()
+        {
+            if (WasEscapePressed())
+            {
+                CloseKeypadModal();
+                return;
+            }
+
+#if ENABLE_INPUT_SYSTEM
+            if (Keyboard.current != null)
+            {
+                var kb = Keyboard.current;
+                if (kb.digit0Key.wasPressedThisFrame || kb.numpad0Key.wasPressedThisFrame) AppendKeypadDigit('0');
+                if (kb.digit1Key.wasPressedThisFrame || kb.numpad1Key.wasPressedThisFrame) AppendKeypadDigit('1');
+                if (kb.digit2Key.wasPressedThisFrame || kb.numpad2Key.wasPressedThisFrame) AppendKeypadDigit('2');
+                if (kb.digit3Key.wasPressedThisFrame || kb.numpad3Key.wasPressedThisFrame) AppendKeypadDigit('3');
+                if (kb.digit4Key.wasPressedThisFrame || kb.numpad4Key.wasPressedThisFrame) AppendKeypadDigit('4');
+                if (kb.digit5Key.wasPressedThisFrame || kb.numpad5Key.wasPressedThisFrame) AppendKeypadDigit('5');
+                if (kb.digit6Key.wasPressedThisFrame || kb.numpad6Key.wasPressedThisFrame) AppendKeypadDigit('6');
+                if (kb.digit7Key.wasPressedThisFrame || kb.numpad7Key.wasPressedThisFrame) AppendKeypadDigit('7');
+                if (kb.digit8Key.wasPressedThisFrame || kb.numpad8Key.wasPressedThisFrame) AppendKeypadDigit('8');
+                if (kb.digit9Key.wasPressedThisFrame || kb.numpad9Key.wasPressedThisFrame) AppendKeypadDigit('9');
+                if (kb.backspaceKey.wasPressedThisFrame) BackspaceKeypadDigit();
+                if (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame) SubmitKeypadCode();
+                return;
+            }
+#endif
+#if ENABLE_LEGACY_INPUT_MANAGER
+            for (int d = 0; d <= 9; d++)
+            {
+                if (Input.GetKeyDown(KeyCode.Alpha0 + d) || Input.GetKeyDown(KeyCode.Keypad0 + d))
+                {
+                    AppendKeypadDigit((char)('0' + d));
+                }
+            }
+            if (Input.GetKeyDown(KeyCode.Backspace)) BackspaceKeypadDigit();
+            if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter)) SubmitKeypadCode();
+#endif
+        }
+
+        private void DrawKeypadDoorPrompt(SecretKeypadDoorController door)
+        {
+            if (door == null) return;
+            bool isEs = currentLanguage == "es";
+
+            float width = 540f;
+            float height = 52f;
+            float x = (Screen.width - width) * 0.5f;
+            float y = Screen.height - 105f;
+
+            GUI.Box(new Rect(x, y, width, height), GUIContent.none, GetOpaquePromptStyle());
+            GUILayout.BeginArea(new Rect(x + 14f, y + 8f, width - 28f, height - 16f));
+            GUILayout.BeginHorizontal();
+
+            GUIStyle promptStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 14,
+                fontStyle = FontStyle.Bold,
+                normal = { textColor = door.IsUnlocked ? new Color(0.40f, 0.96f, 0.55f) : new Color(1f, 0.88f, 0.26f) }
+            };
+
+            string title = door.GetLocalizedTitle(isEs);
+            string promptText;
+            if (door.IsPlayerInsideRoom(transform.position) && !door.IsOpen)
+            {
+                promptText = isEs ? $"[E] Abrir desde adentro ({title})" : $"[E] Open from Inside ({title})";
+            }
+            else if (!door.IsUnlocked)
+            {
+                promptText = isEs ? $"[E] Ingresar código secreto ({title})" : $"[E] Enter Secret Code ({title})";
+            }
+            else if (door.IsOpen)
+            {
+                promptText = isEs ? $"[E] Cerrar {title}" : $"[E] Close {title}";
+            }
+            else
+            {
+                promptText = isEs ? $"[E] Abrir {title}" : $"[E] Open {title}";
+            }
+
+            GUILayout.Label(promptText, promptStyle);
+            GUILayout.FlexibleSpace();
+
+            GUIStyle badgeStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 11,
+                alignment = TextAnchor.MiddleRight,
+                normal = { textColor = door.IsUnlocked ? new Color(0.45f, 0.95f, 0.55f) : new Color(1f, 0.48f, 0.44f) }
+            };
+            string statusTag = door.IsUnlocked
+                ? (isEs ? "[Desbloqueada]" : "[Unlocked]")
+                : (isEs ? $"[Chapa {door.RequiredCodeLength} dígitos]" : $"[{door.RequiredCodeLength}-Digit Lock]");
+            GUILayout.Label(statusTag, badgeStyle);
+
+            GUILayout.EndHorizontal();
+            GUILayout.EndArea();
+        }
+
+        private void DrawSecretKeypadModal()
+        {
+            if (activeKeypadDoor == null) return;
+            bool isEs = currentLanguage == "es";
+            int reqLen = activeKeypadDoor.RequiredCodeLength;
+
+            float modalW = 340f;
+            float modalH = 445f;
+            float modalX = (Screen.width - modalW) * 0.5f;
+            float modalY = (Screen.height - modalH) * 0.5f;
+
+            GUI.Box(new Rect(modalX, modalY, modalW, modalH), GUIContent.none, GetOpaquePromptStyle());
+            GUILayout.BeginArea(new Rect(modalX + 18f, modalY + 14f, modalW - 36f, modalH - 28f));
+
+            GUIStyle titleStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 15,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = new Color(0.95f, 0.97f, 1f) }
+            };
+            GUILayout.Label(
+                isEs ? "CHAPA ELECTRÓNICA DE CÓDIGO" : "ELECTRONIC CODE KEYPAD",
+                titleStyle);
+
+            GUIStyle subTitleStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 11,
+                alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = new Color(0.70f, 0.76f, 0.84f) }
+            };
+            GUILayout.Label(
+                isEs
+                    ? $"{activeKeypadDoor.GetLocalizedTitle(true)} • Código de {reqLen} dígitos"
+                    : $"{activeKeypadDoor.GetLocalizedTitle(false)} • {reqLen}-digit access code",
+                subTitleStyle);
+
+            GUILayout.Space(8f);
+
+            // Digital 6-slot LED code display
+            string[] slots = new string[reqLen];
+            for (int i = 0; i < reqLen; i++)
+            {
+                slots[i] = i < keypadEnteredDigits.Length ? keypadEnteredDigits[i].ToString() : "_";
+            }
+            string displayCode = string.Join("   ", slots);
+
+            GUIStyle displayBoxStyle = new GUIStyle(GUI.skin.box)
+            {
+                fontSize = 24,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = new Color(0.32f, 0.96f, 0.62f) }
+            };
+            GUILayout.Box(displayCode, displayBoxStyle, GUILayout.Height(48f), GUILayout.ExpandWidth(true));
+
+            // Status / error line
+            GUIStyle statusStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 11,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = (Time.unscaledTime < keypadStatusUntilTime) ? keypadStatusColor : new Color(0.95f, 0.35f, 0.35f) }
+            };
+            string statusLine = (Time.unscaledTime < keypadStatusUntilTime && !string.IsNullOrEmpty(keypadStatusMessage))
+                ? keypadStatusMessage
+                : (isEs ? "● BLOQUEADA — Ingresa el código" : "● LOCKED — Enter access code");
+            GUILayout.Label(statusLine, statusStyle, GUILayout.Height(20f));
+
+            GUILayout.Space(6f);
+
+            GUIStyle keyBtnStyle = new GUIStyle(GUI.skin.button)
+            {
+                fontSize = 17,
+                fontStyle = FontStyle.Bold
+            };
+
+            string[,] rows = new string[,]
+            {
+                { "1", "2", "3" },
+                { "4", "5", "6" },
+                { "7", "8", "9" },
+                { "C", "0", "←" }
+            };
+
+            for (int r = 0; r < 4; r++)
+            {
+                GUILayout.BeginHorizontal();
+                for (int c = 0; c < 3; c++)
+                {
+                    string key = rows[r, c];
+                    if (GUILayout.Button(key, keyBtnStyle, GUILayout.Height(46f)))
+                    {
+                        if (key == "C")
+                        {
+                            keypadEnteredDigits = "";
+                        }
+                        else if (key == "←")
+                        {
+                            BackspaceKeypadDigit();
+                        }
+                        else
+                        {
+                            AppendKeypadDigit(key[0]);
+                        }
+                    }
+                }
+                GUILayout.EndHorizontal();
+                GUILayout.Space(4f);
+            }
+
+            GUILayout.Space(6f);
+
+            GUIStyle submitBtnStyle = new GUIStyle(GUI.skin.button)
+            {
+                fontSize = 13,
+                fontStyle = FontStyle.Bold,
+                normal = { textColor = new Color(0.35f, 1f, 0.55f) }
+            };
+            if (GUILayout.Button(isEs ? "DESBLOQUEAR [Enter]" : "UNLOCK [Enter]", submitBtnStyle, GUILayout.Height(36f)))
+            {
+                SubmitKeypadCode();
+            }
+
+            GUILayout.Space(4f);
+            if (GUILayout.Button(isEs ? "Cerrar [Esc]" : "Close [Esc]", GUILayout.Height(28f)))
+            {
+                CloseKeypadModal();
+            }
+
+            GUILayout.Space(4f);
+            GUIStyle hintStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 10,
+                alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = new Color(0.60f, 0.66f, 0.74f) }
+            };
+            GUILayout.Label(
+                isEs ? "Tip: También puedes escribir 0-9 en tu teclado" : "Tip: You can also type 0-9 on your keyboard",
+                hintStyle);
+
+            GUILayout.EndArea();
         }
 
         #endregion
