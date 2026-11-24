@@ -165,6 +165,13 @@ namespace MyVirtualCommunity.Client.World
                 return;
             }
 
+            // Never overwrite moody underground storm-drain fog/lighting while the player is deep inside the sewers
+            var sewerAtmos = UndergroundSewerAtmosphereController.ActiveInstance;
+            if (sewerAtmos != null && sewerAtmos.IsPlayerUnderground)
+            {
+                return;
+            }
+
             ApplyParametersToScene();
         }
 

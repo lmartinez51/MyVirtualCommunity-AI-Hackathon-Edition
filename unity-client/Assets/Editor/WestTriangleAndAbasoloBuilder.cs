@@ -3365,6 +3365,8 @@ namespace MyVirtualCommunity.Editor
             // 6. All Crisp Lane Markings & Export Actual Built Layout JSON for Automated OSM Overlay Check
             BuildEastOsmMarkings(eastRoadRoot.transform, net, whiteStripeMat, yellowStripeMat);
             WestAzucenasCornerBuilder.BuildInOpenScene();
+            WestManzanaPerimeterBuilder.BuildInOpenScene();
+            UndergroundSewerBuilder.BuildInOpenScene();
             ExportUnityLayoutJson(net);
 
             Debug.Log("[WestTriangleAndAbasoloBuilder] Built OSM-aligned Calle Azucenas East, Manuel Doblado stub, Southern Irregular Manzana & exported actual JSON.");

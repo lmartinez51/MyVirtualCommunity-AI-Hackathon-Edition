@@ -112,16 +112,24 @@ namespace MyVirtualCommunity.Client.World
 
         private void OnGUI()
         {
-            if (fadeAlpha <= 0.01f) return;
+            if (fadeAlpha <= 0.01f && glitchFlashAlpha <= 0.01f) return;
             if (fadeBlackTex == null)
             {
                 fadeBlackTex = new Texture2D(1, 1);
-                fadeBlackTex.SetPixel(0, 0, Color.black);
+                fadeBlackTex.SetPixel(0, 0, Color.white);
                 fadeBlackTex.Apply();
             }
             Color prev = GUI.color;
-            GUI.color = new Color(0.04f, 0.04f, 0.03f, fadeAlpha);
-            GUI.DrawTexture(new Rect(0f, 0f, Screen.width, Screen.height), fadeBlackTex);
+            if (glitchFlashAlpha > 0.01f)
+            {
+                GUI.color = new Color(0.88f, 0.85f, 0.56f, glitchFlashAlpha);
+                GUI.DrawTexture(new Rect(0f, 0f, Screen.width, Screen.height), fadeBlackTex);
+            }
+            if (fadeAlpha > 0.01f)
+            {
+                GUI.color = new Color(0.03f, 0.03f, 0.02f, fadeAlpha);
+                GUI.DrawTexture(new Rect(0f, 0f, Screen.width, Screen.height), fadeBlackTex);
+            }
             GUI.color = prev;
         }
 
@@ -180,10 +188,244 @@ namespace MyVirtualCommunity.Client.World
             }
         }
 
+        // Curated wall-free open spots across the 40m x 24m Backrooms Level 1 maze (deliberately FAR from the NE exit door!)
+        private static readonly Vector2[] RandomCeilingDropZonesXZ = new Vector2[]
+        {
+            new Vector2(-7.5f,  2.7f),  // Central Pillared Hall NW
+            new Vector2(-3.5f, -0.2f),  // Central Pillared Hall Center
+            new Vector2( 0.5f,  2.7f),  // Central Pillared Hall SE
+            new Vector2( 3.8f,  8.2f),  // North Quiet Corridor West
+            new Vector2( 9.8f,  7.2f),  // North Quiet Corridor Mid
+            new Vector2(12.6f,  3.0f),  // East Wing Hall North
+            new Vector2(17.2f, -1.5f),  // East Wing Corridor South
+            new Vector2( 4.5f, -8.2f),  // South-Center Investigation Corridor
+            new Vector2(-3.8f, -8.5f),  // South-West Labyrinth Passage
+            new Vector2(-14.5f, 0.8f),  // West Corridor Mid
+        };
+
+        private AudioSource dropAudioSource;
+        private AudioClip noClipGlitchClip;
+        private AudioClip carpetThudClip;
+        private float glitchFlashAlpha = 0f;
+
         public void RequestExitBackrooms()
         {
             if (!isPlayerInBackrooms || isTransitioning) return;
             StartCoroutine(ExitBackroomsRoutine());
+        }
+
+        /// <summary>
+        /// Phase-2 Silent Easter Egg: Triggered without any hint or UI warning when the player
+        /// descends the Av. Benito Juarez x Calle Azucenas manhole. Performs a sudden Kane Pixels
+        /// "Found Footage" reality no-clip glitch and physically drops the player from the sealed
+        /// acoustic ceiling into a random disorienting spot inside the 40m x 24m Backrooms maze.
+        /// </summary>
+        public void TriggerManholeNoClipDropToBackrooms(Transform playerTransform)
+        {
+            if (isPlayerInBackrooms || isTransitioning) return;
+            if (playerTransform != null)
+            {
+                cachedPlayerTransform = playerTransform;
+                cachedPlayerCC = playerTransform.GetComponent<CharacterController>();
+            }
+            StartCoroutine(EnterBackroomsCeilingDropRoutine());
+        }
+
+        private void EnsureDropAudioReady()
+        {
+            if (dropAudioSource == null)
+            {
+                dropAudioSource = gameObject.AddComponent<AudioSource>();
+                dropAudioSource.playOnAwake = false;
+                dropAudioSource.spatialBlend = 0f;
+            }
+            if (noClipGlitchClip == null) noClipGlitchClip = CreateNoClipGlitchClip();
+            if (carpetThudClip == null) carpetThudClip = CreateCarpetThudClip();
+        }
+
+        private IEnumerator EnterBackroomsCeilingDropRoutine()
+        {
+            isTransitioning = true;
+            EnsureDropAudioReady();
+
+            // 1. Sudden unsettling reality tear / no-clip audio + brief glitch flash (zero text/UI hints!)
+            if (noClipGlitchClip != null && dropAudioSource != null)
+            {
+                dropAudioSource.PlayOneShot(noClipGlitchClip, 0.65f);
+            }
+            glitchFlashAlpha = 0.45f;
+            yield return new WaitForSecondsRealtime(0.07f);
+            glitchFlashAlpha = 0f;
+            yield return FadeTo(1f, 0.18f);
+
+            // 2. Claim occupancy gracefully in background (never blocks or shows decoy text for the Easter Egg)
+            if (cachedApiClient != null)
+            {
+                cachedApiClient.EnterSecretVault("player-1", _ => { }, _ => { });
+            }
+
+            // 3. Additively load BackroomsLevel1Scene
+            Scene backroomsScene = SceneManager.GetSceneByName(BackroomsSceneName);
+            if (!backroomsScene.isLoaded)
+            {
+                AsyncOperation loadOp = SceneManager.LoadSceneAsync(BackroomsSceneName, LoadSceneMode.Additive);
+                if (loadOp != null)
+                {
+                    while (!loadOp.isDone) yield return null;
+                }
+            }
+
+            // 4. Activate Backrooms mode & classic Level 0 fluorescent atmosphere
+            isPlayerInBackrooms = true;
+            RefreshThresholdVeilVisibility();
+            ApplyBackroomsAtmosphere();
+            Physics.SyncTransforms();
+
+            // 5. Pick a random verified wall-free drop zone far from the NE exit door + random disorienting yaw
+            Vector2 dropXZ = PickRandomSafeDropZoneXZ();
+            float randomYaw = UnityEngine.Random.Range(0f, 360f);
+            const float floorY = -50.00f;
+            const float ceilingDropStartY = -47.92f; // Feet ~2.08m above damp carpet, dropping right out of ceiling!
+
+            TeleportPlayer(new Vector3(dropXZ.x, ceilingDropStartY, dropXZ.y), Quaternion.Euler(0f, randomYaw, 0f));
+
+            // 6. Snap visibility open as player physically falls out of the ceiling!
+            Camera cam = cachedPlayerTransform != null ? cachedPlayerTransform.GetComponentInChildren<Camera>() : null;
+            Transform camT = cam != null ? cam.transform : null;
+            Vector3 origCamLocalPos = camT != null ? camT.localPosition : new Vector3(0f, 1.6f, 0f);
+            float rollDir = UnityEngine.Random.value < 0.5f ? -1f : 1f;
+
+            // Fast reveal into mid-air free-fall
+            fadeAlpha = 0f;
+            float currentY = ceilingDropStartY;
+            float fallVel = -4.2f;
+            const float fallGravity = 22.0f;
+
+            if (cachedPlayerCC != null) cachedPlayerCC.enabled = false;
+            while (currentY > floorY + 0.04f)
+            {
+                float dt = Mathf.Min(Time.unscaledDeltaTime, 0.04f);
+                fallVel -= fallGravity * dt;
+                currentY = Mathf.Max(floorY + 0.04f, currentY + fallVel * dt);
+                if (cachedPlayerTransform != null)
+                {
+                    cachedPlayerTransform.position = new Vector3(dropXZ.x, currentY, dropXZ.y);
+                }
+                if (camT != null)
+                {
+                    float progress = Mathf.InverseLerp(ceilingDropStartY, floorY + 0.04f, currentY);
+                    camT.localRotation = Quaternion.Euler(Mathf.Lerp(26f, 44f, progress), 0f, rollDir * Mathf.Lerp(5f, 15f, progress));
+                }
+                yield return null;
+            }
+
+            // 7. Heavy damp-carpet impact thud + disoriented camera jolt & recovery
+            if (carpetThudClip != null && dropAudioSource != null)
+            {
+                dropAudioSource.PlayOneShot(carpetThudClip, 0.85f);
+            }
+
+            if (cachedPlayerTransform != null)
+            {
+                cachedPlayerTransform.position = new Vector3(dropXZ.x, floorY + 0.04f, dropXZ.y);
+            }
+            Physics.SyncTransforms();
+            if (cachedPlayerCC != null) cachedPlayerCC.enabled = true;
+
+            // Brief physical impact crouch dip & tilted head recovery (0.52s) — when player looks up, ceiling is sealed!
+            float recoverElapsed = 0f;
+            const float recoverDuration = 0.52f;
+            while (recoverElapsed < recoverDuration)
+            {
+                recoverElapsed += Time.unscaledDeltaTime;
+                float u = Mathf.Clamp01(recoverElapsed / recoverDuration);
+                float smooth = Mathf.SmoothStep(0f, 1f, u);
+                if (camT != null)
+                {
+                    float dip = Mathf.Sin(u * Mathf.PI) * -0.26f * (1f - u * 0.5f);
+                    camT.localPosition = origCamLocalPos + new Vector3(0f, dip, 0f);
+                    float pitch = Mathf.Lerp(38f, 6f, smooth);
+                    float roll = Mathf.Lerp(rollDir * 16f, 0f, smooth);
+                    camT.localRotation = Quaternion.Euler(pitch, 0f, roll);
+                }
+                yield return null;
+            }
+
+            if (camT != null)
+            {
+                camT.localPosition = origCamLocalPos;
+                camT.localRotation = Quaternion.Euler(6f, 0f, 0f);
+            }
+
+            isTransitioning = false;
+        }
+
+        private Vector2 PickRandomSafeDropZoneXZ()
+        {
+            // Shuffle candidate list and verify capsule clearance against Backrooms walls/pillars/furniture
+            int count = RandomCeilingDropZonesXZ.Length;
+            int startIdx = UnityEngine.Random.Range(0, count);
+            for (int offset = 0; offset < count; offset++)
+            {
+                Vector2 c = RandomCeilingDropZonesXZ[(startIdx + offset) % count];
+                Vector3 pBot = new Vector3(c.x, -49.55f, c.y);
+                Vector3 pTop = new Vector3(c.x, -48.35f, c.y);
+                if (!Physics.CheckCapsule(pBot, pTop, 0.42f))
+                {
+                    return c;
+                }
+            }
+            // Guaranteed open fallback in Central Pillared Hall
+            return new Vector2(-3.5f, -0.2f);
+        }
+
+        private static AudioClip CreateNoClipGlitchClip()
+        {
+            int sr = 22050;
+            float dur = 0.34f;
+            int samples = Mathf.RoundToInt(sr * dur);
+            float[] data = new float[samples];
+            System.Random rng = new System.Random(1996);
+            float phase = 0f;
+            for (int i = 0; i < samples; i++)
+            {
+                float t = (float)i / sr;
+                float u = t / dur;
+                float freq = Mathf.Lerp(260f, 42f, u * u);
+                phase += 2f * Mathf.PI * freq / sr;
+                float burst = ((i / 380) % 2 == 0) ? 1f : 0.35f; // VHS stutter tear
+                float staticNoise = ((float)rng.NextDouble() * 2f - 1f) * 0.48f * burst;
+                float dropSub = Mathf.Sin(phase) * 0.60f;
+                float env = Mathf.Sin(u * Mathf.PI);
+                data[i] = (dropSub + staticNoise) * env * 0.72f;
+            }
+            AudioClip clip = AudioClip.Create("BackroomsNoClipGlitch", samples, 1, sr, false);
+            clip.SetData(data, 0);
+            return clip;
+        }
+
+        private static AudioClip CreateCarpetThudClip()
+        {
+            int sr = 22050;
+            float dur = 0.28f;
+            int samples = Mathf.RoundToInt(sr * dur);
+            float[] data = new float[samples];
+            System.Random rng = new System.Random(2024);
+            float phase = 0f;
+            float lp = 0f;
+            for (int i = 0; i < samples; i++)
+            {
+                float t = (float)i / sr;
+                float env = Mathf.Exp(-t * 16f);
+                float freq = Mathf.Lerp(115f, 38f, Mathf.Clamp01(t / 0.14f));
+                phase += 2f * Mathf.PI * freq / sr;
+                float noise = (float)rng.NextDouble() * 2f - 1f;
+                lp = lp * 0.86f + noise * 0.14f;
+                data[i] = (Mathf.Sin(phase) * 0.78f + lp * 0.65f) * env * 0.90f;
+            }
+            AudioClip clip = AudioClip.Create("BackroomsCarpetImpactThud", samples, 1, sr, false);
+            clip.SetData(data, 0);
+            return clip;
         }
 
         private IEnumerator EnterBackroomsRoutine()
@@ -258,8 +500,8 @@ namespace MyVirtualCommunity.Client.World
 
             // 7. Teleport player smoothly to Backrooms Arrival SpawnPoint
             GameObject spawnMarker = GameObject.Find("Backrooms_SpawnPoint");
-            Vector3 targetPos = spawnMarker != null ? spawnMarker.transform.position : new Vector3(0f, -49.92f, -5.85f);
-            Quaternion targetRot = spawnMarker != null ? spawnMarker.transform.rotation : Quaternion.identity;
+            Vector3 targetPos = spawnMarker != null ? spawnMarker.transform.position : new Vector3(17.80f, -49.94f, 8.80f);
+            Quaternion targetRot = spawnMarker != null ? spawnMarker.transform.rotation : Quaternion.Euler(0f, -90f, 0f);
             TeleportPlayer(targetPos, targetRot);
 
             yield return new WaitForSecondsRealtime(0.10f);
@@ -351,11 +593,11 @@ namespace MyVirtualCommunity.Client.World
 
             RenderSettings.skybox = null;
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.36f, 0.33f, 0.21f);
+            RenderSettings.ambientLight = new Color(0.38f, 0.35f, 0.22f);
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
             RenderSettings.fogColor = new Color(0.22f, 0.20f, 0.11f);
-            RenderSettings.fogDensity = 0.045f;
+            RenderSettings.fogDensity = 0.036f;
         }
 
         private void RestoreOutdoorAtmosphere()

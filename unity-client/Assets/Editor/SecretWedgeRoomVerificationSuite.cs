@@ -248,10 +248,13 @@ namespace MyVirtualCommunity.Editor
                 decoyCleanAndVeilToggles
             );
 
-            // 10. Open BackroomsLevel1Scene additively and verify 14m x 14m Level 0 maze, all 13 artifacts, Exit Door, Safe ('654321'), Astrolabe & Monumental Portal!
+            // 10. Open BackroomsLevel1Scene additively and verify 40m x 24m (960 m²) real-scale Level 0 maze,
+            //     strictly 1 desk + 1 chair, all 8 Reality-Bridge props, all 13 artifacts, far Portal (>= 30m from spawn),
+            //     Exit Door, Safe ('654321'), Astrolabe & Monumental Portal activation!
             EditorSceneManager.OpenScene(BackroomsLevel1Builder.ScenePath, OpenSceneMode.Additive);
             Physics.SyncTransforms();
 
+            GameObject brFloorGo = GameObject.Find("Backrooms_Floor");
             GameObject safeGo = GameObject.Find("SecretRoom_HeavyVaultSafe");
             GameObject portalGo = GameObject.Find("Portal_DimensionalMirror_Root");
             GameObject socketGo = GameObject.Find("Portal_KeystoneSocket_Root");
@@ -267,6 +270,26 @@ namespace MyVirtualCommunity.Editor
             GameObject blackPhoneGo = GameObject.Find("Artifact_BlackRotaryPhone");
             GameObject paquimeMaskGo = GameObject.Find("Artifact_PaquimeObsidianMask");
             GameObject compassGo = GameObject.Find("Artifact_AnomalousCompass");
+
+            // Reality-Bridge props & furniture restraint check (strictly 1 desk + 1 chair!)
+            GameObject laptopGo = GameObject.Find("RealityBridge_LaptopWorkstation");
+            GameObject fmRadioGo = GameObject.Find("RealityBridge_FmRadioTable");
+            GameObject alexaGo = GameObject.Find("RealityBridge_AlexaCornerStand");
+            GameObject diarioIpadGo = GameObject.Find("RealityBridge_DiarioJuarezIpad");
+            GameObject borderTermGo = GameObject.Find("RealityBridge_BorderClockTerminal");
+            GameObject payphoneGo = GameObject.Find("RealityBridge_PayphoneTerminal");
+            GameObject cctvFrameGo = GameObject.Find("RealityBridge_CctvPhotoFrame");
+            GameObject printerGo = GameObject.Find("RealityBridge_ThermalPrinter");
+
+            int deskCount = 0, chairCount = 0;
+            foreach (Transform t in UnityEngine.Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (t.name == "BackroomsProp_OfficeDesk") deskCount++;
+                if (t.name == "BackroomsProp_OfficeChair") chairCount++;
+            }
+            bool floorRealScale = brFloorGo != null && brFloorGo.GetComponent<Collider>().bounds.size.x >= 40.0f && brFloorGo.GetComponent<Collider>().bounds.size.z >= 24.0f;
+            float spawnToPortalDist = (spawnGo != null && portalGo != null) ? Vector3.Distance(spawnGo.transform.position, portalGo.transform.position) : 0f;
+            bool portalFarFromSpawn = spawnToPortalDist >= 30.0f;
 
             SecretRoomDimensionVaultController vaultCtrl = UnityEngine.Object.FindFirstObjectByType<SecretRoomDimensionVaultController>();
             SecretKeypadDoorController safeDoorCtrl = safeGo != null ? safeGo.GetComponent<SecretKeypadDoorController>() : null;
@@ -287,16 +310,21 @@ namespace MyVirtualCommunity.Editor
                                    vaultCtrl.portalChainsGroup != null &&
                                    !vaultCtrl.portalChainsGroup.activeSelf;
 
-            // Verify continuous walkability inside Backrooms Level 1 (arrival -> SW office -> pillared hall -> NW doll room -> SE safe -> NE portal!)
+            // Verify continuous grounded walkability across all wings of the 40m x 24m maze!
             Vector3[] brWalkPts = new Vector3[]
             {
-                new Vector3(0.0f, BackroomsLevel1Builder.BaseY, -5.80f), // Arrival vestibule
-                new Vector3(-3.8f, BackroomsLevel1Builder.BaseY, -4.4f), // SW Office
-                new Vector3(-3.6f, BackroomsLevel1Builder.BaseY,  0.5f), // West Pillared Hall
-                new Vector3(-4.5f, BackroomsLevel1Builder.BaseY,  4.8f), // NW Doll Room
-                new Vector3(0.8f, BackroomsLevel1Builder.BaseY,  5.6f),  // North Corridor
-                new Vector3(4.5f, BackroomsLevel1Builder.BaseY, -4.5f),  // SE Vault Office
-                new Vector3(4.5f, BackroomsLevel1Builder.BaseY,  4.5f)   // NE Portal Chamber
+                new Vector3( 17.8f, BackroomsLevel1Builder.BaseY,  8.8f), // NE Arrival Vestibule
+                new Vector3( 14.0f, BackroomsLevel1Builder.BaseY,  0.5f), // East FM Radio Hall
+                new Vector3(  6.8f, BackroomsLevel1Builder.BaseY, -2.7f), // Lone Laptop Workstation
+                new Vector3( 15.5f, BackroomsLevel1Builder.BaseY, -8.4f), // SE Payphone Corridor
+                new Vector3(  4.0f, BackroomsLevel1Builder.BaseY, -8.5f), // S-Center Evidence Corkboard Alcove
+                new Vector3( -3.5f, BackroomsLevel1Builder.BaseY, -2.2f), // Central Pillared Hall & Alexa
+                new Vector3( -9.5f, BackroomsLevel1Builder.BaseY, -8.4f), // SW Labyrinth (Dybbuk & Border Clock)
+                new Vector3(-16.5f, BackroomsLevel1Builder.BaseY, -8.2f), // Far SW Monumental Portal Chamber
+                new Vector3(-14.5f, BackroomsLevel1Builder.BaseY, -1.6f), // West CRT Niche & CCTV Frame
+                new Vector3(-16.4f, BackroomsLevel1Builder.BaseY,  8.8f), // Far NW Level-Omega Vault Safe
+                new Vector3( -5.2f, BackroomsLevel1Builder.BaseY,  8.5f), // N-Center Annabelle Containment Room
+                new Vector3(  4.5f, BackroomsLevel1Builder.BaseY,  7.4f)  // N-East Diario de Juárez iPad
             };
             bool brWalkClear = true;
             foreach (Vector3 pt in brWalkPts)
@@ -310,11 +338,14 @@ namespace MyVirtualCommunity.Editor
             }
 
             Check(
-                "BackroomsLevel1Scene (14x14m additive) verified: all 13 artifacts, Exit Door, walkable zones, Safe ('654321'), Astrolabe Keystone & Monumental Portal activation",
+                $"BackroomsLevel1Scene (40x24m real scale, portalDist={spawnToPortalDist:F1}m, desks={deskCount}, chairs={chairCount}) verified: 13 artifacts, 8 Reality-Bridge props, Safe ('654321'), Astrolabe & far SW Portal",
+                floorRealScale && portalFarFromSpawn && deskCount == 1 && chairCount == 1 &&
                 safeGo != null && portalGo != null && socketGo != null && exitDoorGo != null && spawnGo != null &&
                 crtGo != null && dollCaseGo != null && grimoireGo != null && handGo != null &&
                 lamentGo != null && dybbukGo != null && corkboardGo != null && blackPhoneGo != null &&
                 paquimeMaskGo != null && compassGo != null &&
+                laptopGo != null && fmRadioGo != null && alexaGo != null && diarioIpadGo != null &&
+                borderTermGo != null && payphoneGo != null && cctvFrameGo != null && printerGo != null &&
                 safeRejectsOuterCode && safeAcceptsOwnCode && tookAstrolabe && activatedPortal && brWalkClear
             );
 
@@ -385,33 +416,40 @@ namespace MyVirtualCommunity.Editor
                 62f,
                 System.IO.Path.Combine(outDir, "secret_threshold_veil_street.png"));
 
-            // 2. Open BackroomsLevel1Scene standalone for crisp Level 0 fluorescent screenshots!
+            // 2. Open BackroomsLevel1Scene (40m x 24m real-scale maze) standalone for crisp Level 0 screenshots!
             EditorSceneManager.OpenScene(BackroomsLevel1Builder.ScenePath, OpenSceneMode.Single);
             RenderSettings.skybox = null;
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.36f, 0.33f, 0.21f);
+            RenderSettings.ambientLight = new Color(0.38f, 0.35f, 0.22f);
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
             RenderSettings.fogColor = new Color(0.22f, 0.20f, 0.11f);
-            RenderSettings.fogDensity = 0.045f;
+            RenderSettings.fogDensity = 0.036f;
 
             float yEye = BackroomsLevel1Builder.BaseY + 1.55f;
 
-            // Shot A: Backrooms Arrival Corridor + Pillared Hall + Step-Ladder + Fluorescent Ceiling Grid
+            // Shot A: Vast Central Pillared Hall (12 yellow columns receding into foggy depth + Black Phone + Alexa Corner)
             RenderView(
-                new Vector3(0.0f, yEye, -5.80f),
-                new Vector3(-2.60f, yEye - 0.12f, 0.20f),
-                70f,
-                System.IO.Path.Combine(outDir, "backrooms_level0_corridor_pillars.png"));
+                new Vector3(4.20f, yEye, 2.80f),
+                new Vector3(-7.50f, yEye - 0.15f, -1.60f),
+                74f,
+                System.IO.Path.Combine(outDir, "backrooms_40x24_pillared_hall.png"));
 
-            // Shot B: West Pillared Hall with Black Rotary Phone on Pillar + Glowing Blue CRT TV ("7 DÍAS") + NW Doll Room
+            // Shot B: The Lone Random Laptop Workstation (sole desk + chair + glowing mystery screen)
             RenderView(
-                new Vector3(-2.30f, yEye, -1.60f),
-                new Vector3(-5.80f, yEye - 0.25f, 0.35f),
-                72f,
-                System.IO.Path.Combine(outDir, "backrooms_crt_phone_hall.png"));
+                new Vector3(5.35f, yEye, -2.55f),
+                new Vector3(8.15f, yEye - 0.50f, -2.75f),
+                66f,
+                System.IO.Path.Combine(outDir, "backrooms_40x24_workstation_radio.png"));
 
-            // Shot C: SE Level-Omega Vault Office (Open Vault Safe with "El Ojo del Umbral" + Grimoire + Ceramic Hand + Lament Cube + Ouija)
+            // Shot C: North Corridor with "El Diario de Juárez" iPad Stand & FM Radio vista
+            RenderView(
+                new Vector3(4.85f, yEye, 6.90f),
+                new Vector3(4.50f, yEye - 0.32f, 9.10f),
+                64f,
+                System.IO.Path.Combine(outDir, "backrooms_40x24_diario_ipad_corridor.png"));
+
+            // Shot D: Far SW Portal Chamber (~40m from entrance) with Monumental Dimensional Portal ACTIVATED!
             GameObject safeGo = GameObject.Find("SecretRoom_HeavyVaultSafe");
             SecretKeypadDoorController safeCtrl = safeGo != null ? safeGo.GetComponent<SecretKeypadDoorController>() : null;
             if (safeCtrl != null)
@@ -419,13 +457,6 @@ namespace MyVirtualCommunity.Editor
                 safeCtrl.TrySubmitCode("654321");
                 for (int i = 0; i < 30; i++) safeCtrl.StepDoorForVerification(0.05f);
             }
-            RenderView(
-                new Vector3(3.60f, yEye, -3.40f),
-                new Vector3(5.90f, yEye - 0.45f, -5.80f),
-                70f,
-                System.IO.Path.Combine(outDir, "backrooms_omega_safe_office.png"));
-
-            // Shot D: NE Portal Chamber with "El Ojo del Umbral" inserted into Octagonal Socket — Monumental Dimensional Portal ACTIVATED!
             SecretRoomDimensionVaultController vaultCtrl = UnityEngine.Object.FindFirstObjectByType<SecretRoomDimensionVaultController>();
             if (vaultCtrl != null)
             {
@@ -433,12 +464,12 @@ namespace MyVirtualCommunity.Editor
                 vaultCtrl.TryToggleAstrolabeInPortalSocket();
             }
             RenderView(
-                new Vector3(3.80f, yEye, 2.85f),
-                new Vector3(4.50f, yEye - 0.15f, 6.76f),
-                66f,
-                System.IO.Path.Combine(outDir, "backrooms_monumental_portal_active.png"));
+                new Vector3(-15.10f, yEye, -8.20f),
+                new Vector3(-19.70f, yEye - 0.15f, -8.20f),
+                68f,
+                System.IO.Path.Combine(outDir, "backrooms_40x24_sw_portal_chamber.png"));
 
-            Debug.Log("[SecretWedgeVerify] Captured Threshold Veil & 4 Backrooms Level 0 screenshots cleanly.");
+            Debug.Log("[SecretWedgeVerify] Captured 4 expanded 40x24m Backrooms Level 0 screenshots cleanly.");
             EditorApplication.Exit(0);
         }
 

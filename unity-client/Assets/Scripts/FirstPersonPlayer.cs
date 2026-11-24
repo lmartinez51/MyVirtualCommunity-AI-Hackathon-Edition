@@ -90,6 +90,14 @@ namespace MyVirtualCommunity.Client.World
         private BackroomsExitDoorTrigger currentNearbyBackroomsExit = null;
         private bool lastKnownInBackrooms = false;
 
+        // Underground Storm-Drain Network & Handheld Flashlight State
+        private PlayerFlashlightController playerFlashlight = null;
+        private SewerManholeInteractable[] cachedSewerManholes = null;
+        private SewerManholeInteractable currentNearbyManhole = null;
+        private bool currentManholeGoingDown = true;
+        private SewerOutflowGateController cachedOutflowGate = null;
+        private SewerOutflowGateController currentNearbyOutflowGate = null;
+
         private bool IsInBackroomsMode()
         {
             if (cachedBackroomsTransition == null)
@@ -859,8 +867,13 @@ namespace MyVirtualCommunity.Client.World
                         }
                     }
 
-                    HandleLook();
-                    HandleMovement();
+                    bool isBackroomsTrans = cachedBackroomsTransition != null && cachedBackroomsTransition.IsTransitioning;
+                    if (!isBackroomsTrans)
+                    {
+                        HandleLook();
+                        HandleMovement();
+                    }
+                    HandleFlashlightToggleAndSewerProximity();
                     if (!IsInBackroomsOrTransitioning())
                     {
                         SyncAuthoritativeMovementIntentIfNeeded();
@@ -874,6 +887,14 @@ namespace MyVirtualCommunity.Client.World
                         if (inBackroomsNow && currentNearbyBackroomsExit != null && cachedBackroomsTransition != null)
                         {
                             cachedBackroomsTransition.RequestExitBackrooms();
+                        }
+                        else if (!inBackroomsNow && currentNearbyManhole != null)
+                        {
+                            currentNearbyManhole.TriggerClimb(this, currentManholeGoingDown);
+                        }
+                        else if (!inBackroomsNow && currentNearbyOutflowGate != null)
+                        {
+                            currentNearbyOutflowGate.ToggleGate();
                         }
                         else if (!inBackroomsNow && currentNearbyPoint != null)
                         {
@@ -909,7 +930,7 @@ namespace MyVirtualCommunity.Client.World
             if (characterController.isGrounded)
             {
                 verticalVelocity = -1.5f; // Snap to ground and curbs
-                if (transform.position.y >= -0.5f)
+                if (transform.position.y >= -8.5f)
                 {
                     lastSafeGroundedPosition = transform.position;
                     hasSafeGroundedPosition = true;
@@ -938,8 +959,8 @@ namespace MyVirtualCommunity.Client.World
                 lastActualPlanarMoveDirection = Vector2.zero;
             }
 
-            // Void-fall recovery safety guard (bypassed while exploring or transitioning into Backrooms Level 1 at Y = -50m!)
-            if (!IsInBackroomsOrTransitioning() && transform.position.y < -3.0f && hasSafeGroundedPosition && characterController != null)
+            // Void-fall recovery safety guard (bypassed while exploring Backrooms at Y=-50m & allows underground sewers/vault down to Y=-10m!)
+            if (!IsInBackroomsOrTransitioning() && transform.position.y < -12.0f && hasSafeGroundedPosition && characterController != null)
             {
                 bool wasEnabled = characterController.enabled;
                 characterController.enabled = false;
@@ -2559,6 +2580,14 @@ namespace MyVirtualCommunity.Client.World
                         {
                             DrawBackroomsExitPrompt(currentNearbyBackroomsExit);
                         }
+                        else if (!inBackroomsHud && currentNearbyManhole != null && isCursorLocked)
+                        {
+                            DrawSewerInteractPrompt(currentNearbyManhole.GetPromptText(transform.position, currentLanguage == "es"));
+                        }
+                        else if (!inBackroomsHud && currentNearbyOutflowGate != null && isCursorLocked)
+                        {
+                            DrawSewerInteractPrompt(currentNearbyOutflowGate.GetPromptText(currentLanguage == "es"));
+                        }
                         else if (!inBackroomsHud && currentNearbyPoint != null && isCursorLocked)
                         {
                             DrawInteractionPrompt(currentNearbyPoint);
@@ -2575,6 +2604,7 @@ namespace MyVirtualCommunity.Client.World
                         {
                             DrawEquippedAstrolabeBadgeHUD();
                         }
+                        DrawFlashlightStatusBadgeHUD();
                     }
                     if (!string.IsNullOrEmpty(interactionFeedbackMessage) && Time.unscaledTime < interactionFeedbackUntilTime)
                     {
@@ -8119,6 +8149,109 @@ namespace MyVirtualCommunity.Client.World
             }
 
             GUILayout.EndArea();
+        }
+
+        private void HandleFlashlightToggleAndSewerProximity()
+        {
+            if (playerFlashlight == null)
+            {
+                playerFlashlight = GetComponent<PlayerFlashlightController>();
+                if (playerFlashlight == null)
+                {
+                    playerFlashlight = gameObject.AddComponent<PlayerFlashlightController>();
+                }
+            }
+
+            if (activeKeypadDoor == null && WasKeyPressed(KeyCode.F))
+            {
+                playerFlashlight.ToggleFlashlight();
+            }
+
+            currentNearbyManhole = null;
+            currentNearbyOutflowGate = null;
+            if (IsInBackroomsOrTransitioning()) return;
+
+            if (cachedSewerManholes == null || cachedSewerManholes.Length == 0)
+            {
+                cachedSewerManholes = FindObjectsByType<SewerManholeInteractable>(FindObjectsSortMode.None);
+            }
+            if (cachedSewerManholes != null)
+            {
+                Vector3 pos = transform.position;
+                for (int i = 0; i < cachedSewerManholes.Length; i++)
+                {
+                    var m = cachedSewerManholes[i];
+                    if (m == null) continue;
+                    if (m.IsPlayerNearSurface(pos))
+                    {
+                        currentNearbyManhole = m;
+                        currentManholeGoingDown = true;
+                        break;
+                    }
+                    if (m.IsPlayerNearUndergroundLadder(pos))
+                    {
+                        currentNearbyManhole = m;
+                        currentManholeGoingDown = false;
+                        break;
+                    }
+                }
+            }
+
+            if (cachedOutflowGate == null)
+            {
+                cachedOutflowGate = FindFirstObjectByType<SewerOutflowGateController>();
+            }
+            if (cachedOutflowGate != null && cachedOutflowGate.IsPlayerInRange(transform.position))
+            {
+                currentNearbyOutflowGate = cachedOutflowGate;
+            }
+        }
+
+        private void DrawSewerInteractPrompt(string promptText)
+        {
+            if (string.IsNullOrEmpty(promptText)) return;
+            float w = 540f;
+            float h = 46f;
+            float x = (Screen.width - w) * 0.5f;
+            float y = Screen.height - 105f;
+
+            GUI.Box(new Rect(x, y, w, h), GUIContent.none, GetOpaquePromptStyle());
+            GUIStyle st = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 14,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = new Color(0.75f, 0.96f, 0.85f) }
+            };
+            GUI.Label(new Rect(x, y, w, h), promptText, st);
+        }
+
+        private void DrawFlashlightStatusBadgeHUD()
+        {
+            if (playerFlashlight == null) return;
+            bool underground = UndergroundSewerAtmosphereController.ActiveInstance != null &&
+                               UndergroundSewerAtmosphereController.ActiveInstance.IsPlayerUnderground;
+            if (!underground && !playerFlashlight.IsFlashlightOn) return;
+
+            bool isEs = currentLanguage == "es";
+            bool on = playerFlashlight.IsFlashlightOn;
+            string txt = isEs
+                ? (on ? "[F] Linterna: ENCENDIDA" : "[F] Linterna: APAGADA")
+                : (on ? "[F] Flashlight: ON" : "[F] Flashlight: OFF");
+
+            float w = 220f;
+            float h = 30f;
+            float x = 18f;
+            float y = Screen.height - 46f;
+            GUI.Box(new Rect(x, y, w, h), GUIContent.none, GetOpaquePromptStyle());
+            GUIStyle st = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 12,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = on ? new Color(1.0f, 0.94f, 0.65f) : new Color(0.68f, 0.74f, 0.78f) }
+            };
+            GUI.Label(new Rect(x, y, w, h), txt, st);
         }
 
         private void DrawBackroomsExitPrompt(BackroomsExitDoorTrigger exitDoor)
