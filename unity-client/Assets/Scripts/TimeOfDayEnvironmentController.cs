@@ -165,10 +165,19 @@ namespace MyVirtualCommunity.Client.World
                 return;
             }
 
-            // Never overwrite moody underground storm-drain fog/lighting while the player is deep inside the sewers
+            // Never overwrite moody underground storm-drain fog/lighting while the player is deep inside the sewers,
+            // and suppress shadowless surface streetlights so evening/night street lamps cannot bleed through asphalt into tunnels!
             var sewerAtmos = UndergroundSewerAtmosphereController.ActiveInstance;
             if (sewerAtmos != null && sewerAtmos.IsPlayerUnderground)
             {
+                for (int i = 0; i < managedStreetlights.Count; i++)
+                {
+                    var ml = managedStreetlights[i];
+                    if (ml.lightComponent != null && ml.lightComponent.enabled)
+                    {
+                        ml.lightComponent.enabled = false;
+                    }
+                }
                 return;
             }
 

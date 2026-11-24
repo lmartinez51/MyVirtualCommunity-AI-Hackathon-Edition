@@ -118,15 +118,15 @@ namespace MyVirtualCommunity.Editor
             Material agedRedValveMat = CreateOrGetColorMat("Assets/Settings/Sewer/Sewer_AgedRedValve.mat",
                 new Color(0.38f, 0.11f, 0.08f), 0.20f, 0.45f);
             Material waterMat = CreateOrGetWaterMat("Assets/Settings/Sewer/Sewer_MurkyWater.mat",
-                new Color(0.035f, 0.085f, 0.072f, 0.91f));
+                new Color(0.018f, 0.045f, 0.038f, 0.94f));
             Material waterTrickleMat = CreateOrGetWaterMat("Assets/Settings/Sewer/Sewer_WaterTrickle.mat",
-                new Color(0.48f, 0.60f, 0.56f, 0.42f));
+                new Color(0.32f, 0.42f, 0.40f, 0.42f));
             Material warmBulbMat = CreateOrGetEmissiveMat("Assets/Settings/Sewer/Sewer_WarmBulb.mat",
-                new Color(0.95f, 0.68f, 0.32f), new Color(1.9f, 1.15f, 0.42f));
+                new Color(0.92f, 0.62f, 0.28f), new Color(1.15f, 0.68f, 0.24f));
             Material deadBulbMat = CreateOrGetColorMat("Assets/Settings/Sewer/Sewer_DeadBulb.mat",
                 new Color(0.18f, 0.18f, 0.17f), 0.55f, 0.10f);
             Material backroomsLeakMat = CreateOrGetEmissiveMat("Assets/Settings/Sewer/Sewer_BackroomsLeak.mat",
-                new Color(1.0f, 0.94f, 0.60f), new Color(2.2f, 1.95f, 0.80f));
+                new Color(1.0f, 0.94f, 0.60f), new Color(1.65f, 1.45f, 0.60f));
             Material lightShaftMat = CreateOrGetLightShaftMat("Assets/Settings/Sewer/Sewer_LightShaft.mat");
             Material mossSludgeMat = CreateOrGetColorMat("Assets/Settings/Sewer/Sewer_MossConcrete.mat",
                 new Color(0.16f, 0.21f, 0.14f), 0.36f, 0.0f);
@@ -136,32 +136,33 @@ namespace MyVirtualCommunity.Editor
                 new Color(0.17f, 0.13f, 0.09f), 0.10f, 0.0f);
             Material soggyPlankMat = CreateOrGetColorMat("Assets/Settings/Sewer/Sewer_SoggyPlank.mat",
                 new Color(0.22f, 0.18f, 0.13f), 0.28f, 0.0f);
-            Material paperWhiteMat = CreateOrGetColorMat("Assets/Settings/Sewer/Sewer_PaperBoat.mat",
-                new Color(0.92f, 0.90f, 0.84f), 0.08f, 0.0f);
+            Material paperWhiteMat = CreateOrGetTexturedMat("Assets/Settings/Sewer/Sewer_PaperBoat.mat",
+                "Assets/Textures/Sewer/T_Sewer_PaperBoat_Newspaper.png", new Color(0.95f, 0.93f, 0.86f), 0.06f, 0.0f, Vector2.one);
+            paperWhiteMat.SetFloat("_Cull", 0f); // Double-sided crisp origami paper folds!
 
             // Bilingual crimson graffiti, English Crop Circle symbols & Paris Catacombs wooden plaque
             Material graffitiSalDeAquiMat = CreateOrGetLitDecalMat("Assets/Settings/Sewer/Sewer_Graffiti_SalDeAqui.mat",
-                "Assets/Textures/Sewer/T_Sewer_Graffiti_SalDeAqui.png", Color.white, new Color(0.28f, 0.02f, 0.02f));
+                "Assets/Textures/Sewer/T_Sewer_Graffiti_SalDeAqui.png", Color.white, new Color(0.14f, 0.01f, 0.01f));
             Material graffitiGetOutMat = CreateOrGetLitDecalMat("Assets/Settings/Sewer/Sewer_Graffiti_GetOut.mat",
-                "Assets/Textures/Sewer/T_Sewer_Graffiti_GetOut.png", Color.white, new Color(0.28f, 0.02f, 0.02f));
+                "Assets/Textures/Sewer/T_Sewer_Graffiti_GetOut.png", Color.white, new Color(0.14f, 0.01f, 0.01f));
             Material graffitiNoMiresMat = CreateOrGetLitDecalMat("Assets/Settings/Sewer/Sewer_Graffiti_NoMiresAtras.mat",
-                "Assets/Textures/Sewer/T_Sewer_Graffiti_NoMiresAtras.png", Color.white, new Color(0.22f, 0.02f, 0.02f));
+                "Assets/Textures/Sewer/T_Sewer_Graffiti_NoMiresAtras.png", Color.white, new Color(0.11f, 0.01f, 0.01f));
             Material graffitiDontFollowMat = CreateOrGetLitDecalMat("Assets/Settings/Sewer/Sewer_Graffiti_DontFollow.mat",
-                "Assets/Textures/Sewer/T_Sewer_Graffiti_DontFollow.png", Color.white, new Color(0.24f, 0.02f, 0.02f));
+                "Assets/Textures/Sewer/T_Sewer_Graffiti_DontFollow.png", Color.white, new Color(0.12f, 0.01f, 0.01f));
             Material graffitiStillHereMat = CreateOrGetLitDecalMat("Assets/Settings/Sewer/Sewer_Graffiti_StillHere.mat",
-                "Assets/Textures/Sewer/T_Sewer_Graffiti_StillHere.png", Color.white, new Color(0.26f, 0.02f, 0.02f));
+                "Assets/Textures/Sewer/T_Sewer_Graffiti_StillHere.png", Color.white, new Color(0.13f, 0.01f, 0.01f));
 
             Material cropCircle1Mat = CreateOrGetLitDecalMat("Assets/Settings/Sewer/Sewer_CropCircle_1.mat",
-                "Assets/Textures/Sewer/T_Sewer_CropCircle_1.png", Color.white, new Color(0.08f, 0.08f, 0.07f));
+                "Assets/Textures/Sewer/T_Sewer_CropCircle_1.png", Color.white, new Color(0.04f, 0.04f, 0.035f));
             Material cropCircle2Mat = CreateOrGetLitDecalMat("Assets/Settings/Sewer/Sewer_CropCircle_2.mat",
-                "Assets/Textures/Sewer/T_Sewer_CropCircle_2.png", Color.white, new Color(0.20f, 0.02f, 0.02f));
+                "Assets/Textures/Sewer/T_Sewer_CropCircle_2.png", Color.white, new Color(0.10f, 0.01f, 0.01f));
             Material cropCircle3Mat = CreateOrGetLitDecalMat("Assets/Settings/Sewer/Sewer_CropCircle_3.mat",
-                "Assets/Textures/Sewer/T_Sewer_CropCircle_3.png", Color.white, new Color(0.08f, 0.07f, 0.06f));
+                "Assets/Textures/Sewer/T_Sewer_CropCircle_3.png", Color.white, new Color(0.04f, 0.035f, 0.03f));
 
             Material catacombsSignMat = CreateOrGetTexturedMat("Assets/Settings/Sewer/Sewer_CatacombsSign.mat",
                 "Assets/Textures/Sewer/T_Sewer_CatacombsSign.png", Color.white, 0.14f, 0.0f, Vector2.one);
             catacombsSignMat.EnableKeyword("_EMISSION");
-            catacombsSignMat.SetColor("_EmissionColor", new Color(0.07f, 0.06f, 0.045f));
+            catacombsSignMat.SetColor("_EmissionColor", new Color(0.035f, 0.030f, 0.022f));
 
             Material stencil1958Mat = CreateOrGetAlphaDecalMat("Assets/Settings/Sewer/Sewer_Stencil_1958.mat",
                 "Assets/Textures/Sewer/T_Sewer_Stencil_1958.png", Color.white);
@@ -169,6 +170,10 @@ namespace MyVirtualCommunity.Editor
                 "Assets/Textures/Sewer/T_Sewer_Stencil_RioBravo.png", Color.white);
             Material stencilWarnMat = CreateOrGetAlphaDecalMat("Assets/Settings/Sewer/Sewer_Stencil_Warning.mat",
                 "Assets/Textures/Sewer/T_Sewer_Stencil_Warning.png", Color.white);
+            Material stencilClausuradoMat = CreateOrGetAlphaDecalMat("Assets/Settings/Sewer/Sewer_Stencil_Clausurado.mat",
+                "Assets/Textures/Sewer/T_Sewer_Stencil_Clausurado.png", Color.white);
+            Material manholeVentGlowMat = CreateOrGetEmissiveMat("Assets/Settings/Sewer/Sewer_ManholeVentGlow.mat",
+                new Color(0.86f, 0.92f, 1.0f), new Color(1.9f, 2.1f, 2.4f));
 
             AssetDatabase.SaveAssets();
 
@@ -179,51 +184,75 @@ namespace MyVirtualCommunity.Editor
             // 1. Subsurface safety floor strictly under the sewer & vault
             BuildSewerSubsurfaceSafety(root.transform);
 
-            // 2. Recessed-Channel Junction Chambers (EXACT ±2.20m butt joints -> ZERO Z-fighting!)
+            // 2. Recessed-Channel Junction Chambers with REAL open ceiling shaft apertures for Manholes 1, 2 & 3!
             BuildJunctionChamber("Chamber_Juarez_Azucenas", root.transform, JuarezAxisX, AzucenasAxisZ,
-                openN: true, openS: false, openE: true, openW: true, concreteWallMat, walkwayGrimeMat, brickArchMat, waterMat, rustedIronMat, warmBulbMat);
+                openN: true, openS: false, openE: true, openW: true,
+                concreteWallMat, walkwayGrimeMat, brickArchMat, waterMat, rustedIronMat, warmBulbMat,
+                holeWorldX: JuarezAxisX + 1.15f, holeWorldZ: AzucenasAxisZ - 1.55f);
             BuildJunctionChamber("Chamber_Mariscal_Azucenas", root.transform, MariscalAxisX, AzucenasAxisZ,
-                openN: true, openS: false, openE: true, openW: false, concreteWallMat, walkwayGrimeMat, brickArchMat, waterMat, rustedIronMat, warmBulbMat);
+                openN: true, openS: false, openE: true, openW: false,
+                concreteWallMat, walkwayGrimeMat, brickArchMat, waterMat, rustedIronMat, warmBulbMat,
+                holeWorldX: MariscalAxisX - 1.55f, holeWorldZ: AzucenasAxisZ - 1.15f);
             BuildJunctionChamber("Chamber_Mariscal_Gardenias", root.transform, MariscalAxisX, GardeniasAxisZ,
-                openN: false, openS: true, openE: true, openW: false, concreteWallMat, walkwayGrimeMat, brickArchMat, waterMat, rustedIronMat, warmBulbMat);
+                openN: false, openS: true, openE: true, openW: false,
+                concreteWallMat, walkwayGrimeMat, brickArchMat, waterMat, rustedIronMat, warmBulbMat,
+                holeWorldX: MariscalAxisX - 1.55f, holeWorldZ: GardeniasAxisZ + 1.15f);
 
             // 3. Vaulted Storm-Drain Tunnel Network (EXACT butt-joints at ±JunctionHalf & ±VaultApothem -> ZERO overlap!)
             var tunnelsRoot = new GameObject("Sewer_Tunnels_Root").transform;
             tunnelsRoot.SetParent(root.transform);
 
-            // 3A. Colector Av. Benito Juarez Sur (Azucenas +2.20 -> Vault South face EXACTLY VaultCenterZ - VaultApothem!)
+            // 3A. Colector Av. Benito Juarez Sur (Azucenas +2.20 -> Vault South face EXACTLY VaultCenterZ - VaultApothem; walls inset 0.45m from Vault cheek -> ZERO Z-fighting!)
             BuildVaultedTunnelNS("Tunnel_Juarez_South", tunnelsRoot, JuarezAxisX, AzucenasAxisZ + JunctionHalf, VaultCenterZ - VaultApothem,
-                concreteWallMat, walkwayGrimeMat, brickArchMat, waterMat, rustedIronMat, warmBulbMat, deadBulbMat, mossSludgeMat, seed: 101);
+                concreteWallMat, walkwayGrimeMat, brickArchMat, waterMat, rustedIronMat, warmBulbMat, deadBulbMat, mossSludgeMat, seed: 101,
+                wallInsetStart: 0f, wallInsetEnd: 0.45f);
 
             // 3B. Ramal Calle Azucenas Oeste (Mariscal +2.20 -> Juarez -2.20)
             BuildVaultedTunnelEW("Tunnel_Azucenas_West", tunnelsRoot, AzucenasAxisZ, MariscalAxisX + JunctionHalf, JuarezAxisX - JunctionHalf,
                 concreteWallMat, walkwayGrimeMat, brickArchMat, waterMat, rustedIronMat, warmBulbMat, deadBulbMat, mossSludgeMat, seed: 202);
 
-            // 3C. Ramal Calle Azucenas Este (Juarez +2.20 -> East barred gate)
+            // 3C. Ramal Calle Azucenas Este (Juarez +2.20 -> East barred gate, with REAL open chimney bay for Manhole #5!)
             BuildVaultedTunnelEW("Tunnel_Azucenas_East", tunnelsRoot, AzucenasAxisZ, JuarezAxisX + JunctionHalf, EastBranchEndX,
-                concreteWallMat, walkwayGrimeMat, brickArchMat, waterMat, rustedIronMat, warmBulbMat, deadBulbMat, mossSludgeMat, seed: 303);
-            BuildBarredEndCap("EndGrate_Azucenas_East", tunnelsRoot, new Vector3(EastBranchEndX, WalkwayY, AzucenasAxisZ), 90f, concreteWallMat, rustedIronMat);
+                concreteWallMat, walkwayGrimeMat, brickArchMat, waterMat, rustedIronMat, warmBulbMat, deadBulbMat, mossSludgeMat, seed: 303,
+                manholeHoleX: 21.15f, manholeHoleZ: AzucenasAxisZ + 1.14f);
+            BuildBarredEndCap("EndGrate_Azucenas_East", tunnelsRoot, new Vector3(EastBranchEndX, WalkwayY, AzucenasAxisZ), 90f, concreteWallMat, rustedIronMat, stencilClausuradoMat);
 
             // 3D. Colector Calle Ignacio Mariscal (Azucenas +2.20 -> Gardenias -2.20)
             BuildVaultedTunnelNS("Tunnel_Mariscal_NS", tunnelsRoot, MariscalAxisX, AzucenasAxisZ + JunctionHalf, GardeniasAxisZ - JunctionHalf,
                 concreteWallMat, walkwayGrimeMat, brickArchMat, waterMat, rustedIronMat, warmBulbMat, deadBulbMat, mossSludgeMat, seed: 404);
 
-            // 3E. Ramal Calle Gardenias Oeste (Mariscal +2.20 -> Vault West face EXACTLY VaultCenterX - VaultApothem!)
+            // 3E. Ramal Calle Gardenias Oeste (Mariscal +2.20 -> Vault West face; walls inset 0.45m from Vault cheek -> ZERO Z-fighting!)
             BuildVaultedTunnelEW("Tunnel_Gardenias_West", tunnelsRoot, GardeniasAxisZ, MariscalAxisX + JunctionHalf, VaultCenterX - VaultApothem,
-                concreteWallMat, walkwayGrimeMat, brickArchMat, waterMat, rustedIronMat, warmBulbMat, deadBulbMat, mossSludgeMat, seed: 505);
+                concreteWallMat, walkwayGrimeMat, brickArchMat, waterMat, rustedIronMat, warmBulbMat, deadBulbMat, mossSludgeMat, seed: 505,
+                wallInsetStart: 0f, wallInsetEnd: 0.45f);
 
-            // 3F. Ramal Calle Gardenias Este (Vault East face EXACTLY VaultCenterX + VaultApothem -> East Branch)
+            // 3F. Ramal Calle Gardenias Este (Vault East face -> East Branch, with REAL open chimney bay for Manhole #4!)
             BuildVaultedTunnelEW("Tunnel_Gardenias_East", tunnelsRoot, GardeniasAxisZ, VaultCenterX + VaultApothem, EastBranchEndX,
-                concreteWallMat, walkwayGrimeMat, brickArchMat, waterMat, rustedIronMat, warmBulbMat, deadBulbMat, mossSludgeMat, seed: 606);
-            BuildBarredEndCap("EndGrate_Gardenias_East", tunnelsRoot, new Vector3(EastBranchEndX, WalkwayY, GardeniasAxisZ), 90f, concreteWallMat, rustedIronMat);
+                concreteWallMat, walkwayGrimeMat, brickArchMat, waterMat, rustedIronMat, warmBulbMat, deadBulbMat, mossSludgeMat, seed: 606,
+                wallInsetStart: 0.45f, wallInsetEnd: 0f,
+                manholeHoleX: 21.15f, manholeHoleZ: GardeniasAxisZ - 1.14f);
+            BuildBarredEndCap("EndGrate_Gardenias_East", tunnelsRoot, new Vector3(EastBranchEndX, WalkwayY, GardeniasAxisZ), 90f, concreteWallMat, rustedIronMat, stencilClausuradoMat);
 
-            // 3G. Colector Troncal Norte (Vault North face EXACTLY VaultCenterZ + VaultApothem -> RampStartZ 174.0m)
-            BuildVaultedTunnelNS("Tunnel_Juarez_NorthTrunk", tunnelsRoot, JuarezAxisX, VaultCenterZ + VaultApothem, RampStartZ,
-                concreteWallMat, walkwayGrimeMat, brickArchMat, waterMat, rustedIronMat, warmBulbMat, deadBulbMat, mossSludgeMat, seed: 707);
+            // 3G. Colector Troncal Norte (Vault North face -> Deep Underpass Siphon beneath Av. Abasolo Z=53..66m -> RampStartZ 174.0m!)
+            //     Passes cleanly at Y = -8.45m (crown -5.85m, 50cm BELOW Av. Abasolo's -5.35m underpass slab -> ZERO white wall!)
+            const float AbasoloDeepY = -8.45f;
+            BuildVaultedTunnelNS("Tunnel_Juarez_NorthTrunk_PreAbasolo", tunnelsRoot, JuarezAxisX, VaultCenterZ + VaultApothem, 39.50f,
+                concreteWallMat, walkwayGrimeMat, brickArchMat, waterMat, rustedIronMat, warmBulbMat, deadBulbMat, mossSludgeMat, seed: 707,
+                wallInsetStart: 0.45f, wallInsetEnd: 0f);
+            BuildRampedOutflowTunnelNS("Tunnel_Juarez_NorthTrunk_AbasoloDipDown", tunnelsRoot, JuarezAxisX, 39.50f, 52.00f,
+                WalkwayY, AbasoloDeepY, concreteWallMat, walkwayGrimeMat, brickArchMat, waterMat, archHeight: 1.15f, addMidLight: true, bulbMat: warmBulbMat, ironMat: rustedIronMat);
+            BuildVaultedTunnelNS("Tunnel_Juarez_NorthTrunk_UnderAbasolo", tunnelsRoot, JuarezAxisX, 52.00f, 67.50f,
+                concreteWallMat, walkwayGrimeMat, brickArchMat, waterMat, rustedIronMat, warmBulbMat, deadBulbMat, mossSludgeMat, seed: 708,
+                wallInsetStart: 0f, wallInsetEnd: 0f, baseWalkwayY: AbasoloDeepY);
+            BuildRampedOutflowTunnelNS("Tunnel_Juarez_NorthTrunk_AbasoloClimbUp", tunnelsRoot, JuarezAxisX, 67.50f, 80.00f,
+                AbasoloDeepY, WalkwayY, concreteWallMat, walkwayGrimeMat, brickArchMat, waterMat, archHeight: 1.15f, addMidLight: true, bulbMat: warmBulbMat, ironMat: rustedIronMat);
+            BuildVaultedTunnelNS("Tunnel_Juarez_NorthTrunk_PostAbasolo", tunnelsRoot, JuarezAxisX, 80.00f, RampStartZ,
+                concreteWallMat, walkwayGrimeMat, brickArchMat, waterMat, rustedIronMat, warmBulbMat, deadBulbMat, mossSludgeMat, seed: 709,
+                wallInsetStart: 0f, wallInsetEnd: 0f);
 
             // 3H. Gentle Ramped North Collector (EXACT Z = 174.0m -> OutflowMouthZ = 197.20m, ZERO overlap!)
             BuildRampedOutflowTunnelNS("Tunnel_Juarez_NorthOutflowRamp", tunnelsRoot, JuarezAxisX, RampStartZ, OutflowMouthZ,
-                WalkwayY, OutflowWalkwayY, concreteWallMat, walkwayGrimeMat, brickArchMat, waterMat);
+                WalkwayY, OutflowWalkwayY, concreteWallMat, walkwayGrimeMat, brickArchMat, waterMat, archHeight: 0.86f);
 
             // 4. Grand Octagonal Central Cistern Vault ("La Cisterna / El Nudo") with SINGLE SEAMLESS BALCONY RING MESH!
             BuildGrandCentralCisternVault(root.transform, concreteWallMat, walkwayGrimeMat, brickArchMat, waterMat,
@@ -240,7 +269,7 @@ namespace MyVirtualCommunity.Editor
                 graffitiSalDeAquiMat, graffitiGetOutMat, graffitiNoMiresMat, graffitiDontFollowMat, graffitiStillHereMat,
                 cropCircle1Mat, cropCircle2Mat, cropCircle3Mat);
 
-            // 7. 5 Interactive Round Cast-Iron Street Manholes + Vertical Brick Shafts & Ladders
+            // 7. 5 Interactive Round Cast-Iron Street Manholes + REAL Open Hollow Circular Brick Chimneys & Complete Unbroken Wall-Bolted Ladders!
             var manholesRoot = new GameObject("Sewer_Manholes_Root").transform;
             manholesRoot.SetParent(root.transform);
 
@@ -253,10 +282,12 @@ namespace MyVirtualCommunity.Editor
                 surfacePos: new Vector3(3.30f, 0.004f, -32.20f),
                 surfaceExitPos: new Vector3(3.30f, 0.15f, -30.50f),
                 surfaceExitYaw: 0f,
-                undergroundPos: new Vector3(JuarezAxisX + 1.15f, WalkwayY + 0.08f, AzucenasAxisZ + 0.55f),
+                shaftCenterXZ: new Vector2(JuarezAxisX + 1.15f, AzucenasAxisZ - 1.55f),
+                ladderYaw: 0f, // Bolted to South wall facing North (+Z)
+                undergroundPos: new Vector3(JuarezAxisX + 1.15f, WalkwayY + 0.08f, AzucenasAxisZ - 1.15f),
                 undergroundYaw: 0f,
                 triggerBackroomsTwist: true,
-                manholeCoverMat, darkIronMat, brickArchMat, rustedIronMat);
+                manholeCoverMat, darkIronMat, brickArchMat, rustedIronMat, manholeVentGlowMat);
 
             BuildInteractiveManhole("Manhole_02_Mariscal_Azucenas", manholesRoot,
                 id: "manhole_mariscal_azucenas",
@@ -265,10 +296,12 @@ namespace MyVirtualCommunity.Editor
                 surfacePos: new Vector3(-58.50f, 0.004f, AzucenasAxisZ),
                 surfaceExitPos: new Vector3(-58.50f, 0.15f, AzucenasAxisZ + 2.0f),
                 surfaceExitYaw: 0f,
-                undergroundPos: new Vector3(MariscalAxisX + 1.15f, WalkwayY + 0.08f, AzucenasAxisZ + 0.45f),
+                shaftCenterXZ: new Vector2(MariscalAxisX - 1.55f, AzucenasAxisZ - 1.15f),
+                ladderYaw: 90f, // Bolted to West wall facing East (+X)
+                undergroundPos: new Vector3(MariscalAxisX - 1.15f, WalkwayY + 0.08f, AzucenasAxisZ - 1.15f),
                 undergroundYaw: 90f,
                 triggerBackroomsTwist: false,
-                manholeCoverMat, darkIronMat, brickArchMat, rustedIronMat);
+                manholeCoverMat, darkIronMat, brickArchMat, rustedIronMat, manholeVentGlowMat);
 
             BuildInteractiveManhole("Manhole_03_Mariscal_Gardenias", manholesRoot,
                 id: "manhole_mariscal_gardenias",
@@ -277,10 +310,12 @@ namespace MyVirtualCommunity.Editor
                 surfacePos: new Vector3(-58.50f, 0.004f, GardeniasAxisZ),
                 surfaceExitPos: new Vector3(-58.50f, 0.15f, GardeniasAxisZ - 2.0f),
                 surfaceExitYaw: 180f,
-                undergroundPos: new Vector3(MariscalAxisX + 1.15f, WalkwayY + 0.08f, GardeniasAxisZ - 0.45f),
+                shaftCenterXZ: new Vector2(MariscalAxisX - 1.55f, GardeniasAxisZ + 1.15f),
+                ladderYaw: 90f, // Bolted to West wall facing East (+X)
+                undergroundPos: new Vector3(MariscalAxisX - 1.15f, WalkwayY + 0.08f, GardeniasAxisZ + 1.15f),
                 undergroundYaw: 90f,
                 triggerBackroomsTwist: false,
-                manholeCoverMat, darkIronMat, brickArchMat, rustedIronMat);
+                manholeCoverMat, darkIronMat, brickArchMat, rustedIronMat, manholeVentGlowMat);
 
             BuildInteractiveManhole("Manhole_04_Gardenias_East", manholesRoot,
                 id: "manhole_gardenias_east",
@@ -289,10 +324,12 @@ namespace MyVirtualCommunity.Editor
                 surfacePos: new Vector3(21.50f, 0.004f, GardeniasAxisZ),
                 surfaceExitPos: new Vector3(21.50f, 0.15f, GardeniasAxisZ - 2.0f),
                 surfaceExitYaw: 270f,
-                undergroundPos: new Vector3(21.20f, WalkwayY + 0.08f, GardeniasAxisZ - 1.15f),
+                shaftCenterXZ: new Vector2(21.15f, GardeniasAxisZ - 1.14f),
+                ladderYaw: 0f, // Bolted to South tunnel wall facing North (+Z)
+                undergroundPos: new Vector3(21.15f, WalkwayY + 0.08f, GardeniasAxisZ - 0.98f),
                 undergroundYaw: 270f,
                 triggerBackroomsTwist: false,
-                manholeCoverMat, darkIronMat, brickArchMat, rustedIronMat);
+                manholeCoverMat, darkIronMat, brickArchMat, rustedIronMat, manholeVentGlowMat);
 
             BuildInteractiveManhole("Manhole_05_Azucenas_East", manholesRoot,
                 id: "manhole_azucenas_east",
@@ -301,10 +338,12 @@ namespace MyVirtualCommunity.Editor
                 surfacePos: new Vector3(21.50f, 0.004f, AzucenasAxisZ),
                 surfaceExitPos: new Vector3(21.50f, 0.15f, AzucenasAxisZ + 2.0f),
                 surfaceExitYaw: 270f,
-                undergroundPos: new Vector3(21.20f, WalkwayY + 0.08f, AzucenasAxisZ + 1.15f),
+                shaftCenterXZ: new Vector2(21.15f, AzucenasAxisZ + 1.14f),
+                ladderYaw: 180f, // Bolted to North tunnel wall facing South (-Z)
+                undergroundPos: new Vector3(21.15f, WalkwayY + 0.08f, AzucenasAxisZ + 0.98f),
                 undergroundYaw: 270f,
                 triggerBackroomsTwist: false,
-                manholeCoverMat, darkIronMat, brickArchMat, rustedIronMat);
+                manholeCoverMat, darkIronMat, brickArchMat, rustedIronMat, manholeVentGlowMat);
 
             // 8. 6 "Efecto Georgie" Curbside Storm-Drain Intake Slots + Soft Light Shafts + Paper Boat
             BuildGeorgieStormDrainSlots(root.transform, darkIronMat, concreteWallMat, lightShaftMat, paperWhiteMat);
@@ -348,7 +387,7 @@ namespace MyVirtualCommunity.Editor
         {
             var go = new GameObject("Sewer_Subsurface_SafetyFloor");
             go.transform.SetParent(root);
-            go.transform.position = new Vector3(-20f, -7.20f, 80f);
+            go.transform.position = new Vector3(-20f, -10.50f, 80f);
             var bc = go.AddComponent<BoxCollider>();
             bc.size = new Vector3(130f, 0.4f, 270f);
         }
@@ -359,11 +398,22 @@ namespace MyVirtualCommunity.Editor
 
         private static void BuildVaultedTunnelNS(string name, Transform parent, float centerX, float zMin, float zMax,
             Material wallMat, Material walkwayMat, Material brickMat, Material waterMat, Material ironMat,
-            Material bulbMat, Material deadBulbMat, Material mossMat, int seed)
+            Material bulbMat, Material deadBulbMat, Material mossMat, int seed,
+            float wallInsetStart = 0f, float wallInsetEnd = 0f, float baseWalkwayY = WalkwayY)
         {
             float length = zMax - zMin;
             if (length <= 0.1f) return;
             float midZ = 0.5f * (zMin + zMax);
+
+            float wallZMin = zMin + wallInsetStart;
+            float wallZMax = zMax - wallInsetEnd;
+            float wallLen = Mathf.Max(0.1f, wallZMax - wallZMin);
+            float wallMidZ = 0.5f * (wallZMin + wallZMax);
+
+            float chanFloorY = baseWalkwayY - 0.25f;
+            float waterY = baseWalkwayY - 0.12f;
+            float springY = baseWalkwayY + 1.45f;
+            float crownY = baseWalkwayY + 2.60f;
 
             var go = new GameObject(name);
             go.transform.SetParent(parent);
@@ -372,35 +422,39 @@ namespace MyVirtualCommunity.Editor
             float leftX = centerX - ChannelHalfW - walkW * 0.5f;
             float rightX = centerX + ChannelHalfW + walkW * 0.5f;
 
-            // Left & Right Weathered Concrete Walkways (top strictly at WalkwayY = -3.200m, exact length!)
-            CreateBox("Walkway_West", go.transform, new Vector3(leftX, WalkwayY - 0.15f, midZ), new Vector3(walkW, 0.30f, length), walkwayMat, true);
-            CreateBox("Walkway_East", go.transform, new Vector3(rightX, WalkwayY - 0.15f, midZ), new Vector3(walkW, 0.30f, length), walkwayMat, true);
+            // Left & Right Weathered Concrete Walkways (top strictly at baseWalkwayY, exact length!)
+            CreateBox("Walkway_West", go.transform, new Vector3(leftX, baseWalkwayY - 0.15f, midZ), new Vector3(walkW, 0.30f, length), walkwayMat, true);
+            CreateBox("Walkway_East", go.transform, new Vector3(rightX, baseWalkwayY - 0.15f, midZ), new Vector3(walkW, 0.30f, length), walkwayMat, true);
 
             // Central Channel Bed (strictly between walkways, no horizontal coplanar overlap!) & Murky Water
-            CreateBox("Channel_Bed", go.transform, new Vector3(centerX, ChannelFloorY - 0.12f, midZ), new Vector3(ChannelHalfW * 2f, 0.24f, length), wallMat, true);
-            CreateBox("Channel_Water", go.transform, new Vector3(centerX, WaterSurfaceY, midZ), new Vector3(ChannelHalfW * 2f - 0.02f, 0.02f, length), waterMat, false);
+            CreateBox("Channel_Bed", go.transform, new Vector3(centerX, chanFloorY - 0.12f, midZ), new Vector3(ChannelHalfW * 2f, 0.24f, length), wallMat, true);
+            CreateBox("Channel_Water", go.transform, new Vector3(centerX, waterY, midZ), new Vector3(ChannelHalfW * 2f - 0.02f, 0.02f, length), waterMat, false);
 
-            // Lower Vertical Walls (WalkwayY -> ArchSpringY)
-            float wallH = ArchSpringY - WalkwayY + 0.15f;
-            float wallCenterY = WalkwayY + (wallH - 0.15f) * 0.5f;
-            CreateBox("Wall_West", go.transform, new Vector3(centerX - TunnelHalfW - 0.14f, wallCenterY, midZ), new Vector3(0.28f, wallH, length), wallMat, true);
-            CreateBox("Wall_East", go.transform, new Vector3(centerX + TunnelHalfW + 0.14f, wallCenterY, midZ), new Vector3(0.28f, wallH, length), wallMat, true);
+            // Lower Vertical Walls (baseWalkwayY -> springY, strictly inset from Vault portal cheeks -> ZERO Z-fighting!)
+            float wallH = springY - baseWalkwayY + 0.15f;
+            float wallCenterY = baseWalkwayY + (wallH - 0.15f) * 0.5f;
+            CreateBox("Wall_West", go.transform, new Vector3(centerX - TunnelHalfW - 0.14f, wallCenterY, wallMidZ), new Vector3(0.28f, wallH, wallLen), wallMat, true);
+            CreateBox("Wall_East", go.transform, new Vector3(centerX + TunnelHalfW + 0.14f, wallCenterY, wallMidZ), new Vector3(0.28f, wallH, wallLen), wallMat, true);
 
-            // Dark damp algae/sludge tide skirt proud by +1.8cm along lower wall bases (adds decade-old realism, zero Z-fighting!)
-            CreateBox("SludgeSkirt_W", go.transform, new Vector3(centerX - TunnelHalfW + 0.015f, WalkwayY + 0.20f, midZ), new Vector3(0.03f, 0.38f, length - 0.08f), mossMat, false);
-            CreateBox("SludgeSkirt_E", go.transform, new Vector3(centerX + TunnelHalfW - 0.015f, WalkwayY + 0.20f, midZ), new Vector3(0.03f, 0.38f, length - 0.08f), mossMat, false);
+            // Dark damp algae/sludge tide skirt proud by +1.8cm along lower wall bases (strictly within wallLen -> zero Z-fighting!)
+            CreateBox("SludgeSkirt_W", go.transform, new Vector3(centerX - TunnelHalfW + 0.015f, baseWalkwayY + 0.20f, wallMidZ), new Vector3(0.03f, 0.38f, Mathf.Max(0.1f, wallLen - 0.08f)), mossMat, false);
+            CreateBox("SludgeSkirt_E", go.transform, new Vector3(centerX + TunnelHalfW - 0.015f, baseWalkwayY + 0.20f, wallMidZ), new Vector3(0.03f, 0.38f, Mathf.Max(0.1f, wallLen - 0.08f)), mossMat, false);
 
-            // Curved Brick Barrel-Vault Arch Roof Mesh
-            BuildBarrelVaultArchMesh("Vault_Arch", go.transform, new Vector3(centerX, ArchSpringY, zMin), new Vector3(centerX, ArchSpringY, zMax),
-                TunnelHalfW + 0.04f, ArchCrownY - ArchSpringY, brickMat);
+            // Curved Brick Barrel-Vault Arch Roof Mesh + Solid Brick Spandrel Bulkheads at BOTH ends (ZERO sky/curb leaks!)
+            BuildBarrelVaultArchMesh("Vault_Arch", go.transform, new Vector3(centerX, springY, zMin), new Vector3(centerX, springY, zMax),
+                TunnelHalfW + 0.04f, crownY - springY, brickMat);
+            BuildArchSpandrelHeaderMesh("ArchSpandrel_Start", go.transform, new Vector3(centerX, springY, zMin + (wallInsetStart > 0.01f ? 0.02f : 0f)),
+                Vector3.forward, TunnelHalfW + 0.04f, crownY - springY, brickMat);
+            BuildArchSpandrelHeaderMesh("ArchSpandrel_End", go.transform, new Vector3(centerX, springY, zMax - (wallInsetEnd > 0.01f ? 0.02f : 0f)),
+                Vector3.back, TunnelHalfW + 0.04f, crownY - springY, brickMat);
 
-            // Corroded Utility Pipe + Mounting Clamps mounted high at arch springline (clears all wall graffiti cleanly!)
+            // Corroded Utility Pipe + Mounting Clamps mounted high at arch springline (terminates cleanly at Vault cheek outer face!)
             var pipe = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
             pipe.name = "UtilityPipe_East";
             pipe.transform.SetParent(go.transform);
-            pipe.transform.position = new Vector3(centerX + TunnelHalfW - 0.14f, ArchSpringY + 0.05f, midZ);
+            pipe.transform.position = new Vector3(centerX + TunnelHalfW - 0.14f, springY + 0.05f, wallMidZ);
             pipe.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
-            pipe.transform.localScale = new Vector3(0.14f, length * 0.5f, 0.14f);
+            pipe.transform.localScale = new Vector3(0.14f, wallLen * 0.5f, 0.14f);
             pipe.GetComponent<MeshRenderer>().sharedMaterial = ironMat;
             UnityEngine.Object.DestroyImmediate(pipe.GetComponent<Collider>());
 
@@ -409,7 +463,7 @@ namespace MyVirtualCommunity.Editor
             {
                 CreateBox($"Rib_W_{z:F0}", go.transform, new Vector3(centerX - TunnelHalfW + 0.07f, wallCenterY, z), new Vector3(0.14f, wallH - 0.10f, 0.24f), wallMat, false);
                 CreateBox($"Rib_E_{z:F0}", go.transform, new Vector3(centerX + TunnelHalfW - 0.07f, wallCenterY, z), new Vector3(0.14f, wallH - 0.10f, 0.24f), wallMat, false);
-                CreateBox($"PipeClamp_{z:F0}", go.transform, new Vector3(centerX + TunnelHalfW - 0.14f, ArchSpringY + 0.05f, z), new Vector3(0.24f, 0.20f, 0.09f), ironMat, false);
+                CreateBox($"PipeClamp_{z:F0}", go.transform, new Vector3(centerX + TunnelHalfW - 0.14f, springY + 0.05f, z), new Vector3(0.24f, 0.20f, 0.09f), ironMat, false);
             }
 
             // Sparse, Dark, Aged Bulkhead Lights (mix of very dim amber, weakly sputtering, and dead/shattered cages!)
@@ -422,20 +476,27 @@ namespace MyVirtualCommunity.Editor
                 bool isSputtering = (!isDead && roll < 5); // 20% sputtering old tungsten!
                 string lName = isSputtering ? $"Sputter_TunnelLight_{lightIdx}" : $"TunnelLight_{lightIdx}";
                 CreateMaintenanceBulkheadLight(lName, go.transform,
-                    new Vector3(centerX - TunnelHalfW + 0.14f, ArchSpringY + 0.04f, z),
+                    new Vector3(centerX - TunnelHalfW + 0.14f, springY + 0.04f, z),
                     isDead ? deadBulbMat : bulbMat, ironMat,
-                    intensity: isDead ? 0f : 1.15f, range: 8.5f, addLight: !isDead);
+                    intensity: isDead ? 0f : 0.65f, range: 6.8f, addLight: !isDead);
                 lightIdx++;
             }
         }
 
         private static void BuildVaultedTunnelEW(string name, Transform parent, float centerZ, float xMin, float xMax,
             Material wallMat, Material walkwayMat, Material brickMat, Material waterMat, Material ironMat,
-            Material bulbMat, Material deadBulbMat, Material mossMat, int seed)
+            Material bulbMat, Material deadBulbMat, Material mossMat, int seed,
+            float wallInsetStart = 0f, float wallInsetEnd = 0f,
+            float manholeHoleX = float.NaN, float manholeHoleZ = float.NaN)
         {
             float length = xMax - xMin;
             if (length <= 0.1f) return;
             float midX = 0.5f * (xMin + xMax);
+
+            float wallXMin = xMin + wallInsetStart;
+            float wallXMax = xMax - wallInsetEnd;
+            float wallLen = Mathf.Max(0.1f, wallXMax - wallXMin);
+            float wallMidX = 0.5f * (wallXMin + wallXMax);
 
             var go = new GameObject(name);
             go.transform.SetParent(parent);
@@ -452,21 +513,61 @@ namespace MyVirtualCommunity.Editor
 
             float wallH = ArchSpringY - WalkwayY + 0.15f;
             float wallCenterY = WalkwayY + (wallH - 0.15f) * 0.5f;
-            CreateBox("Wall_South", go.transform, new Vector3(midX, wallCenterY, centerZ - TunnelHalfW - 0.14f), new Vector3(length, wallH, 0.28f), wallMat, true);
-            CreateBox("Wall_North", go.transform, new Vector3(midX, wallCenterY, centerZ + TunnelHalfW + 0.14f), new Vector3(length, wallH, 0.28f), wallMat, true);
+            CreateBox("Wall_South", go.transform, new Vector3(wallMidX, wallCenterY, centerZ - TunnelHalfW - 0.14f), new Vector3(wallLen, wallH, 0.28f), wallMat, true);
+            CreateBox("Wall_North", go.transform, new Vector3(wallMidX, wallCenterY, centerZ + TunnelHalfW + 0.14f), new Vector3(wallLen, wallH, 0.28f), wallMat, true);
 
-            CreateBox("SludgeSkirt_S", go.transform, new Vector3(midX, WalkwayY + 0.20f, centerZ - TunnelHalfW + 0.015f), new Vector3(length - 0.08f, 0.38f, 0.03f), mossMat, false);
-            CreateBox("SludgeSkirt_N", go.transform, new Vector3(midX, WalkwayY + 0.20f, centerZ + TunnelHalfW - 0.015f), new Vector3(length - 0.08f, 0.38f, 0.03f), mossMat, false);
+            CreateBox("SludgeSkirt_S", go.transform, new Vector3(wallMidX, WalkwayY + 0.20f, centerZ - TunnelHalfW + 0.015f), new Vector3(Mathf.Max(0.1f, wallLen - 0.08f), 0.38f, 0.03f), mossMat, false);
+            CreateBox("SludgeSkirt_N", go.transform, new Vector3(wallMidX, WalkwayY + 0.20f, centerZ + TunnelHalfW - 0.015f), new Vector3(Mathf.Max(0.1f, wallLen - 0.08f), 0.38f, 0.03f), mossMat, false);
 
-            BuildBarrelVaultArchMesh("Vault_Arch", go.transform, new Vector3(xMin, ArchSpringY, centerZ), new Vector3(xMax, ArchSpringY, centerZ),
-                TunnelHalfW + 0.04f, ArchCrownY - ArchSpringY, brickMat);
+            if (!float.IsNaN(manholeHoleX) && !float.IsNaN(manholeHoleZ))
+            {
+                // Split barrel-vault arch cleanly around a 1.32m flat-ceiling manhole chimney bay with a REAL open ceiling aperture!
+                float bayHalfX = 0.66f;
+                float bayXMin = manholeHoleX - bayHalfX;
+                float bayXMax = manholeHoleX + bayHalfX;
+                if (bayXMin > xMin + 0.1f)
+                {
+                    BuildBarrelVaultArchMesh("Vault_Arch_West", go.transform, new Vector3(xMin, ArchSpringY, centerZ), new Vector3(bayXMin, ArchSpringY, centerZ),
+                        TunnelHalfW + 0.04f, ArchCrownY - ArchSpringY, brickMat);
+                    BuildArchSpandrelHeaderMesh("ArchSpandrel_BayW", go.transform, new Vector3(bayXMin, ArchSpringY, centerZ),
+                        Vector3.left, TunnelHalfW + 0.04f, ArchCrownY - ArchSpringY, brickMat);
+                }
+                if (xMax > bayXMax + 0.1f)
+                {
+                    BuildBarrelVaultArchMesh("Vault_Arch_East", go.transform, new Vector3(bayXMax, ArchSpringY, centerZ), new Vector3(xMax, ArchSpringY, centerZ),
+                        TunnelHalfW + 0.04f, ArchCrownY - ArchSpringY, brickMat);
+                    BuildArchSpandrelHeaderMesh("ArchSpandrel_BayE", go.transform, new Vector3(bayXMax, ArchSpringY, centerZ),
+                        Vector3.right, TunnelHalfW + 0.04f, ArchCrownY - ArchSpringY, brickMat);
+                }
 
+                // Side upper masonry walls & flat perforated ceiling framing the real circular chimney opening
+                float upperH = ArchCrownY - ArchSpringY;
+                float upperMidY = ArchSpringY + upperH * 0.5f;
+                CreateBox("ShaftBay_UpperWall_S", go.transform, new Vector3(manholeHoleX, upperMidY, centerZ - TunnelHalfW - 0.14f), new Vector3(bayHalfX * 2f + 0.08f, upperH + 0.04f, 0.28f), brickMat, true);
+                CreateBox("ShaftBay_UpperWall_N", go.transform, new Vector3(manholeHoleX, upperMidY, centerZ + TunnelHalfW + 0.14f), new Vector3(bayHalfX * 2f + 0.08f, upperH + 0.04f, 0.28f), brickMat, true);
+
+                BuildCeilingWithCircularShaftAperture(go.transform, "ShaftBay_Ceiling",
+                    bayXMin - 0.04f, bayXMax + 0.04f, centerZ - TunnelHalfW - 0.28f, centerZ + TunnelHalfW + 0.28f,
+                    manholeHoleX, manholeHoleZ, 0.45f, brickMat);
+            }
+            else
+            {
+                BuildBarrelVaultArchMesh("Vault_Arch", go.transform, new Vector3(xMin, ArchSpringY, centerZ), new Vector3(xMax, ArchSpringY, centerZ),
+                    TunnelHalfW + 0.04f, ArchCrownY - ArchSpringY, brickMat);
+            }
+            // Solid Brick Spandrel Bulkheads at BOTH outer ends of every EW tunnel (ZERO open corner triangles to sky/street!)
+            BuildArchSpandrelHeaderMesh("ArchSpandrel_Start", go.transform, new Vector3(xMin + (wallInsetStart > 0.01f ? 0.02f : 0f), ArchSpringY, centerZ),
+                Vector3.right, TunnelHalfW + 0.04f, ArchCrownY - ArchSpringY, brickMat);
+            BuildArchSpandrelHeaderMesh("ArchSpandrel_End", go.transform, new Vector3(xMax - (wallInsetEnd > 0.01f ? 0.02f : 0f), ArchSpringY, centerZ),
+                Vector3.left, TunnelHalfW + 0.04f, ArchCrownY - ArchSpringY, brickMat);
+
+            float pipeSideSign = (!float.IsNaN(manholeHoleZ) && manholeHoleZ > centerZ) ? -1f : 1f;
             var pipe = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            pipe.name = "UtilityPipe_North";
+            pipe.name = pipeSideSign > 0f ? "UtilityPipe_North" : "UtilityPipe_South";
             pipe.transform.SetParent(go.transform);
-            pipe.transform.position = new Vector3(midX, ArchSpringY + 0.05f, centerZ + TunnelHalfW - 0.14f);
+            pipe.transform.position = new Vector3(wallMidX, ArchSpringY + 0.05f, centerZ + pipeSideSign * (TunnelHalfW - 0.14f));
             pipe.transform.rotation = Quaternion.Euler(0f, 0f, 90f);
-            pipe.transform.localScale = new Vector3(0.14f, length * 0.5f, 0.14f);
+            pipe.transform.localScale = new Vector3(0.14f, wallLen * 0.5f, 0.14f);
             pipe.GetComponent<MeshRenderer>().sharedMaterial = ironMat;
             UnityEngine.Object.DestroyImmediate(pipe.GetComponent<Collider>());
 
@@ -474,7 +575,7 @@ namespace MyVirtualCommunity.Editor
             {
                 CreateBox($"Rib_S_{x:F0}", go.transform, new Vector3(x, wallCenterY, centerZ - TunnelHalfW + 0.07f), new Vector3(0.24f, wallH - 0.10f, 0.14f), wallMat, false);
                 CreateBox($"Rib_N_{x:F0}", go.transform, new Vector3(x, wallCenterY, centerZ + TunnelHalfW - 0.07f), new Vector3(0.24f, wallH - 0.10f, 0.14f), wallMat, false);
-                CreateBox($"PipeClamp_{x:F0}", go.transform, new Vector3(x, ArchSpringY + 0.05f, centerZ + TunnelHalfW - 0.14f), new Vector3(0.09f, 0.20f, 0.24f), ironMat, false);
+                CreateBox($"PipeClamp_{x:F0}", go.transform, new Vector3(x, ArchSpringY + 0.05f, centerZ + pipeSideSign * (TunnelHalfW - 0.14f)), new Vector3(0.09f, 0.20f, 0.24f), ironMat, false);
             }
 
             System.Random rng = new System.Random(seed);
@@ -488,13 +589,14 @@ namespace MyVirtualCommunity.Editor
                 CreateMaintenanceBulkheadLight(lName, go.transform,
                     new Vector3(x, ArchSpringY + 0.04f, centerZ - TunnelHalfW + 0.14f),
                     isDead ? deadBulbMat : bulbMat, ironMat,
-                    intensity: isDead ? 0f : 1.15f, range: 8.5f, addLight: !isDead);
+                    intensity: isDead ? 0f : 0.65f, range: 6.8f, addLight: !isDead);
                 lightIdx++;
             }
         }
 
         private static void BuildRampedOutflowTunnelNS(string name, Transform parent, float centerX, float zStart, float zEnd,
-            float yStart, float yEnd, Material wallMat, Material walkwayMat, Material brickMat, Material waterMat)
+            float yStart, float yEnd, Material wallMat, Material walkwayMat, Material brickMat, Material waterMat,
+            float archHeight = 0.86f, bool addMidLight = false, Material bulbMat = null, Material ironMat = null)
         {
             float dz = zEnd - zStart;
             float dy = yEnd - yStart;
@@ -506,21 +608,29 @@ namespace MyVirtualCommunity.Editor
             go.transform.position = new Vector3(centerX, 0.5f * (yStart + yEnd), 0.5f * (zStart + zEnd));
             go.transform.rotation = Quaternion.Euler(pitchDeg, 0f, 0f);
 
-            // Exact slopeLen (zero overlap into Tunnel_Juarez_NorthTrunk or Outfall_Apron!)
+            // Slight +0.16m length overlap on sloped ends seals acute bevel joints between flat & ramped decks cleanly!
+            float deckLen = slopeLen + 0.16f;
             float walkW = TunnelHalfW - ChannelHalfW;
-            CreateBoxLocal("Walkway_West", go.transform, new Vector3(-(ChannelHalfW + walkW * 0.5f), -0.15f, 0f), new Vector3(walkW, 0.30f, slopeLen), walkwayMat, true);
-            CreateBoxLocal("Walkway_East", go.transform, new Vector3(+(ChannelHalfW + walkW * 0.5f), -0.15f, 0f), new Vector3(walkW, 0.30f, slopeLen), walkwayMat, true);
-            CreateBoxLocal("Channel_Bed", go.transform, new Vector3(0f, -0.34f, 0f), new Vector3(ChannelHalfW * 2f, 0.24f, slopeLen), wallMat, true);
-            CreateBoxLocal("Channel_Water", go.transform, new Vector3(0f, -0.14f, 0f), new Vector3(ChannelHalfW * 2f - 0.02f, 0.02f, slopeLen), waterMat, false);
+            CreateBoxLocal("Walkway_West", go.transform, new Vector3(-(ChannelHalfW + walkW * 0.5f), -0.15f, 0f), new Vector3(walkW, 0.30f, deckLen), walkwayMat, true);
+            CreateBoxLocal("Walkway_East", go.transform, new Vector3(+(ChannelHalfW + walkW * 0.5f), -0.15f, 0f), new Vector3(walkW, 0.30f, deckLen), walkwayMat, true);
+            CreateBoxLocal("Channel_Bed", go.transform, new Vector3(0f, -0.34f, 0f), new Vector3(ChannelHalfW * 2f, 0.24f, deckLen), wallMat, true);
+            CreateBoxLocal("Channel_Water", go.transform, new Vector3(0f, -0.14f, 0f), new Vector3(ChannelHalfW * 2f - 0.02f, 0.02f, deckLen), waterMat, false);
 
-            float wallH = 1.75f;
-            CreateBoxLocal("Wall_West", go.transform, new Vector3(-(TunnelHalfW + 0.14f), 0.72f, 0f), new Vector3(0.28f, wallH, slopeLen), wallMat, true);
-            CreateBoxLocal("Wall_East", go.transform, new Vector3(+(TunnelHalfW + 0.14f), 0.72f, 0f), new Vector3(0.28f, wallH, slopeLen), wallMat, true);
+            float wallH = 1.85f;
+            CreateBoxLocal("Wall_West", go.transform, new Vector3(-(TunnelHalfW + 0.14f), 0.78f, 0f), new Vector3(0.28f, wallH, deckLen), wallMat, true);
+            CreateBoxLocal("Wall_East", go.transform, new Vector3(+(TunnelHalfW + 0.14f), 0.78f, 0f), new Vector3(0.28f, wallH, deckLen), wallMat, true);
 
-            BuildBarrelVaultArchMesh("OutflowRamp_VaultArch", parent,
+            BuildBarrelVaultArchMesh($"{name}_VaultArch", parent,
                 new Vector3(centerX, yStart + 1.45f, zStart),
                 new Vector3(centerX, yEnd + 1.45f, zEnd),
-                TunnelHalfW + 0.04f, 1.15f, brickMat);
+                TunnelHalfW + 0.04f, archHeight, brickMat);
+
+            if (addMidLight && bulbMat != null && ironMat != null)
+            {
+                CreateMaintenanceBulkheadLight($"{name}_Lamp", parent,
+                    new Vector3(centerX - TunnelHalfW + 0.14f, 0.5f * (yStart + yEnd) + 1.48f, 0.5f * (zStart + zEnd)),
+                    bulbMat, ironMat, intensity: 0.75f, range: 7.5f, addLight: true);
+            }
         }
 
         private static void BuildBarrelVaultArchMesh(string name, Transform parent, Vector3 startSpringCenter, Vector3 endSpringCenter,
@@ -560,13 +670,74 @@ namespace MyVirtualCommunity.Editor
             mc.sharedMesh = go.GetComponent<MeshFilter>().sharedMesh;
         }
 
+        /// <summary>
+        /// Builds a solid double-sided brick spandrel bulkhead wall sealing the exact triangular gaps
+        /// between the top curve of a barrel-vault tunnel arch and the rectangular chamber/bay/vault ceiling above!
+        /// Eliminates 100% of open sky/street-underside gaps above tunnel arches.
+        /// </summary>
+        private static void BuildArchSpandrelHeaderMesh(string name, Transform parent, Vector3 springCenter, Vector3 dirNormal,
+            float halfWidth, float archHeight, Material mat)
+        {
+            const int arcSegs = 8;
+            Vector3 fwd = dirNormal.normalized;
+            Vector3 right = Vector3.Cross(Vector3.up, fwd).normalized;
+            Vector3 up = Vector3.up;
+            float topY = archHeight + 0.12f; // Tucks cleanly into ceiling slab above (ZERO hairline gaps!)
+
+            var verts = new List<Vector3>();
+            var tris = new List<int>();
+            var uvs = new List<Vector2>();
+
+            void AddDoubleQuad(Vector3 v0, Vector3 v1, Vector3 v2, Vector3 v3, Vector2 u0, Vector2 u1, Vector2 u2, Vector2 u3)
+            {
+                AddQuadMesh(verts, tris, uvs, v0, v1, v2, v3, u0, u1, u2, u3);
+                AddQuadMesh(verts, tris, uvs, v3, v2, v1, v0, u3, u2, u1, u0);
+            }
+
+            for (int i = 0; i < arcSegs; i++)
+            {
+                float a0 = Mathf.PI * ((float)i / arcSegs);
+                float a1 = Mathf.PI * ((float)(i + 1) / arcSegs);
+
+                float x0 = Mathf.Cos(a0) * halfWidth;
+                float y0 = Mathf.Sin(a0) * archHeight;
+                float x1 = Mathf.Cos(a1) * halfWidth;
+                float y1 = Mathf.Sin(a1) * archHeight;
+
+                Vector3 b0 = springCenter + right * x0 + up * y0;
+                Vector3 b1 = springCenter + right * x1 + up * y1;
+                Vector3 t1 = springCenter + right * x1 + up * topY;
+                Vector3 t0 = springCenter + right * x0 + up * topY;
+
+                AddDoubleQuad(b0, b1, t1, t0,
+                    new Vector2(x0 * 0.45f, y0 * 0.65f),
+                    new Vector2(x1 * 0.45f, y1 * 0.65f),
+                    new Vector2(x1 * 0.45f, topY * 0.65f),
+                    new Vector2(x0 * 0.45f, topY * 0.65f));
+            }
+
+            // Slight outer masonry ears (±0.18m past halfWidth) tucking solidly into corner jambs/cheeks
+            float earOut = halfWidth + 0.18f;
+            AddDoubleQuad(
+                springCenter + right * halfWidth, springCenter + right * earOut,
+                springCenter + right * earOut + up * topY, springCenter + right * halfWidth + up * topY,
+                new Vector2(0f, 0f), new Vector2(0.2f, 0f), new Vector2(0.2f, 0.8f), new Vector2(0f, 0.8f));
+            AddDoubleQuad(
+                springCenter - right * earOut, springCenter - right * halfWidth,
+                springCenter - right * halfWidth + up * topY, springCenter - right * earOut + up * topY,
+                new Vector2(0f, 0f), new Vector2(0.2f, 0f), new Vector2(0.2f, 0.8f), new Vector2(0f, 0.8f));
+
+            CreateMeshObject(name, parent, verts, tris, uvs, mat, ShadowCastingMode.TwoSided);
+        }
+
         // =========================================================================
         // RECESSED-CHANNEL JUNCTION CHAMBERS (ZERO COPLANAR FLOOR OVERLAP!)
         // =========================================================================
 
         private static void BuildJunctionChamber(string name, Transform parent, float cx, float cz,
             bool openN, bool openS, bool openE, bool openW,
-            Material wallMat, Material walkwayMat, Material brickMat, Material waterMat, Material ironMat, Material bulbMat)
+            Material wallMat, Material walkwayMat, Material brickMat, Material waterMat, Material ironMat, Material bulbMat,
+            float holeWorldX = float.NaN, float holeWorldZ = float.NaN)
         {
             float half = JunctionHalf; // Exact 2.20m matching tunnel start/end!
             var go = new GameObject(name);
@@ -591,8 +762,17 @@ namespace MyVirtualCommunity.Editor
             if (!openE) CreateBox("ClosedWalk_E", go.transform, new Vector3(cx + padOff, WalkwayY - 0.15f, cz), new Vector3(padSize, 0.30f, ChannelHalfW * 2f), walkwayMat, true);
             if (!openW) CreateBox("ClosedWalk_W", go.transform, new Vector3(cx - padOff, WalkwayY - 0.15f, cz), new Vector3(padSize, 0.30f, ChannelHalfW * 2f), walkwayMat, true);
 
-            // Ceiling slab at ArchCrownY
-            CreateBox("Chamber_Ceiling", go.transform, new Vector3(cx, ArchCrownY + 0.12f, cz), new Vector3(half * 2f + 0.30f, 0.24f, half * 2f + 0.30f), brickMat, true);
+            // Ceiling slab at ArchCrownY with REAL open manhole shaft aperture!
+            if (!float.IsNaN(holeWorldX) && !float.IsNaN(holeWorldZ))
+            {
+                BuildCeilingWithCircularShaftAperture(go.transform, "Chamber_Ceiling",
+                    cx - half - 0.15f, cx + half + 0.15f, cz - half - 0.15f, cz + half + 0.15f,
+                    holeWorldX, holeWorldZ, 0.45f, brickMat);
+            }
+            else
+            {
+                CreateBox("Chamber_Ceiling", go.transform, new Vector3(cx, ArchCrownY + 0.12f, cz), new Vector3(half * 2f + 0.30f, 0.24f, half * 2f + 0.30f), brickMat, true);
+            }
 
             float wallH = ArchCrownY - WalkwayY + 0.05f;
             float wallY = WalkwayY + wallH * 0.5f;
@@ -610,12 +790,46 @@ namespace MyVirtualCommunity.Editor
             CreateBox("Jamb_SW", go.transform, new Vector3(cx - jambOff, wallY, cz - jambOff), new Vector3(jambSize, wallH, jambSize), brickMat, true);
             CreateBox("Jamb_SE", go.transform, new Vector3(cx + jambOff, wallY, cz - jambOff), new Vector3(jambSize, wallH, jambSize), brickMat, true);
 
-            // Dim moody maintenance lamp inside junction
-            CreateMaintenanceBulkheadLight("Chamber_Lamp", go.transform, new Vector3(cx - 1.55f, ArchSpringY + 0.22f, cz + 1.55f),
-                bulbMat, ironMat, intensity: 1.85f, range: 10.5f, addLight: true);
+            // Dim moody maintenance lamp mounted on a corner OPPOSITE the manhole shaft so players never spawn face-to-face with the cage!
+            float lampOffX = (!float.IsNaN(holeWorldX) && holeWorldX < cx) ? +1.55f : -1.55f;
+            float lampOffZ = (!float.IsNaN(holeWorldZ) && holeWorldZ > cz) ? -1.55f : +1.55f;
+            CreateMaintenanceBulkheadLight("Chamber_Lamp", go.transform, new Vector3(cx + lampOffX, ArchSpringY + 0.22f, cz + lampOffZ),
+                bulbMat, ironMat, intensity: 1.05f, range: 8.2f, addLight: true);
         }
 
-        private static void BuildBarredEndCap(string name, Transform parent, Vector3 centerFloor, float yawDeg, Material wallMat, Material ironMat)
+        /// <summary>
+        /// Splits a flat ceiling slab into 4 non-overlapping strips framing a real open square shaft aperture
+        /// so the player can look straight up inside the hollow circular brick manhole chimney!
+        /// </summary>
+        private static void BuildCeilingWithCircularShaftAperture(Transform parent, string prefix,
+            float xMin, float xMax, float zMin, float zMax, float holeX, float holeZ, float holeHalf, Material brickMat)
+        {
+            float yCenter = ArchCrownY + 0.12f;
+            float h = 0.24f;
+            float hx0 = Mathf.Clamp(holeX - holeHalf, xMin, xMax);
+            float hx1 = Mathf.Clamp(holeX + holeHalf, xMin, xMax);
+            float hz0 = Mathf.Clamp(holeZ - holeHalf, zMin, zMax);
+            float hz1 = Mathf.Clamp(holeZ + holeHalf, zMin, zMax);
+
+            // South strip (full X width, zMin -> hz0)
+            if (hz0 - zMin > 0.04f)
+                CreateBox($"{prefix}_S", parent, new Vector3(0.5f * (xMin + xMax), yCenter, 0.5f * (zMin + hz0)),
+                    new Vector3(xMax - xMin, h, hz0 - zMin), brickMat, true);
+            // North strip (full X width, hz1 -> zMax)
+            if (zMax - hz1 > 0.04f)
+                CreateBox($"{prefix}_N", parent, new Vector3(0.5f * (xMin + xMax), yCenter, 0.5f * (hz1 + zMax)),
+                    new Vector3(xMax - xMin, h, zMax - hz1), brickMat, true);
+            // West middle strip (xMin -> hx0, hz0 -> hz1)
+            if (hx0 - xMin > 0.04f && hz1 - hz0 > 0.04f)
+                CreateBox($"{prefix}_W", parent, new Vector3(0.5f * (xMin + hx0), yCenter, 0.5f * (hz0 + hz1)),
+                    new Vector3(hx0 - xMin, h, hz1 - hz0), brickMat, true);
+            // East middle strip (hx1 -> xMax, hz0 -> hz1)
+            if (xMax - hx1 > 0.04f && hz1 - hz0 > 0.04f)
+                CreateBox($"{prefix}_E", parent, new Vector3(0.5f * (hx1 + xMax), yCenter, 0.5f * (hz0 + hz1)),
+                    new Vector3(xMax - hx1, h, hz1 - hz0), brickMat, true);
+        }
+
+        private static void BuildBarredEndCap(string name, Transform parent, Vector3 centerFloor, float yawDeg, Material wallMat, Material ironMat, Material clausuradoMat)
         {
             var go = new GameObject(name);
             go.transform.SetParent(parent);
@@ -627,6 +841,19 @@ namespace MyVirtualCommunity.Editor
             for (float bx = -1.55f; bx <= 1.56f; bx += 0.28f)
             {
                 CreateBoxLocal($"Bar_{bx:F2}", go.transform, new Vector3(bx, 1.15f, 0f), new Vector3(0.055f, 2.55f, 0.055f), ironMat, false);
+            }
+            // Clear weathered municipal sign on closed East dead-end grates so players know they are NOT the Rio Bravo exit!
+            if (clausuradoMat != null)
+            {
+                var signPlate = CreateBoxLocal("Clausurado_Plate", go.transform, new Vector3(0f, 1.48f, -0.05f), new Vector3(1.18f, 0.42f, 0.03f), ironMat, false);
+                var q = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                q.name = "Clausurado_TextFace";
+                q.transform.SetParent(signPlate.transform, false);
+                q.transform.localPosition = new Vector3(0f, 0f, -0.56f);
+                q.transform.localRotation = Quaternion.identity;
+                q.transform.localScale = new Vector3(0.96f, 0.92f, 1f);
+                q.GetComponent<MeshRenderer>().sharedMaterial = clausuradoMat;
+                UnityEngine.Object.DestroyImmediate(q.GetComponent<Collider>());
             }
             var colGo = new GameObject("Grate_Blocker");
             colGo.transform.SetParent(go.transform, false);
@@ -692,8 +919,8 @@ namespace MyVirtualCommunity.Editor
                         new Vector3(faceLen, lowerH, 0.45f), mossMat, true);
                     lowerW.transform.localRotation = Quaternion.Euler(0f, angleDeg, 0f);
 
-                    // Left & Right side cheek walls framing the exact 3.40m portal opening above WalkwayY
-                    float upperH = ceilingY - WalkwayY;
+                    // Left & Right side cheek walls framing the exact 3.40m portal opening above WalkwayY (4mm under ceiling cap -> ZERO Z-fighting!)
+                    float upperH = ceilingY - WalkwayY - 0.004f;
                     float cheekW = (faceLen - (TunnelHalfW * 2f)) * 0.5f;
                     float cheekOffset = TunnelHalfW + cheekW * 0.5f;
                     var leftCheek = CreateBoxLocal($"Vault_PortalCheekL_{i}", vault.transform,
@@ -718,11 +945,11 @@ namespace MyVirtualCommunity.Editor
                     new Vector3(colPos.x, VaultBasinWaterY + 0.42f, colPos.z), new Vector3(0.90f, 0.90f, 0.90f), mossMat, false);
                 stain.transform.localRotation = Quaternion.Euler(0f, angleDeg + 22.5f, 0f);
 
-                // Rusted Iron Guardrail on inner lip (slightly aged/sagging tilt on two segments, skip SW stair opening i==5!)
+                // Rusted Iron Guardrail on inner lip (side i==5 leaves an exact 1.60m centered opening for the SW staircase with flanking rails!)
+                float railR = rIn + 0.09f;
+                float railLen = 2f * rIn * Mathf.Tan(Mathf.PI / sides);
                 if (i != 5)
                 {
-                    float railR = rIn + 0.09f;
-                    float railLen = 2f * rIn * Mathf.Tan(Mathf.PI / sides);
                     float sagRoll = (i == 2) ? 3.2f : ((i == 7) ? -2.4f : 0f);
                     var topRail = CreateBoxLocal($"Vault_RailTop_{i}", vault.transform,
                         new Vector3(faceDir.x * railR, WalkwayY + 0.96f, faceDir.z * railR),
@@ -743,33 +970,155 @@ namespace MyVirtualCommunity.Editor
                         post.transform.localRotation = Quaternion.Euler(0f, angleDeg, 0f);
                     }
                 }
+                else
+                {
+                    // Flanking left & right balcony guardrails framing the exact 1.60m SW staircase opening cleanly!
+                    float stairHalfOpen = 0.80f;
+                    float halfEdge = railLen * 0.5f;
+                    float flankLen = Mathf.Max(0.2f, halfEdge - stairHalfOpen);
+                    float flankCenterOff = stairHalfOpen + flankLen * 0.5f;
+                    foreach (int sgn in new[] { -1, 1 })
+                    {
+                        string sideTag = sgn < 0 ? "L" : "R";
+                        Vector3 fCenter = faceDir * railR + faceRight * (sgn * flankCenterOff);
+                        var topFlank = CreateBoxLocal($"Vault_RailTop_5_{sideTag}", vault.transform,
+                            fCenter + Vector3.up * (WalkwayY + 0.96f), new Vector3(flankLen, 0.06f, 0.06f), rustedIronMat, true);
+                        topFlank.transform.localRotation = Quaternion.Euler(0f, angleDeg, 0f);
+
+                        var midFlank = CreateBoxLocal($"Vault_RailMid_5_{sideTag}", vault.transform,
+                            fCenter + Vector3.up * (WalkwayY + 0.50f), new Vector3(flankLen, 0.045f, 0.045f), rustedIronMat, false);
+                        midFlank.transform.localRotation = Quaternion.Euler(0f, angleDeg, 0f);
+
+                        Vector3 outerPostPos = faceDir * railR + faceRight * (sgn * (halfEdge - 0.08f)) + Vector3.up * (WalkwayY + 0.48f);
+                        var outerPost = CreateBoxLocal($"Vault_RailPost_5_Outer_{sideTag}", vault.transform, outerPostPos,
+                            new Vector3(0.055f, 0.96f, 0.055f), rustedIronMat, false);
+                        outerPost.transform.localRotation = Quaternion.Euler(0f, angleDeg, 0f);
+                    }
+                }
             }
 
-            // 5. Industrial Metal Staircase with side stringer beams & handrail descending SW Balcony -> Central Island
-            const int steps = 16;
-            Vector3 stairTop = new Vector3(-4.15f, WalkwayY, -4.15f);
-            Vector3 stairBot = new Vector3(-2.10f, -6.08f, -1.60f);
+            // 5. Symmetrical Heavy Industrial Staircase (EXACT 45° radial alignment: SW Balcony -> Integrated Circular Island Apron!)
+            float swRad = 225f * Mathf.Deg2Rad;
+            Vector3 swFaceDir = new Vector3(Mathf.Sin(swRad), 0f, Mathf.Cos(swRad));   // (-0.7071, 0, -0.7071) outward SW
+            Vector3 inwardDir = -swFaceDir;                                             // (+0.7071, 0, +0.7071) straight NE to island center
+            Vector3 stairSide = Vector3.Cross(Vector3.up, inwardDir).normalized;        // (+0.7071, 0, -0.7071) Right when descending
+            Quaternion stairYawRot = Quaternion.Euler(0f, 45f, 0f);
+
+            const float islandTopY = -6.08f;
+            const float stairHalfRail = 0.80f; // Matches SW balcony flank guardrail opening EXACTLY!
+            Vector3 stairTop = swFaceDir * 6.00f + Vector3.up * WalkwayY;
+            Vector3 stairBot = swFaceDir * 2.88f + Vector3.up * islandTopY;
             Vector3 stairDelta = stairBot - stairTop;
             float stairLen = stairDelta.magnitude;
             Vector3 stairMid = 0.5f * (stairTop + stairBot);
-            Quaternion stairRot = Quaternion.LookRotation(stairDelta.normalized, Vector3.up);
-            Vector3 stairSide = Vector3.Cross(Vector3.up, stairDelta.normalized).normalized;
+            Quaternion stairSlopeRot = Quaternion.LookRotation(stairDelta.normalized, Vector3.up);
 
-            var strL = CreateBoxLocal("Vault_StairStringer_L", vault.transform, stairMid - stairSide * 0.72f - Vector3.up * 0.14f, new Vector3(0.08f, 0.24f, stairLen + 0.3f), darkIronMat, false);
-            strL.transform.localRotation = stairRot;
-            var strR = CreateBoxLocal("Vault_StairStringer_R", vault.transform, stairMid + stairSide * 0.72f - Vector3.up * 0.14f, new Vector3(0.08f, 0.24f, stairLen + 0.3f), darkIronMat, false);
-            strR.transform.localRotation = stairRot;
-            var stairHandrailR = CreateBoxLocal("Vault_StairHandrail_R", vault.transform, stairMid + stairSide * 0.72f + Vector3.up * 0.85f, new Vector3(0.05f, 0.05f, stairLen + 0.2f), rustedIronMat, false);
-            stairHandrailR.transform.localRotation = stairRot;
+            // Top bolted dark-iron threshold plate sitting flush on SW balcony lip
+            var topPlate = CreateBoxLocal("Vault_Stair_TopThresholdPlate", vault.transform,
+                swFaceDir * 6.12f + Vector3.up * (WalkwayY + 0.008f), new Vector3(1.68f, 0.028f, 0.34f), darkIronMat, false);
+            topPlate.transform.localRotation = stairYawRot;
 
-            for (int s = 0; s <= steps; s++)
+            // Twin heavy symmetric angled C-channel iron stringer beams (Left & Right)
+            foreach (int sgn in new[] { -1, 1 })
             {
-                float t = (float)s / steps;
-                Vector3 sp = Vector3.Lerp(stairTop, stairBot, t);
-                var step = CreateBoxLocal($"Vault_StairStep_{s}", vault.transform,
-                    sp - new Vector3(0f, 0.06f, 0f), new Vector3(1.45f, 0.12f, 0.36f), rustedIronMat, true);
-                step.transform.localRotation = Quaternion.Euler(0f, 38f, 0f);
+                string tag = sgn < 0 ? "L" : "R";
+                Vector3 sideOff = stairSide * (sgn * stairHalfRail);
+
+                var stringer = CreateBoxLocal($"Vault_StairStringer_{tag}", vault.transform,
+                    stairMid + sideOff - Vector3.up * 0.14f, new Vector3(0.09f, 0.28f, stairLen + 0.12f), darkIronMat, false);
+                stringer.transform.localRotation = stairSlopeRot;
+
+                // Full-length tubular Top Handrail (+0.96m) & Mid Safety Rail (+0.50m) matching balcony rail heights EXACTLY!
+                var topRail = CreateBoxLocal($"Vault_StairHandrail_{tag}", vault.transform,
+                    stairMid + sideOff + Vector3.up * 0.96f, new Vector3(0.055f, 0.055f, stairLen + 0.10f), rustedIronMat, false);
+                topRail.transform.localRotation = stairSlopeRot;
+
+                var midRail = CreateBoxLocal($"Vault_StairMidrail_{tag}", vault.transform,
+                    stairMid + sideOff + Vector3.up * 0.50f, new Vector3(0.040f, 0.040f, stairLen + 0.08f), rustedIronMat, false);
+                midRail.transform.localRotation = stairSlopeRot;
+
+                // 5 vertical stanchion posts per side (top balcony newel, 3 stringer posts, bottom apron newel + iron base plates!)
+                for (int p = 0; p <= 4; p++)
+                {
+                    float tp = p / 4f;
+                    Vector3 basePt = Vector3.Lerp(stairTop, stairBot, tp) + sideOff;
+                    bool isEndNewel = (p == 0 || p == 4);
+                    float postBottom = isEndNewel ? basePt.y : (basePt.y - 0.12f);
+                    float postTop = basePt.y + 0.98f;
+                    float postH = postTop - postBottom;
+                    float postW = isEndNewel ? 0.070f : 0.052f;
+
+                    var post = CreateBoxLocal($"Vault_StairPost_{tag}_{p}", vault.transform,
+                        new Vector3(basePt.x, postBottom + postH * 0.5f, basePt.z),
+                        new Vector3(postW, postH, postW), rustedIronMat, false);
+                    post.transform.localRotation = stairYawRot;
+
+                    if (isEndNewel)
+                    {
+                        // Heavy bolted base flange plate anchoring newel cleanly into concrete balcony / bottom landing apron
+                        var flange = CreateBoxLocal($"Vault_StairPostFlange_{tag}_{p}", vault.transform,
+                            new Vector3(basePt.x, basePt.y + 0.015f, basePt.z),
+                            new Vector3(0.16f, 0.03f, 0.16f), darkIronMat, false);
+                        flange.transform.localRotation = stairYawRot;
+                    }
+                }
+
+                // Invisible side safety rail collider keeping the player inside the stairway
+                var guardCol = new GameObject($"Vault_StairGuardCollider_{tag}");
+                guardCol.transform.SetParent(vault.transform, false);
+                guardCol.transform.localPosition = stairMid + sideOff + Vector3.up * 0.55f;
+                guardCol.transform.localRotation = stairSlopeRot;
+                var gbc = guardCol.AddComponent<BoxCollider>();
+                gbc.size = new Vector3(0.10f, 1.05f, stairLen + 0.12f);
             }
+
+            // 15 evenly spaced industrial steel stair treads (exact 18cm rise per step, exact 45° radial alignment!) + anti-slip nosing
+            const int risers = 16;
+            float rise = (WalkwayY - islandTopY) / risers; // 0.180m exact
+            for (int s = 1; s < risers; s++)
+            {
+                float t = (s - 0.5f) / risers;
+                Vector3 radialPt = Vector3.Lerp(new Vector3(stairTop.x, 0f, stairTop.z), new Vector3(stairBot.x, 0f, stairBot.z), t);
+                float treadTopY = WalkwayY - s * rise;
+                Vector3 treadCenter = new Vector3(radialPt.x, treadTopY - 0.028f, radialPt.z);
+
+                var step = CreateBoxLocal($"Vault_StairStep_{s}", vault.transform,
+                    treadCenter, new Vector3(1.50f, 0.056f, 0.28f), rustedIronMat, false);
+                step.transform.localRotation = stairYawRot;
+
+                var nosing = CreateBoxLocal($"Vault_StairNosing_{s}", vault.transform,
+                    treadCenter + inwardDir * 0.13f + Vector3.up * 0.016f, new Vector3(1.50f, 0.026f, 0.036f), darkIronMat, false);
+                nosing.transform.localRotation = stairYawRot;
+            }
+
+            // Single smooth invisible walkable ramp collider flush with tread noses -> silky-smooth CharacterController climb up & down!
+            var smoothRamp = new GameObject("Vault_Stair_SmoothWalkCollider");
+            smoothRamp.transform.SetParent(vault.transform, false);
+            smoothRamp.transform.localPosition = stairMid - Vector3.up * 0.10f;
+            smoothRamp.transform.localRotation = stairSlopeRot;
+            var rampBc = smoothRamp.AddComponent<BoxCollider>();
+            rampBc.size = new Vector3(1.52f, 0.18f, stairLen + 0.24f);
+
+            // Integrated Concrete Bottom Landing Apron & Iron Deck Plate fusing the stair foot SQUARELY into the circular island!
+            // Concrete pier top sits strictly at -6.095m (1.5cm under circular plinth top -6.080m -> ZERO coplanar Z-fighting!)
+            float apronTopY = islandTopY - 0.015f;
+            float apronH = apronTopY - VaultBasinFloorY;
+            var botApron = CreateBoxLocal("Vault_Stair_BottomApron", vault.transform,
+                swFaceDir * 2.52f + Vector3.up * (VaultBasinFloorY + apronH * 0.5f),
+                new Vector3(1.94f, apronH, 1.06f), walkwayMat, true);
+            botApron.transform.localRotation = stairYawRot;
+
+            // Algae/sludge waterline collar strictly hugging the wet lower concrete edge (top = -6.15m, 7cm BELOW island floor!)
+            var apronAlgae = CreateBoxLocal("Vault_Stair_ApronAlgae", vault.transform,
+                swFaceDir * 2.58f + Vector3.up * (VaultBasinWaterY + 0.05f),
+                new Vector3(1.98f, 0.16f, 0.96f), mossMat, false);
+            apronAlgae.transform.localRotation = stairYawRot;
+
+            // Heavy bolted rusted-iron landing deck plate bridging flush (+1.4cm proud) from stair foot onto the circular stone island!
+            var botLandingPlate = CreateBoxLocal("Vault_Stair_BottomLandingPlate", vault.transform,
+                swFaceDir * 2.60f + Vector3.up * (islandTopY + 0.002f),
+                new Vector3(1.76f, 0.024f, 0.78f), darkIronMat, true);
+            botLandingPlate.transform.localRotation = stairYawRot;
 
             // 6. Central Raised Weathered Island Plinth ("La Guarida" Staging Area — exact flat MeshCollider!)
             var island = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
@@ -838,10 +1187,10 @@ namespace MyVirtualCommunity.Editor
             Vector3 nwPos = new Vector3(Mathf.Sin(nwRad) * (r - 0.04f), WalkwayY + 1.32f, Mathf.Cos(nwRad) * (r - 0.04f));
             SpawnWallDecalLocal("Vault_Graffiti_StillHere_NW", vault.transform, nwPos, 315f, 2.75f, 1.15f, vaultGraffitiMat);
 
-            // 7. Dim, Moody Flickering Hanging Industrial Lamps (much darker & more atmospheric!)
-            CreateHangingVaultLamp("VaultFlicker_Light_N", vault.transform, new Vector3(0f, -1.55f, 5.2f), ceilingY, bulbMat, rustedIronMat, 2.2f, 11.5f);
-            CreateHangingVaultLamp("VaultFlicker_Light_S", vault.transform, new Vector3(0f, -1.55f, -5.2f), ceilingY, bulbMat, rustedIronMat, 1.7f, 11.0f);
-            CreateHangingVaultLamp("VaultFlicker_Light_Basin", vault.transform, new Vector3(0f, -3.75f, 0f), ceilingY, bulbMat, rustedIronMat, 1.9f, 10.5f);
+            // 7. Dim, Moody Flickering Hanging Industrial Lamps (~40% darker so the [F] flashlight dominates!)
+            CreateHangingVaultLamp("VaultFlicker_Light_N", vault.transform, new Vector3(0f, -1.55f, 5.2f), ceilingY, bulbMat, rustedIronMat, 1.25f, 9.0f);
+            CreateHangingVaultLamp("VaultFlicker_Light_S", vault.transform, new Vector3(0f, -1.55f, -5.2f), ceilingY, bulbMat, rustedIronMat, 0.95f, 8.5f);
+            CreateHangingVaultLamp("VaultFlicker_Light_Basin", vault.transform, new Vector3(0f, -3.75f, 0f), ceilingY, bulbMat, rustedIronMat, 1.05f, 8.5f);
 
             var lairAnchor = new GameObject("EvilCharacter_Lair_SpawnAnchor");
             lairAnchor.transform.SetParent(vault.transform, false);
@@ -954,7 +1303,7 @@ namespace MyVirtualCommunity.Editor
                 new Vector3(MariscalAxisX - 1.45f, WalkwayY, -12.0f),
                 new Vector3(MariscalAxisX + 1.45f, WalkwayY, 14.5f),
                 new Vector3(-28.0f, WalkwayY, GardeniasAxisZ + 1.45f),
-                new Vector3(JuarezAxisX - 1.46f, WalkwayY, 58.0f),
+                new Vector3(JuarezAxisX - 1.46f, -8.45f, 58.0f),
                 new Vector3(JuarezAxisX + 1.46f, WalkwayY, 112.0f),
                 new Vector3(JuarezAxisX - 1.46f, WalkwayY, 158.0f),
             };
@@ -985,8 +1334,8 @@ namespace MyVirtualCommunity.Editor
             SpawnWallDecalWorld("Graffiti_StillHere_GardeniasW", agingRoot, new Vector3(-32.5f, WalkwayY + 0.96f, GardeniasAxisZ - wOff), 180f, 2.30f, 0.96f, graffitiStillHereMat);
             SpawnWallDecalWorld("CropCircle_1_GardeniasW", agingRoot, new Vector3(-16.5f, WalkwayY + 0.96f, GardeniasAxisZ + wOff), 0f, 1.18f, 1.18f, cropCircle1Mat);
 
-            // Colector Troncal Norte toward Rio Bravo (between ribs at 40.7, 48.7, 56.7, 64.7, 80.7, 104.7, 136.7, 160.7)
-            SpawnWallDecalWorld("Graffiti_GetOut_NorthTrunk", agingRoot, new Vector3(JuarezAxisX + wOff, WalkwayY + 0.96f, 52.7f), 90f, 2.30f, 0.96f, graffitiGetOutMat);
+            // Colector Troncal Norte toward Rio Bravo (including eerie deep -8.45m under-Abasolo crossing!)
+            SpawnWallDecalWorld("Graffiti_GetOut_NorthTrunk", agingRoot, new Vector3(JuarezAxisX + wOff, -8.45f + 0.96f, 59.5f), 90f, 2.30f, 0.96f, graffitiGetOutMat);
             SpawnWallDecalWorld("CropCircle_2_NorthTrunk", agingRoot, new Vector3(JuarezAxisX - wOff, WalkwayY + 0.96f, 84.7f), -90f, 1.22f, 1.22f, cropCircle2Mat);
             SpawnWallDecalWorld("Graffiti_NoMiresAtras_NorthTrunk", agingRoot, new Vector3(JuarezAxisX + wOff, WalkwayY + 0.96f, 116.7f), 90f, 2.35f, 0.98f, graffitiNoMiresMat);
             SpawnWallDecalWorld("CropCircle_3_NorthTrunk", agingRoot, new Vector3(JuarezAxisX - wOff, WalkwayY + 0.96f, 152.7f), -90f, 1.22f, 1.22f, cropCircle3Mat);
@@ -1012,7 +1361,7 @@ namespace MyVirtualCommunity.Editor
                 (new Vector3(JuarezAxisX + TunnelHalfW - 0.08f, WalkwayY + 1.15f, -14.2f), -90f),
                 (new Vector3(JuarezAxisX - TunnelHalfW + 0.08f, WalkwayY + 1.15f, 8.5f), 90f),
                 (new Vector3(MariscalAxisX + TunnelHalfW - 0.08f, WalkwayY + 1.15f, -15.5f), -90f),
-                (new Vector3(JuarezAxisX + TunnelHalfW - 0.08f, WalkwayY + 1.15f, 62.0f), -90f),
+                (new Vector3(JuarezAxisX + TunnelHalfW - 0.08f, -8.45f + 1.15f, 62.0f), -90f),
                 (new Vector3(JuarezAxisX - TunnelHalfW + 0.08f, WalkwayY + 1.15f, 142.0f), 90f),
             };
             for (int i = 0; i < valveSpots.Length; i++)
@@ -1038,7 +1387,8 @@ namespace MyVirtualCommunity.Editor
 
             // 6. Faded Peeling 1958 Municipal Stenciled Concrete Markings (strictly centered between wall ribs!)
             SpawnWallStencil("Stencil_1958_JuarezSouth", agingRoot, new Vector3(JuarezAxisX + wOff, WalkwayY + 1.25f, -29.0f), 90f, stencil1958Mat);
-            SpawnWallStencil("Stencil_RioBravo_VaultNorth", agingRoot, new Vector3(JuarezAxisX - wOff, WalkwayY + 1.25f, 44.7f), -90f, stencilRioMat);
+            SpawnWallStencil("Stencil_RioBravo_VaultNorthEntrance", agingRoot, new Vector3(JuarezAxisX - wOff, WalkwayY + 1.25f, VaultCenterZ + VaultApothem + 2.0f), -90f, stencilRioMat);
+            SpawnWallStencil("Stencil_RioBravo_VaultNorth", agingRoot, new Vector3(JuarezAxisX - wOff, WalkwayY + 1.25f, 83.5f), -90f, stencilRioMat);
             SpawnWallStencil("Stencil_Warn_Mariscal", agingRoot, new Vector3(MariscalAxisX - wOff, WalkwayY + 1.25f, -22.2f), -90f, stencilWarnMat);
             SpawnWallStencil("Stencil_1958_GardeniasW", agingRoot, new Vector3(-24.5f, WalkwayY + 1.25f, GardeniasAxisZ + wOff), 0f, stencil1958Mat);
             SpawnWallStencil("Stencil_RioBravo_MidNorth", agingRoot, new Vector3(JuarezAxisX + wOff, WalkwayY + 1.25f, 128.7f), 90f, stencilRioMat);
@@ -1208,8 +1558,8 @@ namespace MyVirtualCommunity.Editor
             var pl = glowGo.AddComponent<Light>();
             pl.type = LightType.Point;
             pl.color = new Color(1.0f, 0.88f, 0.56f);
-            pl.intensity = 1.45f;
-            pl.range = 4.2f;
+            pl.intensity = 0.85f;
+            pl.range = 3.4f;
             pl.shadows = LightShadows.None;
         }
 
@@ -1219,8 +1569,9 @@ namespace MyVirtualCommunity.Editor
 
         private static void BuildInteractiveManhole(string name, Transform parent, string id, string labelEs, string labelEn,
             Vector3 surfacePos, Vector3 surfaceExitPos, float surfaceExitYaw,
+            Vector2 shaftCenterXZ, float ladderYaw,
             Vector3 undergroundPos, float undergroundYaw, bool triggerBackroomsTwist,
-            Material coverMat, Material darkIronMat, Material brickMat, Material rustedIronMat)
+            Material coverMat, Material darkIronMat, Material brickMat, Material rustedIronMat, Material ventGlowMat)
         {
             var go = new GameObject(name);
             go.transform.SetParent(parent);
@@ -1254,23 +1605,36 @@ namespace MyVirtualCommunity.Editor
             lid.GetComponent<MeshRenderer>().sharedMaterial = coverMat;
             UnityEngine.Object.DestroyImmediate(lid.GetComponent<Collider>());
 
-            var ladderRoot = new GameObject("Underground_LadderShaft");
+            // Underground REAL Open Hollow Circular Brick Chimney Shaft + Unbroken Wall-Bolted Iron Ladder!
+            var ladderRoot = new GameObject($"{name}_UndergroundShaft");
             ladderRoot.transform.SetParent(parent);
-            ladderRoot.transform.position = new Vector3(undergroundPos.x, WalkwayY, undergroundPos.z);
+            ladderRoot.transform.position = new Vector3(shaftCenterXZ.x, WalkwayY, shaftCenterXZ.y);
+            ladderRoot.transform.rotation = Quaternion.Euler(0f, ladderYaw, 0f);
 
-            var shaftCap = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            shaftCap.name = "Shaft_ChimneyNeck";
-            shaftCap.transform.SetParent(ladderRoot.transform, false);
-            shaftCap.transform.localPosition = new Vector3(0f, 2.55f, 0f);
-            shaftCap.transform.localScale = new Vector3(0.95f, 0.35f, 0.95f);
-            shaftCap.GetComponent<MeshRenderer>().sharedMaterial = brickMat;
-            UnityEngine.Object.DestroyImmediate(shaftCap.GetComponent<Collider>());
+            // 1. REAL Hollow 16-sided Circular Brick Chimney Tube rising from ceiling aperture (-0.70m) up cleanly to -0.22m (below street asphalt slab!)
+            float chimneyBotLocalY = (ArchCrownY - 0.10f) - WalkwayY; // +2.50m above WalkwayY (protrudes 10cm below ceiling!)
+            float chimneyTopLocalY = (-0.22f) - WalkwayY;             // +2.98m above WalkwayY (cleanly under street slab underside!)
+            BuildHollowBrickChimneyMesh("Shaft_OpenHollowChimney", ladderRoot.transform,
+                chimneyBotLocalY, chimneyTopLocalY, innerR: 0.44f, outerR: 0.66f, brickMat, darkIronMat, ventGlowMat);
 
-            CreateBoxLocal("Ladder_RailL", ladderRoot.transform, new Vector3(0.45f, 1.35f, -0.22f), new Vector3(0.045f, 2.70f, 0.045f), rustedIronMat, false);
-            CreateBoxLocal("Ladder_RailR", ladderRoot.transform, new Vector3(0.45f, 1.35f, +0.22f), new Vector3(0.045f, 2.70f, 0.045f), rustedIronMat, false);
-            for (int r = 0; r < 8; r++)
+            // 2. Complete Unbroken Rusted-Iron Wall Ladder climbing from WalkwayY (0.0m) ALL THE WAY UP INSIDE THE OPEN SHAFT (+2.94m)!
+            // Local -Z is the wall/shaft back side; local +Z faces inward toward the walkway/player!
+            float ladderH = 2.94f;
+            float ladderZ = -0.35f; // Fits cleanly inside the 0.44m radius circular brick shaft!
+            CreateBoxLocal("Ladder_RailL", ladderRoot.transform, new Vector3(-0.21f, ladderH * 0.5f, ladderZ), new Vector3(0.045f, ladderH, 0.045f), rustedIronMat, false);
+            CreateBoxLocal("Ladder_RailR", ladderRoot.transform, new Vector3(+0.21f, ladderH * 0.5f, ladderZ), new Vector3(0.045f, ladderH, 0.045f), rustedIronMat, false);
+
+            // 10 continuous horizontal rungs climbing straight up into the hollow brick chimney
+            for (int r = 0; r < 10; r++)
             {
-                CreateBoxLocal($"Ladder_Rung_{r}", ladderRoot.transform, new Vector3(0.45f, 0.30f + r * 0.32f, 0f), new Vector3(0.04f, 0.04f, 0.44f), rustedIronMat, false);
+                float ry = 0.24f + r * 0.29f;
+                CreateBoxLocal($"Ladder_Rung_{r}", ladderRoot.transform, new Vector3(0f, ry, ladderZ + 0.01f), new Vector3(0.44f, 0.036f, 0.036f), rustedIronMat, false);
+            }
+            // Bolted wall standoff anchor brackets securing the ladder rails cleanly to the masonry wall & chimney wall
+            foreach (float ay in new[] { 0.45f, 1.40f, 2.35f, 2.82f })
+            {
+                CreateBoxLocal($"Ladder_BracketL_{ay:F1}", ladderRoot.transform, new Vector3(-0.21f, ay, ladderZ - 0.11f), new Vector3(0.04f, 0.04f, 0.22f), darkIronMat, false);
+                CreateBoxLocal($"Ladder_BracketR_{ay:F1}", ladderRoot.transform, new Vector3(+0.21f, ay, ladderZ - 0.11f), new Vector3(0.04f, 0.04f, 0.22f), darkIronMat, false);
             }
 
             var interactable = go.AddComponent<SewerManholeInteractable>();
@@ -1283,6 +1647,67 @@ namespace MyVirtualCommunity.Editor
             interactable.undergroundLandingPosition = undergroundPos;
             interactable.undergroundLandingYaw = undergroundYaw;
             interactable.triggerBackroomsNoClipTwist = triggerBackroomsTwist;
+        }
+
+        /// <summary>
+        /// Generates a TRUE open-bottom hollow 16-sided vertical brick chimney tube with an outer ceiling trim ring
+        /// and a dark cast-iron street manhole lid underside at the top with 2 glowing street-light pick vent slots!
+        /// </summary>
+        private static void BuildHollowBrickChimneyMesh(string name, Transform parent, float botY, float topY,
+            float innerR, float outerR, Material brickMat, Material darkIronMat, Material ventGlowMat)
+        {
+            const int segs = 16;
+            var verts = new List<Vector3>();
+            var tris = new List<int>();
+            var uvs = new List<Vector2>();
+
+            float collarTopY = botY + 0.12f; // Outer trim collar hugging the ceiling aperture
+            for (int i = 0; i < segs; i++)
+            {
+                float a0 = (i / (float)segs) * Mathf.PI * 2f;
+                float a1 = ((i + 1) / (float)segs) * Mathf.PI * 2f;
+                float u0 = i / (float)segs * 2.0f;
+                float u1 = (i + 1) / (float)segs * 2.0f;
+
+                Vector3 in0Bot = new Vector3(Mathf.Sin(a0) * innerR, botY, Mathf.Cos(a0) * innerR);
+                Vector3 in1Bot = new Vector3(Mathf.Sin(a1) * innerR, botY, Mathf.Cos(a1) * innerR);
+                Vector3 in0Top = new Vector3(Mathf.Sin(a0) * innerR, topY, Mathf.Cos(a0) * innerR);
+                Vector3 in1Top = new Vector3(Mathf.Sin(a1) * innerR, topY, Mathf.Cos(a1) * innerR);
+
+                Vector3 out0Bot = new Vector3(Mathf.Sin(a0) * outerR, botY, Mathf.Cos(a0) * outerR);
+                Vector3 out1Bot = new Vector3(Mathf.Sin(a1) * outerR, botY, Mathf.Cos(a1) * outerR);
+                Vector3 out0Col = new Vector3(Mathf.Sin(a0) * outerR, collarTopY, Mathf.Cos(a0) * outerR);
+                Vector3 out1Col = new Vector3(Mathf.Sin(a1) * outerR, collarTopY, Mathf.Cos(a1) * outerR);
+
+                // 1. Inward-facing hollow circular brick chimney walls (visible when looking UP into the hole!)
+                AddQuadMesh(verts, tris, uvs, in0Bot, in0Top, in1Top, in1Bot,
+                    new Vector2(u0, 0f), new Vector2(u0, 1.4f), new Vector2(u1, 1.4f), new Vector2(u1, 0f));
+
+                // 2. Downward-facing hollow rim ring (NO solid center cap -> TRUE circular opening!)
+                AddQuadMesh(verts, tris, uvs, out0Bot, in0Bot, in1Bot, out1Bot,
+                    new Vector2(u0, 0f), new Vector2(u0, 0.25f), new Vector2(u1, 0.25f), new Vector2(u1, 0f));
+
+                // 3. Outward-facing masonry collar skirt protruding 10cm below ceiling
+                AddQuadMesh(verts, tris, uvs, out0Bot, out1Bot, out1Col, out0Col,
+                    new Vector2(u0, 0f), new Vector2(u1, 0f), new Vector2(u1, 0.25f), new Vector2(u0, 0.25f));
+            }
+            CreateMeshObject(name, parent, verts, tris, uvs, brickMat, ShadowCastingMode.TwoSided);
+
+            // Dark cast-iron underside of the street manhole cover capping the VERY TOP of the open brick chimney
+            var lidUnder = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            lidUnder.name = "Shaft_TopManholeLidUnderside";
+            lidUnder.transform.SetParent(parent, false);
+            lidUnder.transform.localPosition = new Vector3(0f, topY - 0.01f, 0f);
+            lidUnder.transform.localScale = new Vector3(innerR * 2.04f, 0.018f, innerR * 2.04f);
+            lidUnder.GetComponent<MeshRenderer>().sharedMaterial = darkIronMat;
+            UnityEngine.Object.DestroyImmediate(lidUnder.GetComponent<Collider>());
+
+            // 2 subtle glowing street-light pick-hole vent slots in the top iron lid underside!
+            if (ventGlowMat != null)
+            {
+                CreateBoxLocal("Shaft_LidVentSlot_0", parent, new Vector3(-0.18f, topY - 0.03f, 0.08f), new Vector3(0.085f, 0.012f, 0.028f), ventGlowMat, false);
+                CreateBoxLocal("Shaft_LidVentSlot_1", parent, new Vector3(+0.18f, topY - 0.03f, -0.08f), new Vector3(0.085f, 0.012f, 0.028f), ventGlowMat, false);
+            }
         }
 
         // =========================================================================
@@ -1356,8 +1781,8 @@ namespace MyVirtualCommunity.Editor
                 var sl = spotGo.AddComponent<Light>();
                 sl.type = LightType.Spot;
                 sl.color = new Color(0.76f, 0.86f, 0.96f);
-                sl.intensity = 4.6f;
-                sl.range = 6.8f;
+                sl.intensity = 2.7f;
+                sl.range = 5.8f;
                 sl.spotAngle = 44f;
                 sl.innerSpotAngle = 18f;
                 sl.shadows = LightShadows.None;
@@ -1365,25 +1790,95 @@ namespace MyVirtualCommunity.Editor
                 if (s.addPaperBoat)
                 {
                     BuildFoldedPaperBoat("PaperBoat_Georgie", slotsRoot,
-                        new Vector3(s.tunnelBeamPos.x, WaterSurfaceY + 0.03f, AzucenasAxisZ + ChannelHalfW - 0.18f),
+                        new Vector3(s.tunnelBeamPos.x, WaterSurfaceY + 0.008f, AzucenasAxisZ + 0.08f),
                         paperWhiteMat);
                 }
             }
         }
 
+        /// <summary>
+        /// Builds a genuine, unmistakable 3D folded origami paper boat ("S.S. Georgie") mesh:
+        /// sharp angled prow & stern peaks, flared folded gunwales, hollow interior folded trough,
+        /// and iconic tall central triangular origami sail peak floating in the dark drain water!
+        /// </summary>
         private static void BuildFoldedPaperBoat(string name, Transform parent, Vector3 pos, Material paperMat)
         {
             var boat = new GameObject(name);
             boat.transform.SetParent(parent);
             boat.transform.position = pos;
-            boat.transform.rotation = Quaternion.Euler(0f, 24f, 5f);
+            boat.transform.rotation = Quaternion.Euler(-2.5f, 32f, 4.0f);
 
-            var hullL = CreateBoxLocal("Hull_Left", boat.transform, new Vector3(0f, 0.03f, 0.045f), new Vector3(0.24f, 0.055f, 0.012f), paperMat, false);
-            hullL.transform.localRotation = Quaternion.Euler(22f, 0f, 0f);
-            var hullR = CreateBoxLocal("Hull_Right", boat.transform, new Vector3(0f, 0.03f, -0.045f), new Vector3(0.24f, 0.055f, 0.012f), paperMat, false);
-            hullR.transform.localRotation = Quaternion.Euler(-22f, 0f, 0f);
-            var sail = CreateBoxLocal("Center_Sail", boat.transform, new Vector3(0f, 0.095f, 0f), new Vector3(0.11f, 0.12f, 0.016f), paperMat, false);
-            sail.transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
+            var verts = new List<Vector3>();
+            var tris = new List<int>();
+            var uvs = new List<Vector2>();
+
+            void AddTri(Vector3 a, Vector3 b, Vector3 c, Vector2 ua, Vector2 ub, Vector2 uc)
+            {
+                int idx = verts.Count;
+                verts.Add(a); verts.Add(b); verts.Add(c);
+                uvs.Add(ua); uvs.Add(ub); uvs.Add(uc);
+                tris.Add(idx); tris.Add(idx + 1); tris.Add(idx + 2);
+            }
+
+            // Crisp flat-shaded origami triangles (each fold gets its own vertices so creases catch flashlight cleanly!)
+            Vector3 keelBow   = new Vector3(0f,     0.000f, +0.125f);
+            Vector3 keelStern = new Vector3(0f,     0.000f, -0.125f);
+            Vector3 keelPort  = new Vector3(-0.056f, 0.000f, 0.000f);
+            Vector3 keelStbd  = new Vector3(+0.056f, 0.000f, 0.000f);
+
+            Vector3 rimBow    = new Vector3(0f,     0.084f, +0.190f); // Sharp upturned origami bow peak
+            Vector3 rimStern  = new Vector3(0f,     0.084f, -0.190f); // Sharp upturned origami stern peak
+            Vector3 rimPort   = new Vector3(-0.092f, 0.062f, 0.000f); // Flared port folded paper gunwale
+            Vector3 rimStbd   = new Vector3(+0.092f, 0.062f, 0.000f); // Flared starboard folded paper gunwale
+
+            // Inner folded paper trough floor slightly above waterline
+            Vector3 inBow     = new Vector3(0f,     0.014f, +0.105f);
+            Vector3 inStern   = new Vector3(0f,     0.014f, -0.105f);
+            Vector3 inPort    = new Vector3(-0.048f, 0.014f, 0.000f);
+            Vector3 inStbd    = new Vector3(+0.048f, 0.014f, 0.000f);
+
+            // Tall central folded triangular origami pyramid sail
+            Vector3 sailBow   = new Vector3(0f,     0.014f, +0.095f);
+            Vector3 sailStern = new Vector3(0f,     0.014f, -0.095f);
+            Vector3 sailPort  = new Vector3(-0.036f, 0.014f, 0.000f);
+            Vector3 sailStbd  = new Vector3(+0.036f, 0.014f, 0.000f);
+            Vector3 sailPeak  = new Vector3(0f,     0.172f,  0.000f);
+
+            // 1. Outer Hull Sides (4 crisp folded quads = 8 triangles, outward-facing normals, mapped to S.S. GEORGIE side print!)
+            // Port-Forward
+            AddTri(keelBow, rimBow, rimPort, new Vector2(0.05f, 0.05f), new Vector2(0.02f, 0.45f), new Vector2(0.50f, 0.45f));
+            AddTri(keelBow, rimPort, keelPort, new Vector2(0.05f, 0.05f), new Vector2(0.50f, 0.45f), new Vector2(0.50f, 0.05f));
+            // Port-Aft
+            AddTri(keelPort, rimPort, rimStern, new Vector2(0.50f, 0.05f), new Vector2(0.50f, 0.45f), new Vector2(0.98f, 0.45f));
+            AddTri(keelPort, rimStern, keelStern, new Vector2(0.50f, 0.05f), new Vector2(0.98f, 0.45f), new Vector2(0.95f, 0.05f));
+            // Starboard-Forward (looking at starboard from +X: Stern=-Z is LEFT u=0.02, Bow=+Z is RIGHT u=0.98 -> reads left-to-right!)
+            AddTri(keelStbd, rimStbd, rimBow, new Vector2(0.50f, 0.05f), new Vector2(0.50f, 0.45f), new Vector2(0.98f, 0.45f));
+            AddTri(keelStbd, rimBow, keelBow, new Vector2(0.50f, 0.05f), new Vector2(0.98f, 0.45f), new Vector2(0.95f, 0.05f));
+            // Starboard-Aft
+            AddTri(keelStern, rimStern, rimStbd, new Vector2(0.05f, 0.05f), new Vector2(0.02f, 0.45f), new Vector2(0.50f, 0.45f));
+            AddTri(keelStern, rimStbd, keelStbd, new Vector2(0.05f, 0.05f), new Vector2(0.50f, 0.45f), new Vector2(0.50f, 0.05f));
+
+            // 2. Inner Hull Trough Walls (so looking straight down shows the classic folded paper pocket!)
+            AddTri(rimPort, rimBow, inBow, new Vector2(0.50f, 0.50f), new Vector2(0.05f, 0.50f), new Vector2(0.15f, 0.85f));
+            AddTri(rimPort, inBow, inPort, new Vector2(0.50f, 0.50f), new Vector2(0.15f, 0.85f), new Vector2(0.50f, 0.85f));
+            AddTri(rimStern, rimPort, inPort, new Vector2(0.95f, 0.50f), new Vector2(0.50f, 0.50f), new Vector2(0.50f, 0.85f));
+            AddTri(rimStern, inPort, inStern, new Vector2(0.95f, 0.50f), new Vector2(0.50f, 0.85f), new Vector2(0.85f, 0.85f));
+            AddTri(rimBow, rimStbd, inStbd, new Vector2(0.05f, 0.50f), new Vector2(0.50f, 0.50f), new Vector2(0.50f, 0.85f));
+            AddTri(rimBow, inStbd, inBow, new Vector2(0.05f, 0.50f), new Vector2(0.50f, 0.85f), new Vector2(0.15f, 0.85f));
+            AddTri(rimStbd, rimStern, inStern, new Vector2(0.50f, 0.50f), new Vector2(0.95f, 0.50f), new Vector2(0.85f, 0.85f));
+            AddTri(rimStbd, inStern, inStbd, new Vector2(0.50f, 0.50f), new Vector2(0.85f, 0.85f), new Vector2(0.50f, 0.85f));
+
+            // 3. Inner Trough Floor & Bottom Keel Diamond
+            AddTri(inBow, inStbd, inStern, new Vector2(0.5f, 0.95f), new Vector2(0.8f, 0.75f), new Vector2(0.5f, 0.55f));
+            AddTri(inBow, inStern, inPort, new Vector2(0.5f, 0.95f), new Vector2(0.5f, 0.55f), new Vector2(0.2f, 0.75f));
+
+            // 4. Iconic Tall Central Origami Triangular Pyramid Sail (4 crisp faceted sides meeting at sailPeak!)
+            AddTri(sailBow, sailPeak, sailPort, new Vector2(0.15f, 0.52f), new Vector2(0.50f, 0.98f), new Vector2(0.50f, 0.52f));
+            AddTri(sailPort, sailPeak, sailStern, new Vector2(0.50f, 0.52f), new Vector2(0.50f, 0.98f), new Vector2(0.85f, 0.52f));
+            AddTri(sailStbd, sailPeak, sailBow, new Vector2(0.50f, 0.52f), new Vector2(0.50f, 0.98f), new Vector2(0.15f, 0.52f));
+            AddTri(sailStern, sailPeak, sailStbd, new Vector2(0.85f, 0.52f), new Vector2(0.50f, 0.98f), new Vector2(0.50f, 0.52f));
+
+            CreateMeshObject("Origami_PaperBoat_Mesh", boat.transform, verts, tris, uvs, paperMat, ShadowCastingMode.TwoSided);
         }
 
         // =========================================================================
@@ -1442,9 +1937,9 @@ namespace MyVirtualCommunity.Editor
             headwall.transform.SetParent(outRoot.transform);
             headwall.transform.position = new Vector3(JuarezAxisX, OutflowWalkwayY, OutflowMouthZ);
 
-            CreateBoxLocal("Headwall_PierWest", headwall.transform, new Vector3(-2.15f, 1.45f, 0.15f), new Vector3(0.95f, 3.25f, 1.45f), concreteMat, true);
-            CreateBoxLocal("Headwall_PierEast", headwall.transform, new Vector3(+2.15f, 1.45f, 0.15f), new Vector3(0.95f, 3.25f, 1.45f), concreteMat, true);
-            CreateBoxLocal("Headwall_BrowLintel", headwall.transform, new Vector3(0f, 2.85f, 0.15f), new Vector3(5.25f, 0.72f, 1.55f), concreteMat, true);
+            CreateBoxLocal("Headwall_PierWest", headwall.transform, new Vector3(-2.15f, 1.32f, 0.15f), new Vector3(0.95f, 2.90f, 1.45f), concreteMat, true);
+            CreateBoxLocal("Headwall_PierEast", headwall.transform, new Vector3(+2.15f, 1.32f, 0.15f), new Vector3(0.95f, 2.90f, 1.45f), concreteMat, true);
+            CreateBoxLocal("Headwall_BrowLintel", headwall.transform, new Vector3(0f, 2.52f, 0.15f), new Vector3(5.25f, 0.56f, 1.55f), concreteMat, true);
 
             // Algae waterline grime on headwall piers
             CreateBoxLocal("Headwall_MossBaseW", headwall.transform, new Vector3(-2.15f, 0.35f, 0.89f), new Vector3(0.96f, 0.72f, 0.04f), mossMat, false);
@@ -1467,12 +1962,12 @@ namespace MyVirtualCommunity.Editor
             hinge.transform.SetParent(gateRoot.transform, false);
             hinge.transform.localPosition = new Vector3(-1.68f, 0f, 0f);
 
-            CreateBoxLocal("Gate_TopBar", hinge.transform, new Vector3(1.68f, 2.38f, 0f), new Vector3(3.36f, 0.10f, 0.10f), rustedIronMat, true);
-            CreateBoxLocal("Gate_MidBar", hinge.transform, new Vector3(1.68f, 1.22f, 0f), new Vector3(3.36f, 0.08f, 0.08f), rustedIronMat, false);
+            CreateBoxLocal("Gate_TopBar", hinge.transform, new Vector3(1.68f, 2.20f, 0f), new Vector3(3.36f, 0.10f, 0.10f), rustedIronMat, true);
+            CreateBoxLocal("Gate_MidBar", hinge.transform, new Vector3(1.68f, 1.18f, 0f), new Vector3(3.36f, 0.08f, 0.08f), rustedIronMat, false);
             CreateBoxLocal("Gate_BotBar", hinge.transform, new Vector3(1.68f, 0.18f, 0f), new Vector3(3.36f, 0.09f, 0.09f), rustedIronMat, false);
-            for (float gx = 0.14f; gx <= 3.25f; gx += 0.28f)
+            for (float gx = 0.22f; gx <= 3.18f; gx += 0.38f)
             {
-                CreateBoxLocal($"Gate_Rod_{gx:F2}", hinge.transform, new Vector3(gx, 1.28f, 0f), new Vector3(0.05f, 2.28f, 0.05f), darkIronMat, false);
+                CreateBoxLocal($"Gate_Rod_{gx:F2}", hinge.transform, new Vector3(gx, 1.19f, 0f), new Vector3(0.048f, 2.08f, 0.048f), darkIronMat, false);
             }
             var gateCol = new GameObject("Gate_LeafCollider");
             gateCol.transform.SetParent(hinge.transform, false);
@@ -1498,6 +1993,28 @@ namespace MyVirtualCommunity.Editor
             CreateBox("RioBravo_Outflow_RunoffStream", outRoot.transform,
                 new Vector3(JuarezAxisX, OutflowWalkwayY + 0.012f, OutflowMouthZ + 4.40f),
                 new Vector3(1.45f, 0.02f, 8.80f), waterMat, false);
+
+            // Exterior Under-Bridge Sodium/Moonlight Illumination right outside the Río Bravo gate bars
+            // so even at night the player clearly sees the Río Bravo river, concrete levee & bridge piers through the bars!
+            var bridgeFloodApron = new GameObject("Outflow_BridgeFlood_Apron");
+            bridgeFloodApron.transform.SetParent(outRoot.transform);
+            bridgeFloodApron.transform.position = new Vector3(JuarezAxisX, OutflowWalkwayY + 4.8f, OutflowMouthZ + 4.5f);
+            var fl1 = bridgeFloodApron.AddComponent<Light>();
+            fl1.type = LightType.Point;
+            fl1.color = new Color(0.84f, 0.90f, 1.00f);
+            fl1.intensity = 18.0f;
+            fl1.range = 24.0f;
+            fl1.shadows = LightShadows.None;
+
+            var bridgeFloodRiver = new GameObject("Outflow_BridgeFlood_River");
+            bridgeFloodRiver.transform.SetParent(outRoot.transform);
+            bridgeFloodRiver.transform.position = new Vector3(JuarezAxisX + 1.0f, 2.2f, OutflowMouthZ + 18.0f);
+            var fl2 = bridgeFloodRiver.AddComponent<Light>();
+            fl2.type = LightType.Point;
+            fl2.color = new Color(0.70f, 0.84f, 1.00f);
+            fl2.intensity = 32.0f;
+            fl2.range = 38.0f;
+            fl2.shadows = LightShadows.None;
         }
 
         // =========================================================================
@@ -1535,6 +2052,19 @@ namespace MyVirtualCommunity.Editor
             Check("Seamless Vault Balcony Ring mesh exists (zero overlapping octagon deck cubes!)",
                 GameObject.Find("Vault_BalconyRing_SeamlessMesh") != null &&
                 GameObject.Find("Vault_BalconyDeck_0") == null);
+
+            Check("Upgraded symmetrical Vault staircase has BOTH Left & Right handrails, posts, flanking rails & flush circular island apron",
+                GameObject.Find("Vault_StairHandrail_L") != null &&
+                GameObject.Find("Vault_StairHandrail_R") != null &&
+                GameObject.Find("Vault_StairMidrail_L") != null &&
+                GameObject.Find("Vault_StairMidrail_R") != null &&
+                GameObject.Find("Vault_StairPost_L_4") != null &&
+                GameObject.Find("Vault_StairPost_R_4") != null &&
+                GameObject.Find("Vault_RailTop_5_L") != null &&
+                GameObject.Find("Vault_RailTop_5_R") != null &&
+                GameObject.Find("Vault_Stair_BottomApron") != null &&
+                GameObject.Find("Vault_Stair_BottomLandingPlate") != null &&
+                GameObject.Find("Vault_Stair_SmoothWalkCollider") != null);
 
             Check("ZERO cobwebs exist anywhere in the underground sewer",
                 GameObject.Find("Vault_Cobweb_0") == null &&
@@ -1577,12 +2107,19 @@ namespace MyVirtualCommunity.Editor
                 HitUnderground(MariscalAxisX + 1.15f, 0.0f, -1.8f, -3.30f, -3.10f));
             Check("Central Cistern Vault sunken island walkable at (2.15, 28.0, Y=-6.08m)",
                 HitUnderground(VaultCenterX, VaultCenterZ, -4.5f, -6.25f, -5.95f));
+            Check("Vault staircase midpoint & flush circular landing plate walkable along 45° SW axis",
+                HitUnderground(VaultCenterX - 3.14f, VaultCenterZ - 3.14f, -3.2f, -4.90f, -4.35f) &&
+                HitUnderground(VaultCenterX - 1.84f, VaultCenterZ - 1.84f, -4.5f, -6.15f, -5.98f));
             Check("North Trunk Collector walkway walkable at (3.30, 120.0, Y=-3.20m)",
                 HitUnderground(JuarezAxisX + 1.15f, 120.0f, -1.8f, -3.30f, -3.10f));
             Check("Rio Bravo Outflow Apron walkable outside gate at (2.15, 199.7, Y=-2.42m)",
                 HitUnderground(JuarezAxisX, OutflowMouthZ + 2.5f, -0.5f, -2.60f, -2.30f));
             Check("Rio Bravo South Bank Ledge walkable at (3.65, 203.0, Y~-2.45m)",
                 HitUnderground(JuarezAxisX + 1.5f, OutflowMouthZ + 5.8f, -0.5f, -2.60f, -2.30f));
+            Check("Deep under-Abasolo siphon crossing walkable at (3.30, 59.5, Y=-8.45m) with unobstructed north sightline (ZERO white wall!)",
+                HitUnderground(JuarezAxisX + 1.15f, 59.5f, -6.5f, -8.55f, -8.35f) &&
+                !Physics.Raycast(new Vector3(JuarezAxisX + 1.15f, -7.15f, 52.5f), Vector3.forward, 14.5f));
+
             Check("Physics.simulationMode remains FixedUpdate",
                 Physics.simulationMode == SimulationMode.FixedUpdate);
 
@@ -1594,13 +2131,17 @@ namespace MyVirtualCommunity.Editor
         {
             Directory.CreateDirectory(ArtifactDir);
 
-            // Apply realistic dark underground fog & ambient during Editor capture so screenshots match real runtime gloom!
+            // Apply realistic dark underground fog, ambient & near-zero skybox reflection so renders match real runtime gloom 1:1!
             Color savedFogCol = RenderSettings.fogColor;
             float savedFogDens = RenderSettings.fogDensity;
             bool savedFog = RenderSettings.fog;
             Color savedAmbSky = RenderSettings.ambientSkyColor;
             Color savedAmbEq = RenderSettings.ambientEquatorColor;
             Color savedAmbGnd = RenderSettings.ambientGroundColor;
+            float savedAmbInt = RenderSettings.ambientIntensity;
+            float savedReflInt = RenderSettings.reflectionIntensity;
+            Light sun = GameObject.Find("Sun_DirectionalLight")?.GetComponent<Light>();
+            float savedSunInt = sun != null ? sun.intensity : 1f;
 
             GameObject root = GameObject.Find(RootName);
             if (root != null)
@@ -1615,38 +2156,44 @@ namespace MyVirtualCommunity.Editor
             cam.farClipPlane = 350f;
             cam.fieldOfView = 62f;
 
-            // Player [F] flashlight preview beam for underground renders
+            // Player [F] flashlight preview beam matching PlayerFlashlightController runtime intensity!
             var previewSpot = camGo.AddComponent<Light>();
             previewSpot.type = LightType.Spot;
-            previewSpot.range = 28f;
-            previewSpot.spotAngle = 54f;
-            previewSpot.innerSpotAngle = 24f;
-            previewSpot.intensity = 16.5f;
-            previewSpot.color = new Color(1.0f, 0.96f, 0.88f);
+            previewSpot.range = 42f;
+            previewSpot.spotAngle = 48f;
+            previewSpot.innerSpotAngle = 20f;
+            previewSpot.intensity = 68.0f;
+            previewSpot.color = new Color(1.0f, 0.97f, 0.90f);
             previewSpot.shadows = LightShadows.None;
 
-            void Shoot(string filename, Vector3 pos, Vector3 lookAt, bool darkUnderground, float fov = 62f)
+            void Shoot(string filename, Vector3 pos, Vector3 lookAt, bool darkUnderground, bool flashlightOn = true, float fov = 62f)
             {
                 cam.fieldOfView = fov;
-                previewSpot.enabled = darkUnderground;
+                previewSpot.enabled = darkUnderground && flashlightOn;
                 if (darkUnderground)
                 {
+                    if (sun != null) sun.intensity = 0f;
                     cam.clearFlags = CameraClearFlags.SolidColor;
-                    cam.backgroundColor = new Color(0.011f, 0.019f, 0.020f);
+                    cam.backgroundColor = new Color(0.004f, 0.007f, 0.008f);
                     RenderSettings.fog = true;
                     RenderSettings.fogMode = FogMode.ExponentialSquared;
-                    RenderSettings.fogColor = new Color(0.011f, 0.019f, 0.020f);
-                    RenderSettings.fogDensity = 0.075f;
-                    RenderSettings.ambientSkyColor = new Color(0.014f, 0.020f, 0.022f);
-                    RenderSettings.ambientEquatorColor = new Color(0.010f, 0.015f, 0.015f);
-                    RenderSettings.ambientGroundColor = new Color(0.006f, 0.008f, 0.008f);
+                    RenderSettings.fogColor = new Color(0.004f, 0.007f, 0.008f);
+                    RenderSettings.fogDensity = 0.095f;
+                    RenderSettings.ambientIntensity = 0.28f;
+                    RenderSettings.reflectionIntensity = 0.02f;
+                    RenderSettings.ambientSkyColor = new Color(0.0045f, 0.007f, 0.0075f);
+                    RenderSettings.ambientEquatorColor = new Color(0.003f, 0.005f, 0.0055f);
+                    RenderSettings.ambientGroundColor = new Color(0.0018f, 0.0025f, 0.0028f);
                 }
                 else
                 {
+                    if (sun != null) sun.intensity = savedSunInt;
                     cam.clearFlags = CameraClearFlags.Skybox;
                     RenderSettings.fog = savedFog;
                     RenderSettings.fogColor = savedFogCol;
                     RenderSettings.fogDensity = savedFogDens;
+                    RenderSettings.ambientIntensity = savedAmbInt;
+                    RenderSettings.reflectionIntensity = savedReflInt;
                     RenderSettings.ambientSkyColor = savedAmbSky;
                     RenderSettings.ambientEquatorColor = savedAmbEq;
                     RenderSettings.ambientGroundColor = savedAmbGnd;
@@ -1669,40 +2216,46 @@ namespace MyVirtualCommunity.Editor
                 UnityEngine.Object.DestroyImmediate(tex);
             }
 
-            // 1. Sealed Bulkhead under La Esquina de Chihuas + Hanging Paris Catacombs Wooden Plaque!
-            Shoot("sewer_v3_01_catacombs_door.png",
-                new Vector3(JuarezAxisX + 1.15f, WalkwayY + 1.48f, -15.8f),
-                new Vector3(JuarezAxisX - TunnelHalfW + 0.16f, WalkwayY + 1.32f, -14.8f),
-                darkUnderground: true, fov: 62f);
+            // 1. North Trunk Collector dipping cleanly DOWN beneath the Av. Abasolo sunken underpass (ZERO white wall!)
+            previewSpot.intensity = 58.0f;
+            Shoot("sewer_v7_01_north_trunk_dip_under_abasolo.png",
+                new Vector3(JuarezAxisX + 0.90f, WalkwayY + 1.50f, 38.20f),
+                new Vector3(JuarezAxisX + 0.40f, -6.20f, 54.00f),
+                darkUnderground: true, flashlightOn: true, fov: 64f);
 
-            // 2. Intense Crimson "SAL DE AQUÍ!" Spray Graffiti on East Wall (100% clear of pipe & ghost box!)
-            Shoot("sewer_v3_02_graffiti_saldeaqui.png",
-                new Vector3(JuarezAxisX - 1.05f, WalkwayY + 1.15f, -23.4f),
-                new Vector3(JuarezAxisX + TunnelHalfW - 0.04f, WalkwayY + 0.96f, -22.2f),
-                darkUnderground: true, fov: 56f);
+            // 2. Inside the deep -8.45m under-Abasolo siphon gallery looking North past "GET OUT!" up the climb ramp toward Rio Bravo!
+            Shoot("sewer_v7_02_deep_under_abasolo_gallery.png",
+                new Vector3(JuarezAxisX - 0.65f, -8.45f + 1.48f, 53.50f),
+                new Vector3(JuarezAxisX + 0.55f, -7.20f, 71.00f),
+                darkUnderground: true, flashlightOn: true, fov: 64f);
 
-            // 3. American English Crimson "GET OUT!" (100% clear of pipe & ghost box!)
-            Shoot("sewer_v3_03_graffiti_getout_crop.png",
-                new Vector3(-25.8f, WalkwayY + 1.15f, AzucenasAxisZ - 1.05f),
-                new Vector3(-24.5f, WalkwayY + 0.96f, AzucenasAxisZ + TunnelHalfW - 0.04f),
-                darkUnderground: true, fov: 56f);
+            // 3. Chamber_Mariscal_Gardenias looking SE across BOTH curved tunnel arches (exact angle of user's Screenshot 3 -> ZERO sky/curb leaks!)
+            previewSpot.intensity = 42.0f;
+            Shoot("sewer_v7_03_chamber_mariscal_gardenias_sealed.png",
+                new Vector3(MariscalAxisX - 1.10f, WalkwayY + 1.52f, GardeniasAxisZ + 1.05f),
+                new Vector3(MariscalAxisX + 2.20f, WalkwayY + 1.55f, GardeniasAxisZ - 2.20f),
+                darkUnderground: true, flashlightOn: true, fov: 68f);
 
-            // 4. Wiltshire Crop Circle #1 on West Wall of Av. Juarez South Collector (100% crisp chalk-on-concrete!)
-            Shoot("sewer_v3_04_vault_no_cobwebs.png",
-                new Vector3(JuarezAxisX + 0.95f, WalkwayY + 1.15f, -7.2f),
-                new Vector3(JuarezAxisX - TunnelHalfW + 0.04f, WalkwayY + 0.96f, -6.2f),
-                darkUnderground: true, fov: 56f);
+            // 4. Chamber_Juarez_Azucenas looking NE across curved tunnel arches (proves ALL chambers have 100% sealed brick spandrels!)
+            Shoot("sewer_v7_04_chamber_juarez_azucenas_sealed.png",
+                new Vector3(JuarezAxisX - 1.15f, WalkwayY + 1.52f, AzucenasAxisZ - 1.15f),
+                new Vector3(JuarezAxisX + 2.20f, WalkwayY + 1.55f, AzucenasAxisZ + 2.20f),
+                darkUnderground: true, flashlightOn: true, fov: 68f);
+            previewSpot.intensity = 68.0f;
 
             // Restore Editor lighting state cleanly
+            if (sun != null) sun.intensity = savedSunInt;
             RenderSettings.fog = savedFog;
             RenderSettings.fogColor = savedFogCol;
             RenderSettings.fogDensity = savedFogDens;
+            RenderSettings.ambientIntensity = savedAmbInt;
+            RenderSettings.reflectionIntensity = savedReflInt;
             RenderSettings.ambientSkyColor = savedAmbSky;
             RenderSettings.ambientEquatorColor = savedAmbEq;
             RenderSettings.ambientGroundColor = savedAmbGnd;
 
             UnityEngine.Object.DestroyImmediate(camGo);
-            Debug.Log("[UndergroundSewerBuilder] Captured 4 aged & Z-fight-free verification screenshots.");
+            Debug.Log("[UndergroundSewerBuilder] Captured 4 dark-atmosphere & upgraded-staircase verification screenshots.");
         }
 
         // =========================================================================
@@ -1816,6 +2369,8 @@ namespace MyVirtualCommunity.Editor
             GenerateStencilTex(Path.Combine(dir, "T_Sewer_Stencil_1958.png"), "COLECTOR 1958", "SECTOR SUR");
             GenerateStencilTex(Path.Combine(dir, "T_Sewer_Stencil_RioBravo.png"), "<- RIO BRAVO", "DESAGUE NORTE");
             GenerateStencilTex(Path.Combine(dir, "T_Sewer_Stencil_Warning.png"), "NO PASAR", "NIVEL AVENIDA");
+            GenerateStencilTex(Path.Combine(dir, "T_Sewer_Stencil_Clausurado.png"), "SECTOR ESTE", "CLAUSURADO");
+            GenerateNewspaperBoatTex(Path.Combine(dir, "T_Sewer_PaperBoat_Newspaper.png"));
 
             AssetDatabase.Refresh();
 
@@ -1825,6 +2380,7 @@ namespace MyVirtualCommunity.Editor
                 "Assets/Textures/Sewer/T_Sewer_Stencil_1958.png",
                 "Assets/Textures/Sewer/T_Sewer_Stencil_RioBravo.png",
                 "Assets/Textures/Sewer/T_Sewer_Stencil_Warning.png",
+                "Assets/Textures/Sewer/T_Sewer_Stencil_Clausurado.png",
                 "Assets/Textures/Sewer/T_Sewer_Graffiti_SalDeAqui.png",
                 "Assets/Textures/Sewer/T_Sewer_Graffiti_GetOut.png",
                 "Assets/Textures/Sewer/T_Sewer_Graffiti_NoMiresAtras.png",
@@ -1844,6 +2400,79 @@ namespace MyVirtualCommunity.Editor
                     ti.SaveAndReimport();
                 }
             }
+        }
+
+        private static void GenerateNewspaperBoatTex(string path)
+        {
+            int sz = 256;
+            var tex = new Texture2D(sz, sz, TextureFormat.RGB24, false);
+            for (int y = 0; y < sz; y++)
+            {
+                float v = (float)y / (sz - 1);
+                for (int x = 0; x < sz; x++)
+                {
+                    float u = (float)x / (sz - 1);
+                    // Aged damp newsprint off-white base with slight waterline darkening near bottom (v < 0.14)
+                    float grain = Mathf.PerlinNoise(u * 28f + 3.1f, v * 28f + 7.4f);
+                    float wet = v < 0.14f ? Mathf.Lerp(0.76f, 1.0f, v / 0.14f) : 1.0f;
+                    float r = (0.91f + (grain - 0.5f) * 0.08f) * wet;
+                    float g = (0.88f + (grain - 0.5f) * 0.08f) * wet;
+                    float b = (0.80f + (grain - 0.5f) * 0.08f) * wet;
+
+                    // Subtle newspaper print columns & thin horizontal text lines
+                    bool inCol = (u > 0.08f && u < 0.44f) || (u > 0.54f && u < 0.92f);
+                    if (inCol && v > 0.16f && v < 0.90f && ((y % 7) == 0 || (y % 7) == 1))
+                    {
+                        float wordMask = Mathf.PerlinNoise(u * 65f, y * 0.4f);
+                        if (wordMask > 0.38f)
+                        {
+                            r *= 0.72f; g *= 0.71f; b *= 0.69f;
+                        }
+                    }
+
+                    // Crisp origami fold crease line along v = 0.46 and vertical center fold u = 0.50
+                    if (Mathf.Abs(v - 0.46f) < 0.012f || Mathf.Abs(u - 0.50f) < 0.008f)
+                    {
+                        r *= 0.80f; g *= 0.78f; b *= 0.74f;
+                    }
+
+                    tex.SetPixel(x, y, new Color(Mathf.Clamp01(r), Mathf.Clamp01(g), Mathf.Clamp01(b)));
+                }
+            }
+            // Subtle hand-inked "SS GEORGIE" hull stamp along the lower-mid hull band (v = 0.22..0.34)
+            void DrawInk(string text, int startX, int startY, int scale)
+            {
+                Color ink = new Color(0.14f, 0.17f, 0.26f);
+                int cx = startX;
+                foreach (char ch in text)
+                {
+                    if (ch == ' ') { cx += 4 * scale; continue; }
+                    string[] g = GetMiniGlyph5x7(ch);
+                    for (int ry = 0; ry < 7; ry++)
+                    {
+                        for (int rx = 0; rx < 5; rx++)
+                        {
+                            if (g[ry][rx] == '#')
+                            {
+                                for (int dy = 0; dy < scale; dy++)
+                                    for (int dx = 0; dx < scale; dx++)
+                                    {
+                                        int px = cx + rx * scale + dx;
+                                        int py = startY + (6 - ry) * scale + dy;
+                                        if (px >= 0 && px < sz && py >= 0 && py < sz)
+                                            tex.SetPixel(px, py, ink);
+                                    }
+                            }
+                        }
+                    }
+                    cx += 6 * scale;
+                }
+            }
+            DrawInk("SS GEORGIE", 64, 58, 2);
+
+            tex.Apply();
+            File.WriteAllBytes(path, tex.EncodeToPNG());
+            UnityEngine.Object.DestroyImmediate(tex);
         }
 
         private static void GenerateAgedConcreteWallTex(string path)
@@ -2190,7 +2819,7 @@ namespace MyVirtualCommunity.Editor
 
         private static Material CreateOrGetWaterMat(string path, Color color)
         {
-            Material mat = CreateOrGetColorMat(path, color, 0.88f, 0.12f);
+            Material mat = CreateOrGetColorMat(path, color, 0.58f, 0.05f);
             ConfigureURPTransparent(mat);
             EditorUtility.SetDirty(mat);
             return mat;

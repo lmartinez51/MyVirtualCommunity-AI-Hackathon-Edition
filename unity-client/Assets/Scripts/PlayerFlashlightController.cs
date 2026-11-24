@@ -15,11 +15,11 @@ namespace MyVirtualCommunity.Client.World
     public class PlayerFlashlightController : MonoBehaviour
     {
         [Header("Flashlight Tuning")]
-        [SerializeField] private float spotRange = 30f;
-        [SerializeField] private float spotAngle = 54f;
-        [SerializeField] private float innerSpotAngle = 26f;
-        [SerializeField] private float spotIntensity = 18.0f;
-        [SerializeField] private Color beamColor = new Color(1.00f, 0.96f, 0.88f);
+        [SerializeField] private float spotRange = 42f;
+        [SerializeField] private float spotAngle = 48f;
+        [SerializeField] private float innerSpotAngle = 20f;
+        [SerializeField] private float spotIntensity = 68.0f;
+        [SerializeField] private Color beamColor = new Color(1.00f, 0.97f, 0.90f);
         [SerializeField] private float aimFollowSpeed = 14f;
 
         private Light spotLight;
@@ -75,7 +75,7 @@ namespace MyVirtualCommunity.Client.World
             spotLight.intensity = spotIntensity;
             spotLight.color = beamColor;
             spotLight.shadows = LightShadows.Soft;
-            spotLight.shadowStrength = 0.85f;
+            spotLight.shadowStrength = 0.92f;
             spotLight.shadowBias = 0.03f;
             spotLight.shadowNormalBias = 0.25f;
             spotLight.renderMode = LightRenderMode.ForcePixel;
@@ -87,9 +87,9 @@ namespace MyVirtualCommunity.Client.World
             fillGo.transform.localPosition = new Vector3(0.16f, -0.10f, 0.35f);
             fillBounceLight = fillGo.AddComponent<Light>();
             fillBounceLight.type = LightType.Point;
-            fillBounceLight.range = 6.5f;
-            fillBounceLight.intensity = 1.6f;
-            fillBounceLight.color = new Color(0.95f, 0.92f, 0.84f);
+            fillBounceLight.range = 8.5f;
+            fillBounceLight.intensity = 3.8f;
+            fillBounceLight.color = new Color(0.96f, 0.93f, 0.85f);
             fillBounceLight.shadows = LightShadows.None;
             fillBounceLight.enabled = false;
 

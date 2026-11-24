@@ -17,15 +17,17 @@ namespace MyVirtualCommunity.Client.World
 
         [Header("Underground Spatial Bounds")]
         public float undergroundThresholdY = -0.85f;
-        public float outflowDaylightStartZ = 182.0f;
-        public float outflowDaylightFullZ = 197.5f;
+        public float outflowDaylightStartZ = 162.0f;
+        public float outflowDaylightFullZ = 190.5f;
 
         [Header("Dense Dark Underground Visual Tuning")]
-        public Color undergroundFogColor = new Color(0.011f, 0.019f, 0.020f, 1.0f);
-        public float undergroundFogDensity = 0.088f;
-        public Color undergroundAmbientSky = new Color(0.012f, 0.018f, 0.019f, 1.0f);
-        public Color undergroundAmbientEquator = new Color(0.009f, 0.014f, 0.014f, 1.0f);
-        public Color undergroundAmbientGround = new Color(0.005f, 0.007f, 0.007f, 1.0f);
+        public Color undergroundFogColor = new Color(0.004f, 0.007f, 0.008f, 1.0f);
+        public float undergroundFogDensity = 0.098f;
+        public Color undergroundAmbientSky = new Color(0.0045f, 0.007f, 0.0075f, 1.0f);
+        public Color undergroundAmbientEquator = new Color(0.003f, 0.005f, 0.0055f, 1.0f);
+        public Color undergroundAmbientGround = new Color(0.0018f, 0.0025f, 0.0028f, 1.0f);
+        public float undergroundAmbientIntensity = 0.28f;
+        public float undergroundReflectionIntensity = 0.02f;
 
         private Transform playerTransform;
         private Light sunLight;
@@ -41,6 +43,7 @@ namespace MyVirtualCommunity.Client.World
         private float nextDripTime = 6.5f;
 
         private float currentUndergroundBlend = 0f;
+        private bool wasUndergroundApplied = false;
         private float screenFadeAlpha = 0f;
         private Texture2D blackTex;
 
@@ -85,6 +88,8 @@ namespace MyVirtualCommunity.Client.World
             foreach (var l in childLights)
             {
                 if (l == null) continue;
+                // Keep exterior Rio Bravo under-bridge floodlights active at all times (never disable when exiting underground!)
+                if (l.gameObject.name.Contains("BridgeFlood")) continue;
                 undergroundLights.Add(l);
                 if (l.gameObject.name.Contains("VaultFlicker") || l.gameObject.name.Contains("Sputter"))
                 {
@@ -158,7 +163,18 @@ namespace MyVirtualCommunity.Client.World
                 }
             }
 
-            if (currentUndergroundBlend <= 0.005f) return;
+            if (currentUndergroundBlend <= 0.005f)
+            {
+                if (wasUndergroundApplied)
+                {
+                    // Cleanly restore outdoor skybox reflections when returning to the surface
+                    RenderSettings.reflectionIntensity = 1.0f;
+                    wasUndergroundApplied = false;
+                }
+                return;
+            }
+
+            wasUndergroundApplied = true;
 
             if (sunLight != null)
             {
@@ -171,9 +187,13 @@ namespace MyVirtualCommunity.Client.World
             RenderSettings.fogDensity = Mathf.Lerp(0.0025f, undergroundFogDensity, currentUndergroundBlend);
 
             RenderSettings.ambientMode = AmbientMode.Trilight;
+            RenderSettings.ambientIntensity = Mathf.Lerp(1.0f, undergroundAmbientIntensity, currentUndergroundBlend);
             RenderSettings.ambientSkyColor = Color.Lerp(RenderSettings.ambientSkyColor, undergroundAmbientSky, currentUndergroundBlend);
             RenderSettings.ambientEquatorColor = Color.Lerp(RenderSettings.ambientEquatorColor, undergroundAmbientEquator, currentUndergroundBlend);
             RenderSettings.ambientGroundColor = Color.Lerp(RenderSettings.ambientGroundColor, undergroundAmbientGround, currentUndergroundBlend);
+
+            // Suppress outdoor skybox reflections underground so water & damp concrete stay pitch-dark instead of glowing sky-blue!
+            RenderSettings.reflectionIntensity = Mathf.Lerp(1.0f, undergroundReflectionIntensity, currentUndergroundBlend);
         }
 
         private void UpdateFlickerLights()

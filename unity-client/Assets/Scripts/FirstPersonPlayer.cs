@@ -930,7 +930,7 @@ namespace MyVirtualCommunity.Client.World
             if (characterController.isGrounded)
             {
                 verticalVelocity = -1.5f; // Snap to ground and curbs
-                if (transform.position.y >= -8.5f)
+                if (transform.position.y >= -10.5f)
                 {
                     lastSafeGroundedPosition = transform.position;
                     hasSafeGroundedPosition = true;
@@ -960,7 +960,7 @@ namespace MyVirtualCommunity.Client.World
             }
 
             // Void-fall recovery safety guard (bypassed while exploring Backrooms at Y=-50m & allows underground sewers/vault down to Y=-10m!)
-            if (!IsInBackroomsOrTransitioning() && transform.position.y < -12.0f && hasSafeGroundedPosition && characterController != null)
+            if (!IsInBackroomsOrTransitioning() && transform.position.y < -13.0f && hasSafeGroundedPosition && characterController != null)
             {
                 bool wasEnabled = characterController.enabled;
                 characterController.enabled = false;
@@ -989,6 +989,29 @@ namespace MyVirtualCommunity.Client.World
             }
         }
 
+        private bool IsPlayerInUndergroundSewer()
+        {
+            if (UndergroundSewerAtmosphereController.ActiveInstance != null &&
+                UndergroundSewerAtmosphereController.ActiveInstance.IsPlayerUnderground)
+            {
+                return true;
+            }
+            float py = transform.position.y;
+            return py < -0.95f && py > -20f;
+        }
+
+        private bool ShouldHideNpcForCurrentElevation(InteractionPoint pt)
+        {
+            if (pt == null) return true;
+            float npcY = pt.transform.position.y;
+            float playerY = transform.position.y;
+            // While inside the underground storm-drain network, never leak surface NPC nameplates, radar, or prompts through the ceiling!
+            if (IsPlayerInUndergroundSewer() && npcY > -0.85f) return true;
+            // Also guard in reverse (or across major elevation separation > 2.6m)
+            if (Mathf.Abs(npcY - playerY) > 2.6f) return true;
+            return false;
+        }
+
         private void HandleInteractionProximity()
         {
             if (cachedInteractionPoints == null || cachedInteractionPoints.Length == 0)
@@ -1003,7 +1026,7 @@ namespace MyVirtualCommunity.Client.World
 
             foreach (var point in points)
             {
-                if (point == null || point.IsSuppressedOutsideServiceHours()) continue;
+                if (point == null || point.IsSuppressedOutsideServiceHours() || ShouldHideNpcForCurrentElevation(point)) continue;
                 float dist = Vector3.Distance(point.transform.position, playerPos);
                 float radius = Mathf.Max(point.interactionRadius, maxInteractionDistance);
 
@@ -2771,7 +2794,7 @@ namespace MyVirtualCommunity.Client.World
 
             foreach (var pt in points)
             {
-                if (pt == null || pt.IsSuppressedOutsideServiceHours()) continue;
+                if (pt == null || pt.IsSuppressedOutsideServiceHours() || ShouldHideNpcForCurrentElevation(pt)) continue;
                 Vector3 targetPos = pt.transform.position + Vector3.up * 2.15f;
                 float dist = Vector3.Distance(camPos, targetPos);
                 if (dist > 25f) continue; // Visible within 25 meters
@@ -3330,7 +3353,7 @@ namespace MyVirtualCommunity.Client.World
 
             foreach (var pt in points)
             {
-                if (pt == null || pt.IsSuppressedOutsideServiceHours()) continue;
+                if (pt == null || pt.IsSuppressedOutsideServiceHours() || ShouldHideNpcForCurrentElevation(pt)) continue;
                 float dist = Vector3.Distance(playerPos, pt.transform.position);
 
                 Vector3 toTarget = pt.transform.position - playerPos;
@@ -3376,6 +3399,7 @@ namespace MyVirtualCommunity.Client.World
             }
 
             sortedPoints.Sort((a, b) => a.Item1.CompareTo(b.Item1));
+            if (sortedPoints.Count == 0) return;
 
             const float cardW = 280f;
             int count = Mathf.Min(3, sortedPoints.Count);
@@ -3519,7 +3543,7 @@ namespace MyVirtualCommunity.Client.World
             {
                 foreach (var pt in points)
                 {
-                    if (pt == null) continue;
+                    if (pt == null || ShouldHideNpcForCurrentElevation(pt)) continue;
                     Vector3 ptPos = pt.transform.position;
                     float nx = Mathf.Clamp01((ptPos.x - minX) / (maxX - minX));
                     float nz = Mathf.Clamp01((ptPos.z - minZ) / (maxZ - minZ));
