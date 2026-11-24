@@ -6,10 +6,10 @@ using UnityEngine.Rendering;
 namespace MyVirtualCommunity.Client.World
 {
     /// <summary>
-    /// Manages underground storm-drain atmosphere, fog, directional-sun attenuation,
-    /// subtle flickering maintenance lights inside the Central Cistern Vault, procedural
-    /// water-drip & tunnel-hum ambient audio, and seamless daylight fade-in as the player
-    /// exits through the Rio Bravo storm outflow headwall (Z >= 186m).
+    /// Manages underground storm-drain atmosphere: dense dark fog, suppressed outdoor sunlight,
+    /// near-black damp ambient gloom (making the [F] flashlight essential), erratic flickering
+    /// old maintenance lights inside the Central Cistern Vault, subtle low tunnel hum with sparse
+    /// organic water droplets, and smooth daylight fade-in exiting to the Rio Bravo (Z >= 182m).
     /// </summary>
     public class UndergroundSewerAtmosphereController : MonoBehaviour
     {
@@ -17,15 +17,15 @@ namespace MyVirtualCommunity.Client.World
 
         [Header("Underground Spatial Bounds")]
         public float undergroundThresholdY = -0.85f;
-        public float outflowDaylightStartZ = 180.0f;
-        public float outflowDaylightFullZ = 195.5f;
+        public float outflowDaylightStartZ = 182.0f;
+        public float outflowDaylightFullZ = 197.5f;
 
-        [Header("Underground Visual Tuning")]
-        public Color undergroundFogColor = new Color(0.035f, 0.055f, 0.060f, 1.0f);
-        public float undergroundFogDensity = 0.052f;
-        public Color undergroundAmbientSky = new Color(0.06f, 0.09f, 0.10f, 1.0f);
-        public Color undergroundAmbientEquator = new Color(0.045f, 0.065f, 0.068f, 1.0f);
-        public Color undergroundAmbientGround = new Color(0.03f, 0.035f, 0.035f, 1.0f);
+        [Header("Dense Dark Underground Visual Tuning")]
+        public Color undergroundFogColor = new Color(0.011f, 0.019f, 0.020f, 1.0f);
+        public float undergroundFogDensity = 0.088f;
+        public Color undergroundAmbientSky = new Color(0.012f, 0.018f, 0.019f, 1.0f);
+        public Color undergroundAmbientEquator = new Color(0.009f, 0.014f, 0.014f, 1.0f);
+        public Color undergroundAmbientGround = new Color(0.005f, 0.007f, 0.007f, 1.0f);
 
         private Transform playerTransform;
         private Light sunLight;
@@ -36,8 +36,9 @@ namespace MyVirtualCommunity.Client.World
 
         private AudioSource ambientLoopSource;
         private AudioSource dripSource;
-        private AudioClip dripClip;
-        private float nextDripTime = 1.5f;
+        private AudioClip dripClipSoft;
+        private AudioClip dripClipDeep;
+        private float nextDripTime = 6.5f;
 
         private float currentUndergroundBlend = 0f;
         private float screenFadeAlpha = 0f;
@@ -85,7 +86,7 @@ namespace MyVirtualCommunity.Client.World
             {
                 if (l == null) continue;
                 undergroundLights.Add(l);
-                if (l.gameObject.name.Contains("VaultFlicker"))
+                if (l.gameObject.name.Contains("VaultFlicker") || l.gameObject.name.Contains("Sputter"))
                 {
                     flickeringVaultLights.Add(l);
                     flickeringBaseIntensities.Add(l.intensity);
@@ -113,15 +114,12 @@ namespace MyVirtualCommunity.Client.World
 
         private float ComputeTargetBlend(Vector3 pos)
         {
-            // Inside Backrooms scene (Y < -20m): do NOT interfere with Backrooms lighting
             if (pos.y < -20f) return 0f;
             if (backroomsTransition != null && (backroomsTransition.IsPlayerInBackrooms || backroomsTransition.IsTransitioning))
                 return 0f;
 
-            // Above street level -> 0
             if (pos.y > undergroundThresholdY) return 0f;
 
-            // Outside the Rio Bravo storm outflow headwall (Z >= outflowDaylightFullZ) -> real outdoor sky & sun!
             if (pos.z >= outflowDaylightFullZ) return 0f;
             if (pos.z > outflowDaylightStartZ)
             {
@@ -162,10 +160,9 @@ namespace MyVirtualCommunity.Client.World
 
             if (currentUndergroundBlend <= 0.005f) return;
 
-            // Override scene lighting smoothly while deep inside the storm drains
             if (sunLight != null)
             {
-                sunLight.intensity = Mathf.Lerp(sunLight.intensity, 0.04f, currentUndergroundBlend);
+                sunLight.intensity = Mathf.Lerp(sunLight.intensity, 0.0f, currentUndergroundBlend);
             }
 
             RenderSettings.fog = true;
@@ -186,9 +183,9 @@ namespace MyVirtualCommunity.Client.World
             {
                 Light l = flickeringVaultLights[i];
                 if (l == null) continue;
-                float n = Mathf.PerlinNoise(Time.time * 4.5f + i * 11.3f, 0.25f);
-                float dip = n < 0.20f ? 0.28f : (0.85f + 0.22f * n);
-                l.intensity = flickeringBaseIntensities[i] * dip;
+                float n = Mathf.PerlinNoise(Time.time * 5.2f + i * 13.7f, 0.35f);
+                float sputter = n < 0.22f ? 0.14f : (n < 0.34f ? 0.48f : (0.82f + 0.18f * n));
+                l.intensity = flickeringBaseIntensities[i] * sputter;
             }
         }
 
@@ -196,19 +193,25 @@ namespace MyVirtualCommunity.Client.World
         {
             if (ambientLoopSource != null)
             {
-                ambientLoopSource.volume = 0.28f * currentUndergroundBlend;
+                ambientLoopSource.volume = 0.18f * currentUndergroundBlend;
                 if (currentUndergroundBlend > 0.02f && !ambientLoopSource.isPlaying)
                     ambientLoopSource.Play();
                 else if (currentUndergroundBlend <= 0.02f && ambientLoopSource.isPlaying)
                     ambientLoopSource.Stop();
             }
 
-            if (currentUndergroundBlend > 0.35f && dripSource != null && dripClip != null && Time.time >= nextDripTime)
+            // Sparse, subtle, organic water droplets (every 9.5–22 seconds instead of annoying constant dripping!)
+            if (currentUndergroundBlend > 0.45f && dripSource != null && Time.time >= nextDripTime)
             {
-                dripSource.pitch = Random.Range(0.78f, 1.32f);
-                dripSource.panStereo = Random.Range(-0.75f, 0.75f);
-                dripSource.PlayOneShot(dripClip, Random.Range(0.14f, 0.32f) * currentUndergroundBlend);
-                nextDripTime = Time.time + Random.Range(1.4f, 4.2f);
+                AudioClip chosen = Random.value < 0.55f ? dripClipSoft : dripClipDeep;
+                if (chosen != null)
+                {
+                    dripSource.pitch = Random.Range(0.84f, 1.16f);
+                    dripSource.panStereo = Random.Range(-0.70f, 0.70f);
+                    dripSource.PlayOneShot(chosen, Random.Range(0.08f, 0.17f) * currentUndergroundBlend);
+                }
+                // Occasional subtle second echo drop (20% chance), otherwise long quiet pause!
+                nextDripTime = Time.time + (Random.value < 0.20f ? Random.Range(0.55f, 1.15f) : Random.Range(9.5f, 22.0f));
             }
         }
 
@@ -235,48 +238,55 @@ namespace MyVirtualCommunity.Client.World
             dripSource = gameObject.AddComponent<AudioSource>();
             dripSource.playOnAwake = false;
             dripSource.spatialBlend = 0f;
-            dripClip = CreateWaterDripClip();
+            dripClipSoft = CreateNaturalWaterDripClip("SewerDripSoft", 460f, 980f, 0.14f);
+            dripClipDeep = CreateNaturalWaterDripClip("SewerDripDeep", 310f, 680f, 0.18f);
         }
 
         private static AudioClip CreateTunnelWaterHumClip()
         {
             int sr = 22050;
-            int samples = sr * 4;
+            int samples = sr * 5;
             float[] data = new float[samples];
             System.Random rng = new System.Random(4407);
-            float lp = 0f;
+            float lp1 = 0f, lp2 = 0f;
             for (int i = 0; i < samples; i++)
             {
                 float t = (float)i / sr;
                 float white = (float)rng.NextDouble() * 2f - 1f;
-                lp = lp * 0.94f + white * 0.06f; // Low-pass rushing drain water
-                float resonance = Mathf.Sin(2f * Mathf.PI * 58f * t) * 0.14f + Mathf.Sin(2f * Mathf.PI * 116f * t) * 0.06f;
-                // Seamless loop fade
+                // Double low-pass for deep, warm subterranean airflow & distant flowing drain water
+                lp1 = lp1 * 0.955f + white * 0.045f;
+                lp2 = lp2 * 0.92f + lp1 * 0.08f;
+                float resonance = Mathf.Sin(2f * Mathf.PI * 52f * t) * 0.09f;
                 float fade = 1f;
-                if (i < 1000) fade = i / 1000f;
-                else if (i > samples - 1000) fade = (samples - i) / 1000f;
-                data[i] = (lp * 1.6f + resonance) * 0.45f * fade;
+                if (i < 1200) fade = i / 1200f;
+                else if (i > samples - 1200) fade = (samples - i) / 1200f;
+                data[i] = (lp2 * 2.4f + resonance) * 0.42f * fade;
             }
             AudioClip clip = AudioClip.Create("SewerAmbientWaterHum", samples, 1, sr, false);
             clip.SetData(data, 0);
             return clip;
         }
 
-        private static AudioClip CreateWaterDripClip()
+        private static AudioClip CreateNaturalWaterDripClip(string name, float fStart, float fEnd, float duration)
         {
             int sr = 22050;
-            int samples = Mathf.RoundToInt(sr * 0.22f);
+            int samples = Mathf.RoundToInt(sr * duration);
             float[] data = new float[samples];
             float phase = 0f;
+            float lp = 0f;
             for (int i = 0; i < samples; i++)
             {
                 float t = (float)i / sr;
-                float freq = Mathf.Lerp(620f, 1650f, Mathf.Clamp01(t / 0.06f));
+                float u = Mathf.Clamp01(t / (duration * 0.45f));
+                float freq = Mathf.Lerp(fStart, fEnd, u * u);
                 phase += 2f * Mathf.PI * freq / sr;
-                float env = Mathf.Exp(-t * 28f);
-                data[i] = Mathf.Sin(phase) * env * 0.7f;
+                float attack = Mathf.Clamp01(t / 0.004f);
+                float decay = Mathf.Exp(-t * 34f);
+                float raw = Mathf.Sin(phase) * attack * decay;
+                lp = lp * 0.55f + raw * 0.45f; // Soft dampened concrete cave absorption
+                data[i] = lp * 0.55f;
             }
-            AudioClip clip = AudioClip.Create("SewerWaterDrip", samples, 1, sr, false);
+            AudioClip clip = AudioClip.Create(name, samples, 1, sr, false);
             clip.SetData(data, 0);
             return clip;
         }
