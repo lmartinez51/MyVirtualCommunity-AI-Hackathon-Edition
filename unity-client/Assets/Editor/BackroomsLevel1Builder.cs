@@ -20,7 +20,7 @@ namespace MyVirtualCommunity.Editor
     /// Includes:
     ///   - Seamless procedural Level 0 yellow wallpaper, damp mustard carpet & acoustic ceiling grid
     ///   - 24 fluorescent ceiling fixtures (steady, flickering & dead tubes) + ceiling void tiles
-    ///   - Vast Kane Pixels-style central pillared hall, long disorienting corridors & isolated rooms
+    ///   - Vast central pillared hall, long disorienting corridors & isolated rooms
     ///   - Strictly 1 lone workstation (1 desk + 1 laptop + 1 office chair) in a surreal random alcove
     ///   - 8 "Reality-Bridge" props ready for future live API integrations (Laptop, FM Radio, Alexa,
     ///     Diario de Juárez iPad, Juárez Live Weather/Clock Terminal, 90s Wall Payphone, CCTV Frame,
@@ -190,7 +190,7 @@ namespace MyVirtualCommunity.Editor
             CreateWallSegment("Wall_SWPortal_EastS", shellRoot.transform, new Vector2(-12.5f, -12.0f), new Vector2(-12.5f, -9.2f), 0.22f, wallMat, baseboardMat);
             CreateWallSegment("Wall_SWPortal_North", shellRoot.transform, new Vector2(-20.0f, -4.0f), new Vector2(-15.5f, -4.0f), 0.22f, wallMat, baseboardMat);
 
-            // --- VAST CENTRAL PILLARED HALL (Kane Pixels Iconic Square Yellow Columns!) ---
+            // --- VAST CENTRAL PILLARED HALL (12 Square Columns) ---
             // 12 evenly spaced yellow-wallpapered square columns spanning X = -10..+6, Z = -2.2..+3.8
             float[] pillarXs = new float[] { -9.5f, -5.5f, -1.5f, 2.5f };
             float[] pillarZs = new float[] { -1.8f, 1.4f, 4.0f };
@@ -818,8 +818,8 @@ namespace MyVirtualCommunity.Editor
             AttachDesc(chassis, "reality-bridge:diario-de-juarez-ipad",
                 "iPad • Portada Digital 'El Diario de Juárez' (Noticias Reales del Día)",
                 "iPad • 'El Diario de Juárez' Digital Front Page (Live Daily News)",
-                "Tableta sobre atril mostrando la portada digital de El Diario de Juárez. Preparada para sincronizar titulares reales del día desde Ciudad Juárez dentro de los Backrooms.",
-                "Tablet on a floor stand displaying the digital front page of El Diario de Juárez. Ready to pull live daily headlines from Ciudad Juárez straight into the Backrooms.",
+                "Tableta sobre atril mostrando la portada digital de El Diario de Juárez. Preparada para sincronizar titulares reales del día desde Ciudad Juárez dentro de Remanencia.",
+                "Tablet on a floor stand displaying the digital front page of El Diario de Juárez. Ready to pull live daily headlines from Ciudad Juárez straight into Remanencia.",
                 new Color(0.96f, 0.96f, 0.96f));
         }
 
@@ -1154,10 +1154,10 @@ namespace MyVirtualCommunity.Editor
             mTrig.isTrigger = true;
             vaultCtrl.portalMirrorRenderer = mirrorSurface.GetComponent<Renderer>();
             AttachDesc(mirrorSurface, "portal:umbral-de-lasser",
-                "El Umbral de Lasser — Única Puerta Dimensional (Nivel 1 → Nivel 2)",
-                "The Lasser Threshold — Sole Dimensional Portal (Level 1 → Level 2)",
-                "El único portal dimensional escondido en lo más profundo del laberinto. Su pilar derecho posee una Cuenca Octagonal que requiere 'El Ojo del Umbral' para liberar las cadenas y abrir paso al Nivel 2.",
-                "The sole dimensional gateway hidden deep within the maze. Its right pillar holds an Octagonal Socket requiring 'The Eye of the Threshold' to release the chains and open the path to Level 2.",
+                "Pasaje dimensional",
+                "Dimensional Passage",
+                "El mecanismo está activo. Su destino no puede determinarse. La estructura parece conectar este espacio con otra región de Remanencia.",
+                "The mechanism is active. Its destination cannot be determined. The structure appears to connect this space to another region of Remanencia.",
                 new Color(0.55f, 0.86f, 1.0f));
 
             GameObject vortexGroup = new GameObject("Portal_ActiveVortexGroup");

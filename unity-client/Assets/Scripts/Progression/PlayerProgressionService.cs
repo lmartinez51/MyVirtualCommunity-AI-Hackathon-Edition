@@ -747,7 +747,7 @@ namespace MyVirtualCommunity.Client.Progression
                 case ProgressionIds.CheckpointEvidenceBoardPdn00Inspected:
                     return isEs ? "Muro de Evidencias PDN-00 inspeccionado" : "Evidence Board PDN-00 Inspected";
                 case ProgressionIds.CheckpointBackroomsEntered:
-                    return isEs ? "Acceso a Nivel 1 (Backrooms)" : "Entered Backrooms Level 1";
+                    return isEs ? "Remanencia — Nivel 0" : "Remanencia — Level 0";
                 case ProgressionIds.CheckpointSecretDoorUnlocked:
                     return isEs ? "Puerta secreta desbloqueada" : "Secret Door Unlocked";
                 case ProgressionIds.CheckpointUndergroundEntered:

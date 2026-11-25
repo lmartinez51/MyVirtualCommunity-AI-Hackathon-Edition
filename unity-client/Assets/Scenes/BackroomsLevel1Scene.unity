@@ -3610,16 +3610,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MyVirtualCommunity.Client.World.SecretContainmentArtifactDescriptor
   artifactId: portal:umbral-de-lasser
-  titleEs: "El Umbral de Lasser \u2014 \xDAnica Puerta Dimensional (Nivel 1 \u2192
-    Nivel 2)"
-  titleEn: "The Lasser Threshold \u2014 Sole Dimensional Portal (Level 1 \u2192 Level
-    2)"
-  loreEs: "El \xFAnico portal dimensional escondido en lo m\xE1s profundo del laberinto.
-    Su pilar derecho posee una Cuenca Octagonal que requiere 'El Ojo del Umbral'
-    para liberar las cadenas y abrir paso al Nivel 2."
-  loreEn: The sole dimensional gateway hidden deep within the maze. Its right pillar
-    holds an Octagonal Socket requiring 'The Eye of the Threshold' to release the
-    chains and open the path to Level 2.
+  titleEs: Pasaje dimensional
+  titleEn: Dimensional Passage
+  loreEs: "El mecanismo est\xE1 activo. Su destino no puede determinarse. La estructura
+    parece conectar este espacio con otra regi\xF3n de Remanencia."
+  loreEn: The mechanism is active. Its destination cannot be determined. The structure
+    appears to connect this space to another region of Remanencia.
   accentColor: {r: 0.55, g: 0.86, b: 1, a: 1}
   inspectionScope: 0
 --- !u!65 &130620060
@@ -32621,10 +32617,10 @@ MonoBehaviour:
   titleEn: "iPad \u2022 'El Diario de Ju\xE1rez' Digital Front Page (Live Daily News)"
   loreEs: "Tableta sobre atril mostrando la portada digital de El Diario de Ju\xE1rez.
     Preparada para sincronizar titulares reales del d\xEDa desde Ciudad Ju\xE1rez
-    dentro de los Backrooms."
+    dentro de Remanencia."
   loreEn: "Tablet on a floor stand displaying the digital front page of El Diario
     de Ju\xE1rez. Ready to pull live daily headlines from Ciudad Ju\xE1rez straight
-    into the Backrooms."
+    into Remanencia."
   accentColor: {r: 0.96, g: 0.96, b: 0.96, a: 1}
   inspectionScope: 0
 --- !u!65 &1656098998

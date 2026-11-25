@@ -15,7 +15,7 @@ Prove the commercial core of **My Virtual Community — A Living World Beyond Re
 1. **Main Reality Layer** (Ciudad Juárez–El Paso corridor)
 2. **Underground Storm-Drain Network** (*La Cisterna / El Nudo*, *Sector C-0*, Río Bravo outflow)
 3. **Secret Room Threshold** (Building A South false wall & keypad door)
-4. **Backrooms Level 1** (IP-cleared liminal vault, Level-Ω Safe, *El Ojo del Umbral*, *El Umbral de Lasser*)
+4. **Remanencia — Nivel 0: Hotel de las Palomas** (liminal territory undergoing incremental visual transformation from legacy `BackroomsLevel1Scene.unity`, Level-Ω Safe, *El Ojo del Umbral*, and Dimensional Passage)
 
 > **Scope Boundary (`PLANNED`):** A playable fourth hidden world *beyond* *El Umbral de Lasser* is **explicitly NOT required** for this initial Unity Fellowship demo slice. Activating *El Umbral de Lasser* serves as the vertical slice climax and completion beat, pointing forward to the full commercial campaign.
 
@@ -42,10 +42,10 @@ Each beat below explicitly separates **`[EXISTING NOW]` (`CONFIRMED`)** from **`
 - **`[PROPOSED FOR SLICE]`:**
   - Add responsive audio/visual cues (keypad beeps, heavy latch, low hum behind the Threshold Veil) reinforcing the shift from grounded border street into liminal space.
 
-### Beat 4 — Backrooms Level 1 Exploration (Liminal Labyrinth — IP-01 Replaced)
-- **`[EXISTING NOW]`:** `BackroomsLevel1Scene.unity` (`40 m × 24 m` at `Y = -50.0 m`) loads additively with flickering fluorescent fixtures, central pillared hall, NE return door, **15 original dispersed artifacts** (the 12 retired IP-01 horror-franchise props replaced with original archival/anomalous artifacts alongside Evidence Board PDN-00, the *Paquimé* mask, and the *Anomalous Astral Compass* — `REPLACED — creator visual review complete; not formal legal clearance`), and 8 Reality-Bridge prop models.
+### Beat 4 — Remanencia — Nivel 0: Hotel de las Palomas Exploration *(IP-01 Replaced; Public Identity Transitioned)*
+- **`[EXISTING NOW]`:** `BackroomsLevel1Scene.unity` (`40 m × 24 m` at `Y = -50.0 m`) loads additively as the playable foundation for **Remanencia — Nivel 0** (see [Remanencia — Nivel 0 Creative Design Brief](REMANENCIA_LEVEL_0_CREATIVE_DESIGN_BRIEF.md)) with flickering fluorescent fixtures, central pillared hall, NE return door, **15 original dispersed artifacts** (the 12 retired IP-01 horror-franchise props replaced with original archival/anomalous artifacts alongside Evidence Board PDN-00, the *Paquimé* mask, and the *Anomalous Astral Compass* — `REPLACED — creator visual review complete; not formal legal clearance`), and 8 Reality-Bridge prop models.
 - **`[PROPOSED FOR SLICE]`:**
-  - **Remaining IP Replacement (`IP-03` / `IP-05`):** Complete creator naming review for liminal-layer terminology (`IP-03`) and replace trademarked consumer/newspaper Reality-Bridge props (`IP-05`) with generic or original diegetic devices.
+  - **Remaining IP Replacement (`IP-03` visual redesign / `IP-05`):** Transform the legacy yellow-wallpaper/mustard-carpet surfaces, lighting, and Manhole #1 transition into the unfinished northern Mexican architecture of *Hotel de las Palomas* (`IP-03`), and replace trademarked consumer/newspaper Reality-Bridge props (`IP-05`) with generic or original diegetic devices.
   - Wire at least **1–2 Reality-Bridge props** (such as the Juárez telemetry wall monitor or thermal printer) to display deterministic local World Core clock/corridor state offline so the "living world beyond reality" theme pays off diegetically.
 
 ### Beat 5 — Evidence Board & Level-Ω Safe Puzzle

@@ -217,9 +217,9 @@ namespace MyVirtualCommunity.Client.World
 
         /// <summary>
         /// Phase-2 Silent Easter Egg: Triggered without any hint or UI warning when the player
-        /// descends the Av. Benito Juarez x Calle Azucenas manhole. Performs a sudden Kane Pixels
-        /// "Found Footage" reality no-clip glitch and physically drops the player from the sealed
-        /// acoustic ceiling into a random disorienting spot inside the 40m x 24m Backrooms maze.
+        /// descends the Av. Benito Juarez x Calle Azucenas manhole. Performs a sudden legacy
+        /// dimensional reality-tear glitch and physically drops the player from the sealed
+        /// acoustic ceiling into a random disorienting spot inside the 40m x 24m maze.
         /// </summary>
         public void TriggerManholeNoClipDropToBackrooms(Transform playerTransform)
         {

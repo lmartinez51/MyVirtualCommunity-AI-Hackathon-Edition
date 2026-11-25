@@ -22,7 +22,7 @@ Related documents: [Application Brief](APPLICATION_BRIEF.md) · [Roadmap](ROADMA
 | **6. Hardware, Software & Unity Licensing** | Commercial Unity license tier (if required beyond Fellowship support), dev/test hardware across GPU tiers (low-VRAM laptop + mid-range desktop), audio/art tool subscriptions. | Q1 2027 – Feb 2028 | `TBD` |
 | **7. QA Playtesting & Release Marketing** | External usability/playtest compensation, trailer production polish, storefront capsule art, Steam/platform fees, and launch visibility. | Q4 2027 – Feb 2028 | `TBD` |
 | **8. Contingency Reserve** | Buffer for schedule risks, optimization passes, or unexpected clearance/localization costs. | Full Production Window | `TBD` |
-| **Optional Conditional Scope *(Unapproved)*** | Candidate post-Lasser hidden world expansion (`OPTIONAL FUTURE SCOPE — SUBJECT TO CREATOR APPROVAL AND VERTICAL-SLICE VALIDATION`; **not** a committed funded v1.0 deliverable). | Unscheduled (Post-Slice Evaluation) | `TBD (Optional)` |
+| **Optional Conditional Scope *(Unapproved)*** | Candidate post-passage hidden world expansion beyond the Dimensional Passage (`OPTIONAL FUTURE SCOPE — SUBJECT TO CREATOR APPROVAL AND VERTICAL-SLICE VALIDATION`; **not** a committed funded v1.0 deliverable). | Unscheduled (Post-Slice Evaluation) | `TBD (Optional)` |
 | **Total Requested / Projected Core Budget** | — | **Mar 2027 – Feb 2028** | **`TBD`** |
 
 ---

@@ -27,10 +27,10 @@ The project evolved from an earlier 2026 AI Hackathon foundation (archived intac
   - Full first-person exploration across the Ciudad Juárez–El Paso surface corridor (`BorderCorridorScene.unity`), including East/West commercial blocks, walkable *Óptica Fashion*, West Manzana & Calle Ignacio Mariscal, Paso del Norte viaduct, and El Paso U.S. Inspection Plaza.
   - 7 autonomous, procedurally baked Bobblehead NPCs with distinct roles, schedule-driven movement, and deterministic World Core authority (`src/domain/`).
   - Physically integrated underground storm-drain network beneath `BorderCorridorScene.unity` (*La Cisterna / El Nudo*, *Sector C-0* bulkhead, `Y = -8.45 m` Abasolo inverted siphon, 4 sewer manholes, Río Bravo interactive outflow gate, `[F]` tactical flashlight).
-  - Building A South Secret Room keypad door (`SecretKeypadDoorController.cs`) and opaque Threshold Veil additively loading `BackroomsLevel1Scene.unity` (`40 m × 24 m`), plus a silent alternate ceiling no-clip entry via the Av. Juárez × Azucenas manhole and a clean return door back to Avenida Juárez.
-  - Self-contained Backrooms micro-puzzle (Evidence Board PDN-00 → Level-Ω Safe → *El Ojo del Umbral* → visual activation of *El Umbral de Lasser*).
+  - Building A South Secret Room keypad door (`SecretKeypadDoorController.cs`) and opaque Threshold Veil additively loading **Remanencia — Nivel 0** (`BackroomsLevel1Scene.unity`, `40 m × 24 m`), plus a legacy alternate manhole entry via Av. Juárez × Azucenas and a clean return door back to Avenida Juárez.
+  - Self-contained **Remanencia — Nivel 0** micro-puzzle (Evidence Board PDN-00 → Level-Ω Safe → *El Ojo del Umbral* → visual activation of the Dimensional Passage).
 - **What is NOT yet implemented (explicit transparency):**
-  - *El Umbral de Lasser* is currently a **visual activation only** — it does not load or transport the player to another world.
+  - The Dimensional Passage (*Pasaje dimensional*) is currently a **visual activation only** — it does not load or transport the player to another world.
   - No title screen, save/load, clue journal, general inventory, quest/progression framework, or slice end state exists yet.
   - Audio is currently procedural C# synthesis only (no authored soundscape/music/foley files yet).
   - Current developer build requires running the local Node.js backend via `scripts/launch-demo.ps1` alongside `MyVirtualCommunity.exe` (not yet a single-click consumer installer).

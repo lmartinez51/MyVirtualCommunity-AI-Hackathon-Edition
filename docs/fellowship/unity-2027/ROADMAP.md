@@ -31,7 +31,7 @@ Related documents: [Application Brief](APPLICATION_BRIEF.md) · [Vertical Slice]
    - Replace `media/arch-ads/camila_loop.mp4`, unlicensed consumer trademarks (`Alexa`, `iPad`, `El Diario de Juárez`), and external YouTube/unlicensed brand assets per chosen brand policy.
    - Update Unity `ProjectSettings.asset` (`productName`, `companyName`) and remove `HandshakeScene.unity` from playable demo build settings.
 3. **Minimal Playable Vertical Slice Loop (*Slice 01*):**
-   - Add Title Screen, gated debug modes (`[V]`/`[G]` locked behind dev flag), underground environmental clues leading to the Secret Room code, lightweight Discovery Journal, persistent slice save, and *El Umbral de Lasser* climax + Slice Complete screen.
+   - Add Title Screen, gated debug modes (`[V]`/`[G]` locked behind dev flag), underground environmental clues leading to the Secret Room code, lightweight Discovery Journal, persistent slice save, and Dimensional Passage (*Pasaje dimensional*) climax + Slice Complete screen.
    - Simplify Windows demo launch so evaluators can run cleanly offline.
 4. **Trailer Capture & Application Submission:** Capture IP-clean footage per [Trailer Script](TRAILER_SCRIPT.md), package verified Windows demo build per [Build Delivery](BUILD_DELIVERY.md), and submit before **December 18, 2026, 5:00 p.m. ET**.
 
@@ -53,9 +53,9 @@ Related documents: [Application Brief](APPLICATION_BRIEF.md) · [Vertical Slice]
 *Goal: Expand Slice 01 into a complete, cohesive commercial campaign.*
 
 - **Q2 2027 (Mar – May 2027) — Narrative & Systems Alpha:**
-  - Implement full save/load system, Discovery Journal, key-item inventory, dialogue/clue state tracking, and creator-approved narrative campaign structure across the four verified spatial layers (Main Reality corridor, Underground Storm-Drain Network, Secret Room, and IP-cleared Backrooms Level 1).
+  - Implement full save/load system, Discovery Journal, key-item inventory, dialogue/clue state tracking, and creator-approved narrative campaign structure across the four verified spatial layers (Main Reality corridor, Underground Storm-Drain Network, Secret Room, and **Remanencia — Nivel 0: Hotel de las Palomas**).
   - Populate underground storm-drain network (*La Cisterna / El Nudo*, *Sector C-0*) with authored environmental storytelling, puzzles, and any creator-approved subterranean encounters.
-  - Complete *Slice 01* playtesting and evaluate feasibility/value of optional post-Lasser expansion candidates before committing additional world scope.
+  - Complete *Slice 01* playtesting and evaluate feasibility/value of optional post-passage expansion candidates before committing additional world scope.
 - **Q3 2027 (Jun – Aug 2027) — Content Complete & Audio/Visual Upgrade:**
   - Complete authored sound design: border streetscape ambience, material-based footsteps, underground acoustics, liminal audio, puzzle foley, and original music score.
   - Upgrade URP lighting, shadow fidelity (replacing `256`-resolution shadow atlas with scalable PC quality presets), occlusion culling, LODs, and visual polish across all scenes.
@@ -81,7 +81,7 @@ Related documents: [Application Brief](APPLICATION_BRIEF.md) · [Vertical Slice]
 ## Candidate Expansion (`OPTIONAL FUTURE SCOPE — SUBJECT TO CREATOR APPROVAL AND VERTICAL-SLICE VALIDATION`)
 
 The following expansion is **NOT** a committed v1.0 milestone and carries **no mandatory completion date**:
-- **First Playable Hidden World Beyond *El Umbral de Lasser*:** A candidate additive realm whose narrative value, production feasibility, and schedule impact will be evaluated only after *Slice 01* playtesting and explicit creator approval.
+- **First Playable Hidden World Beyond the Dimensional Passage:** A candidate additive realm whose narrative value, production feasibility, and schedule impact will be evaluated only after *Slice 01* playtesting and explicit creator approval.
 
 ---
 
@@ -89,6 +89,6 @@ The following expansion is **NOT** a committed v1.0 milestone and carries **no m
 
 Explicitly **deferred** out of v1.0 scope to protect the **February 2028** internal target release (ahead of the March 1, 2028 deadline in Unity Fellowship Terms Section 2.1(c)):
 - Additional Ciudad Juárez / El Paso urban districts beyond the Av. Benito Juárez – Paso del Norte corridor.
-- Further hidden worlds beyond any future post-Lasser expansion.
+- Further hidden worlds beyond any future post-passage expansion.
 - Optional live API Reality-Bridge modules (live radio/news/weather/AI integrations).
 - Multiplayer / shared-world modes, console ports, or macOS/Linux builds.

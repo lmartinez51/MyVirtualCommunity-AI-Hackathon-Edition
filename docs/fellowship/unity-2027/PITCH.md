@@ -14,7 +14,7 @@ Related documents: [Application Brief](APPLICATION_BRIEF.md) · [Game Vision](..
 
 Most mystery games ask you to believe in a secret world inside an invented fantasy town. **My Virtual Community** starts somewhere unmistakably real: **Avenida Benito Juárez** in historic downtown Ciudad Juárez, stretching north onto the **Puente Internacional Paso del Norte** crossing into El Paso, Texas.
 
-At street level, the city breathes with everyday border rhythm — local storefronts opening and closing on real schedules, commuters crossing between two nations, sunlight arcing over the viaduct and the Río Bravo. Yet beneath the asphalt lies an aged storm-drain network leading to a flooded octagonal cistern (*La Cisterna / El Nudo*), and tucked behind an ordinary building chamfer sits a steel keypad door opening onto an impossible `960 m²` liminal labyrinth guarding a dormant dimensional threshold: ***El Umbral de Lasser***.
+At street level, the city breathes with everyday border rhythm — local storefronts opening and closing on real schedules, commuters crossing between two nations, sunlight arcing over the viaduct and the Río Bravo. Yet beneath the asphalt lies an aged storm-drain network leading to a flooded octagonal cistern (*La Cisterna / El Nudo*), and tucked behind an ordinary building chamfer sits a steel keypad door opening onto **Remanencia — Nivel 0**, an impossible `960 m²` liminal space guarding a dormant **Dimensional Passage (*Pasaje dimensional*)**.
 
 The game's magic comes from **contrast**: ordinary cultural realism giving way, step by step, to hidden architecture beyond reality.
 
@@ -32,8 +32,8 @@ The game's magic comes from **contrast**: ordinary cultural realism giving way, 
 
 - **Observe the Surface:** Walk Avenida Juárez and the Paso del Norte bridge, converse with distinct residents and commuters, notice schedules and architectural anomalies.
 - **Descend Into the Unknown:** Pry open municipal manholes, switch on your tactical flashlight (`[F]`), navigate vaulted storm drains, uncover environmental clues inside *La Cisterna* and *Sector C-0*, and emerge along the Río Bravo levee beneath the bridge.
-- **Unlock Hidden Thresholds:** Piece together clues across layers to breach concealed doors, navigate the flickering yellow corridors of the liminal vault, unlock the Level-Ω containment safe, recover ***El Ojo del Umbral***, and awaken ***El Umbral de Lasser***.
-- **Journey Beyond Reality (`OPTIONAL FUTURE SCOPE — SUBJECT TO CREATOR APPROVAL AND VERTICAL-SLICE VALIDATION`):** The creative vision encompasses a larger network of hidden worlds beyond *El Umbral de Lasser*; however, any additional playable post-Lasser world is **not** guaranteed for v1.0 and will be evaluated only after *Slice 01* playtesting and creator sign-off.
+- **Unlock Hidden Thresholds:** Piece together clues across layers to breach concealed doors, navigate the flickering yellow corridors of **Remanencia — Nivel 0**, unlock the Level-Ω containment safe, recover ***El Ojo del Umbral***, and awaken the **Dimensional Passage (*Pasaje dimensional*)**.
+- **Journey Beyond Reality (`OPTIONAL FUTURE SCOPE — SUBJECT TO CREATOR APPROVAL AND VERTICAL-SLICE VALIDATION`):** The creative vision encompasses a larger network of hidden worlds beyond the Dimensional Passage; however, any additional playable post-passage world is **not** guaranteed for v1.0 and will be evaluated only after *Slice 01* playtesting and creator sign-off.
 
 ---
 
@@ -52,4 +52,4 @@ The game's magic comes from **contrast**: ordinary cultural realism giving way, 
 - **Commercial Release Strategy (`AUTHOR DECISION REQUIRED`):**
   - **Primary Storefront:** Windows PC (e.g., Steam — `TBD`).
   - **Pricing Tier & Positioning:** Mid-sized indie premium single-player adventure (`TBD`).
-  - **Post-Launch Expansion Path:** Modular additive-scene architecture naturally supports optional future neighborhood districts and candidate hidden worlds beyond *El Umbral de Lasser* if approved after v1.0 or post-slice validation.
+  - **Post-Launch Expansion Path:** Modular additive-scene architecture naturally supports optional future neighborhood districts and candidate hidden worlds beyond the Dimensional Passage if approved after v1.0 or post-slice validation.

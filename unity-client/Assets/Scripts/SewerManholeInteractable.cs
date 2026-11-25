@@ -25,7 +25,7 @@ namespace MyVirtualCommunity.Client.World
         public float undergroundLandingYaw = 0f;
         public float interactionRadius = 2.65f;
 
-        [Header("Phase 2 Hook (Backrooms Kane Pixels Easter Egg)")]
+        [Header("Phase 2 Hook (Legacy Dimensional Transition)")]
         [Tooltip("Left false in Phase 1 so all manholes access the underground storm-drain network. Phase 2 flips this on the Av. Juarez x Azucenas manhole.")]
         public bool triggerBackroomsNoClipTwist = false;
 
@@ -110,8 +110,8 @@ namespace MyVirtualCommunity.Client.World
                 }
             }
 
-            // Phase 2 Silent Easter Egg: Descending Manhole #1 triggers an unexpected Kane Pixels
-            // ceiling no-clip drop into a random disorienting spot inside BackroomsLevel1Scene!
+            // Phase 2 Silent Easter Egg: Descending Manhole #1 triggers an unexpected dimensional
+            // ceiling drop into a random disorienting spot inside BackroomsLevel1Scene!
             if (goingDown && triggerBackroomsNoClipTwist)
             {
                 var backroomsCtrl = FindFirstObjectByType<SecretBackroomsTransitionController>();

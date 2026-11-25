@@ -11,7 +11,7 @@ Related active documents: [Game Vision](GAME_VISION.md) · [World Atlas](WORLD_A
 
 **Does a complete commercial adventure gameplay loop exist today? No.**
 
-What currently exists in the repository is a **playable, multi-layered 3D spatial exploration sandbox** with authentic border architecture, 7 schedule-driven NPCs, working cross-world transitions (Main Reality ↔ Underground Storm-Drain Network ↔ Backrooms Level 1), and one self-contained local puzzle inside Backrooms Level 1.
+What currently exists in the repository is a **playable, multi-layered 3D spatial exploration sandbox** with authentic border architecture, 7 schedule-driven NPCs, working cross-world transitions (Main Reality ↔ Underground Storm-Drain Network ↔ **Remanencia — Nivel 0**, currently hosted in `BackroomsLevel1Scene.unity`), and one self-contained local puzzle inside Nivel 0.
 
 Critical adventure-loop infrastructure is **not yet implemented (`CONFIRMED`):**
 - No title screen, New Game / Continue flow, or in-game session restart.
@@ -49,16 +49,16 @@ The following interactions and exploration systems are verified in the current c
 - Walkable underground collector tunnels, *La Cisterna / El Nudo* octagonal cistern, *Sector C-0* sealed bulkhead, deep `Y = -8.45 m` inverted siphon under Av. Abasolo, and an interactive rusted iron outflow gate (`SewerOutflowGateController.cs`, `[E]`) opening onto the Río Bravo south bank.
 - Atmospheric shift controller (`UndergroundSewerAtmosphereController.cs`) with dark fog, suppressed skybox reflections, flickering vault lights, and procedurally synthesized ambient hum/water drips.
 
-### 2.4 Secret Room Access, Underground Clue Chain & Backrooms Micro-Puzzle
+### 2.4 Secret Room Access, Underground Clue Chain & Nivel 0 Micro-Puzzle
 - **Underground-to-Secret-Room Clue Chain (`CONFIRMED`):** Three physical weathered-steel maintenance markings inside the storm-drain network (*Sector C-0* `58`, *La Cisterna* `19`, *Sifón de Abasolo* `26`) can be inspected underground (`ArtifactInspectionScope.UndergroundSewer`) and recorded into the local Discovery Journal (`[J]`). Discovering all three permanently records the learned Building A South sequence (`581926`) offline.
 - **Building A South Mysterious Door (`SecretKeypadDoorController.cs`):** Interactive 6-digit electronic keypad using the stable clue-chain code `"581926"` (auto-relocks on close; remembered in the keypad modal and Discovery Journal once learned; optional `SetAuthoritativeDailyCode` hook preserved without daily/random rotation).
-- **Threshold Veil Transition (`SecretBackroomsTransitionController.cs`):** Stepping past `X < -11.94 m` slams and relocks the street door, checks single-occupant status via `/api/secret-vault/enter` (falling back to solo access offline), and additively loads `BackroomsLevel1Scene.unity`.
-- **Inspectable Artifacts & Props (`SecretContainmentArtifactDescriptor.cs`):** 13 dispersed artifacts and 8 "Reality-Bridge" props display localized ES/EN dossier popups on aim/interact. *(Note: the 8 Reality-Bridge props are inspect-only captions today, not live API feeds.)*
-- **Backrooms Local Puzzle (`SecretRoomDimensionVaultController.cs`):**
+- **Threshold Veil Transition (`SecretBackroomsTransitionController.cs`):** Stepping past `X < -11.94 m` slams and relocks the street door, checks single-occupant status via `/api/secret-vault/enter` (falling back to solo access offline), and additively loads `BackroomsLevel1Scene.unity` (**Remanencia — Nivel 0**).
+- **Inspectable Artifacts & Props (`SecretContainmentArtifactDescriptor.cs`):** 15 original/preserved dispersed artifacts and 8 "Reality-Bridge" props display localized ES/EN dossier popups on aim/interact. *(Note: the 8 Reality-Bridge props are inspect-only captions today, not live API feeds.)*
+- **Nivel 0 Local Puzzle (`SecretRoomDimensionVaultController.cs`):**
   1. Inspect **Evidence Corkboard PDN-00** (South-Central alcove) → reveals reverse vault code `654321`.
   2. Enter `654321` on the **Level-Ω Vault Safe** (NW room) → safe door opens.
   3. Pick up ***El Ojo del Umbral*** (Astrolabe Keystone) from inside the safe.
-  4. Insert *El Ojo del Umbral* into the **Octagonal Socket** on ***El Umbral de Lasser*** (SW chamber) → chains retract, vortex material and spinning rings ignite visually. *(Visual activation only — no world transition occurs.)*
+  4. Insert *El Ojo del Umbral* into the **Octagonal Socket** on the **Dimensional Passage** (*Pasaje dimensional*, SW chamber) → chains retract, vortex material and spinning rings ignite visually. *(Visual activation only — no world transition occurs.)*
 - **Return to Surface (`BackroomsExitDoorTrigger.cs`):** NE double metal return door unloads `BackroomsLevel1Scene.unity`, releases vault occupancy, restores outdoor atmosphere, and returns the player to Av. Benito Juárez.
 
 ---
@@ -90,7 +90,7 @@ The following loop describes the **proposed** player experience for the Unity Fe
 - **Opening Hook & Soft Guidance:** Minimal diegetic onboarding (e.g., an anomalous sightline, sound cue, or brief journal entry) giving the player immediate curiosity without hand-holding waypoints. `AUTHOR DECISION REQUIRED` on exact narrative hook.
 - **Persistent Discovery Journal & Clue Log:** Tracks inspected landmarks, recorded codes, sketched diagrams, and anomalous artifacts across sessions and scene unloads.
 - **Persistent Inventory & Key-Item System:** Replaces transient scene booleans so acquired keys, codes, and relics survive scene transitions and save/load cycles.
-- **Cross-World Clue Chaining:** Connects surface anomalies → underground *La Cisterna* / *Sector C-0* discoveries → Secret Room keypad code → Backrooms vault puzzle → *El Umbral de Lasser* activation (see [Vertical Slice](VERTICAL_SLICE.md)).
+- **Cross-World Clue Chaining:** Connects surface anomalies → underground *La Cisterna* / *Sector C-0* discoveries → Secret Room keypad code → **Remanencia — Nivel 0** vault puzzle → Dimensional Passage activation (see [Vertical Slice](VERTICAL_SLICE.md)).
 - **Save/Load & Session Lifecycle:** Title screen (`Continue`, `New Journey`, `Settings`, `Quit`), local JSON save file storing player position/checkpoint, unlocked doors, journal entries, and puzzle states.
 - **Diegetic Audio & Pacing Polish:** Ambient border streetscapes, footsteps by surface material, distinct subterranean acoustics, and responsive puzzle/discovery audio cues.
 - **Debug Mode Gating:** Move aerial Drone (`[V]`) and Satellite (`[G]`) inspection tools behind an explicit developer flag or unlockable post-completion photo mode so exploration boundaries remain intact.

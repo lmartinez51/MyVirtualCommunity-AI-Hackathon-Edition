@@ -349,8 +349,8 @@ namespace MyVirtualCommunity.Client.Progression
                     new Color(0.45f, 0.94f, 0.65f)),
 
                 [ProgressionIds.MilestoneBackroomsEntered] = new LocalizedEntryMetadata(
-                    "Ingreso al Nivel 1 (Backrooms)",
-                    "Entered Backrooms Level 1",
+                    "Ingreso a Remanencia — Nivel 0",
+                    "Entered Remanencia — Level 0",
                     "Cruzaste el umbral hacia el laberinto liminal de iluminación fluorescente.",
                     "Crossed the threshold into the fluorescent liminal labyrinth.",
                     new Color(1.0f, 0.88f, 0.42f)),

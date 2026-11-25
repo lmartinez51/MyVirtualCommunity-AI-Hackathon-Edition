@@ -44,13 +44,13 @@ Execute **every gate below** before uploading any playable build to Unity Fellow
 ### Gate C — Self-Contained Offline Evaluation Experience
 - [ ] Verify the demo runs **100% offline** with airplane mode enabled (no Meta API keys, no CBP/Open-Meteo/YouTube network calls required).
 - [ ] Confirm evaluator launch flow requires zero manual terminal troubleshooting (either fully embedded Unity C# offline simulation or a single self-contained launcher executable tested on a clean Windows 10/11 machine without Unity Editor or Node.js pre-installed).
-- [ ] Include a concise 1-page `EVALUATOR_README.txt` inside the ZIP with system requirements, controls (`WASD`, `Shift`, `Space`, `E`, `F`, `M`, `Esc`), and known demo scope boundaries (including honest disclosure that *El Umbral de Lasser* concludes *Slice 01*).
+- [ ] Include a concise 1-page `EVALUATOR_README.txt` inside the ZIP with system requirements, controls (`WASD`, `Shift`, `Space`, `E`, `F`, `M`, `Esc`), and known demo scope boundaries (including honest disclosure that the Dimensional Passage (*Pasaje dimensional*) concludes *Slice 01*).
 
 ### Gate D — Clean-Machine Smoke Test & Artifact Integrity
 - [ ] Run backend verification (`npm run build`, `npm test`) if backend runtime is still included.
 - [ ] Run fresh `.\scripts\build-standalone.ps1 -Force` and `.\scripts\package-release.ps1 -Force` from a clean Git commit on the release branch (`release/fellowship-demo-2026-12`).
 - [ ] Extract the ZIP into a clean directory outside the repo and verify:
   1. Boot to Title Screen → enter Avenida Benito Juárez with stable framerate and zero console crashes.
-  2. Complete full *Slice 01* path: Surface Corridor → Underground Storm Drain → Secret Room Keypad → Backrooms Level 1 → Level-Ω Safe → *El Ojo del Umbral* → *El Umbral de Lasser* activation → Return to surface / Slice Complete.
+  2. Complete full *Slice 01* path: Surface Corridor → Underground Storm Drain → Secret Room Keypad → **Remanencia — Nivel 0** (`BackroomsLevel1Scene.unity`) → Level-Ω Safe → *El Ojo del Umbral* → Dimensional Passage activation → Return to surface / Slice Complete.
   3. Clean exit with zero orphaned background processes.
 - [ ] Record final fresh SHA-256 checksum, compressed ZIP size, uncompressed size, and exact Git commit SHA in the submission record.

@@ -27,7 +27,7 @@ namespace MyVirtualCommunity.Editor
     ///   broken brick rubble piles, corroded valve wheels, sagging Vault rails, overflow water
     ///   trickles, floating soggy debris & faded 1958 stenciled municipal markings.
     /// - 5 interactive round street manholes (Manhole #1 at Av. Juarez x Azucenas armed with the
-    ///   Phase-2 silent Kane Pixels ceiling no-clip drop into BackroomsLevel1Scene).
+    ///   Phase-2 silent dimensional ceiling drop into BackroomsLevel1Scene).
     /// - Single ramped Rio Bravo storm outflow headwall + interactive rusted iron gate onto the
     ///   walkable south riverbank beneath Puente Internacional Paso del Norte.
     /// </summary>
@@ -284,7 +284,7 @@ namespace MyVirtualCommunity.Editor
             manholesRoot.SetParent(root.transform);
 
             // Manhole #1: EXACT STREET VIEW PHOTO LOCATION (Av. Benito Juarez x Calle Azucenas!)
-            // Phase 2 ACTIVE: Silent Kane Pixels ceiling no-clip drop into random Backrooms spot!
+            // Phase 2 ACTIVE: Silent dimensional ceiling drop into random spot in BackroomsLevel1Scene!
             BuildInteractiveManhole("Manhole_01_Juarez_Azucenas", manholesRoot,
                 id: "manhole_juarez_azucenas",
                 labelEs: "Alcantarilla (Av. Juárez × Azucenas)",
