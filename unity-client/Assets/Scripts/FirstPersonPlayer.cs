@@ -114,6 +114,35 @@ namespace MyVirtualCommunity.Client.World
             return cachedBackroomsTransition != null && cachedBackroomsTransition.IsPlayerInBackrooms;
         }
 
+        private bool IsActivelyInRemanenciaWorld()
+        {
+            if (cachedBackroomsTransition == null)
+            {
+                cachedBackroomsTransition = FindFirstObjectByType<SecretBackroomsTransitionController>();
+            }
+            return cachedBackroomsTransition != null && cachedBackroomsTransition.IsPlayerActivelyInRemanencia;
+        }
+
+        /// <summary>
+        /// Authoritative world-scoped presentation gate for the Remanencia relic-held HUD badge
+        /// ("El Ojo del Umbral"). Suppresses Remanencia-specific held-relic presentation whenever
+        /// the player is in the surface world or mid-transition, while preserving persistent
+        /// ownership and Discovery Journal records intact.
+        /// </summary>
+        public static bool ShouldShowEquippedOjoDelUmbralBadge(
+            SecretBackroomsTransitionController transitionController,
+            SecretRoomDimensionVaultController vaultController,
+            PlayerProgressionService progressionService,
+            bool cursorLocked)
+        {
+            if (!cursorLocked) return false;
+            if (transitionController == null || !transitionController.IsPlayerActivelyInRemanencia) return false;
+
+            bool holdingInVault = vaultController != null && vaultController.HasAstrolabeInInventory;
+            bool holdingInProgression = progressionService != null && progressionService.IsHoldingOjoDelUmbral;
+            return holdingInVault || holdingInProgression;
+        }
+
         private bool IsInBackroomsOrTransitioning()
         {
             if (cachedBackroomsTransition == null)
@@ -934,6 +963,12 @@ namespace MyVirtualCommunity.Client.World
                         cachedDimensionVault = null;
                         currentAimedArtifact = null;
                         currentNearbyBackroomsExit = null;
+                        if (!inBackroomsNow)
+                        {
+                            // Clear any transient Remanencia in-world feedback banner when returning to the surface world
+                            interactionFeedbackMessage = null;
+                            interactionFeedbackUntilTime = -1f;
+                        }
                     }
 
                     if (!inBackroomsNow && WasDroneKeyPressed())
@@ -2851,9 +2886,15 @@ namespace MyVirtualCommunity.Client.World
                         {
                             DrawKeypadDoorPrompt(currentNearbyKeypadDoor);
                         }
-                        bool holdingOjoDelUmbral = (cachedDimensionVault != null && cachedDimensionVault.HasAstrolabeInInventory) ||
-                                                   (Application.isPlaying && PlayerProgressionService.HasSharedInstance && PlayerProgressionService.Shared.IsHoldingOjoDelUmbral);
-                        if (holdingOjoDelUmbral && isCursorLocked)
+                        PlayerProgressionService activeProgression =
+                            Application.isPlaying && PlayerProgressionService.HasSharedInstance
+                                ? PlayerProgressionService.Shared
+                                : null;
+                        if (ShouldShowEquippedOjoDelUmbralBadge(
+                                cachedBackroomsTransition,
+                                cachedDimensionVault,
+                                activeProgression,
+                                isCursorLocked))
                         {
                             DrawEquippedAstrolabeBadgeHUD();
                         }

@@ -8,6 +8,12 @@ using MyVirtualCommunity.Client.Progression;
 
 namespace MyVirtualCommunity.Client.World
 {
+    public enum PlayerWorldContext
+    {
+        SurfaceCorridor,
+        RemanenciaLevel0
+    }
+
     /// <summary>
     /// Orchestrates the non-Euclidean Backrooms Level 1 transition from the Building A South
     /// mysterious doorway:
@@ -25,6 +31,11 @@ namespace MyVirtualCommunity.Client.World
     public class SecretBackroomsTransitionController : MonoBehaviour
     {
         public const string BackroomsSceneName = "BackroomsLevel1Scene";
+
+        // Remanencia — Nivel 0 (Hotel de las Palomas) enclosed unfinished-concrete atmosphere palette
+        public static readonly Color RemanenciaLevel0AmbientLight = new Color(0.29f, 0.31f, 0.33f);
+        public static readonly Color RemanenciaLevel0FogColor = new Color(0.16f, 0.175f, 0.19f);
+        public const float RemanenciaLevel0FogDensity = 0.028f;
 
         [Header("Scene References")]
         public SecretKeypadDoorController outerStreetDoor;
@@ -64,6 +75,25 @@ namespace MyVirtualCommunity.Client.World
         public bool IsTransitioning => isTransitioning;
         public bool IsOccupiedByOtherPlayer => occupiedByOtherPlayer;
         public float TransitionFadeAlpha => fadeAlpha;
+
+        /// <summary>
+        /// Authoritative world-context state for world-scoped player HUD presentation.
+        /// Reports RemanenciaLevel0 strictly after the player has completed arrival inside Remanencia
+        /// (never during surface startup, never during entry/exit transition fades).
+        /// </summary>
+        public PlayerWorldContext CurrentWorldContext =>
+            isPlayerInBackrooms && !isTransitioning
+                ? PlayerWorldContext.RemanenciaLevel0
+                : PlayerWorldContext.SurfaceCorridor;
+
+        public bool IsPlayerActivelyInRemanencia => CurrentWorldContext == PlayerWorldContext.RemanenciaLevel0;
+
+        public void SetWorldTransitionStateForTest(bool inBackrooms, bool transitioning)
+        {
+            isPlayerInBackrooms = inBackrooms;
+            isTransitioning = transitioning;
+            RefreshThresholdVeilVisibility();
+        }
 
         private void Start()
         {
@@ -632,11 +662,11 @@ namespace MyVirtualCommunity.Client.World
 
             RenderSettings.skybox = null;
             RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.38f, 0.35f, 0.22f);
+            RenderSettings.ambientLight = RemanenciaLevel0AmbientLight;
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
-            RenderSettings.fogColor = new Color(0.22f, 0.20f, 0.11f);
-            RenderSettings.fogDensity = 0.036f;
+            RenderSettings.fogColor = RemanenciaLevel0FogColor;
+            RenderSettings.fogDensity = RemanenciaLevel0FogDensity;
         }
 
         private void RestoreOutdoorAtmosphere()

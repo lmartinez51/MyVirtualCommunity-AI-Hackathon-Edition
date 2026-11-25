@@ -40,27 +40,240 @@ namespace MyVirtualCommunity.Editor
         public const float HalfWidthX = 20.0f;  // Total 40.0m (East-West: Mariscal <-> Av. Juárez)
         public const float HalfDepthZ = 12.0f;  // Total 24.0m (North-South: Azucenas <-> Farmacia Juárez)
 
+        // Canonical texture & material paths (preserving existing Backrooms_* filenames & .meta GUIDs)
+        public const string WallConcreteTexPath = "Assets/Textures/Environment/T_Backrooms_YellowWallpaper.png";
+        public const string FloorConcreteTexPath = "Assets/Textures/Environment/T_Backrooms_DampCarpet.png";
+        public const string CeilingSoffitTexPath = "Assets/Textures/Environment/T_Backrooms_CeilingGrid.png";
+        public const string ColumnConcreteTexPath = "Assets/Textures/Environment/T_Remanencia_Level0_ConcreteColumn.png";
+        public const string PlasterWallTexPath = "Assets/Textures/Environment/T_Remanencia_Level0_PlasterWall.png";
+
+        public const string WallConcreteMatPath = "Assets/Settings/Backrooms_YellowWallpaper.mat";
+        public const string FloorConcreteMatPath = "Assets/Settings/Backrooms_DampCarpet.mat";
+        public const string CeilingSoffitMatPath = "Assets/Settings/Backrooms_CeilingGrid.mat";
+        public const string BaseboardMatPath = "Assets/Settings/Backrooms_Baseboard.mat";
+        public const string FluorOnMatPath = "Assets/Settings/Backrooms_FluorescentOn.mat";
+        public const string FluorOffMatPath = "Assets/Settings/Backrooms_FluorescentOff.mat";
+        public const string CeilingVoidMatPath = "Assets/Settings/Backrooms_CeilingVoid.mat";
+        public const string ColumnConcreteMatPath = "Assets/Settings/Remanencia_Level0_ConcreteColumn.mat";
+        public const string PlasterWallMatPath = "Assets/Settings/Remanencia_Level0_PlasterTerracottaWall.mat";
+        public const string IndustrialMetalMatPath = "Assets/Settings/Remanencia_Level0_IndustrialMetal.mat";
+        public const string UtilityWarmOnMatPath = "Assets/Settings/Remanencia_Level0_UtilityWarmOn.mat";
+
+        // Curated subset of preserved interior partition walls receiving weathered plaster / faded terracotta skim-coat
+        private static readonly HashSet<string> PlasterPartitionWallNames = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "Wall_NE_ArrivalSouth",
+            "Wall_NWVault_East",
+            "Wall_NWVault_SouthW",
+            "Wall_NWVault_SouthE",
+            "Wall_SWPortal_EastN",
+            "Wall_SWPortal_EastS",
+            "Wall_SWPortal_North"
+        };
+
+        // Obsolete legacy Backrooms labyrinth interior walls explicitly replaced by the Hotel de las Palomas
+        // ground-floor architecture (entrance vestibule, open reception/lobby, twin elevator core,
+        // double-loaded guest-room corridor, 6 empty guest-room shells, and service wing bulkhead).
+        private static readonly HashSet<string> ObsoleteLegacyMazeWallNames = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "Wall_NE_SightlineBaffle",
+            "Wall_NorthCorridor_SouthA",
+            "Wall_NorthCorridor_AlcoveW",
+            "Wall_NorthCorridor_Divider",
+            "Wall_NCenter_East",
+            "Wall_NCenter_SouthL",
+            "Wall_NCenter_SouthR",
+            "Wall_NCenter_West",
+            "Wall_EastWing_WestN",
+            "Wall_EastWing_WorkstationN",
+            "Wall_EastWing_WorkstationE",
+            "Wall_SE_NorthE",
+            "Wall_SE_NorthW",
+            "Wall_SE_West",
+            "Wall_SCenter_NorthE",
+            "Wall_SCenter_NorthW",
+            "Wall_SCenter_West",
+            "Wall_SWLab_NorthE",
+            "Wall_SWLab_Baffle"
+        };
+
+        public const string HotelArchitectureRootName = "Hotel_GroundFloor_Architecture";
+
+        private enum IndustrialFixtureStyle
+        {
+            LinearStrip,
+            HoodedStrip,
+            CagedUtility
+        }
+
+        private struct RemanenciaVisualMaterials
+        {
+            public Material WallConcrete;
+            public Material WallPlaster;
+            public Material ColumnConcrete;
+            public Material FloorConcrete;
+            public Material CeilingSoffit;
+            public Material BaseboardConcrete;
+            public Material FluorOn;
+            public Material FluorOff;
+            public Material UtilityWarmOn;
+            public Material IndustrialMetal;
+            public Material CeilingVoid;
+            public Material ElevatorDoorMetal;
+            public Material[] RoomPlaqueMats; // Index 0..5 -> Rooms 101..106
+        }
+
+        private static readonly (float x, float z, bool lit, bool spawnLight, bool flicker, float intensity, IndustrialFixtureStyle style)[] CanonicalFixtures = new[]
+        {
+            // North Row (Z = +8.8m)
+            ( 16.5f,  8.8f, true,  true,  false, 1.22f, IndustrialFixtureStyle.LinearStrip),  // 0: NE Arrival Vestibule
+            ( 10.2f,  8.8f, true,  false, false, 0.00f, IndustrialFixtureStyle.LinearStrip),  // 1: NE Baffle Corridor (emissive strip)
+            (  4.5f,  8.8f, true,  true,  false, 1.12f, IndustrialFixtureStyle.CagedUtility), // 2: N-East Alcove (warm work light)
+            ( -5.2f,  8.8f, true,  true,  true,  1.05f, IndustrialFixtureStyle.HoodedStrip),  // 3: N-Center Specimen Vitrine Room (flicker)
+            (-11.0f,  8.8f, false, false, false, 0.00f, IndustrialFixtureStyle.LinearStrip),  // 4: Dead tube before NW Vault
+            (-16.5f,  8.6f, true,  true,  false, 1.20f, IndustrialFixtureStyle.HoodedStrip),  // 5: NW Level-Omega Vault Safe Room
+
+            // Upper-Central Row (Z = +2.8m)
+            ( 16.5f,  2.2f, true,  true,  false, 1.12f, IndustrialFixtureStyle.LinearStrip),  // 6: East Corridor
+            ( 12.5f,  2.2f, true,  false, true,  0.00f, IndustrialFixtureStyle.HoodedStrip),  // 7: FM Radio Hall strip
+            (  5.5f,  2.8f, true,  true,  false, 1.18f, IndustrialFixtureStyle.LinearStrip),  // 8: Central Pillared Hall East
+            ( -1.5f,  2.8f, true,  true,  true,  1.12f, IndustrialFixtureStyle.LinearStrip),  // 9: Central Pillared Hall Center (flicker)
+            ( -8.5f,  2.8f, true,  true,  false, 1.15f, IndustrialFixtureStyle.LinearStrip),  // 10: Central Pillared Hall West
+            (-15.5f,  2.4f, false, false, false, 0.00f, IndustrialFixtureStyle.LinearStrip),  // 11: Dead tube in West Corridor
+
+            // Lower-Central Row (Z = -2.4m)
+            ( 17.5f, -2.4f, true,  false, false, 0.00f, IndustrialFixtureStyle.HoodedStrip),  // 12: Far East Corridor
+            (  7.2f, -2.6f, true,  true,  false, 1.15f, IndustrialFixtureStyle.CagedUtility), // 13: Lone Workstation Recess (warm work light)
+            (  0.5f, -2.2f, true,  true,  false, 1.12f, IndustrialFixtureStyle.LinearStrip),  // 14: Central-South Hall
+            ( -6.8f, -2.4f, true,  true,  true,  1.05f, IndustrialFixtureStyle.HoodedStrip),  // 15: West-Central Hall (flicker)
+            (-14.5f, -1.6f, true,  true,  false, 0.98f, IndustrialFixtureStyle.CagedUtility), // 16: West Signal Monitor Niche (warm work light)
+
+            // South Row (Z = -8.4m)
+            ( 15.5f, -8.4f, true,  true,  false, 1.10f, IndustrialFixtureStyle.CagedUtility), // 17: SE Corridor (warm work light)
+            ( 11.2f, -8.4f, false, false, false, 0.00f, IndustrialFixtureStyle.LinearStrip),  // 18: Dead tube between SE & S-Center
+            (  4.0f, -8.4f, true,  true,  false, 1.22f, IndustrialFixtureStyle.HoodedStrip),  // 19: S-Center Evidence Corkboard & Thermal Printer
+            ( -3.5f, -8.4f, true,  false, false, 0.00f, IndustrialFixtureStyle.LinearStrip),  // 20: South Labyrinth East
+            ( -9.5f, -8.4f, true,  true,  true,  1.02f, IndustrialFixtureStyle.CagedUtility), // 21: SW Labyrinth Custody Case & Border Clock (flicker, warm)
+            (-16.5f, -8.2f, true,  true,  true,  0.76f, IndustrialFixtureStyle.CagedUtility), // 22: Far SW Dimensional Passage Chamber (dim warm flicker)
+            (-16.5f, -5.2f, false, false, false, 0.00f, IndustrialFixtureStyle.LinearStrip),  // 23: Dead tube at Portal Threshold
+        };
+
+        private static readonly Color CoolIndustrialLightColor = new Color(0.84f, 0.90f, 0.95f);
+        private static readonly Color WarmUtilityLightColor = new Color(0.96f, 0.84f, 0.65f);
+
+        public const string ElevatorDoorMetalMatPath = "Assets/Settings/Remanencia_Level0_ElevatorDoorMetal.mat";
+
+        private static RemanenciaVisualMaterials EnsureRemanenciaVisualAssets()
+        {
+            string wallTexPath = EnsureBackroomsWallpaperTexture(WallConcreteTexPath);
+            string floorTexPath = EnsureBackroomsCarpetTexture(FloorConcreteTexPath);
+            string ceilingTexPath = EnsureBackroomsCeilingGridTexture(CeilingSoffitTexPath);
+            string columnTexPath = EnsureRemanenciaConcreteColumnTexture(ColumnConcreteTexPath);
+            string plasterTexPath = EnsureRemanenciaPlasterWallTexture(PlasterWallTexPath);
+            string[] plaqueTexPaths = new string[6];
+            for (int r = 0; r < 6; r++)
+            {
+                int roomNum = 101 + r;
+                plaqueTexPaths[r] = EnsureRoomNumberPlaqueTexture(
+                    $"Assets/Textures/Environment/T_Remanencia_RoomPlaque_{roomNum}.png",
+                    roomNum.ToString());
+            }
+            AssetDatabase.Refresh();
+
+            ConfigureArchitecturalTextureImporter(wallTexPath);
+            ConfigureArchitecturalTextureImporter(floorTexPath);
+            ConfigureArchitecturalTextureImporter(ceilingTexPath);
+            ConfigureArchitecturalTextureImporter(columnTexPath);
+            ConfigureArchitecturalTextureImporter(plasterTexPath);
+            for (int r = 0; r < 6; r++)
+            {
+                ConfigurePlaqueTextureImporter(plaqueTexPaths[r]);
+            }
+
+            Material[] plaqueMats = new Material[6];
+            for (int r = 0; r < 6; r++)
+            {
+                int roomNum = 101 + r;
+                plaqueMats[r] = CreateTexturedMat(
+                    $"Assets/Settings/Remanencia_Level0_RoomPlaque_{roomNum}.mat",
+                    plaqueTexPaths[r],
+                    Color.white,
+                    0.28f,
+                    Vector2.one);
+            }
+
+            var mats = new RemanenciaVisualMaterials
+            {
+                WallConcrete = CreateTexturedMat(WallConcreteMatPath, wallTexPath, new Color(0.94f, 0.93f, 0.91f), 0.14f, new Vector2(1.25f, 1.0f)),
+                WallPlaster = CreateTexturedMat(PlasterWallMatPath, plasterTexPath, new Color(0.95f, 0.93f, 0.90f), 0.12f, new Vector2(1.25f, 1.0f)),
+                ColumnConcrete = CreateTexturedMat(ColumnConcreteMatPath, columnTexPath, new Color(0.92f, 0.92f, 0.91f), 0.16f, new Vector2(1.0f, 1.0f)),
+                FloorConcrete = CreateTexturedMat(FloorConcreteMatPath, floorTexPath, new Color(0.93f, 0.93f, 0.91f), 0.22f, new Vector2(10f, 6f)),
+                CeilingSoffit = CreateTexturedMat(CeilingSoffitMatPath, ceilingTexPath, new Color(0.90f, 0.91f, 0.93f), 0.10f, new Vector2(10f, 6f)),
+                BaseboardConcrete = CreateColorMat(BaseboardMatPath, new Color(0.31f, 0.30f, 0.29f), 0.15f, 0.0f),
+                FluorOn = CreateEmissiveMat(FluorOnMatPath, new Color(0.90f, 0.94f, 0.96f), new Color(0.84f, 0.92f, 0.98f) * 2.35f),
+                FluorOff = CreateColorMat(FluorOffMatPath, new Color(0.36f, 0.38f, 0.39f), 0.42f, 0.15f),
+                UtilityWarmOn = CreateEmissiveMat(UtilityWarmOnMatPath, new Color(0.98f, 0.88f, 0.72f), new Color(0.96f, 0.78f, 0.50f) * 2.15f),
+                IndustrialMetal = CreateColorMat(IndustrialMetalMatPath, new Color(0.26f, 0.27f, 0.28f), 0.36f, 0.68f),
+                CeilingVoid = CreateColorMat(CeilingVoidMatPath, new Color(0.05f, 0.055f, 0.06f), 0.08f, 0.0f),
+                ElevatorDoorMetal = CreateColorMat(ElevatorDoorMetalMatPath, new Color(0.46f, 0.48f, 0.50f), 0.48f, 0.72f),
+                RoomPlaqueMats = plaqueMats
+            };
+            return mats;
+        }
+
+        private static void ConfigurePlaqueTextureImporter(string assetPath)
+        {
+            if (AssetImporter.GetAtPath(assetPath) is TextureImporter importer)
+            {
+                bool changed = false;
+                if (importer.wrapMode != TextureWrapMode.Clamp) { importer.wrapMode = TextureWrapMode.Clamp; changed = true; }
+                if (!importer.mipmapEnabled) { importer.mipmapEnabled = true; changed = true; }
+                if (importer.filterMode != FilterMode.Bilinear) { importer.filterMode = FilterMode.Bilinear; changed = true; }
+                if (importer.maxTextureSize != 256) { importer.maxTextureSize = 256; changed = true; }
+                if (changed)
+                {
+                    importer.SaveAndReimport();
+                }
+            }
+        }
+
+        private static void ConfigureArchitecturalTextureImporter(string assetPath)
+        {
+            if (AssetImporter.GetAtPath(assetPath) is TextureImporter importer)
+            {
+                bool changed = false;
+                if (importer.wrapMode != TextureWrapMode.Repeat) { importer.wrapMode = TextureWrapMode.Repeat; changed = true; }
+                if (!importer.mipmapEnabled) { importer.mipmapEnabled = true; changed = true; }
+                if (importer.filterMode != FilterMode.Bilinear) { importer.filterMode = FilterMode.Bilinear; changed = true; }
+                if (importer.maxTextureSize != 512) { importer.maxTextureSize = 512; changed = true; }
+                if (changed)
+                {
+                    importer.SaveAndReimport();
+                }
+            }
+        }
+
         [MenuItem("MyVirtualCommunity/Build Backrooms Level 1 Scene")]
         public static void BuildBackroomsLevel1Scene()
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
-            // Procedural Level 0 & Reality-Bridge textures
-            string wallpaperTexPath = EnsureBackroomsWallpaperTexture("Assets/Textures/Environment/T_Backrooms_YellowWallpaper.png");
-            string carpetTexPath = EnsureBackroomsCarpetTexture("Assets/Textures/Environment/T_Backrooms_DampCarpet.png");
-            string ceilingTexPath = EnsureBackroomsCeilingGridTexture("Assets/Textures/Environment/T_Backrooms_CeilingGrid.png");
+            // Canonical Remanencia Nivel 0 architectural textures & materials + Reality-Bridge screen textures
+            RemanenciaVisualMaterials visualMats = EnsureRemanenciaVisualAssets();
             string diarioTexPath = EnsureDiarioJuarezScreenTexture("Assets/Textures/Environment/T_Backrooms_DiarioJuarez_Screen.png");
             string laptopTexPath = EnsureLaptopMysteryScreenTexture("Assets/Textures/Environment/T_Backrooms_Laptop_Screen.png");
             string weatherTexPath = EnsureBorderTerminalScreenTexture("Assets/Textures/Environment/T_Backrooms_BorderTerminal_Screen.png");
             AssetDatabase.Refresh();
 
-            Material wallMat = CreateTexturedMat("Assets/Settings/Backrooms_YellowWallpaper.mat", wallpaperTexPath, new Color(0.95f, 0.92f, 0.78f), 0.12f, new Vector2(1.5f, 1.0f));
-            Material carpetMat = CreateTexturedMat("Assets/Settings/Backrooms_DampCarpet.mat", carpetTexPath, new Color(0.86f, 0.80f, 0.62f), 0.06f, new Vector2(20f, 12f));
-            Material ceilingMat = CreateTexturedMat("Assets/Settings/Backrooms_CeilingGrid.mat", ceilingTexPath, new Color(0.92f, 0.90f, 0.82f), 0.10f, new Vector2(20f, 12f));
-            Material baseboardMat = CreateColorMat("Assets/Settings/Backrooms_Baseboard.mat", new Color(0.28f, 0.23f, 0.14f), 0.18f, 0.0f);
-            Material fluorOnMat = CreateEmissiveMat("Assets/Settings/Backrooms_FluorescentOn.mat", new Color(1.0f, 0.98f, 0.84f), new Color(1.0f, 0.95f, 0.74f) * 2.3f);
-            Material fluorOffMat = CreateColorMat("Assets/Settings/Backrooms_FluorescentOff.mat", new Color(0.45f, 0.44f, 0.38f), 0.35f, 0.1f);
-            Material voidBlackMat = CreateColorMat("Assets/Settings/Backrooms_CeilingVoid.mat", new Color(0.03f, 0.03f, 0.03f), 0.05f, 0.0f);
+            Material wallMat = visualMats.WallConcrete;
+            Material columnMat = visualMats.ColumnConcrete;
+            Material carpetMat = visualMats.FloorConcrete;
+            Material ceilingMat = visualMats.CeilingSoffit;
+            Material baseboardMat = visualMats.BaseboardConcrete;
+            Material fluorOnMat = visualMats.FluorOn;
+            Material fluorOffMat = visualMats.FluorOff;
+            Material voidBlackMat = visualMats.CeilingVoid;
+            Material industrialMetalMat = visualMats.IndustrialMetal;
 
             // Reality-Bridge screen & device materials
             Material diarioScreenMat = CreateEmissiveTexturedMat("Assets/Settings/Backrooms_DiarioScreen.mat", diarioTexPath, Color.white, Color.white * 0.85f);
@@ -120,11 +333,11 @@ namespace MyVirtualCommunity.Editor
             CreateBox("Backrooms_Floor", shellRoot.transform,
                 new Vector3(0f, BaseY - 0.15f, 0f), new Vector3(40.6f, 0.30f, 24.6f), carpetMat, keepCollider: true);
 
-            // Acoustic office ceiling slab (bottom at CeilingY = -47.15m) + 2 eerie missing ceiling tiles
+            // Exposed cast-concrete soffit slab (bottom at CeilingY = -47.15m) + 2 unfinished ceiling service openings
             CreateBox("Backrooms_Ceiling", shellRoot.transform,
                 new Vector3(0f, CeilingY + 0.10f, 0f), new Vector3(40.6f, 0.20f, 24.6f), ceilingMat, keepCollider: true);
-            CreateMissingCeilingTile(shellRoot.transform, new Vector3(8.5f, CeilingY, 5.2f), voidBlackMat, ceilingMat);
-            CreateMissingCeilingTile(shellRoot.transform, new Vector3(-6.2f, CeilingY, -1.8f), voidBlackMat, ceilingMat);
+            CreateMissingCeilingTile(shellRoot.transform, new Vector3(8.5f, CeilingY, 5.2f), voidBlackMat, industrialMetalMat);
+            CreateMissingCeilingTile(shellRoot.transform, new Vector3(-6.2f, CeilingY, -1.8f), voidBlackMat, industrialMetalMat);
 
             // Outer 40m x 24m Perimeter Walls
             CreateWallSegment("Wall_Outer_South", shellRoot.transform, new Vector2(-20f, -12f), new Vector2(20f, -12f), 0.26f, wallMat, baseboardMat);
@@ -133,65 +346,24 @@ namespace MyVirtualCommunity.Editor
             CreateWallSegment("Wall_Outer_East",  shellRoot.transform, new Vector2( 20f, -12f), new Vector2( 20f, 12f), 0.26f, wallMat, baseboardMat);
 
             // =========================================================================
-            // 2. 40m x 24m LIMINAL LEVEL 0 LABYRINTH ARCHITECTURE
-            //    Every doorway/passage is >= 2.2m wide for effortless navigation!
+            // 2. REMANENCIA NIVEL 0 — HOTEL DE LAS PALOMAS GROUND-FLOOR ARCHITECTURE
+            //    Entrance Vestibule -> Open Reception/Lobby -> Twin Elevator Core ->
+            //    Double-Loaded Guest-Room Corridor (Rooms 101-106) -> Back-of-House Service Wing
             // =========================================================================
-
-            // --- ZONE NE: ARRIVAL VESTIBULE & ENTRY BAFFLE (X=+13..+20, Z=+5..+12) ---
-            // Long south divider separating Arrival Vestibule from East Hall (2.6m doorway at X=+13..+15.6)
-            CreateWallSegment("Wall_NE_ArrivalSouth", shellRoot.transform, new Vector2(15.6f, 5.4f), new Vector2(20.0f, 5.4f), 0.22f, wallMat, baseboardMat);
-            // Sightline baffle directly ahead of arrival so the player steps into an eerie corridor T-junction
-            CreateWallSegment("Wall_NE_SightlineBaffle", shellRoot.transform, new Vector2(12.2f, 7.6f), new Vector2(12.2f, 12.0f), 0.22f, wallMat, baseboardMat);
-
-            // --- ZONE N-EAST: QUIET CORRIDOR & DIARIO IPAD ALCOVE (X=+1..+12.2, Z=+5.4..+12) ---
-            CreateWallSegment("Wall_NorthCorridor_SouthA", shellRoot.transform, new Vector2(6.8f, 5.4f), new Vector2(12.2f, 5.4f), 0.22f, wallMat, baseboardMat);
-            CreateWallSegment("Wall_NorthCorridor_AlcoveW", shellRoot.transform, new Vector2(7.6f, 8.6f), new Vector2(7.6f, 12.0f), 0.22f, wallMat, baseboardMat);
-            CreateWallSegment("Wall_NorthCorridor_Divider", shellRoot.transform, new Vector2(1.0f, 5.4f), new Vector2(1.0f, 9.2f), 0.22f, wallMat, baseboardMat);
-
-            // --- ZONE N-CENTER: SPECIMEN VITRINE CONTAINMENT ROOM (X=-9..-1, Z=+5.6..+12) ---
-            CreateWallSegment("Wall_NCenter_East", shellRoot.transform, new Vector2(-1.4f, 5.6f), new Vector2(-1.4f, 9.4f), 0.22f, wallMat, baseboardMat);
-            CreateWallSegment("Wall_NCenter_SouthL", shellRoot.transform, new Vector2(-9.2f, 5.6f), new Vector2(-6.2f, 5.6f), 0.22f, wallMat, baseboardMat);
-            CreateWallSegment("Wall_NCenter_SouthR", shellRoot.transform, new Vector2(-3.6f, 5.6f), new Vector2(-1.4f, 5.6f), 0.22f, wallMat, baseboardMat);
-            CreateWallSegment("Wall_NCenter_West", shellRoot.transform, new Vector2(-9.2f, 5.6f), new Vector2(-9.2f, 12.0f), 0.22f, wallMat, baseboardMat);
-
-            // --- ZONE NW: LEVEL-OMEGA VAULT SAFE ROOM (X=-20..-12.5, Z=+4.8..+12) ---
-            CreateWallSegment("Wall_NWVault_East", shellRoot.transform, new Vector2(-12.5f, 4.8f), new Vector2(-12.5f, 9.4f), 0.22f, wallMat, baseboardMat);
-            CreateWallSegment("Wall_NWVault_SouthW", shellRoot.transform, new Vector2(-20.0f, 4.8f), new Vector2(-17.8f, 4.8f), 0.22f, wallMat, baseboardMat);
-            CreateWallSegment("Wall_NWVault_SouthE", shellRoot.transform, new Vector2(-15.0f, 4.8f), new Vector2(-12.5f, 4.8f), 0.22f, wallMat, baseboardMat);
-
-            // --- ZONE EAST WING: FM RADIO HALL & RANDOM WORKSTATION RECESS (X=+10..+20, Z=-4.6..+5.4) ---
-            CreateWallSegment("Wall_EastWing_WestN", shellRoot.transform, new Vector2(10.2f, 1.0f), new Vector2(10.2f, 5.4f), 0.22f, wallMat, baseboardMat);
-            CreateWallSegment("Wall_EastWing_WorkstationN", shellRoot.transform, new Vector2(5.4f, -0.8f), new Vector2(9.4f, -0.8f), 0.22f, wallMat, baseboardMat);
-            CreateWallSegment("Wall_EastWing_WorkstationE", shellRoot.transform, new Vector2(9.4f, -4.6f), new Vector2(9.4f, -0.8f), 0.22f, wallMat, baseboardMat);
-            CreateWallSegment("Wall_EastWing_MidBaffle", shellRoot.transform, new Vector2(14.8f, -4.6f), new Vector2(14.8f, 0.8f), 0.22f, wallMat, baseboardMat);
-
-            // --- ZONE SE: PAYPHONE CORRIDOR & 03:07 ALCOVE (X=+9.4..+20, Z=-12..-4.6) ---
-            CreateWallSegment("Wall_SE_NorthE", shellRoot.transform, new Vector2(14.8f, -4.6f), new Vector2(17.4f, -4.6f), 0.22f, wallMat, baseboardMat);
-            CreateWallSegment("Wall_SE_NorthW", shellRoot.transform, new Vector2(9.4f, -4.6f), new Vector2(12.0f, -4.6f), 0.22f, wallMat, baseboardMat);
-            CreateWallSegment("Wall_SE_West", shellRoot.transform, new Vector2(9.4f, -12.0f), new Vector2(9.4f, -7.4f), 0.22f, wallMat, baseboardMat);
-
-            // --- ZONE S-CENTER: EVIDENCE CORKBOARD INVESTIGATION ALCOVE (X=-1.5..+9.4, Z=-12..-4.6) ---
-            CreateWallSegment("Wall_SCenter_NorthE", shellRoot.transform, new Vector2(3.8f, -4.6f), new Vector2(6.8f, -4.6f), 0.22f, wallMat, baseboardMat);
-            CreateWallSegment("Wall_SCenter_NorthW", shellRoot.transform, new Vector2(-1.5f, -4.6f), new Vector2(1.2f, -4.6f), 0.22f, wallMat, baseboardMat);
-            CreateWallSegment("Wall_SCenter_West", shellRoot.transform, new Vector2(-1.5f, -9.2f), new Vector2(-1.5f, -4.6f), 0.22f, wallMat, baseboardMat);
-
-            // --- ZONE S-WEST LABYRINTH & ALEXA CORNER (X=-12.5..-1.5, Z=-12..-4.0) ---
-            CreateWallSegment("Wall_SWLab_NorthE", shellRoot.transform, new Vector2(-7.0f, -4.0f), new Vector2(-4.0f, -4.0f), 0.22f, wallMat, baseboardMat);
+            // Preserved structural anchor walls for Entry Vestibule, SE Service Pier, Service Bulkheads, NW Vault & SW Portal
+            CreateWallSegment("Wall_NE_ArrivalSouth", shellRoot.transform, new Vector2(16.2f, 5.4f), new Vector2(20.0f, 5.4f), 0.22f, visualMats.WallPlaster, baseboardMat);
+            CreateWallSegment("Wall_NWVault_East", shellRoot.transform, new Vector2(-12.5f, 4.8f), new Vector2(-12.5f, 9.4f), 0.22f, visualMats.WallPlaster, baseboardMat);
+            CreateWallSegment("Wall_NWVault_SouthW", shellRoot.transform, new Vector2(-20.0f, 4.8f), new Vector2(-17.8f, 4.8f), 0.22f, visualMats.WallPlaster, baseboardMat);
+            CreateWallSegment("Wall_NWVault_SouthE", shellRoot.transform, new Vector2(-15.0f, 4.8f), new Vector2(-12.5f, 4.8f), 0.22f, visualMats.WallPlaster, baseboardMat);
+            CreateWallSegment("Wall_EastWing_MidBaffle", shellRoot.transform, new Vector2(14.8f, -4.4f), new Vector2(14.8f, -1.0f), 0.22f, wallMat, baseboardMat);
             CreateWallSegment("Wall_SWLab_NorthW", shellRoot.transform, new Vector2(-12.5f, -4.0f), new Vector2(-9.8f, -4.0f), 0.22f, wallMat, baseboardMat);
-            CreateWallSegment("Wall_SWLab_Baffle", shellRoot.transform, new Vector2(-6.5f, -12.0f), new Vector2(-6.5f, -7.2f), 0.22f, wallMat, baseboardMat);
-
-            // --- ZONE WEST CORRIDOR & CRT NICHE (X=-20..-12.5, Z=-4.0..+4.8) ---
             CreateWallSegment("Wall_WestCorr_East", shellRoot.transform, new Vector2(-12.5f, -1.0f), new Vector2(-12.5f, 2.2f), 0.22f, wallMat, baseboardMat);
             CreateWallSegment("Wall_WestCorr_CrtBaffle", shellRoot.transform, new Vector2(-16.5f, -1.8f), new Vector2(-16.5f, 1.8f), 0.22f, wallMat, baseboardMat);
+            CreateWallSegment("Wall_SWPortal_EastN", shellRoot.transform, new Vector2(-12.5f, -6.4f), new Vector2(-12.5f, -4.0f), 0.22f, visualMats.WallPlaster, baseboardMat);
+            CreateWallSegment("Wall_SWPortal_EastS", shellRoot.transform, new Vector2(-12.5f, -12.0f), new Vector2(-12.5f, -9.2f), 0.22f, visualMats.WallPlaster, baseboardMat);
+            CreateWallSegment("Wall_SWPortal_North", shellRoot.transform, new Vector2(-20.0f, -4.0f), new Vector2(-15.5f, -4.0f), 0.22f, visualMats.WallPlaster, baseboardMat);
 
-            // --- ZONE SW: MONUMENTAL DIMENSIONAL PORTAL CHAMBER (X=-20..-12.5, Z=-12..-4.0) ---
-            // Deep isolated sanctuary in the opposite corner (~40m diagonally from entrance!)
-            CreateWallSegment("Wall_SWPortal_EastN", shellRoot.transform, new Vector2(-12.5f, -6.4f), new Vector2(-12.5f, -4.0f), 0.22f, wallMat, baseboardMat);
-            CreateWallSegment("Wall_SWPortal_EastS", shellRoot.transform, new Vector2(-12.5f, -12.0f), new Vector2(-12.5f, -9.2f), 0.22f, wallMat, baseboardMat);
-            CreateWallSegment("Wall_SWPortal_North", shellRoot.transform, new Vector2(-20.0f, -4.0f), new Vector2(-15.5f, -4.0f), 0.22f, wallMat, baseboardMat);
-
-            // --- VAST CENTRAL PILLARED HALL (12 Square Columns) ---
-            // 12 evenly spaced yellow-wallpapered square columns spanning X = -10..+6, Z = -2.2..+3.8
+            // --- 13 REINFORCED-CONCRETE STRUCTURAL COLUMNS (Preserved Structural Grid) ---
             float[] pillarXs = new float[] { -9.5f, -5.5f, -1.5f, 2.5f };
             float[] pillarZs = new float[] { -1.8f, 1.4f, 4.0f };
             int pIdx = 0;
@@ -199,77 +371,44 @@ namespace MyVirtualCommunity.Editor
             {
                 for (int iz = 0; iz < pillarZs.Length; iz++)
                 {
-                    // Skip one pillar near Workstation recess so sightlines open eerily
                     if (ix == 3 && iz == 0) continue;
                     string pName = (ix == 2 && iz == 1) ? "Pillar_CentralHall_Phone" : $"Pillar_CentralHall_{pIdx++}";
-                    CreatePillar(pName, shellRoot.transform, pillarXs[ix], pillarZs[iz], 0.68f, wallMat, baseboardMat);
+                    CreatePillar(pName, shellRoot.transform, pillarXs[ix], pillarZs[iz], 0.68f, columnMat, baseboardMat);
                 }
             }
-            // Extra iconic offset pillars in East & West halls
-            CreatePillar("Pillar_EastHall_Mid", shellRoot.transform, 12.6f, -1.4f, 0.64f, wallMat, baseboardMat);
-            CreatePillar("Pillar_SouthLab_Mid", shellRoot.transform, -9.6f, -8.2f, 0.64f, wallMat, baseboardMat);
+            CreatePillar("Pillar_EastHall_Mid", shellRoot.transform, 12.6f, -1.4f, 0.64f, columnMat, baseboardMat);
+            CreatePillar("Pillar_SouthLab_Mid", shellRoot.transform, -9.6f, -8.2f, 0.64f, columnMat, baseboardMat);
+
+            // Build canonical Hotel de las Palomas ground-floor architecture
+            BuildOrUpdateHotelGroundFloorArchitecture(shellRoot.transform, visualMats);
+            ApplyWallSurfaceVariation(shellRoot.transform, visualMats.WallConcrete, visualMats.WallPlaster);
 
             // =========================================================================
-            // 3. LEVEL 0 FLUORESCENT CEILING PANELS (24 FIXTURES, 16 EFFICIENT POINT LIGHTS)
-            //    Tuned for rich liminal glow across 960 m² while staying fast on 2 GB VRAM GPUs!
+            // 3. REMANENCIA INDUSTRIAL CONSTRUCTION LIGHTING (24 FIXTURES, 16 POINT LIGHTS)
+            //    Mix of exposed linear strips, hooded shop fixtures & caged utility lights.
             // =========================================================================
             GameObject lightsRoot = new GameObject("Backrooms_FluorescentLights");
             lightsRoot.transform.SetParent(root.transform, false);
 
-            (float x, float z, bool lit, bool spawnLight, bool flicker, float intensity)[] fixtures = new[]
+            for (int i = 0; i < CanonicalFixtures.Length; i++)
             {
-                // North Row (Z = +8.8m)
-                ( 16.5f,  8.8f, true,  true,  false, 1.15f), // NE Arrival Vestibule
-                ( 10.2f,  8.8f, true,  false, false, 0.00f), // NE Baffle Corridor (emissive panel)
-                (  4.5f,  8.8f, true,  true,  false, 1.10f), // N-East Diario de Juárez iPad Alcove
-                ( -5.2f,  8.8f, true,  true,  true,  0.95f), // N-Center Specimen Vitrine Room (flicker!)
-                (-11.0f,  8.8f, false, false, false, 0.00f), // Dead tube before NW Vault
-                (-16.5f,  8.6f, true,  true,  false, 1.15f), // NW Level-Omega Vault Safe Room
-
-                // Upper-Central Row (Z = +2.8m)
-                ( 16.5f,  2.2f, true,  true,  false, 1.05f), // East Corridor
-                ( 12.5f,  2.2f, true,  false, true,  0.00f), // FM Radio Hall panel
-                (  5.5f,  2.8f, true,  true,  false, 1.10f), // Central Pillared Hall East
-                ( -1.5f,  2.8f, true,  true,  true,  1.05f), // Central Pillared Hall Center (flicker!)
-                ( -8.5f,  2.8f, true,  true,  false, 1.05f), // Central Pillared Hall West
-                (-15.5f,  2.4f, false, false, false, 0.00f), // Dead tube in West Corridor
-
-                // Lower-Central Row (Z = -2.4m)
-                ( 17.5f, -2.4f, true,  false, false, 0.00f), // Far East Corridor
-                (  7.2f, -2.6f, true,  true,  false, 1.10f), // Lone Laptop Workstation Recess
-                (  0.5f, -2.2f, true,  true,  false, 1.05f), // Central-South Hall
-                ( -6.8f, -2.4f, true,  true,  true,  0.95f), // Alexa Corner Hall (flicker!)
-                (-14.5f, -1.6f, true,  true,  false, 0.90f), // West Signal Monitor Niche
-
-                // South Row (Z = -8.4m)
-                ( 15.5f, -8.4f, true,  true,  false, 1.05f), // SE Payphone & 03:07 Shift Clock Corridor
-                ( 11.2f, -8.4f, false, false, false, 0.00f), // Dead tube between SE & S-Center
-                (  4.0f, -8.4f, true,  true,  false, 1.15f), // S-Center Evidence Corkboard & Thermal Printer
-                ( -3.5f, -8.4f, true,  false, false, 0.00f), // South Labyrinth East
-                ( -9.5f, -8.4f, true,  true,  true,  0.95f), // SW Labyrinth Custody Case & Border Clock (flicker!)
-                (-16.5f, -8.2f, true,  true,  true,  0.65f), // Far SW Monumental Portal Chamber (dimmer eerie glow!)
-                (-16.5f, -5.2f, false, false, false, 0.00f), // Dead tube at Portal Threshold
-            };
-
-            for (int i = 0; i < fixtures.Length; i++)
-            {
-                var fx = fixtures[i];
+                var fx = CanonicalFixtures[i];
                 GameObject panel = CreateBox($"Backrooms_FluorPanel_{i}", lightsRoot.transform,
-                    new Vector3(fx.x, CeilingY - 0.015f, fx.z), new Vector3(1.22f, 0.03f, 0.58f),
+                    new Vector3(fx.x, CeilingY - 0.072f, fx.z), new Vector3(1.36f, 0.046f, 0.068f),
                     fx.lit ? fluorOnMat : fluorOffMat, keepCollider: false);
                 CreateBox($"Backrooms_FluorFrame_{i}", panel.transform,
-                    new Vector3(0f, 0.25f, 0f), new Vector3(1.05f, 0.8f, 1.06f), rackSteelMat, keepCollider: false);
+                    new Vector3(0f, 1.12f, 0f), new Vector3(1.05f, 0.85f, 1.65f), industrialMetalMat, keepCollider: false);
 
                 if (fx.lit && fx.spawnLight)
                 {
                     GameObject lGo = new GameObject($"Backrooms_FluorLight_{i}");
                     lGo.transform.SetParent(panel.transform, false);
-                    lGo.transform.localPosition = new Vector3(0f, -0.35f, 0f);
+                    lGo.transform.localPosition = new Vector3(0f, -2.4f, 0f);
                     Light l = lGo.AddComponent<Light>();
                     l.type = LightType.Point;
-                    l.color = new Color(1.0f, 0.95f, 0.72f);
+                    l.color = fx.style == IndustrialFixtureStyle.CagedUtility ? WarmUtilityLightColor : CoolIndustrialLightColor;
                     l.intensity = fx.intensity;
-                    l.range = 9.8f;
+                    l.range = 10.2f;
                     l.shadows = LightShadows.None;
 
                     if (fx.flicker)
@@ -282,6 +421,8 @@ namespace MyVirtualCommunity.Editor
                         fl.phaseOffset = i * 1.7f;
                     }
                 }
+
+                ApplyIndustrialFixtureStyling(panel.transform, i, fx, visualMats);
             }
 
             // =========================================================================
@@ -650,6 +791,956 @@ namespace MyVirtualCommunity.Editor
             return mat;
         }
 
+        /// <summary>
+        /// Targeted, idempotent Remanencia Nivel 0 (Hotel de las Palomas) visual migration utility.
+        /// Opens the existing BackroomsLevel1Scene.unity without recreating the scene or root hierarchy,
+        /// re-authors the exclusive architectural textures & materials in place (preserving filenames and
+        /// .meta GUIDs), updates structural walls, columns, ceiling openings, and industrial fixtures
+        /// in place, and saves only BackroomsLevel1Scene.unity and its target-specific visual assets.
+        /// </summary>
+        [MenuItem("MyVirtualCommunity/Migrate Remanencia Nivel 0 Visuals (In-Place)")]
+        public static void MigrateRemanenciaLevel0VisualsAndSave()
+        {
+            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            if (!scene.IsValid())
+            {
+                throw new InvalidOperationException($"Failed to open existing scene at {ScenePath}.");
+            }
+
+            MigrateRemanenciaLevel0VisualsInOpenScene(scene);
+            AssetDatabase.SaveAssets();
+            EditorSceneManager.MarkSceneDirty(scene);
+            if (!EditorSceneManager.SaveScene(scene, ScenePath))
+            {
+                throw new InvalidOperationException($"Failed to save migrated scene at {ScenePath}.");
+            }
+            Debug.Log($"[BackroomsLevel1Builder] Remanencia Nivel 0 in-place visual migration completed and saved to {ScenePath}.");
+        }
+
+        public static void MigrateRemanenciaLevel0VisualsInOpenScene(UnityEngine.SceneManagement.Scene scene)
+        {
+            if (!scene.IsValid() || !string.Equals(scene.path, ScenePath, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    $"Remanencia visual migration requires open scene '{ScenePath}', but found '{scene.path}'.");
+            }
+
+            GameObject root = null;
+            foreach (GameObject go in scene.GetRootGameObjects())
+            {
+                if (go.name == "BackroomsLevel1_Root")
+                {
+                    root = go;
+                    break;
+                }
+            }
+            if (root == null)
+            {
+                throw new InvalidOperationException("BackroomsLevel1_Root not found in open scene.");
+            }
+
+            Transform shellRoot = root.transform.Find("Backrooms_Architecture");
+            Transform lightsRoot = root.transform.Find("Backrooms_FluorescentLights");
+            if (shellRoot == null || lightsRoot == null)
+            {
+                throw new InvalidOperationException("Expected Backrooms_Architecture and Backrooms_FluorescentLights under BackroomsLevel1_Root.");
+            }
+
+            // 1. Re-author exclusive target textures & materials in place (GUIDs preserved) + ensure Remanencia-specific materials
+            RemanenciaVisualMaterials mats = EnsureRemanenciaVisualAssets();
+
+            // 2. Migrate architectural surfaces under Backrooms_Architecture in place (preserving all GameObjects, Transforms & Colliders)
+            Transform floorTf = shellRoot.Find("Backrooms_Floor");
+            if (floorTf != null) SetSharedMatPreservingRendererSettings(floorTf.gameObject, mats.FloorConcrete);
+
+            Transform ceilingTf = shellRoot.Find("Backrooms_Ceiling");
+            if (ceilingTf != null) SetSharedMatPreservingRendererSettings(ceilingTf.gameObject, mats.CeilingSoffit);
+
+            ApplyWallSurfaceVariation(shellRoot, mats.WallConcrete, mats.WallPlaster);
+
+            for (int i = 0; i < shellRoot.childCount; i++)
+            {
+                Transform child = shellRoot.GetChild(i);
+                string n = child.name;
+
+                if (n.EndsWith("_Baseboard", StringComparison.Ordinal))
+                {
+                    SetSharedMatPreservingRendererSettings(child.gameObject, mats.BaseboardConcrete);
+                }
+                else if (n.StartsWith("Pillar_", StringComparison.Ordinal))
+                {
+                    SetSharedMatPreservingRendererSettings(child.gameObject, mats.ColumnConcrete);
+                }
+                else if (n == "Backrooms_MissingTileVoid")
+                {
+                    // Repurpose existing ceiling void GameObject into recessed unfinished utility chase opening
+                    Vector3 p = child.localPosition;
+                    child.localPosition = new Vector3(p.x, CeilingY - 0.008f, p.z);
+                    child.localScale = new Vector3(0.86f, 0.024f, 0.62f);
+                    SetSharedMatPreservingRendererSettings(child.gameObject, mats.CeilingVoid);
+                }
+                else if (n == "Backrooms_CrookedCeilingTile")
+                {
+                    // Repurpose existing crooked ceiling tile GameObject into tilted galvanized industrial access hatch
+                    Vector3 p = child.localPosition;
+                    child.localPosition = new Vector3(p.x, CeilingY - 0.085f, p.z);
+                    child.localRotation = Quaternion.Euler(11f, 4f, -15f);
+                    child.localScale = new Vector3(0.78f, 0.022f, 0.56f);
+                    SetSharedMatPreservingRendererSettings(child.gameObject, mats.IndustrialMetal);
+                }
+            }
+
+            // 3. Migrate all 24 existing ceiling fixtures & 16 point lights in place (preserving GameObjects, lights & 5 flicker controllers)
+            for (int i = 0; i < CanonicalFixtures.Length; i++)
+            {
+                Transform panelTf = lightsRoot.Find($"Backrooms_FluorPanel_{i}");
+                if (panelTf == null)
+                {
+                    throw new InvalidOperationException($"Expected existing fixture Backrooms_FluorPanel_{i} under Backrooms_FluorescentLights.");
+                }
+                ApplyIndustrialFixtureStyling(panelTf, i, CanonicalFixtures[i], mats);
+            }
+        }
+
+        private static void ApplyWallSurfaceVariation(Transform shellRoot, Material concreteWallMat, Material plasterWallMat)
+        {
+            for (int i = 0; i < shellRoot.childCount; i++)
+            {
+                Transform child = shellRoot.GetChild(i);
+                string n = child.name;
+                if (!n.StartsWith("Wall_", StringComparison.Ordinal) || n.EndsWith("_Baseboard", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+                Material targetMat = PlasterPartitionWallNames.Contains(n) ? plasterWallMat : concreteWallMat;
+                SetSharedMatPreservingRendererSettings(child.gameObject, targetMat);
+            }
+        }
+
+        private static void ApplyIndustrialFixtureStyling(
+            Transform panelTf,
+            int fixtureIndex,
+            (float x, float z, bool lit, bool spawnLight, bool flicker, float intensity, IndustrialFixtureStyle style) fx,
+            RemanenciaVisualMaterials mats)
+        {
+            Material emitterMat;
+            if (!fx.lit)
+            {
+                emitterMat = mats.FluorOff;
+            }
+            else if (fx.style == IndustrialFixtureStyle.CagedUtility)
+            {
+                emitterMat = mats.UtilityWarmOn;
+            }
+            else
+            {
+                emitterMat = mats.FluorOn;
+            }
+
+            Transform frameTf = panelTf.Find($"Backrooms_FluorFrame_{fixtureIndex}");
+            Transform lightTf = panelTf.Find($"Backrooms_FluorLight_{fixtureIndex}");
+
+            // Remove only non-matching Remanencia_* detail children if a fixture ever changed style; reuse matching children for idempotency
+            if (fx.style == IndustrialFixtureStyle.LinearStrip)
+            {
+                panelTf.localPosition = new Vector3(fx.x, CeilingY - 0.072f, fx.z);
+                panelTf.localRotation = Quaternion.identity;
+                panelTf.localScale = new Vector3(1.36f, 0.046f, 0.068f);
+                SetSharedMatPreservingRendererSettings(panelTf.gameObject, emitterMat);
+
+                if (frameTf != null)
+                {
+                    frameTf.localPosition = new Vector3(0f, 1.12f, 0f);
+                    frameTf.localRotation = Quaternion.identity;
+                    frameTf.localScale = new Vector3(1.05f, 0.85f, 1.65f);
+                    SetSharedMatPreservingRendererSettings(frameTf.gameObject, mats.IndustrialMetal);
+                }
+
+                DestroyStaleFixtureChildrenExcept(panelTf, "Remanencia_EndSocket_L", "Remanencia_EndSocket_R");
+                EnsureFixtureDetailChild(panelTf, "Remanencia_EndSocket_L", new Vector3(-0.505f, 0.25f, 0f), new Vector3(0.028f, 1.55f, 1.40f), mats.IndustrialMetal);
+                EnsureFixtureDetailChild(panelTf, "Remanencia_EndSocket_R", new Vector3( 0.505f, 0.25f, 0f), new Vector3(0.028f, 1.55f, 1.40f), mats.IndustrialMetal);
+
+                if (lightTf != null)
+                {
+                    lightTf.localPosition = new Vector3(0f, -2.60f, 0f);
+                }
+            }
+            else if (fx.style == IndustrialFixtureStyle.HoodedStrip)
+            {
+                panelTf.localPosition = new Vector3(fx.x, CeilingY - 0.088f, fx.z);
+                panelTf.localRotation = Quaternion.identity;
+                panelTf.localScale = new Vector3(1.32f, 0.048f, 0.14f);
+                SetSharedMatPreservingRendererSettings(panelTf.gameObject, emitterMat);
+
+                if (frameTf != null)
+                {
+                    frameTf.localPosition = new Vector3(0f, 1.10f, 0f);
+                    frameTf.localRotation = Quaternion.identity;
+                    frameTf.localScale = new Vector3(1.06f, 0.72f, 2.25f);
+                    SetSharedMatPreservingRendererSettings(frameTf.gameObject, mats.IndustrialMetal);
+                }
+
+                DestroyStaleFixtureChildrenExcept(panelTf, "Remanencia_DropRod_L", "Remanencia_DropRod_R");
+                EnsureFixtureDetailChild(panelTf, "Remanencia_DropRod_L", new Vector3(-0.42f, 1.55f, 0f), new Vector3(0.024f, 0.95f, 0.24f), mats.IndustrialMetal);
+                EnsureFixtureDetailChild(panelTf, "Remanencia_DropRod_R", new Vector3( 0.42f, 1.55f, 0f), new Vector3(0.024f, 0.95f, 0.24f), mats.IndustrialMetal);
+
+                if (lightTf != null)
+                {
+                    lightTf.localPosition = new Vector3(0f, -2.40f, 0f);
+                }
+            }
+            else // IndustrialFixtureStyle.CagedUtility
+            {
+                panelTf.localPosition = new Vector3(fx.x, CeilingY - 0.145f, fx.z);
+                panelTf.localRotation = Quaternion.identity;
+                panelTf.localScale = new Vector3(0.17f, 0.17f, 0.17f);
+                SetSharedMatPreservingRendererSettings(panelTf.gameObject, emitterMat);
+
+                if (frameTf != null)
+                {
+                    frameTf.localPosition = new Vector3(0f, 0.68f, 0f);
+                    frameTf.localRotation = Quaternion.identity;
+                    frameTf.localScale = new Vector3(1.42f, 0.44f, 1.42f);
+                    SetSharedMatPreservingRendererSettings(frameTf.gameObject, mats.IndustrialMetal);
+                }
+
+                DestroyStaleFixtureChildrenExcept(panelTf, "Remanencia_CageGuard_A", "Remanencia_CageGuard_B");
+                EnsureFixtureDetailChild(panelTf, "Remanencia_CageGuard_A", new Vector3(0f, -0.04f, 0f), new Vector3(1.26f, 1.22f, 0.14f), mats.IndustrialMetal);
+                EnsureFixtureDetailChild(panelTf, "Remanencia_CageGuard_B", new Vector3(0f, -0.04f, 0f), new Vector3(0.14f, 1.22f, 1.26f), mats.IndustrialMetal);
+
+                if (lightTf != null)
+                {
+                    lightTf.localPosition = new Vector3(0f, -0.95f, 0f);
+                }
+            }
+
+            // Retune existing point light without creating or removing Light components or enabling shadows
+            if (lightTf != null)
+            {
+                Light l = lightTf.GetComponent<Light>();
+                if (l != null)
+                {
+                    l.type = LightType.Point;
+                    l.color = fx.style == IndustrialFixtureStyle.CagedUtility ? WarmUtilityLightColor : CoolIndustrialLightColor;
+                    l.intensity = fx.intensity;
+                    l.range = 10.2f;
+                    l.shadows = LightShadows.None;
+                }
+            }
+
+            // Preserve existing BackroomsAmbientFlicker assignment and sync baseIntensity to retuned light
+            BackroomsAmbientFlicker flickerComp = panelTf.GetComponent<BackroomsAmbientFlicker>();
+            if (flickerComp != null)
+            {
+                flickerComp.baseIntensity = fx.intensity;
+            }
+        }
+
+        private static void DestroyStaleFixtureChildrenExcept(Transform parent, string keepA, string keepB)
+        {
+            var stale = new List<GameObject>();
+            for (int i = 0; i < parent.childCount; i++)
+            {
+                Transform c = parent.GetChild(i);
+                if (c.name.StartsWith("Remanencia_", StringComparison.Ordinal) &&
+                    c.name != keepA && c.name != keepB)
+                {
+                    stale.Add(c.gameObject);
+                }
+            }
+            for (int i = 0; i < stale.Count; i++)
+            {
+                UnityEngine.Object.DestroyImmediate(stale[i]);
+            }
+        }
+
+        private static GameObject EnsureFixtureDetailChild(Transform parent, string childName, Vector3 localPos, Vector3 localScale, Material mat)
+        {
+            Transform existing = parent.Find(childName);
+            GameObject go;
+            if (existing != null)
+            {
+                go = existing.gameObject;
+                go.transform.localPosition = localPos;
+                go.transform.localRotation = Quaternion.identity;
+                go.transform.localScale = localScale;
+                SetSharedMatPreservingRendererSettings(go, mat);
+                Collider col = go.GetComponent<Collider>();
+                if (col != null) UnityEngine.Object.DestroyImmediate(col);
+                return go;
+            }
+
+            go = CreateBox(childName, parent, localPos, localScale, mat, keepCollider: false);
+            return go;
+        }
+
+        private static void SetSharedMatPreservingRendererSettings(GameObject go, Material mat)
+        {
+            Renderer r = go.GetComponent<Renderer>();
+            if (r != null && mat != null)
+            {
+                r.sharedMaterial = mat;
+            }
+        }
+
+        /// <summary>
+        /// Targeted, idempotent Remanencia Nivel 0 — Hotel de las Palomas ground-floor architectural
+        /// migration utility (Implementation 07.2.1).
+        /// Opens the existing BackroomsLevel1Scene.unity without recreating the scene or root hierarchy,
+        /// preserves all 07.2 concrete/plaster materials, lighting, 13 columns, floor, ceiling, spawn,
+        /// exit, safe, portal, artifacts, and Reality-Bridge objects, removes ONLY the 19 obsolete
+        /// legacy Backrooms labyrinth partitions (+ baseboards), and builds/updates the identifiable
+        /// Hotel de las Palomas ground-floor architecture (Entrance Vestibule, Reception/Lobby,
+        /// Twin Elevator Core, Double-Loaded Guest-Room Corridor, 6 Empty Guest-Room Shells 101-106,
+        /// and Back-of-House Service Bulkhead) in place.
+        /// </summary>
+        [MenuItem("MyVirtualCommunity/Migrate Remanencia Hotel Architecture (In-Place)")]
+        public static void MigrateRemanenciaHotelArchitectureAndSave()
+        {
+            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            if (!scene.IsValid())
+            {
+                throw new InvalidOperationException($"Failed to open existing scene at {ScenePath}.");
+            }
+
+            MigrateRemanenciaHotelArchitectureInOpenScene(scene);
+            AssetDatabase.SaveAssets();
+            EditorSceneManager.MarkSceneDirty(scene);
+            if (!EditorSceneManager.SaveScene(scene, ScenePath))
+            {
+                throw new InvalidOperationException($"Failed to save migrated scene at {ScenePath}.");
+            }
+            Debug.Log($"[BackroomsLevel1Builder] Remanencia Hotel de las Palomas ground-floor architecture migration completed and saved to {ScenePath}.");
+        }
+
+        public static void MigrateRemanenciaHotelArchitectureInOpenScene(UnityEngine.SceneManagement.Scene scene)
+        {
+            if (!scene.IsValid() || !string.Equals(scene.path, ScenePath, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    $"Remanencia hotel architecture migration requires open scene '{ScenePath}', but found '{scene.path}'.");
+            }
+
+            // Ensure all 07.2 visual materials, textures, ceiling openings, columns, and industrial fixtures are current
+            MigrateRemanenciaLevel0VisualsInOpenScene(scene);
+
+            GameObject root = null;
+            foreach (GameObject go in scene.GetRootGameObjects())
+            {
+                if (go.name == "BackroomsLevel1_Root")
+                {
+                    root = go;
+                    break;
+                }
+            }
+            if (root == null)
+            {
+                throw new InvalidOperationException("BackroomsLevel1_Root not found in open scene.");
+            }
+
+            Transform shellRoot = root.transform.Find("Backrooms_Architecture");
+            if (shellRoot == null)
+            {
+                throw new InvalidOperationException("Backrooms_Architecture not found under BackroomsLevel1_Root.");
+            }
+
+            RemanenciaVisualMaterials mats = EnsureRemanenciaVisualAssets();
+
+            // 1. Remove ONLY the 19 explicitly identified obsolete legacy maze walls (+ their 19 baseboards)
+            var obsoleteWalls = new List<GameObject>();
+            for (int i = 0; i < shellRoot.childCount; i++)
+            {
+                Transform child = shellRoot.GetChild(i);
+                string n = child.name;
+                string baseName = n.EndsWith("_Baseboard", StringComparison.Ordinal)
+                    ? n.Substring(0, n.Length - "_Baseboard".Length)
+                    : n;
+                if (ObsoleteLegacyMazeWallNames.Contains(baseName))
+                {
+                    obsoleteWalls.Add(child.gameObject);
+                }
+            }
+            for (int i = 0; i < obsoleteWalls.Count; i++)
+            {
+                UnityEngine.Object.DestroyImmediate(obsoleteWalls[i]);
+            }
+
+            // 2. Align 2 retained architectural anchor walls in place without altering their GameObjects or fileIDs
+            UpdateRetainedWallSegmentInPlace(shellRoot, "Wall_NE_ArrivalSouth", new Vector2(16.2f, 5.4f), new Vector2(20.0f, 5.4f), 0.22f, mats.WallPlaster, mats.BaseboardConcrete);
+            UpdateRetainedWallSegmentInPlace(shellRoot, "Wall_EastWing_MidBaffle", new Vector2(14.8f, -4.4f), new Vector2(14.8f, -1.0f), 0.22f, mats.WallConcrete, mats.BaseboardConcrete);
+
+            // 3. Build or idempotently update the Hotel de las Palomas ground-floor architecture
+            BuildOrUpdateHotelGroundFloorArchitecture(shellRoot, mats);
+            ApplyWallSurfaceVariation(shellRoot, mats.WallConcrete, mats.WallPlaster);
+        }
+
+        private static void UpdateRetainedWallSegmentInPlace(
+            Transform shellRoot, string wallName, Vector2 a, Vector2 b, float thickness, Material wallMat, Material baseMat)
+        {
+            Vector2 delta = b - a;
+            float len = delta.magnitude;
+            Vector2 mid = 0.5f * (a + b);
+            Quaternion rot = Quaternion.LookRotation(new Vector3(delta.x, 0f, delta.y), Vector3.up);
+
+            Transform wallTf = shellRoot.Find(wallName);
+            if (wallTf != null)
+            {
+                wallTf.position = new Vector3(mid.x, BaseY + ClearHeight * 0.5f, mid.y);
+                wallTf.rotation = rot;
+                wallTf.localScale = new Vector3(thickness, ClearHeight, len + thickness * 0.5f);
+                SetSharedMatPreservingRendererSettings(wallTf.gameObject, wallMat);
+            }
+
+            Transform baseTf = shellRoot.Find(wallName + "_Baseboard");
+            if (baseTf != null)
+            {
+                baseTf.position = new Vector3(mid.x, BaseY + 0.06f, mid.y);
+                baseTf.rotation = rot;
+                baseTf.localScale = new Vector3(thickness + 0.025f, 0.12f, len + thickness * 0.52f);
+                SetSharedMatPreservingRendererSettings(baseTf.gameObject, baseMat);
+            }
+        }
+
+        private static void BuildOrUpdateHotelGroundFloorArchitecture(Transform shellRoot, RemanenciaVisualMaterials mats)
+        {
+            Transform hotelRootTf = shellRoot.Find(HotelArchitectureRootName);
+            if (hotelRootTf == null)
+            {
+                GameObject hotelRootGo = new GameObject(HotelArchitectureRootName);
+                hotelRootGo.transform.SetParent(shellRoot, false);
+                hotelRootTf = hotelRootGo.transform;
+            }
+            hotelRootTf.localPosition = Vector3.zero;
+            hotelRootTf.localRotation = Quaternion.identity;
+            hotelRootTf.localScale = Vector3.one;
+
+            const float wallT = 0.22f;
+
+            // =========================================================================
+            // A. HOTEL ENTRANCE VESTIBULE (X = +16.2..+20.0, Z = +5.4..+12.0)
+            //    4.0 m framed lobby portal opening straight West from spawn (17.8, 8.8)
+            // =========================================================================
+            Transform entryGroup = EnsureHotelSubgroup(hotelRootTf, "Hotel_Entrance_Vestibule");
+            EnsureHotelWallSegment(entryGroup, "Hotel_Entrance_ArchPierS", new Vector2(16.2f, 5.4f), new Vector2(16.2f, 6.8f), 0.28f, mats.ColumnConcrete, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(entryGroup, "Hotel_Entrance_ArchPierN", new Vector2(16.2f, 10.8f), new Vector2(16.2f, 12.0f), 0.28f, mats.ColumnConcrete, mats.BaseboardConcrete);
+            EnsureHotelBox(entryGroup, "Hotel_Entrance_ArchTransom",
+                new Vector3(16.2f, CeilingY - 0.22f, 8.8f), Quaternion.identity, new Vector3(0.32f, 0.44f, 4.28f),
+                mats.ColumnConcrete, keepCollider: false);
+            EnsureHotelBox(entryGroup, "Hotel_Entrance_PortalTrimS",
+                new Vector3(16.2f, BaseY + 1.21f, 6.82f), Quaternion.identity, new Vector3(0.34f, 2.42f, 0.06f),
+                mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(entryGroup, "Hotel_Entrance_PortalTrimN",
+                new Vector3(16.2f, BaseY + 1.21f, 10.78f), Quaternion.identity, new Vector3(0.34f, 2.42f, 0.06f),
+                mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(entryGroup, "Hotel_Entrance_PortalTrimTop",
+                new Vector3(16.2f, BaseY + 2.41f, 8.80f), Quaternion.identity, new Vector3(0.34f, 0.06f, 4.02f),
+                mats.IndustrialMetal, keepCollider: false);
+
+            // =========================================================================
+            // B. MAIN HOTEL LOBBY & ARCHITECTURAL RECEPTION ALCOVE (NO FURNITURE!)
+            //    Open public hall X = +3.4..+16.2, Z = +1.4..+12.0 + SE Lobby Foyer
+            // =========================================================================
+            Transform lobbyGroup = EnsureHotelSubgroup(hotelRootTf, "Hotel_Lobby_Reception");
+            // Built-in architectural Reception Alcove along North wall (X = +7.4..+14.2, Z = +9.2..+12.0)
+            EnsureHotelWallSegment(lobbyGroup, "Hotel_Reception_PilasterW", new Vector2(7.4f, 10.5f), new Vector2(7.4f, 12.0f), 0.34f, mats.ColumnConcrete, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(lobbyGroup, "Hotel_Reception_PilasterE", new Vector2(14.2f, 10.5f), new Vector2(14.2f, 12.0f), 0.34f, mats.ColumnConcrete, mats.BaseboardConcrete);
+            EnsureHotelBox(lobbyGroup, "Hotel_Reception_CanopySoffit",
+                new Vector3(10.8f, CeilingY - 0.21f, 10.60f), Quaternion.identity, new Vector3(7.14f, 0.42f, 2.80f),
+                mats.ColumnConcrete, keepCollider: false);
+            EnsureHotelBox(lobbyGroup, "Hotel_Reception_CanopyValenceTrim",
+                new Vector3(10.8f, CeilingY - 0.42f, 9.22f), Quaternion.identity, new Vector3(7.16f, 0.05f, 0.06f),
+                mats.IndustrialMetal, keepCollider: false);
+            // Recessed architectural wall-backing masonry frame on the Reception North Wall (pure architecture, zero furniture)
+            EnsureHotelBox(lobbyGroup, "Hotel_Reception_BackWallRevealTop",
+                new Vector3(10.8f, BaseY + 2.18f, 11.83f), Quaternion.identity, new Vector3(5.40f, 0.10f, 0.12f),
+                mats.ColumnConcrete, keepCollider: false);
+            EnsureHotelBox(lobbyGroup, "Hotel_Reception_BackWallRevealBot",
+                new Vector3(10.8f, BaseY + 1.04f, 11.83f), Quaternion.identity, new Vector3(5.40f, 0.10f, 0.12f),
+                mats.ColumnConcrete, keepCollider: false);
+            EnsureHotelBox(lobbyGroup, "Hotel_Reception_BackWallRevealL",
+                new Vector3(8.14f, BaseY + 1.61f, 11.83f), Quaternion.identity, new Vector3(0.10f, 1.24f, 0.12f),
+                mats.ColumnConcrete, keepCollider: false);
+            EnsureHotelBox(lobbyGroup, "Hotel_Reception_BackWallRevealR",
+                new Vector3(13.46f, BaseY + 1.61f, 11.83f), Quaternion.identity, new Vector3(0.10f, 1.24f, 0.12f),
+                mats.ColumnConcrete, keepCollider: false);
+
+            // Public Lobby ceiling structural soffit beams distinguishing public volume from guest corridors
+            EnsureHotelBox(lobbyGroup, "Hotel_Lobby_Beam_East",
+                new Vector3(16.2f, CeilingY - 0.17f, 0.50f), Quaternion.identity, new Vector3(0.30f, 0.34f, 9.80f),
+                mats.ColumnConcrete, keepCollider: false);
+            EnsureHotelBox(lobbyGroup, "Hotel_Lobby_Beam_Mid",
+                new Vector3(10.2f, CeilingY - 0.17f, 3.80f), Quaternion.identity, new Vector3(0.30f, 0.34f, 16.40f),
+                mats.ColumnConcrete, keepCollider: false);
+            EnsureHotelBox(lobbyGroup, "Hotel_Lobby_Beam_West",
+                new Vector3(3.4f, CeilingY - 0.17f, 5.10f), Quaternion.identity, new Vector3(0.30f, 0.34f, 13.80f),
+                mats.ColumnConcrete, keepCollider: false);
+            EnsureHotelBox(lobbyGroup, "Hotel_Lobby_Beam_South",
+                new Vector3(9.8f, CeilingY - 0.17f, 1.40f), Quaternion.identity, new Vector3(12.80f, 0.34f, 0.30f),
+                mats.ColumnConcrete, keepCollider: false);
+            // Architectural portal piers framing the transition from Main Lobby into the Guest-Room Corridor
+            EnsureHotelWallSegment(lobbyGroup, "Hotel_Lobby_CorridorPortalPierN", new Vector2(10.2f, 1.4f), new Vector2(10.2f, 2.3f), 0.30f, mats.ColumnConcrete, mats.BaseboardConcrete);
+
+            // Lobby Front-Office Architectural Alcove (X = +5.4..+10.2, Z = -4.4..-1.8, preserves existing LaptopWorkstation at (7.9,-2.7))
+            EnsureHotelWallSegment(lobbyGroup, "Hotel_FrontOffice_EastWall", new Vector2(10.2f, -4.4f), new Vector2(10.2f, -1.8f), wallT, mats.WallPlaster, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(lobbyGroup, "Hotel_FrontOffice_WestWall", new Vector2(5.4f, -4.4f), new Vector2(5.4f, -1.8f), wallT, mats.WallPlaster, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(lobbyGroup, "Hotel_FrontOffice_NorthPierE", new Vector2(8.2f, -1.8f), new Vector2(10.2f, -1.8f), wallT, mats.WallPlaster, mats.BaseboardConcrete);
+            EnsureHotelBox(lobbyGroup, "Hotel_FrontOffice_ArchTransom",
+                new Vector3(6.8f, CeilingY - 0.25f, -1.8f), Quaternion.identity, new Vector3(2.85f, 0.50f, 0.26f),
+                mats.ColumnConcrete, keepCollider: false);
+
+            // =========================================================================
+            // C. TWIN REINFORCED-CONCRETE ELEVATOR CORE & WAITING LOBBY
+            //    Core: X = +1.0..+3.4, Z = +4.2..+9.4 (2 recessed closed metal bays facing East into Lobby)
+            //    Safe solid shaft walls & closed metal doors — ZERO vertical fall hazard!
+            // =========================================================================
+            Transform elevGroup = EnsureHotelSubgroup(hotelRootTf, "Hotel_Elevator_Core");
+            EnsureHotelWallSegment(elevGroup, "Hotel_ElevatorCore_BackWall", new Vector2(1.12f, 4.2f), new Vector2(1.12f, 9.4f), 0.24f, mats.ColumnConcrete, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(elevGroup, "Hotel_ElevatorCore_SouthWall", new Vector2(1.0f, 4.32f), new Vector2(3.4f, 4.32f), 0.24f, mats.ColumnConcrete, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(elevGroup, "Hotel_ElevatorCore_NorthWall", new Vector2(1.0f, 9.28f), new Vector2(3.4f, 9.28f), 0.24f, mats.ColumnConcrete, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(elevGroup, "Hotel_ElevatorCore_FrontPierS", new Vector2(3.28f, 4.2f), new Vector2(3.28f, 5.0f), 0.26f, mats.ColumnConcrete, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(elevGroup, "Hotel_ElevatorCore_FrontPierMid", new Vector2(3.28f, 6.5f), new Vector2(3.28f, 7.1f), 0.26f, mats.ColumnConcrete, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(elevGroup, "Hotel_ElevatorCore_FrontPierN", new Vector2(3.28f, 8.6f), new Vector2(3.28f, 9.4f), 0.26f, mats.ColumnConcrete, mats.BaseboardConcrete);
+            EnsureHotelBox(elevGroup, "Hotel_ElevatorCore_FrontHeader",
+                new Vector3(3.28f, CeilingY - 0.325f, 6.80f), Quaternion.identity, new Vector3(0.28f, 0.65f, 5.24f),
+                mats.ColumnConcrete, keepCollider: true);
+            // Dropped concrete Elevator Waiting Lobby soffit framing the waiting bay (X = +3.4..+5.8)
+            EnsureHotelBox(elevGroup, "Hotel_ElevatorLobby_Soffit",
+                new Vector3(4.60f, CeilingY - 0.18f, 6.80f), Quaternion.identity, new Vector3(2.40f, 0.36f, 5.40f),
+                mats.ColumnConcrete, keepCollider: false);
+
+            BuildOrUpdateElevatorBay(elevGroup, "Hotel_ElevatorBay_1", 5.75f, mats);
+            BuildOrUpdateElevatorBay(elevGroup, "Hotel_ElevatorBay_2", 7.85f, mats);
+
+            // Shared central hall-call bezel plate mounted on concrete pier between Bay 1 and Bay 2
+            EnsureHotelBox(elevGroup, "Hotel_Elevator_CallPanelPlate",
+                new Vector3(3.43f, BaseY + 1.18f, 6.80f), Quaternion.identity, new Vector3(0.025f, 0.26f, 0.14f),
+                mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(elevGroup, "Hotel_Elevator_CallButtonUp",
+                new Vector3(3.448f, BaseY + 1.23f, 6.80f), Quaternion.identity, new Vector3(0.014f, 0.04f, 0.04f),
+                mats.ElevatorDoorMetal, keepCollider: false);
+            EnsureHotelBox(elevGroup, "Hotel_Elevator_CallButtonDown",
+                new Vector3(3.448f, BaseY + 1.13f, 6.80f), Quaternion.identity, new Vector3(0.014f, 0.04f, 0.04f),
+                mats.ElevatorDoorMetal, keepCollider: false);
+
+            // =========================================================================
+            // D. MAIN DOUBLE-LOADED HOTEL GUEST-ROOM CORRIDOR (X = -9.5..+10.2, Z = -1.8..+1.4)
+            //    Rhythmic overhead concrete soffit beams + framed Service Bulkhead Portal at X = -9.5
+            // =========================================================================
+            Transform corrGroup = EnsureHotelSubgroup(hotelRootTf, "Hotel_GuestCorridor");
+            float[] corrBeamXs = new float[] { 2.5f, -1.5f, -5.5f, -9.5f };
+            for (int b = 0; b < corrBeamXs.Length; b++)
+            {
+                EnsureHotelBox(corrGroup, $"Hotel_Corridor_CeilingBeam_{b}",
+                    new Vector3(corrBeamXs[b], CeilingY - 0.15f, -0.20f), Quaternion.identity, new Vector3(0.28f, 0.30f, 3.20f),
+                    mats.ColumnConcrete, keepCollider: false);
+            }
+            // Framed Back-of-House Service Wing Bulkhead Portal at X = -9.5 (Z = -1.8..+1.4, 2.52 m clear width, no lock)
+            Transform serviceGroup = EnsureHotelSubgroup(hotelRootTf, "Hotel_Service_Wing");
+            EnsureHotelBox(serviceGroup, "Hotel_ServicePortal_Transom",
+                new Vector3(-9.5f, CeilingY - 0.32f, -0.20f), Quaternion.identity, new Vector3(0.32f, 0.64f, 2.60f),
+                mats.ColumnConcrete, keepCollider: false);
+            EnsureHotelBox(serviceGroup, "Hotel_ServicePortal_JambS",
+                new Vector3(-9.5f, BaseY + 1.11f, -1.44f), Quaternion.identity, new Vector3(0.36f, 2.22f, 0.06f),
+                mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(serviceGroup, "Hotel_ServicePortal_JambN",
+                new Vector3(-9.5f, BaseY + 1.11f, 1.04f), Quaternion.identity, new Vector3(0.36f, 2.22f, 0.06f),
+                mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(serviceGroup, "Hotel_ServicePortal_HeaderTrim",
+                new Vector3(-9.5f, BaseY + 2.21f, -0.20f), Quaternion.identity, new Vector3(0.36f, 0.06f, 2.54f),
+                mats.IndustrialMetal, keepCollider: false);
+
+            // SW Maintenance Hall Entry Portal (Z = -1.8, X = -9.5..-5.6, 2.4 m wide framed opening X = -8.6..-6.2)
+            EnsureHotelWallSegment(serviceGroup, "Hotel_SWService_NorthPierW", new Vector2(-9.5f, -1.8f), new Vector2(-8.6f, -1.8f), wallT, mats.WallConcrete, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(serviceGroup, "Hotel_SWService_NorthPierE", new Vector2(-6.2f, -1.8f), new Vector2(-5.6f, -1.8f), wallT, mats.WallConcrete, mats.BaseboardConcrete);
+            EnsureHotelBox(serviceGroup, "Hotel_SWService_PortalTransom",
+                new Vector3(-7.4f, CeilingY - 0.30f, -1.8f), Quaternion.identity, new Vector3(2.44f, 0.60f, 0.24f),
+                mats.ColumnConcrete, keepCollider: false);
+            EnsureHotelBox(serviceGroup, "Hotel_SWService_PortalTrimW",
+                new Vector3(-8.58f, BaseY + 1.13f, -1.8f), Quaternion.identity, new Vector3(0.06f, 2.26f, 0.28f),
+                mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(serviceGroup, "Hotel_SWService_PortalTrimE",
+                new Vector3(-6.22f, BaseY + 1.13f, -1.8f), Quaternion.identity, new Vector3(0.06f, 2.26f, 0.28f),
+                mats.IndustrialMetal, keepCollider: false);
+
+            // =========================================================================
+            // E. SIX DISTINCT EMPTY HOTEL GUEST-ROOM SHELLS (ROOMS 101-106, ZERO FURNITURE!)
+            //    Each room has framed traversable doorway, neutral room plaque, party walls,
+            //    and distinct unfinished architectural en-suite bathroom / entry foyer partitions.
+            // =========================================================================
+
+            // --- GUEST ROOM 101 (North Mid: X = -3.6..+1.0, Z = +1.4..+12.0) ---
+            Transform r101 = EnsureHotelSubgroup(hotelRootTf, "Hotel_GuestRoom_101");
+            EnsureHotelDoorwayWallX(r101, "Hotel_Room101_CorridorWall", z: 1.4f, minX: -3.6f, maxX: 1.0f, doorMinX: -1.14f, doorMaxX: 0.26f,
+                thickness: wallT, wallMat: mats.WallPlaster, baseMat: mats.BaseboardConcrete, trimMat: mats.IndustrialMetal,
+                plaqueMat: mats.RoomPlaqueMats[0], plaqueX: 0.58f, corridorOnSouthSide: true);
+            EnsureHotelWallSegment(r101, "Hotel_Room101_EastWall", new Vector2(1.0f, 1.4f), new Vector2(1.0f, 12.0f), wallT, mats.WallPlaster, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(r101, "Hotel_Room101_WestPartyWall", new Vector2(-3.6f, 1.4f), new Vector2(-3.6f, 12.0f), wallT, mats.WallPlaster, mats.BaseboardConcrete);
+            // Built-in unfinished bathroom shell inside Room 101 (open doorway facing West at Z = +4.4..+5.4)
+            EnsureHotelWallSegment(r101, "Hotel_Room101_BathWallS", new Vector2(-0.8f, 4.4f), new Vector2(1.0f, 4.4f), 0.16f, mats.WallConcrete, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(r101, "Hotel_Room101_BathWallN", new Vector2(-0.8f, 7.0f), new Vector2(1.0f, 7.0f), 0.16f, mats.WallConcrete, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(r101, "Hotel_Room101_BathWallW", new Vector2(-0.8f, 5.4f), new Vector2(-0.8f, 7.0f), 0.16f, mats.WallConcrete, mats.BaseboardConcrete);
+
+            // --- GUEST ROOM 102 (North-West Suite: X = -9.5..-3.6, Z = +1.4..+12.0; houses SpecimenVitrine cleanly) ---
+            Transform r102 = EnsureHotelSubgroup(hotelRootTf, "Hotel_GuestRoom_102");
+            EnsureHotelDoorwayWallX(r102, "Hotel_Room102_CorridorWall", z: 1.4f, minX: -9.5f, maxX: -3.6f, doorMinX: -7.80f, doorMaxX: -6.40f,
+                thickness: wallT, wallMat: mats.WallPlaster, baseMat: mats.BaseboardConcrete, trimMat: mats.IndustrialMetal,
+                plaqueMat: mats.RoomPlaqueMats[1], plaqueX: -6.05f, corridorOnSouthSide: true);
+            EnsureHotelWallSegment(r102, "Hotel_Room102_WestServiceWall", new Vector2(-9.5f, 1.4f), new Vector2(-9.5f, 12.0f), wallT, mats.WallConcrete, mats.BaseboardConcrete);
+            // Built-in unfinished bathroom shell inside Room 102 (open doorway facing East at Z = +4.6..+5.6)
+            EnsureHotelWallSegment(r102, "Hotel_Room102_BathWallS", new Vector2(-9.5f, 4.6f), new Vector2(-7.4f, 4.6f), 0.16f, mats.WallConcrete, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(r102, "Hotel_Room102_BathWallN", new Vector2(-9.5f, 7.4f), new Vector2(-7.4f, 7.4f), 0.16f, mats.WallConcrete, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(r102, "Hotel_Room102_BathWallE", new Vector2(-7.4f, 5.6f), new Vector2(-7.4f, 7.4f), 0.16f, mats.WallConcrete, mats.BaseboardConcrete);
+
+            // --- GUEST ROOM 103 (South-East Corner Suite: X = +12.6..+20.0, Z = -12.0..-4.4; opens onto SE Lobby Foyer) ---
+            Transform r103 = EnsureHotelSubgroup(hotelRootTf, "Hotel_GuestRoom_103");
+            EnsureHotelDoorwayWallX(r103, "Hotel_Room103_CorridorWall", z: -4.4f, minX: 12.6f, maxX: 20.0f, doorMinX: 15.20f, doorMaxX: 16.60f,
+                thickness: wallT, wallMat: mats.WallPlaster, baseMat: mats.BaseboardConcrete, trimMat: mats.IndustrialMetal,
+                plaqueMat: mats.RoomPlaqueMats[2], plaqueX: 16.95f, corridorOnSouthSide: false);
+            EnsureHotelWallSegment(r103, "Hotel_Room103_WestPartyWall", new Vector2(12.6f, -12.0f), new Vector2(12.6f, -4.4f), wallT, mats.WallPlaster, mats.BaseboardConcrete);
+            // Built-in unfinished bathroom/closet partition inside Room 103
+            EnsureHotelWallSegment(r103, "Hotel_Room103_BathWallE", new Vector2(14.6f, -7.2f), new Vector2(14.6f, -4.4f), 0.16f, mats.WallConcrete, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(r103, "Hotel_Room103_BathWallS", new Vector2(13.6f, -7.2f), new Vector2(14.6f, -7.2f), 0.16f, mats.WallConcrete, mats.BaseboardConcrete);
+
+            // --- GUEST ROOM 104 (South-East Standard Room: X = +7.8..+12.6, Z = -12.0..-4.4; houses ShiftClock0307 cleanly) ---
+            Transform r104 = EnsureHotelSubgroup(hotelRootTf, "Hotel_GuestRoom_104");
+            EnsureHotelDoorwayWallX(r104, "Hotel_Room104_CorridorWall", z: -4.4f, minX: 7.8f, maxX: 12.6f, doorMinX: 10.45f, doorMaxX: 11.80f,
+                thickness: wallT, wallMat: mats.WallPlaster, baseMat: mats.BaseboardConcrete, trimMat: mats.IndustrialMetal,
+                plaqueMat: mats.RoomPlaqueMats[3], plaqueX: 12.12f, corridorOnSouthSide: false);
+            EnsureHotelWallSegment(r104, "Hotel_Room104_WestPartyWall", new Vector2(7.8f, -12.0f), new Vector2(7.8f, -4.4f), wallT, mats.WallPlaster, mats.BaseboardConcrete);
+            // Built-in entry foyer nib partition inside Room 104
+            EnsureHotelWallSegment(r104, "Hotel_Room104_FoyerNibWall", new Vector2(9.4f, -6.8f), new Vector2(9.4f, -4.4f), 0.16f, mats.WallConcrete, mats.BaseboardConcrete);
+
+            // --- GUEST ROOM 105 (South-Center Suite: Entry Foyer X=+1.4..+5.4, Z=-4.4..-1.8 + Main Chamber X=+1.4..+7.8, Z=-12.0..-4.4) ---
+            Transform r105 = EnsureHotelSubgroup(hotelRootTf, "Hotel_GuestRoom_105");
+            EnsureHotelDoorwayWallX(r105, "Hotel_Room105_CorridorWall", z: -1.8f, minX: 1.4f, maxX: 5.4f, doorMinX: 3.30f, doorMaxX: 4.70f,
+                thickness: wallT, wallMat: mats.WallPlaster, baseMat: mats.BaseboardConcrete, trimMat: mats.IndustrialMetal,
+                plaqueMat: mats.RoomPlaqueMats[4], plaqueX: 2.92f, corridorOnSouthSide: false);
+            EnsureHotelWallSegment(r105, "Hotel_Room105_WestPartyWall", new Vector2(1.4f, -12.0f), new Vector2(1.4f, -1.8f), wallT, mats.WallPlaster, mats.BaseboardConcrete);
+            // Built-in suite foyer divider & North backwall closure under Front-Office Alcove (Z = -4.4, X = +5.4..+7.8)
+            EnsureHotelWallSegment(r105, "Hotel_Room105_NorthAlcoveWall", new Vector2(5.4f, -4.4f), new Vector2(7.8f, -4.4f), wallT, mats.WallPlaster, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(r105, "Hotel_Room105_FoyerDivider", new Vector2(1.4f, -4.4f), new Vector2(3.1f, -4.4f), 0.16f, mats.WallConcrete, mats.BaseboardConcrete);
+
+            // --- GUEST ROOM 106 (South-West Suite: X = -5.6..+1.4, Z = -12.0..-1.8; doorway at X=-4.25..-2.80 keeps (-3.5,-2.2) clear) ---
+            Transform r106 = EnsureHotelSubgroup(hotelRootTf, "Hotel_GuestRoom_106");
+            EnsureHotelDoorwayWallX(r106, "Hotel_Room106_CorridorWall", z: -1.8f, minX: -5.6f, maxX: 1.4f, doorMinX: -4.25f, doorMaxX: -2.80f,
+                thickness: wallT, wallMat: mats.WallPlaster, baseMat: mats.BaseboardConcrete, trimMat: mats.IndustrialMetal,
+                plaqueMat: mats.RoomPlaqueMats[5], plaqueX: -2.42f, corridorOnSouthSide: false);
+            EnsureHotelWallSegment(r106, "Hotel_Room106_WestServiceWall", new Vector2(-5.6f, -12.0f), new Vector2(-5.6f, -1.8f), wallT, mats.WallConcrete, mats.BaseboardConcrete);
+            // Built-in unfinished bathroom partition inside Room 106 (NE flank, open South at X = -1.4..-0.3)
+            EnsureHotelWallSegment(r106, "Hotel_Room106_BathWallW", new Vector2(-1.4f, -5.2f), new Vector2(-1.4f, -1.8f), 0.16f, mats.WallConcrete, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(r106, "Hotel_Room106_BathWallS", new Vector2(-0.3f, -5.2f), new Vector2(1.4f, -5.2f), 0.16f, mats.WallConcrete, mats.BaseboardConcrete);
+        }
+
+        private static void BuildOrUpdateElevatorBay(Transform elevGroup, string bayPrefix, float centerZ, RemanenciaVisualMaterials mats)
+        {
+            // Recessed closed bi-parting metal elevator door leaves (solid colliders meeting flush at centerZ -> zero gap, zero fall hazard)
+            EnsureHotelBox(elevGroup, $"{bayPrefix}_DoorLeafS",
+                new Vector3(3.14f, BaseY + 1.10f, centerZ - 0.37f), Quaternion.identity, new Vector3(0.08f, 2.20f, 0.76f),
+                mats.ElevatorDoorMetal, keepCollider: true);
+            EnsureHotelBox(elevGroup, $"{bayPrefix}_DoorLeafN",
+                new Vector3(3.14f, BaseY + 1.10f, centerZ + 0.37f), Quaternion.identity, new Vector3(0.08f, 2.20f, 0.76f),
+                mats.ElevatorDoorMetal, keepCollider: true);
+            // Crisp vertical meeting seam between closed bi-parting leaves
+            EnsureHotelBox(elevGroup, $"{bayPrefix}_CenterSeam",
+                new Vector3(3.19f, BaseY + 1.10f, centerZ), Quaternion.identity, new Vector3(0.02f, 2.20f, 0.025f),
+                mats.CeilingVoid, keepCollider: false);
+            // Oxidized steel elevator surround jambs, top lintel, sill threshold, and floor-indicator housing
+            EnsureHotelBox(elevGroup, $"{bayPrefix}_FrameJambS",
+                new Vector3(3.38f, BaseY + 1.11f, centerZ - 0.75f), Quaternion.identity, new Vector3(0.18f, 2.22f, 0.08f),
+                mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(elevGroup, $"{bayPrefix}_FrameJambN",
+                new Vector3(3.38f, BaseY + 1.11f, centerZ + 0.75f), Quaternion.identity, new Vector3(0.18f, 2.22f, 0.08f),
+                mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(elevGroup, $"{bayPrefix}_FrameHeader",
+                new Vector3(3.38f, BaseY + 2.24f, centerZ), Quaternion.identity, new Vector3(0.18f, 0.08f, 1.58f),
+                mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(elevGroup, $"{bayPrefix}_FloorSill",
+                new Vector3(3.30f, BaseY + 0.012f, centerZ), Quaternion.identity, new Vector3(0.30f, 0.024f, 1.54f),
+                mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(elevGroup, $"{bayPrefix}_IndicatorHousing",
+                new Vector3(3.43f, BaseY + 2.46f, centerZ), Quaternion.identity, new Vector3(0.04f, 0.16f, 0.56f),
+                mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(elevGroup, $"{bayPrefix}_IndicatorStrip",
+                new Vector3(3.455f, BaseY + 2.46f, centerZ), Quaternion.identity, new Vector3(0.012f, 0.06f, 0.44f),
+                mats.CeilingVoid, keepCollider: false);
+        }
+
+        private static Transform EnsureHotelSubgroup(Transform parent, string groupName)
+        {
+            Transform existing = parent.Find(groupName);
+            if (existing != null)
+            {
+                existing.localPosition = Vector3.zero;
+                existing.localRotation = Quaternion.identity;
+                existing.localScale = Vector3.one;
+                return existing;
+            }
+            GameObject go = new GameObject(groupName);
+            go.transform.SetParent(parent, false);
+            return go.transform;
+        }
+
+        private static void EnsureHotelWallSegment(
+            Transform parent, string name, Vector2 a, Vector2 b, float thickness, Material wallMat, Material baseMat)
+        {
+            Vector2 delta = b - a;
+            float len = delta.magnitude;
+            if (len < 0.01f) return;
+            Vector2 mid = 0.5f * (a + b);
+            Quaternion rot = Quaternion.LookRotation(new Vector3(delta.x, 0f, delta.y), Vector3.up);
+
+            EnsureHotelBox(parent, name,
+                new Vector3(mid.x, BaseY + ClearHeight * 0.5f, mid.y), rot,
+                new Vector3(thickness, ClearHeight, len + thickness * 0.5f), wallMat, keepCollider: true);
+            EnsureHotelBox(parent, name + "_Baseboard",
+                new Vector3(mid.x, BaseY + 0.06f, mid.y), rot,
+                new Vector3(thickness + 0.025f, 0.12f, len + thickness * 0.52f), baseMat, keepCollider: false);
+        }
+
+        private static void EnsureHotelDoorwayWallX(
+            Transform parent, string prefix, float z, float minX, float maxX, float doorMinX, float doorMaxX,
+            float thickness, Material wallMat, Material baseMat, Material trimMat,
+            Material plaqueMat, float plaqueX, bool corridorOnSouthSide)
+        {
+            if (doorMinX - minX > 0.05f)
+            {
+                EnsureHotelWallSegment(parent, $"{prefix}_Left", new Vector2(minX, z), new Vector2(doorMinX, z), thickness, wallMat, baseMat);
+            }
+            if (maxX - doorMaxX > 0.05f)
+            {
+                EnsureHotelWallSegment(parent, $"{prefix}_Right", new Vector2(doorMaxX, z), new Vector2(maxX, z), thickness, wallMat, baseMat);
+            }
+
+            float doorWidth = doorMaxX - doorMinX;
+            float doorCenterX = 0.5f * (doorMinX + doorMaxX);
+            const float doorHeight = 2.20f;
+            float transomH = ClearHeight - doorHeight; // 0.65m
+
+            EnsureHotelBox(parent, $"{prefix}_Transom",
+                new Vector3(doorCenterX, BaseY + doorHeight + transomH * 0.5f, z), Quaternion.identity,
+                new Vector3(doorWidth + 0.04f, transomH, thickness), wallMat, keepCollider: false);
+            EnsureHotelBox(parent, $"{prefix}_JambL",
+                new Vector3(doorMinX + 0.02f, BaseY + doorHeight * 0.5f, z), Quaternion.identity,
+                new Vector3(0.055f, doorHeight, thickness + 0.05f), trimMat, keepCollider: false);
+            EnsureHotelBox(parent, $"{prefix}_JambR",
+                new Vector3(doorMaxX - 0.02f, BaseY + doorHeight * 0.5f, z), Quaternion.identity,
+                new Vector3(0.055f, doorHeight, thickness + 0.05f), trimMat, keepCollider: false);
+            EnsureHotelBox(parent, $"{prefix}_HeaderTrim",
+                new Vector3(doorCenterX, BaseY + doorHeight, z), Quaternion.identity,
+                new Vector3(doorWidth + 0.08f, 0.055f, thickness + 0.05f), trimMat, keepCollider: false);
+
+            if (plaqueMat != null)
+            {
+                float zOffset = corridorOnSouthSide ? -(thickness * 0.5f + 0.012f) : (thickness * 0.5f + 0.012f);
+                Quaternion plaqueRot = corridorOnSouthSide ? Quaternion.identity : Quaternion.Euler(0f, 180f, 0f);
+                EnsureHotelBox(parent, $"{prefix}_RoomPlaque",
+                    new Vector3(plaqueX, BaseY + 1.58f, z + zOffset), plaqueRot,
+                    new Vector3(0.22f, 0.11f, 0.016f), plaqueMat, keepCollider: false);
+            }
+        }
+
+        private static GameObject EnsureHotelBox(
+            Transform parent, string name, Vector3 worldPos, Quaternion worldRot, Vector3 scale, Material mat, bool keepCollider)
+        {
+            Transform existing = parent.Find(name);
+            GameObject go;
+            if (existing != null)
+            {
+                go = existing.gameObject;
+                go.transform.position = worldPos;
+                go.transform.rotation = worldRot;
+                go.transform.localScale = scale;
+                SetSharedMatPreservingRendererSettings(go, mat);
+                BoxCollider col = go.GetComponent<BoxCollider>();
+                if (keepCollider)
+                {
+                    if (col == null) col = go.AddComponent<BoxCollider>();
+                    col.enabled = true;
+                    col.isTrigger = false;
+                }
+                else if (col != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(col);
+                }
+                return go;
+            }
+
+            go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            go.name = name;
+            go.transform.SetParent(parent, false);
+            go.transform.position = worldPos;
+            go.transform.rotation = worldRot;
+            go.transform.localScale = scale;
+            SetMat(go, mat);
+            if (!keepCollider)
+            {
+                Collider col = go.GetComponent<Collider>();
+                if (col != null) UnityEngine.Object.DestroyImmediate(col);
+            }
+            return go;
+        }
+
+        private static string EnsureRoomNumberPlaqueTexture(string assetPath, string roomNumber)
+        {
+            string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", assetPath));
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+            const int w = 128, h = 64;
+            Texture2D tex = new Texture2D(w, h, TextureFormat.RGB24, false);
+
+            Color plate = new Color(0.68f, 0.69f, 0.68f);
+            Color rim = new Color(0.24f, 0.25f, 0.26f);
+            Color ink = new Color(0.14f, 0.15f, 0.16f);
+
+            for (int y = 0; y < h; y++)
+            {
+                for (int x = 0; x < w; x++)
+                {
+                    bool border = x < 4 || x >= w - 4 || y < 4 || y >= h - 4;
+                    float grain = (PeriodicHash(x, y, w, h, 3109 + roomNumber.GetHashCode()) - 0.5f) * 0.04f;
+                    Color c = border ? rim : new Color(plate.r + grain, plate.g + grain, plate.b + grain);
+                    tex.SetPixel(x, y, c);
+                }
+            }
+
+            // Crisp 5x7 pixel-font stencil numerals centered on the metal plaque
+            string[][] glyphs = new string[][]
+            {
+                new[] { "01110", "10001", "10011", "10101", "11001", "10001", "01110" }, // 0
+                new[] { "00100", "01100", "00100", "00100", "00100", "00100", "01110" }, // 1
+                new[] { "01110", "10001", "00001", "00110", "01000", "10000", "11111" }, // 2
+                new[] { "01110", "10001", "00001", "00110", "00001", "10001", "01110" }, // 3
+                new[] { "00010", "00110", "01010", "10010", "11111", "00010", "00010" }, // 4
+                new[] { "11111", "10000", "11110", "00001", "00001", "10001", "01110" }, // 5
+                new[] { "01110", "10000", "11110", "10001", "10001", "10001", "01110" }, // 6
+            };
+
+            const int scale = 5;
+            const int charW = 5 * scale;
+            const int gap = 7;
+            int totalW = roomNumber.Length * charW + (roomNumber.Length - 1) * gap;
+            int startX = (w - totalW) / 2;
+            int startY = (h - 7 * scale) / 2;
+
+            for (int cIdx = 0; cIdx < roomNumber.Length; cIdx++)
+            {
+                int digit = roomNumber[cIdx] - '0';
+                if (digit < 0 || digit >= glyphs.Length) continue;
+                string[] g = glyphs[digit];
+                int cx = startX + cIdx * (charW + gap);
+                for (int row = 0; row < 7; row++)
+                {
+                    for (int col = 0; col < 5; col++)
+                    {
+                        if (g[row][col] != '1') continue;
+                        int pyBase = startY + (6 - row) * scale;
+                        int pxBase = cx + col * scale;
+                        for (int dy = 0; dy < scale; dy++)
+                        {
+                            for (int dx = 0; dx < scale; dx++)
+                            {
+                                tex.SetPixel(pxBase + dx, pyBase + dy, ink);
+                            }
+                        }
+                    }
+                }
+            }
+
+            tex.Apply();
+            File.WriteAllBytes(fullPath, tex.EncodeToPNG());
+            UnityEngine.Object.DestroyImmediate(tex);
+            return assetPath;
+        }
+
+        /// <summary>
+        /// Read-only verification gate for the currently loaded BackroomsLevel1Scene.unity
+        /// (Remanencia Nivel 0 — Hotel de las Palomas architecture, visual & structural invariants).
+        /// </summary>
+        public static bool RunVerificationChecks()
+        {
+            var scene = EditorSceneManager.GetActiveScene();
+            if (!scene.IsValid() || !string.Equals(scene.path, ScenePath, StringComparison.OrdinalIgnoreCase))
+            {
+                scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            }
+            if (!scene.IsValid())
+            {
+                Debug.LogError($"[BackroomsLevel1Builder] RunVerificationChecks failed: could not open {ScenePath}.");
+                return false;
+            }
+
+            GameObject root = null;
+            foreach (GameObject go in scene.GetRootGameObjects())
+            {
+                if (go.name == "BackroomsLevel1_Root") { root = go; break; }
+            }
+            if (root == null)
+            {
+                Debug.LogError("[BackroomsLevel1Builder] RunVerificationChecks failed: missing BackroomsLevel1_Root.");
+                return false;
+            }
+
+            Transform shell = root.transform.Find("Backrooms_Architecture");
+            Transform lights = root.transform.Find("Backrooms_FluorescentLights");
+            Transform artifacts = root.transform.Find("Backrooms_DispersedArtifacts");
+            Transform spawn = root.transform.Find("Backrooms_SpawnPoint");
+            Transform exitDoor = root.transform.Find("Backrooms_ExitDoor_ToStreet");
+
+            if (shell == null || lights == null || artifacts == null || spawn == null || exitDoor == null)
+            {
+                Debug.LogError("[BackroomsLevel1Builder] RunVerificationChecks failed: required scene roots missing.");
+                return false;
+            }
+
+            Transform hotelRoot = shell.Find(HotelArchitectureRootName);
+            bool hasHotelStructure = hotelRoot != null &&
+                                     hotelRoot.Find("Hotel_Entrance_Vestibule") != null &&
+                                     hotelRoot.Find("Hotel_Lobby_Reception") != null &&
+                                     hotelRoot.Find("Hotel_Elevator_Core") != null &&
+                                     hotelRoot.Find("Hotel_GuestCorridor") != null &&
+                                     hotelRoot.Find("Hotel_Service_Wing") != null &&
+                                     hotelRoot.Find("Hotel_GuestRoom_101") != null &&
+                                     hotelRoot.Find("Hotel_GuestRoom_102") != null &&
+                                     hotelRoot.Find("Hotel_GuestRoom_103") != null &&
+                                     hotelRoot.Find("Hotel_GuestRoom_104") != null &&
+                                     hotelRoot.Find("Hotel_GuestRoom_105") != null &&
+                                     hotelRoot.Find("Hotel_GuestRoom_106") != null;
+
+            int retainedWallCount = 0, pillarCount = 0, missingVoidCount = 0, crookedHatchCount = 0;
+            for (int i = 0; i < shell.childCount; i++)
+            {
+                string n = shell.GetChild(i).name;
+                if (n.StartsWith("Wall_", StringComparison.Ordinal) && !n.EndsWith("_Baseboard", StringComparison.Ordinal)) retainedWallCount++;
+                else if (n.StartsWith("Pillar_", StringComparison.Ordinal) && !n.EndsWith("_Baseboard", StringComparison.Ordinal)) pillarCount++;
+                else if (n == "Backrooms_MissingTileVoid") missingVoidCount++;
+                else if (n == "Backrooms_CrookedCeilingTile") crookedHatchCount++;
+            }
+
+            int fixtureCount = lights.childCount;
+            Light[] fixtureLights = lights.GetComponentsInChildren<Light>(includeInactive: true);
+            BackroomsAmbientFlicker[] flickers = lights.GetComponentsInChildren<BackroomsAmbientFlicker>(includeInactive: true);
+            Light[] allLights = root.GetComponentsInChildren<Light>(includeInactive: true);
+            int shadowCastingLights = 0;
+            for (int i = 0; i < allLights.Length; i++)
+            {
+                if (allLights[i].shadows != LightShadows.None) shadowCastingLights++;
+            }
+
+            bool ok = hasHotelStructure &&
+                      retainedWallCount == 15 &&
+                      pillarCount == 13 &&
+                      missingVoidCount == 2 &&
+                      crookedHatchCount == 2 &&
+                      fixtureCount == 24 &&
+                      fixtureLights.Length == 16 &&
+                      flickers.Length == 5 &&
+                      shadowCastingLights == 0 &&
+                      artifacts.Find("SecretRoom_HeavyVaultSafe") != null &&
+                      artifacts.Find("Portal_DimensionalMirror_Root") != null;
+
+            Debug.Log($"[BackroomsLevel1Builder] RunVerificationChecks: ok={ok} (hotelStructure={hasHotelStructure}, retainedWalls={retainedWallCount}, pillars={pillarCount}, fixtures={fixtureCount}, fixtureLights={fixtureLights.Length}, flickers={flickers.Length}, shadowLights={shadowCastingLights}).");
+            return ok;
+        }
+
         private static void EnsureSceneInBuildSettings(string scenePath)
         {
             var existing = new List<EditorBuildSettingsScene>(EditorBuildSettings.scenes);
@@ -928,13 +2019,13 @@ namespace MyVirtualCommunity.Editor
         // =====================================================================
         // STRUCTURAL & PROP BUILDERS
         // =====================================================================
-        private static void CreateMissingCeilingTile(Transform parent, Vector3 pos, Material voidMat, Material tileMat)
+        private static void CreateMissingCeilingTile(Transform parent, Vector3 pos, Material voidMat, Material hatchMat)
         {
             CreateBox("Backrooms_MissingTileVoid", parent,
-                new Vector3(pos.x, pos.y - 0.005f, pos.z), new Vector3(0.68f, 0.02f, 0.68f), voidMat, keepCollider: false);
-            GameObject crookedTile = CreateBox("Backrooms_CrookedCeilingTile", parent,
-                new Vector3(pos.x + 0.38f, pos.y - 0.08f, pos.z + 0.02f), new Vector3(0.62f, 0.025f, 0.62f), tileMat, keepCollider: false);
-            crookedTile.transform.localRotation = Quaternion.Euler(14f, 8f, -18f);
+                new Vector3(pos.x, pos.y - 0.008f, pos.z), new Vector3(0.86f, 0.024f, 0.62f), voidMat, keepCollider: false);
+            GameObject serviceHatch = CreateBox("Backrooms_CrookedCeilingTile", parent,
+                new Vector3(pos.x + 0.40f, pos.y - 0.085f, pos.z + 0.02f), new Vector3(0.78f, 0.022f, 0.56f), hatchMat, keepCollider: false);
+            serviceHatch.transform.localRotation = Quaternion.Euler(11f, 4f, -15f);
         }
 
         private static void CreateWallSegment(string name, Transform parent, Vector2 a, Vector2 b, float thickness, Material wallMat, Material baseMat)
@@ -1818,26 +2909,134 @@ namespace MyVirtualCommunity.Editor
             return assetPath;
         }
 
+        // =====================================================================
+        // SEAMLESS PERIODIC NOISE & REMANENCIA NIVEL 0 ARCHITECTURAL TEXTURES
+        // =====================================================================
+        private static float PeriodicHash(int ix, int iy, int px, int py, int seed)
+        {
+            int x = ((ix % px) + px) % px;
+            int y = ((iy % py) + py) % py;
+            uint h = (uint)(x * 374761393 + y * 668265263 + seed * 1442695041);
+            h = (h ^ (h >> 13)) * 1274126177u;
+            h ^= h >> 16;
+            return (h & 0x00FFFFFFu) / 16777215f;
+        }
+
+        private static float PeriodicValueNoise(float u, float v, int periodX, int periodY, int seed)
+        {
+            float fx = u * periodX;
+            float fy = v * periodY;
+            int x0 = Mathf.FloorToInt(fx);
+            int y0 = Mathf.FloorToInt(fy);
+            float tx = fx - x0;
+            float ty = fy - y0;
+            tx = tx * tx * (3f - 2f * tx);
+            ty = ty * ty * (3f - 2f * ty);
+
+            float v00 = PeriodicHash(x0, y0, periodX, periodY, seed);
+            float v10 = PeriodicHash(x0 + 1, y0, periodX, periodY, seed);
+            float v01 = PeriodicHash(x0, y0 + 1, periodX, periodY, seed);
+            float v11 = PeriodicHash(x0 + 1, y0 + 1, periodX, periodY, seed);
+
+            float vx0 = Mathf.Lerp(v00, v10, tx);
+            float vx1 = Mathf.Lerp(v01, v11, tx);
+            return Mathf.Lerp(vx0, vx1, ty);
+        }
+
+        private static float PeriodicFbm(float u, float v, int basePeriodX, int basePeriodY, int octaves, int seed)
+        {
+            float sum = 0f;
+            float amp = 0.5f;
+            float norm = 0f;
+            int px = basePeriodX;
+            int py = basePeriodY;
+            for (int o = 0; o < octaves; o++)
+            {
+                sum += PeriodicValueNoise(u, v, px, py, seed + o * 97) * amp;
+                norm += amp;
+                amp *= 0.5f;
+                px *= 2;
+                py *= 2;
+            }
+            return sum / norm;
+        }
+
+        /// <summary>
+        /// Re-authors T_Backrooms_YellowWallpaper.png (preserving filename & GUID) as unfinished
+        /// poured-concrete hotel construction with formwork seams, tie-rod dimples, irregular
+        /// weathered off-white plaster skim patches, and subtle lower-wall dust/moisture staining.
+        /// </summary>
         private static string EnsureBackroomsWallpaperTexture(string assetPath)
         {
             string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", assetPath));
             Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
-            const int sz = 256;
+            const int sz = 512;
             Texture2D tex = new Texture2D(sz, sz, TextureFormat.RGB24, false);
             for (int y = 0; y < sz; y++)
             {
-                float dampBottom = y < 44 ? (1f - y / 44f) * 0.18f : 0f;
+                float v = (float)y / sz;
+                float lowerDust = y < 104 ? Mathf.Pow(1f - y / 104f, 1.5f) * 0.13f : 0f;
+                bool formSeamH = (y % 128) < 3;
+                bool formLipH = (y % 128) == 3 || (y % 128) == 4;
+
                 for (int x = 0; x < sz; x++)
                 {
-                    float stripe = ((x % 32) < 4) ? -0.055f : 0f;
-                    int gx = (x % 32) - 16;
-                    int gy = (y % 32) - 16;
-                    bool diamond = Mathf.Abs(gx) + Mathf.Abs(gy) == 7 || (Mathf.Abs(gx) == 0 && Mathf.Abs(gy) < 6);
-                    float motif = diamond ? -0.045f : 0f;
-                    float noise = (Mathf.PerlinNoise(x * 0.08f, y * 0.08f) - 0.5f) * 0.06f;
-                    float r = Mathf.Clamp01(0.84f + stripe + motif + noise - dampBottom);
-                    float g = Mathf.Clamp01(0.76f + stripe + motif + noise - dampBottom * 1.05f);
-                    float b = Mathf.Clamp01(0.45f + stripe * 0.6f + motif * 0.6f + noise * 0.5f - dampBottom * 0.9f);
+                    float u = (float)x / sz;
+                    float macro = PeriodicFbm(u, v, 4, 4, 4, 101);
+                    float fine = PeriodicFbm(u, v, 24, 24, 3, 211) - 0.5f;
+                    float streak = PeriodicFbm(u, v, 16, 3, 3, 307);
+
+                    // Base raw unfinished poured concrete (dusty warm mineral gray)
+                    Color concrete = new Color(
+                        0.55f + (macro - 0.5f) * 0.10f + fine * 0.08f,
+                        0.54f + (macro - 0.5f) * 0.10f + fine * 0.08f,
+                        0.52f + (macro - 0.5f) * 0.09f + fine * 0.07f);
+
+                    // Formwork board horizontal seams & subtle vertical shuttering joints
+                    bool formSeamV = ((x + ((y / 128) % 2) * 128) % 256) < 2;
+                    if (formSeamH || formSeamV)
+                    {
+                        concrete *= 0.84f;
+                    }
+                    else if (formLipH)
+                    {
+                        concrete *= 1.05f;
+                    }
+
+                    // Recessed concrete tie-rod pin dimples
+                    int tx = (x % 128) - 64;
+                    int ty = (y % 128) - 64;
+                    int distSq = tx * tx + ty * ty;
+                    if (distSq < 18)
+                    {
+                        concrete *= 0.68f;
+                    }
+                    else if (distSq < 34)
+                    {
+                        concrete *= 0.90f;
+                    }
+
+                    // Irregular troweled unfinished off-white plaster skim-coat patches
+                    float plasterMask = PeriodicFbm(u, v, 3, 3, 4, 419);
+                    float plasterBlend = Mathf.SmoothStep(0.55f, 0.64f, plasterMask);
+                    if (plasterBlend > 0.001f)
+                    {
+                        float trowel = (PeriodicFbm(u, v, 12, 6, 3, 521) - 0.5f) * 0.07f;
+                        Color plaster = new Color(
+                            0.72f + trowel + fine * 0.04f,
+                            0.70f + trowel + fine * 0.04f,
+                            0.67f + trowel + fine * 0.04f);
+                        // Faint dusty terracotta primer undertone along worn patch margins
+                        float margin = plasterBlend * (1f - plasterBlend) * 4f;
+                        plaster = Color.Lerp(plaster, new Color(0.64f, 0.56f, 0.50f), margin * 0.35f);
+                        concrete = Color.Lerp(concrete, plaster, plasterBlend);
+                    }
+
+                    // Localized mineral seepage / vertical water stain & bottom dust gradient
+                    float stain = Mathf.Clamp01((streak - 0.62f) * 2.4f) * (1f - v * 0.45f) * 0.14f;
+                    float r = Mathf.Clamp01(concrete.r - lowerDust - stain * 0.92f);
+                    float g = Mathf.Clamp01(concrete.g - lowerDust * 1.02f - stain);
+                    float b = Mathf.Clamp01(concrete.b - lowerDust * 1.05f - stain * 1.06f);
                     tex.SetPixel(x, y, new Color(r, g, b));
                 }
             }
@@ -1847,22 +3046,211 @@ namespace MyVirtualCommunity.Editor
             return assetPath;
         }
 
+        /// <summary>
+        /// Generates T_Remanencia_Level0_PlasterWall.png: weathered off-white and muted faded terracotta
+        /// northern Mexican stucco plaster interrupted mid-finish, exposing patches of raw cement blockwork.
+        /// </summary>
+        private static string EnsureRemanenciaPlasterWallTexture(string assetPath)
+        {
+            string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", assetPath));
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+            const int sz = 512;
+            Texture2D tex = new Texture2D(sz, sz, TextureFormat.RGB24, false);
+            for (int y = 0; y < sz; y++)
+            {
+                float v = (float)y / sz;
+                float lowerDust = y < 100 ? Mathf.Pow(1f - y / 100f, 1.4f) * 0.14f : 0f;
+                bool blockCourseH = (y % 48) < 3;
+
+                for (int x = 0; x < sz; x++)
+                {
+                    float u = (float)x / sz;
+                    float macro = PeriodicFbm(u, v, 4, 4, 4, 613);
+                    float fine = PeriodicFbm(u, v, 28, 28, 3, 709) - 0.5f;
+                    float wash = PeriodicFbm(u, v, 3, 5, 3, 811);
+
+                    // Base weathered off-white plaster blended with muted faded terracotta stucco patches
+                    Color offWhite = new Color(0.71f + fine * 0.06f, 0.69f + fine * 0.06f, 0.65f + fine * 0.05f);
+                    Color fadedTerracotta = new Color(0.65f + fine * 0.05f, 0.55f + fine * 0.05f, 0.49f + fine * 0.05f);
+                    float terraBlend = Mathf.SmoothStep(0.46f, 0.72f, wash) * 0.62f;
+                    Color wallCol = Color.Lerp(offWhite, fadedTerracotta, terraBlend);
+
+                    // Exposed unfinished concrete-block / raw cement patches where skim coat stopped
+                    float rawPatch = Mathf.SmoothStep(0.40f, 0.31f, macro);
+                    if (rawPatch > 0.001f)
+                    {
+                        bool blockJointV = ((x + ((y / 48) % 2) * 48) % 96) < 3;
+                        float mortar = (blockCourseH || blockJointV) ? -0.07f : 0f;
+                        Color rawBlock = new Color(
+                            0.51f + mortar + fine * 0.09f,
+                            0.50f + mortar + fine * 0.09f,
+                            0.49f + mortar + fine * 0.08f);
+                        wallCol = Color.Lerp(wallCol, rawBlock, rawPatch);
+                    }
+
+                    // Subtle damp streaks near upper/lower transitions
+                    float drip = Mathf.Clamp01((PeriodicFbm(u, v, 14, 3, 3, 919) - 0.64f) * 2.2f) * 0.11f;
+                    float r = Mathf.Clamp01(wallCol.r - lowerDust - drip * 0.90f);
+                    float g = Mathf.Clamp01(wallCol.g - lowerDust * 1.03f - drip);
+                    float b = Mathf.Clamp01(wallCol.b - lowerDust * 1.06f - drip * 1.05f);
+                    tex.SetPixel(x, y, new Color(r, g, b));
+                }
+            }
+            tex.Apply();
+            File.WriteAllBytes(fullPath, tex.EncodeToPNG());
+            UnityEngine.Object.DestroyImmediate(tex);
+            return assetPath;
+        }
+
+        /// <summary>
+        /// Generates T_Remanencia_Level0_ConcreteColumn.png: reinforced cast-concrete structural column
+        /// with pour lift lines, corner formwork shading, darker cement patch repairs, and lower weathering.
+        /// </summary>
+        private static string EnsureRemanenciaConcreteColumnTexture(string assetPath)
+        {
+            string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", assetPath));
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+            const int sz = 512;
+            Texture2D tex = new Texture2D(sz, sz, TextureFormat.RGB24, false);
+            for (int y = 0; y < sz; y++)
+            {
+                float v = (float)y / sz;
+                float lowerWeather = y < 128 ? Mathf.Pow(1f - y / 128f, 1.35f) * 0.16f : 0f;
+                bool liftSeam = (y % 170) < 4;
+
+                for (int x = 0; x < sz; x++)
+                {
+                    float u = (float)x / sz;
+                    float macro = PeriodicFbm(u, v, 4, 5, 4, 1021);
+                    float fine = PeriodicFbm(u, v, 32, 32, 3, 1117) - 0.5f;
+
+                    // Cooler structural reinforced concrete gray
+                    Color col = new Color(
+                        0.49f + (macro - 0.5f) * 0.11f + fine * 0.09f,
+                        0.495f + (macro - 0.5f) * 0.11f + fine * 0.09f,
+                        0.49f + (macro - 0.5f) * 0.10f + fine * 0.08f);
+
+                    // Vertical formwork edge bevels on column faces
+                    if (x < 14 || x > sz - 15)
+                    {
+                        float edgeFactor = (x < 14) ? (1f - x / 14f) : (1f - (sz - 1 - x) / 14f);
+                        col *= (1f - edgeFactor * 0.15f);
+                    }
+
+                    // Horizontal concrete pour lift lines & tie holes
+                    if (liftSeam) col *= 0.80f;
+                    int tx = (x % 256) - 128;
+                    int ty = (y % 170) - 85;
+                    if (tx * tx + ty * ty < 22) col *= 0.64f;
+
+                    // Darker cement repair patches
+                    float repairMask = PeriodicFbm(u, v, 5, 5, 3, 1223);
+                    float repairBlend = Mathf.SmoothStep(0.65f, 0.72f, repairMask);
+                    col = Color.Lerp(col, new Color(0.38f + fine * 0.05f, 0.385f + fine * 0.05f, 0.38f + fine * 0.05f), repairBlend * 0.85f);
+
+                    // Small unfinished white-gray plaster smears
+                    float plasterMask = PeriodicFbm(u, v, 4, 4, 3, 1327);
+                    float plasterBlend = Mathf.SmoothStep(0.68f, 0.75f, plasterMask) * 0.55f;
+                    col = Color.Lerp(col, new Color(0.66f, 0.65f, 0.62f), plasterBlend);
+
+                    float r = Mathf.Clamp01(col.r - lowerWeather);
+                    float g = Mathf.Clamp01(col.g - lowerWeather * 1.02f);
+                    float b = Mathf.Clamp01(col.b - lowerWeather * 1.04f);
+                    tex.SetPixel(x, y, new Color(r, g, b));
+                }
+            }
+            tex.Apply();
+            File.WriteAllBytes(fullPath, tex.EncodeToPNG());
+            UnityEngine.Object.DestroyImmediate(tex);
+            return assetPath;
+        }
+
+        /// <summary>
+        /// Re-authors T_Backrooms_DampCarpet.png (preserving filename & GUID) as an unfinished
+        /// poured-concrete hotel floor with expansion joints, trowel variation, fine cracks, dust,
+        /// localized damp/repaired patches, and a subtle incomplete ceramic hotel tile remnant.
+        /// </summary>
         private static string EnsureBackroomsCarpetTexture(string assetPath)
         {
             string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", assetPath));
             Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
-            const int sz = 256;
+            const int sz = 512;
             Texture2D tex = new Texture2D(sz, sz, TextureFormat.RGB24, false);
             for (int y = 0; y < sz; y++)
             {
+                float v = (float)y / sz;
+                bool expJointY = y < 3 || y >= sz - 2;
                 for (int x = 0; x < sz; x++)
                 {
-                    float grain = (Mathf.PerlinNoise(x * 0.35f, y * 0.35f) - 0.5f) * 0.10f;
-                    float damp = Mathf.PerlinNoise(x * 0.035f + 7f, y * 0.035f + 3f) > 0.66f ? -0.12f : 0f;
-                    float r = Mathf.Clamp01(0.62f + grain + damp);
-                    float g = Mathf.Clamp01(0.54f + grain + damp);
-                    float b = Mathf.Clamp01(0.32f + grain * 0.7f + damp * 0.8f);
-                    tex.SetPixel(x, y, new Color(r, g, b));
+                    float u = (float)x / sz;
+                    bool expJointX = x < 3 || x >= sz - 2;
+
+                    float macro = PeriodicFbm(u, v, 4, 4, 4, 1429);
+                    float trowel = PeriodicFbm(u, v, 8, 8, 3, 1531) - 0.5f;
+                    float aggregate = PeriodicFbm(u, v, 48, 48, 2, 1637) - 0.5f;
+
+                    // Raw troweled poured concrete (balanced mineral gray for crisp walkability)
+                    Color floorCol = new Color(
+                        0.48f + (macro - 0.5f) * 0.12f + trowel * 0.06f + aggregate * 0.07f,
+                        0.475f + (macro - 0.5f) * 0.12f + trowel * 0.06f + aggregate * 0.07f,
+                        0.46f + (macro - 0.5f) * 0.11f + trowel * 0.055f + aggregate * 0.065f);
+
+                    // Lighter dusty plaster/cement powder drifts
+                    float dust = Mathf.SmoothStep(0.60f, 0.76f, PeriodicFbm(u, v, 5, 5, 3, 1741));
+                    floorCol = Color.Lerp(floorCol, new Color(0.57f, 0.56f, 0.53f), dust * 0.55f);
+
+                    // Localized darker damp or repaired concrete patches (restrained, never black)
+                    float damp = Mathf.SmoothStep(0.64f, 0.76f, PeriodicFbm(u, v, 3, 3, 3, 1847));
+                    floorCol *= (1f - damp * 0.22f);
+
+                    // Fine shrinkage hairline crack ridge
+                    float crackField = Mathf.Abs(PeriodicFbm(u, v, 6, 6, 4, 1951) - 0.5f);
+                    if (crackField < 0.0085f && macro < 0.55f)
+                    {
+                        float crackStrength = 1f - (crackField / 0.0085f);
+                        floorCol *= (1f - crackStrength * 0.34f);
+                    }
+
+                    // Subtle localized remnant cluster of unfinished muted aged hotel ceramic tiles (32x32 px each)
+                    // Stair-stepped incomplete border showing where tile installation halted mid-construction
+                    int tileCol = x / 32;
+                    int tileRow = y / 32;
+                    bool inTileRemnant =
+                        (tileRow == 2 && tileCol >= 2 && tileCol <= 5) ||
+                        (tileRow == 3 && tileCol >= 2 && tileCol <= 6) ||
+                        (tileRow == 4 && tileCol >= 3 && tileCol <= 5) ||
+                        (tileRow == 5 && tileCol >= 3 && tileCol <= 4);
+                    if (inTileRemnant)
+                    {
+                        int lx = x % 32;
+                        int ly = y % 32;
+                        bool grout = lx < 2 || ly < 2;
+                        if (grout)
+                        {
+                            floorCol = new Color(0.36f, 0.35f, 0.34f);
+                        }
+                        else
+                        {
+                            bool altTile = ((tileCol + tileRow) % 2) == 0;
+                            float tileVar = (PeriodicHash(tileCol, tileRow, 16, 16, 2063) - 0.5f) * 0.05f;
+                            Color ceramic = altTile
+                                ? new Color(0.60f + tileVar + aggregate * 0.03f, 0.56f + tileVar + aggregate * 0.03f, 0.51f + tileVar + aggregate * 0.03f)
+                                : new Color(0.56f + tileVar + aggregate * 0.03f, 0.53f + tileVar + aggregate * 0.03f, 0.49f + tileVar + aggregate * 0.03f);
+                            // Dust & wear blending tiles naturally into surrounding slab
+                            floorCol = Color.Lerp(ceramic, floorCol, 0.22f + dust * 0.30f);
+                        }
+                    }
+
+                    // Concrete slab expansion-joint score lines
+                    if (expJointX || expJointY)
+                    {
+                        floorCol *= 0.72f;
+                    }
+
+                    tex.SetPixel(x, y, new Color(
+                        Mathf.Clamp01(floorCol.r),
+                        Mathf.Clamp01(floorCol.g),
+                        Mathf.Clamp01(floorCol.b)));
                 }
             }
             tex.Apply();
@@ -1871,29 +3259,83 @@ namespace MyVirtualCommunity.Editor
             return assetPath;
         }
 
+        /// <summary>
+        /// Re-authors T_Backrooms_CeilingGrid.png (preserving filename & GUID) as an exposed
+        /// cast-concrete structural soffit with coffered beam transitions, plywood formwork seams,
+        /// visible galvanized conduit runs, and subtle mineral water staining (zero office ceiling grid).
+        /// </summary>
         private static string EnsureBackroomsCeilingGridTexture(string assetPath)
         {
             string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", assetPath));
             Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
-            const int sz = 256;
+            const int sz = 512;
             Texture2D tex = new Texture2D(sz, sz, TextureFormat.RGB24, false);
             for (int y = 0; y < sz; y++)
             {
+                float v = (float)y / sz;
+                bool beamEdgeY = y < 22 || y >= sz - 22;
+                bool beamLipY = y == 22 || y == 23 || y == sz - 23 || y == sz - 24;
+                bool formJointY = (y % 128) < 2;
+
                 for (int x = 0; x < sz; x++)
                 {
-                    bool gridLine = (x % 64) < 3 || (y % 64) < 3;
-                    if (gridLine)
+                    float u = (float)x / sz;
+                    bool beamEdgeX = x < 24 || x >= sz - 24;
+                    bool beamLipX = x == 24 || x == 25 || x == sz - 25 || x == sz - 26;
+                    bool formJointX = (x % 256) < 2;
+
+                    float macro = PeriodicFbm(u, v, 4, 4, 4, 2179);
+                    float fine = PeriodicFbm(u, v, 32, 32, 3, 2281) - 0.5f;
+                    float woodGrain = (PeriodicFbm(u, v, 32, 6, 2, 2389) - 0.5f) * 0.035f;
+
+                    // Cool cast-concrete soffit base
+                    Color soffit = new Color(
+                        0.49f + (macro - 0.5f) * 0.10f + fine * 0.07f + woodGrain,
+                        0.50f + (macro - 0.5f) * 0.10f + fine * 0.07f + woodGrain,
+                        0.51f + (macro - 0.5f) * 0.10f + fine * 0.07f + woodGrain);
+
+                    // Coffered structural concrete beam transitions along bay borders
+                    if (beamEdgeX || beamEdgeY)
                     {
-                        tex.SetPixel(x, y, new Color(0.56f, 0.55f, 0.48f));
+                        soffit *= 0.80f;
                     }
-                    else
+                    else if (beamLipX || beamLipY)
                     {
-                        float speckle = (Mathf.PerlinNoise(x * 0.48f, y * 0.48f) - 0.5f) * 0.09f;
-                        float r = Mathf.Clamp01(0.84f + speckle);
-                        float g = Mathf.Clamp01(0.81f + speckle);
-                        float b = Mathf.Clamp01(0.68f + speckle);
-                        tex.SetPixel(x, y, new Color(r, g, b));
+                        soffit *= 0.68f;
                     }
+                    else if (formJointX || formJointY)
+                    {
+                        soffit *= 0.88f;
+                    }
+
+                    // Subtle mineral moisture seepage patches
+                    float seepage = Mathf.SmoothStep(0.65f, 0.78f, PeriodicFbm(u, v, 4, 4, 3, 2477));
+                    soffit *= (1f - seepage * 0.18f);
+
+                    // Exposed galvanized steel electrical conduit runs & junction box along soffit
+                    bool conduitX = y >= 210 && y <= 216;
+                    bool conduitY = x >= 146 && x <= 152;
+                    bool junctionBox = x >= 139 && x <= 159 && y >= 203 && y <= 223;
+                    bool conduitShadow = (y >= 217 && y <= 219) || (x >= 153 && x <= 155);
+                    if (junctionBox)
+                    {
+                        bool rim = x <= 141 || x >= 157 || y <= 205 || y >= 221;
+                        soffit = rim ? new Color(0.22f, 0.23f, 0.25f) : new Color(0.32f, 0.34f, 0.36f);
+                    }
+                    else if (conduitX || conduitY)
+                    {
+                        bool strap = (conduitX && (x % 64) < 3) || (conduitY && (y % 64) < 3);
+                        soffit = strap ? new Color(0.20f, 0.21f, 0.23f) : new Color(0.34f, 0.36f, 0.38f);
+                    }
+                    else if (conduitShadow)
+                    {
+                        soffit *= 0.76f;
+                    }
+
+                    tex.SetPixel(x, y, new Color(
+                        Mathf.Clamp01(soffit.r),
+                        Mathf.Clamp01(soffit.g),
+                        Mathf.Clamp01(soffit.b)));
                 }
             }
             tex.Apply();

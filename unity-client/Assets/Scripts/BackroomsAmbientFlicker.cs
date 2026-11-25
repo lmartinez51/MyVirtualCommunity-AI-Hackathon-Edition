@@ -15,7 +15,7 @@ namespace MyVirtualCommunity.Client.World
         public float phaseOffset = 0f;
 
         private Material runtimePanelMat;
-        private Color baseEmissionColor = new Color(1.0f, 0.96f, 0.78f) * 2.1f;
+        private Color baseEmissionColor = new Color(0.84f, 0.92f, 0.98f) * 2.2f;
 
         private void Start()
         {
