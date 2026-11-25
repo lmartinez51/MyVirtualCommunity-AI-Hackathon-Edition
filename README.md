@@ -145,7 +145,7 @@ See [docs/fellowship/unity-2027/BUILD_DELIVERY.md](docs/fellowship/unity-2027/BU
 ### Unity Fellowship 2027 Package
 - [docs/fellowship/unity-2027/APPLICATION_BRIEF.md](docs/fellowship/unity-2027/APPLICATION_BRIEF.md) — Master application reference
 - [docs/fellowship/unity-2027/PITCH.md](docs/fellowship/unity-2027/PITCH.md) — Commercial game pitch
-- [docs/fellowship/unity-2027/ROADMAP.md](docs/fellowship/unity-2027/ROADMAP.md) — Production roadmap toward March 2028 PC v1.0
+- [docs/fellowship/unity-2027/ROADMAP.md](docs/fellowship/unity-2027/ROADMAP.md) — Production roadmap with an internal target commercial release of February 2028 (ahead of Unity Fellowship Terms Section 2.1(c), requiring release before March 1, 2028)
 - [docs/fellowship/unity-2027/FUNDING_PLAN.md](docs/fellowship/unity-2027/FUNDING_PLAN.md) — Funding categories (`TBD` figures pending creator input) & Fellowship support objectives
 - [docs/fellowship/unity-2027/TRAILER_SCRIPT.md](docs/fellowship/unity-2027/TRAILER_SCRIPT.md) — IP-clean game trailer shot plan
 - [docs/fellowship/unity-2027/BUILD_DELIVERY.md](docs/fellowship/unity-2027/BUILD_DELIVERY.md) — Reproducible Windows evaluation build checklist

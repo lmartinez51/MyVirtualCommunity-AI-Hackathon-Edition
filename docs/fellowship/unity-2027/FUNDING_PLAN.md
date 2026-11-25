@@ -1,28 +1,29 @@
-# Funding & Support Plan â€” Unity Fellowship 2027
+# Funding & Support Plan — Unity Fellowship 2027
 
-**Project:** My Virtual Community â€” *A Living World Beyond Reality.*
-**Production Window:** March 2027 â€“ March 2028 (~12 months to commercial PC v1.0)
-**Document Status:** Structural Framework â€” all monetary figures, compensation rates, and vendor quotes are marked **`TBD` (`AUTHOR DECISION REQUIRED`)** until supplied directly by the creator.
+**Project:** My Virtual Community — *A Living World Beyond Reality.*
+**Production Window:** March 2027 – February 2028 (Internal target commercial release: February 2028, providing schedule buffer ahead of [Unity Fellowship Terms and Conditions](https://unity.com/legal/unity-fellowship-terms-and-conditions) Section 2.1(c), which requires commercial release before March 1, 2028.)
+**Document Status:** Structural Framework — all monetary figures, compensation rates, and vendor quotes are marked **`TBD` (`AUTHOR DECISION REQUIRED`)** until supplied directly by the creator.
 
 > **Integrity Notice:** No studio operating budget, personal stipend, contractor rates, or total funding request have been invented in this document.
 
-Related documents: [Application Brief](APPLICATION_BRIEF.md) Â· [Roadmap](ROADMAP.md) Â· [Vertical Slice](../../VERTICAL_SLICE.md) Â· [IP & Asset Provenance](../../IP_AND_ASSET_PROVENANCE.md)
+Related documents: [Application Brief](APPLICATION_BRIEF.md) · [Roadmap](ROADMAP.md) · [Vertical Slice](../../VERTICAL_SLICE.md) · [IP & Asset Provenance](../../IP_AND_ASSET_PROVENANCE.md)
 
 ---
 
-## 1. Funding Allocation Categories (`TBD` â€” Creator to Supply Figures)
+## 1. Funding Allocation Categories (`TBD` — Creator to Supply Figures)
 
 | Category | Scope & Commercial Deliverable Supported | Target Phase | Estimated Cost |
 | :--- | :--- | :---: | :---: |
-| **1. Core Development Runway** | Full-time creator production runway (architecture refactor, Unity UI migration, save/journal/inventory systems, campaign implementation, post-Lasser world). | Mar 2027 â€“ Mar 2028 | `TBD` |
-| **2. Original Art, 3D Props & IP Clearance Replacement** | Replacement of uncleared prototype props/textures, bespoke original borderland anomalous artifacts, environment lighting/material polish, custom iconography & UI art. | Q1â€“Q3 2027 | `TBD` |
-| **3. Audio Design & Original Music** | Authored spatial soundscapes (border street, storm drain, liminal vault, hidden world), foley/footsteps, puzzle SFX, and original atmospheric score (replacing current C# procedural audio). | Q2â€“Q4 2027 | `TBD` |
-| **4. Narrative Design & Bilingual Editing (EN/ES)** | Narrative script editing, clue/journal copywriting, and natural Mexican Spanish + American English localization QA. | Q2â€“Q4 2027 | `TBD` |
-| **5. Legal, IP Clearance & Commercial Compliance** | Trademark/IP legal counsel for borderland setting & brand strategy, commercial EULA/privacy policy, business entity / storefront compliance. | Q1â€“Q4 2027 | `TBD` |
-| **6. Hardware, Software & Unity Licensing** | Commercial Unity license tier (if required beyond Fellowship support), dev/test hardware across GPU tiers (low-VRAM laptop + mid-range desktop), audio/art tool subscriptions. | Q1 2027 â€“ Q1 2028 | `TBD` |
-| **7. QA Playtesting & Release Marketing** | External usability/playtest compensation, trailer production polish, storefront capsule art, Steam/platform fees, and launch visibility. | Q4 2027 â€“ Mar 2028 | `TBD` |
-| **8. Contingency Reserve** | Buffer for schedule risks, optimization passes, or unexpected clearance/localization costs. | Full Year | `TBD` |
-| **Total Requested / Projected Budget** | â€” | **12 Months** | **`TBD`** |
+| **1. Core Development Runway** | Full-time creator production runway (architecture refactor, Unity UI migration, save/journal/inventory systems, core campaign across the four verified spatial layers). | Mar 2027 – Feb 2028 | `TBD` |
+| **2. Original Art, 3D Props & IP Clearance Replacement** | Replacement of uncleared prototype props/textures, bespoke original borderland anomalous artifacts, environment lighting/material polish, custom iconography & UI art. | Q1–Q3 2027 | `TBD` |
+| **3. Audio Design & Original Music** | Authored spatial soundscapes (border street, storm drain, liminal vault), foley/footsteps, puzzle SFX, and original atmospheric score (replacing current C# procedural audio). | Q2–Q4 2027 | `TBD` |
+| **4. Narrative Design & Bilingual Editing (EN/ES)** | Narrative script editing, clue/journal copywriting, and natural Mexican Spanish + American English localization QA. | Q2–Q4 2027 | `TBD` |
+| **5. Legal, IP Clearance & Commercial Compliance** | Trademark/IP legal counsel for borderland setting & brand strategy, commercial EULA/privacy policy, business entity / storefront compliance. | Q1–Q4 2027 | `TBD` |
+| **6. Hardware, Software & Unity Licensing** | Commercial Unity license tier (if required beyond Fellowship support), dev/test hardware across GPU tiers (low-VRAM laptop + mid-range desktop), audio/art tool subscriptions. | Q1 2027 – Feb 2028 | `TBD` |
+| **7. QA Playtesting & Release Marketing** | External usability/playtest compensation, trailer production polish, storefront capsule art, Steam/platform fees, and launch visibility. | Q4 2027 – Feb 2028 | `TBD` |
+| **8. Contingency Reserve** | Buffer for schedule risks, optimization passes, or unexpected clearance/localization costs. | Full Production Window | `TBD` |
+| **Optional Conditional Scope *(Unapproved)*** | Candidate post-Lasser hidden world expansion (`OPTIONAL FUTURE SCOPE — SUBJECT TO CREATOR APPROVAL AND VERTICAL-SLICE VALIDATION`; **not** a committed funded v1.0 deliverable). | Unscheduled (Post-Slice Evaluation) | `TBD (Optional)` |
+| **Total Requested / Projected Core Budget** | — | **Mar 2027 – Feb 2028** | **`TBD`** |
 
 ---
 
