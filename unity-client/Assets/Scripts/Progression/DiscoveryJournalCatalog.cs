@@ -121,88 +121,88 @@ namespace MyVirtualCommunity.Client.Progression
                     "Ignores magnetic north; its glowing cyan needle points unerringly Southwest toward the Dimensional Threshold Chamber in the farthest corner of the maze.",
                     new Color(0.38f, 0.92f, 1.0f)),
 
-                ["artifact:reloj-0307"] = new LocalizedEntryMetadata(
-                    "Reloj Despertador Detenido a las 03:07 AM (EXP-00 • El Conjuro)",
-                    "Alarm Clock Frozen at 03:07 AM (EXP-00 • The Conjuring)",
-                    "Todos los relojes dentro de los Backrooms se detienen exactamente a las 03:07 AM sin importar la hora de Ciudad Juárez.",
-                    "Every clock inside the Backrooms stops at exactly 03:07 AM regardless of the real time in Ciudad Juárez.",
+                [ProgressionIds.ArtifactShiftClock0307] = new LocalizedEntryMetadata(
+                    "Reloj de Turno 03:07",
+                    "Shift Clock 03:07",
+                    "Reloj checador industrial detenido a las 03:07. Sin importar la hora en Ciudad Juárez ni el turno del corredor fronterizo, sus manecillas jamás avanzan.",
+                    "Industrial shift timekeeper frozen at 03:07. Regardless of the local hour in Ciudad Juárez or the border corridor shift, its hands never move.",
                     new Color(1.0f, 0.80f, 0.34f)),
 
-                ["artifact:libro-babadook"] = new LocalizedEntryMetadata(
-                    "Libro Emergente 'Mister Babadook' (EXP-02)",
-                    "'Mister Babadook' Pop-Up Storybook (EXP-02)",
-                    "Libro infantil de tapa carbonizada abandonado sobre la alfombra húmeda. Atado con correa para impedir que sus páginas emergentes se abran.",
-                    "Charcoal-black pop-up book lying alone on the damp carpet. Strapped shut so its pop-up pages cannot unfold.",
+                [ProgressionIds.ArtifactSealedNotebook] = new LocalizedEntryMetadata(
+                    "Cuaderno de Páginas Selladas",
+                    "Notebook of Sealed Pages",
+                    "Cuaderno de campo manchado por la humedad con diagramas técnicos doblados y varias hojas pegadas entre sí. Sus márgenes registran lecturas de un plano que no coincide con la superficie.",
+                    "Water-damaged field notebook filled with folded technical diagrams and pages sealed together. Its margins log survey measurements that do not match the surface grid.",
                     new Color(0.82f, 0.84f, 0.90f)),
 
-                ["artifact:telefono-negro"] = new LocalizedEntryMetadata(
-                    "El Teléfono Negro con Cable Cortado (EXP-11 • The Black Phone)",
-                    "The Black Rotary Phone with Severed Cord (EXP-11 • The Black Phone)",
-                    "Teléfono mural de baquelita montado en una columna amarilla del gran salón. Su cable está cortado, pero a veces timbra en el silencio de los pasillos.",
-                    "Black Bakelite wall telephone mounted on a yellow column in the great pillared hall. Its cord is severed, yet it still rings in the silence.",
+                [ProgressionIds.ArtifactServiceIntercom] = new LocalizedEntryMetadata(
+                    "Intercomunicador de Servicio sin Línea",
+                    "Unwired Service Intercom",
+                    "Caja de intercomunicación municipal fijada a la columna con el ducto eléctrico cortado. Aunque no existe tendido conectado, el altavoz emite breves chasquidos de portadora en los pasillos vacíos.",
+                    "Municipal-style wall intercom box bolted to the column with its conduit sheared off. Though no line is connected, the speaker emits brief carrier clicks across the empty halls.",
                     new Color(0.75f, 0.80f, 0.90f)),
 
-                ["artifact:cinta-vhs-el-aro"] = new LocalizedEntryMetadata(
-                    "Televisor CRT y Cinta VHS '7 DÍAS' (EXP-04 • El Aro / Ringu)",
-                    "CRT Television & '7 DAYS' Cursed VHS (EXP-04 • The Ring)",
-                    "Televisor de los 90 encendido sin estar enchufado en un nicho del ala Oeste. Reproduce en bucle un eclipse circular de estática. Etiqueta: '7 DÍAS'.",
-                    "Unplugged 1990s CRT TV glowing in a West wing niche, looping a circular eclipse of static. Tape label: '7 DAYS'.",
+                [ProgressionIds.ArtifactSignalMonitor] = new LocalizedEntryMetadata(
+                    "Monitor de Señal sin Origen",
+                    "Unsourced Signal Monitor",
+                    "Monitor CRT industrial encendido sin cable de alimentación en un nicho del ala Oeste. Sus barras horizontales de interferencia barren la pantalla en un ciclo irregular sin fuente identificable.",
+                    "Industrial CRT test monitor glowing without a power cord in a West wing niche. Irregular horizontal scan bars drift across its screen with no traceable broadcast source.",
                     new Color(0.55f, 0.84f, 1.0f)),
 
-                ["artifact:muneca-porcelana"] = new LocalizedEntryMetadata(
-                    "Vitrina de Contención: Muñeca de Porcelana (EXP-03 • Annabelle)",
-                    "Containment Vitrine: Porcelain Conduit Doll (EXP-03 • Annabelle)",
-                    "Muñeca de porcelana agrietada encerrada tras cristal bendecido. Letrero superior: 'ADVERTENCIA: POSITIVAMENTE NO ABRIR'.",
-                    "Cracked porcelain doll sealed behind blessed glass. Warning plaque: 'WARNING: POSITIVELY DO NOT OPEN'.",
-                    new Color(1.0f, 0.36f, 0.38f)),
+                [ProgressionIds.ArtifactSpecimenVitrine] = new LocalizedEntryMetadata(
+                    "Vitrina de Muestra: Figura sin Rasgos",
+                    "Specimen Vitrine: Featureless Figure",
+                    "Vitrina sellada de archivo que resguarda una forma cerámica lisa y sin rostro ni inscripción. Su placa de inventario carece de fecha de ingreso o procedencia.",
+                    "Sealed archival vitrine housing a smooth, featureless ceramic form with no markings. Its brass inventory tag carries neither an intake date nor a point of origin.",
+                    new Color(0.84f, 0.78f, 0.66f)),
 
-                ["artifact:titere-espiral"] = new LocalizedEntryMetadata(
-                    "Títere de Mejillas en Espiral (EXP-05 • Billy / Saw)",
-                    "Spiral-Cheek Ventriloquist Puppet (EXP-05 • Billy / Saw)",
-                    "Posado sobre un cajón solitario con smoking negro y corbatín rojo. Su grabadora interna murmura: 'Quiero jugar un juego...'.",
-                    "Perched atop a lone wooden crate in black tuxedo and red bow tie. Its internal recorder whispers: 'I want to play a game...'.",
-                    new Color(0.95f, 0.22f, 0.24f)),
+                [ProgressionIds.ArtifactArticulatedWoodAssembly] = new LocalizedEntryMetadata(
+                    "Ensamble de Madera Articulado",
+                    "Articulated Wooden Assembly",
+                    "Estructura articulada de madera y pernos de latón abandonada sobre una caja de archivo. Sus brazos móviles conservan marcas de calibración a lápiz, aunque no corresponde a ningún instrumento convencional.",
+                    "Hand-built jointed wooden frame with brass pivot pins left atop an archive crate. Its hinged arms bear pencil calibration marks, yet it matches no standard drafting or survey tool.",
+                    new Color(0.86f, 0.68f, 0.42f)),
 
-                ["artifact:muneco-good-guy"] = new LocalizedEntryMetadata(
-                    "Caja de Juguete 'Good Guy' con Rasguños Internos (EXP-10 • Chucky)",
-                    "'Good Guy' Toy Box with Internal Claw Marks (EXP-10 • Child's Play)",
-                    "Caja amarilla asegurada con fleje de acero sobre cajas de archivo húmedas. Hay marcas de rasguños hechas desde el interior.",
-                    "Factory yellow toy box strapped in steel atop damp archive boxes. Deep claw marks tear outward from inside.",
-                    new Color(1.0f, 0.82f, 0.18f)),
+                [ProgressionIds.ArtifactArchiveCase06] = new LocalizedEntryMetadata(
+                    "Caja de Archivo 06",
+                    "Archive Case 06",
+                    "Contenedor metálico de archivo sin logotipo comercial, asegurado con cierre de acero sobre las cajas húmedas del pasillo Norte. Su etiqueta numerada '06' está en blanco en el reverso.",
+                    "Unbranded archival storage case secured with a steel latch atop damp corridor cartons in the North hall. Its numbered index tag '06' bears no sender or contents manifest.",
+                    new Color(0.76f, 0.80f, 0.84f)),
 
-                ["artifact:caja-dybbuk"] = new LocalizedEntryMetadata(
-                    "La Caja Dybbuk Sellada con Cadenas (EXP-01 • El Origen del Mal)",
-                    "Chained Dybbuk Wine Cabinet (EXP-01 • The Possession)",
-                    "Antigua licorera de caoba atada con cadenas de hierro y rodeada por un cerco de sal blanca sobre la alfombra húmeda.",
-                    "Antique mahogany wine cabinet bound in iron chains inside a white salt perimeter on the damp carpet.",
+                [ProgressionIds.ArtifactSealedCustodyCase] = new LocalizedEntryMetadata(
+                    "Estuche de Custodia Sellado",
+                    "Sealed Custody Case",
+                    "Estuche de madera oscura reforzado con barras de sujeción de acero y precinto metálico de custodia municipal. Al acercarse se percibe un zumbido sordo amortiguado en su interior.",
+                    "Dark wood custody chest clamped shut with industrial steel retention bars and a metal transit seal. Up close, a faint muffled resonance vibrates against the casing.",
                     new Color(0.92f, 0.64f, 0.28f)),
 
-                ["artifact:grimorio-necronomicon"] = new LocalizedEntryMetadata(
-                    "Grimorio Encuadernado / Libro de los Muertos (EXP-06 • Evil Dead / Hamunaptra)",
-                    "Bound Grimoire / Book of the Dead (EXP-06 • Evil Dead / Hamunaptra)",
-                    "Códice antiguo con relieves orgánicos y herrajes egipcios de oro. Permanece sellado junto a la Caja Fuerte Nivel Ω en el Ala Noroeste.",
-                    "Ancient codex bound with organic ridges and golden Egyptian clasps, sealed beside the Level-Ω Vault Safe in the NW Wing.",
+                [ProgressionIds.ArtifactAnomalousGeometryAtlas] = new LocalizedEntryMetadata(
+                    "Atlas de Geometría Anómala",
+                    "Atlas of Anomalous Geometry",
+                    "Folio técnico de gran formato colocado sobre un atril de acero junto a la bóveda Nivel Ω. Contiene levantamientos topográficos de pasillos cerrados en bucle y ángulos imposibles.",
+                    "Oversized technical archival folio resting on a steel drafting stand beside the Level-Ω vault. Its bound plates chart closed-loop corridors and non-Euclidean interior angles.",
                     new Color(0.95f, 0.68f, 0.24f)),
 
-                ["artifact:mano-ceramica"] = new LocalizedEntryMetadata(
-                    "La Mano Embalsamada de Cerámica (EXP-07 • Háblame / Talk to Me)",
-                    "Embalmed Ceramic Hand (EXP-07 • Talk to Me)",
-                    "Antebrazo de cerámica blanca cubierto de firmas oscuras. Regla: jamás sostenerla por más de 90 segundos.",
-                    "White ceramic forearm covered in dark signatures. Rule: never hold it for longer than 90 seconds.",
+                [ProgressionIds.ArtifactFracturedInsulator] = new LocalizedEntryMetadata(
+                    "Aislador Cerámico Fracturado",
+                    "Fractured Ceramic Insulator",
+                    "Aislador de porcelana de alta tensión con tres campanas acanaladas y una fractura vítrea en el núcleo. Conserva restos de hollín eléctrico pese a hallarse lejos de cualquier subestación.",
+                    "Ribbed high-voltage porcelain insulator split by a glassy fracture seam across its core. It retains traces of arc scorch despite sitting far from any utility line or substation.",
                     new Color(0.92f, 0.88f, 0.78f)),
 
-                ["artifact:configuracion-lamento"] = new LocalizedEntryMetadata(
-                    "Caja Rompecabezas de Filigrana (EXP-08 • La Configuración del Lamento)",
-                    "Filigree Puzzle Box (EXP-08 • The Lament Configuration)",
-                    "Cubo mecánico de laca negra y latón grabado con anillos concéntricos, bloqueado a mitad de su secuencia.",
-                    "Mechanical cube of black lacquer and etched brass locked mid-sequence to prevent opening a rift.",
-                    new Color(1.0f, 0.78f, 0.28f)),
+                [ProgressionIds.ArtifactFoldedTopologyCore] = new LocalizedEntryMetadata(
+                    "Núcleo de Topología Plegada",
+                    "Folded Topology Core",
+                    "Ensamble mecánico asimétrico de placas cerámicas y aluminio montado sobre una cuna de acero. Sus secciones escalonadas se desfasan entre sí como un modelo a escala de un espacio plegado.",
+                    "Asymmetric mechanical assembly of stepped ceramic and aluminum plates seated in a steel cradle. Its offset tiers shift out of phase like a scale model of folded architectural space.",
+                    new Color(0.74f, 0.86f, 0.96f)),
 
-                ["artifact:tablero-ouija"] = new LocalizedEntryMetadata(
-                    "Tablero Espiritista y Planchette (EXP-09 • El Exorcista / Ouija)",
-                    "Spirit Board & Planchette (EXP-09 • The Exorcist / Ouija)",
-                    "Tablero clásico de madera grabada con el puntero clavado sobre 'GOODBYE'.",
-                    "Classic engraved spirit board with its planchette pinned over 'GOODBYE'.",
+                [ProgressionIds.ArtifactCoordinatePlottingPlate] = new LocalizedEntryMetadata(
+                    "Lámina de Trazado de Coordenadas",
+                    "Coordinate Plotting Plate",
+                    "Placa cartográfica de pizarra y latón con retícula ortogonal y regla deslizable. Sus coordenadas trazan intersecciones bajo la Avenida Benito Juárez que no figuran en los planos catastrales.",
+                    "Slate-and-brass cartographic plotting plate fitted with an orthogonal grid and sliding vernier rule. Its etched intersections map chambers beneath Avenida Benito Juárez absent from civic surveys.",
                     new Color(0.86f, 0.72f, 0.46f)),
 
                 ["reality-bridge:laptop-mystery-terminal"] = new LocalizedEntryMetadata(
@@ -407,12 +407,13 @@ namespace MyVirtualCommunity.Client.Progression
 
         public static bool TryGetEvidence(string evidenceId, out LocalizedEntryMetadata metadata)
         {
-            if (string.IsNullOrWhiteSpace(evidenceId))
+            string canonical = ProgressionIds.CanonicalizeEvidenceId(evidenceId);
+            if (string.IsNullOrEmpty(canonical))
             {
                 metadata = null;
                 return false;
             }
-            return EvidenceCatalog.TryGetValue(evidenceId.Trim(), out metadata);
+            return EvidenceCatalog.TryGetValue(canonical, out metadata);
         }
 
         public static LocalizedEntryMetadata GetEvidenceOrFallback(string evidenceId)

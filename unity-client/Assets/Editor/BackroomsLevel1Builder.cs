@@ -5,12 +5,13 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
+using MyVirtualCommunity.Client.Progression;
 using MyVirtualCommunity.Client.World;
 
 namespace MyVirtualCommunity.Editor
 {
     /// <summary>
-    /// Idempotent builder for Assets/Scenes/BackroomsLevel1Scene.unity:
+    /// Idempotent builder and targeted artifact migrator for Assets/Scenes/BackroomsLevel1Scene.unity:
     /// A full real-world scale 40m x 24m (960 m²) liminal Backrooms Level 0 maze (origin Y = -50.0m,
     /// clear height 2.85m), matching the actual footprint of the south block between Av. Benito Juárez
     /// and C. Ignacio Mariscal. Loaded additively when the player crosses the Threshold Veil inside
@@ -24,7 +25,8 @@ namespace MyVirtualCommunity.Editor
     ///   - 8 "Reality-Bridge" props ready for future live API integrations (Laptop, FM Radio, Alexa,
     ///     Diario de Juárez iPad, Juárez Live Weather/Clock Terminal, 90s Wall Payphone, CCTV Frame,
     ///     Thermal Receipt Printer)
-    ///   - All 13 pop-culture horror & esoteric containment artifacts dispersed across the 40x24m maze
+    ///   - 12 original archival & anomalous artifacts plus Evidence Board PDN-00, Paquimé mask &
+    ///     Anomalous Astral Compass dispersed across the 40x24m maze
     ///   - Level-Omega Vault Safe ("654321") in the far NW Vault Room holding "El Ojo del Umbral"
     ///   - Single Monumental Dimensional Mirror-Portal ("El Umbral de Lasser") in the far SW Chamber
     ///     (~40m diagonally away from the NE entrance!)
@@ -81,8 +83,6 @@ namespace MyVirtualCommunity.Editor
             Material corkMat = CreateColorMat("Assets/Settings/West_SecretVault_Cork.mat", new Color(0.58f, 0.42f, 0.25f), 0.12f, 0.0f);
             Material stickyYellowMat = CreateColorMat("Assets/Settings/West_SecretVault_StickyYellow.mat", new Color(0.98f, 0.88f, 0.26f), 0.18f, 0.0f);
             Material redThreadMat = CreateEmissiveMat("Assets/Settings/West_SecretVault_RedThread.mat", new Color(0.88f, 0.12f, 0.14f), new Color(0.55f, 0.06f, 0.08f));
-            Material goodGuyYellowMat = CreateColorMat("Assets/Settings/West_SecretVault_ToyBoxYellow.mat", new Color(0.94f, 0.74f, 0.12f), 0.36f, 0.0f);
-            Material toyBoxBlueMat = CreateColorMat("Assets/Settings/West_SecretVault_ToyBoxBlue.mat", new Color(0.14f, 0.36f, 0.72f), 0.36f, 0.0f);
             Material cardboardMat = CreateColorMat("Assets/Settings/Backrooms_Cardboard.mat", new Color(0.62f, 0.48f, 0.30f), 0.10f, 0.0f);
             Material officeBeigeMat = CreateColorMat("Assets/Settings/Backrooms_OfficeBeige.mat", new Color(0.74f, 0.70f, 0.60f), 0.28f, 0.05f);
             Material chairFabricMat = CreateColorMat("Assets/Settings/Backrooms_OfficeChairFabric.mat", new Color(0.22f, 0.26f, 0.30f), 0.12f, 0.0f);
@@ -148,7 +148,7 @@ namespace MyVirtualCommunity.Editor
             CreateWallSegment("Wall_NorthCorridor_AlcoveW", shellRoot.transform, new Vector2(7.6f, 8.6f), new Vector2(7.6f, 12.0f), 0.22f, wallMat, baseboardMat);
             CreateWallSegment("Wall_NorthCorridor_Divider", shellRoot.transform, new Vector2(1.0f, 5.4f), new Vector2(1.0f, 9.2f), 0.22f, wallMat, baseboardMat);
 
-            // --- ZONE N-CENTER: SEALED DOLL CONTAINMENT ROOM (X=-9..-1, Z=+5.6..+12) ---
+            // --- ZONE N-CENTER: SPECIMEN VITRINE CONTAINMENT ROOM (X=-9..-1, Z=+5.6..+12) ---
             CreateWallSegment("Wall_NCenter_East", shellRoot.transform, new Vector2(-1.4f, 5.6f), new Vector2(-1.4f, 9.4f), 0.22f, wallMat, baseboardMat);
             CreateWallSegment("Wall_NCenter_SouthL", shellRoot.transform, new Vector2(-9.2f, 5.6f), new Vector2(-6.2f, 5.6f), 0.22f, wallMat, baseboardMat);
             CreateWallSegment("Wall_NCenter_SouthR", shellRoot.transform, new Vector2(-3.6f, 5.6f), new Vector2(-1.4f, 5.6f), 0.22f, wallMat, baseboardMat);
@@ -222,7 +222,7 @@ namespace MyVirtualCommunity.Editor
                 ( 16.5f,  8.8f, true,  true,  false, 1.15f), // NE Arrival Vestibule
                 ( 10.2f,  8.8f, true,  false, false, 0.00f), // NE Baffle Corridor (emissive panel)
                 (  4.5f,  8.8f, true,  true,  false, 1.10f), // N-East Diario de Juárez iPad Alcove
-                ( -5.2f,  8.8f, true,  true,  true,  0.95f), // N-Center Annabelle Containment Room (flicker!)
+                ( -5.2f,  8.8f, true,  true,  true,  0.95f), // N-Center Specimen Vitrine Room (flicker!)
                 (-11.0f,  8.8f, false, false, false, 0.00f), // Dead tube before NW Vault
                 (-16.5f,  8.6f, true,  true,  false, 1.15f), // NW Level-Omega Vault Safe Room
 
@@ -239,14 +239,14 @@ namespace MyVirtualCommunity.Editor
                 (  7.2f, -2.6f, true,  true,  false, 1.10f), // Lone Laptop Workstation Recess
                 (  0.5f, -2.2f, true,  true,  false, 1.05f), // Central-South Hall
                 ( -6.8f, -2.4f, true,  true,  true,  0.95f), // Alexa Corner Hall (flicker!)
-                (-14.5f, -1.6f, true,  true,  false, 0.90f), // West CRT TV Niche
+                (-14.5f, -1.6f, true,  true,  false, 0.90f), // West Signal Monitor Niche
 
                 // South Row (Z = -8.4m)
-                ( 15.5f, -8.4f, true,  true,  false, 1.05f), // SE Payphone & 03:07 Clock Corridor
+                ( 15.5f, -8.4f, true,  true,  false, 1.05f), // SE Payphone & 03:07 Shift Clock Corridor
                 ( 11.2f, -8.4f, false, false, false, 0.00f), // Dead tube between SE & S-Center
                 (  4.0f, -8.4f, true,  true,  false, 1.15f), // S-Center Evidence Corkboard & Thermal Printer
                 ( -3.5f, -8.4f, true,  false, false, 0.00f), // South Labyrinth East
-                ( -9.5f, -8.4f, true,  true,  true,  0.95f), // SW Labyrinth Dybbuk & Border Clock (flicker!)
+                ( -9.5f, -8.4f, true,  true,  true,  0.95f), // SW Labyrinth Custody Case & Border Clock (flicker!)
                 (-16.5f, -8.2f, true,  true,  true,  0.65f), // Far SW Monumental Portal Chamber (dimmer eerie glow!)
                 (-16.5f, -5.2f, false, false, false, 0.00f), // Dead tube at Portal Threshold
             };
@@ -365,7 +365,7 @@ namespace MyVirtualCommunity.Editor
                 darkMahoganyMat, officeBeigeMat, saltWhiteMat, obsidianMat, alexaRingMat);
 
             // =========================================================================
-            // 7. THE 13 POP-CULTURE HORROR & ESOTERIC ARTIFACTS DISPERSED OVER 960 m²
+            // 7. ORIGINAL ARCHIVAL & ANOMALOUS ARTIFACTS DISPERSED OVER 960 m²
             // =========================================================================
             GameObject artifactsRoot = new GameObject("Backrooms_DispersedArtifacts");
             artifactsRoot.transform.SetParent(root.transform, false);
@@ -374,56 +374,56 @@ namespace MyVirtualCommunity.Editor
             BuildEvidenceCorkboard(artifactsRoot.transform, new Vector3(4.00f, BaseY + 1.48f, -11.78f), Quaternion.Euler(0f, -90f, 0f),
                 darkMahoganyMat, corkMat, porcelainMat, astrolabeCoreMat, stickyYellowMat, redThreadMat);
 
-            // 2. 03:07 AM Brass Alarm Clock on a narrow wooden wall shelf in SE Corridor
+            // 2. Shift Clock 03:07 on a narrow wooden pedestal in SE Corridor
             CreateBox("Clock307_Pedestal", propsRoot.transform, new Vector3(11.40f, BaseY + 0.45f, -11.45f), new Vector3(0.42f, 0.90f, 0.42f), darkMahoganyMat, keepCollider: true);
-            BuildClock307(artifactsRoot.transform, new Vector3(11.40f, BaseY + 0.98f, -11.45f), Quaternion.Euler(0f, 180f, 0f),
-                antiqueBrassMat, porcelainMat, obsidianMat);
+            BuildShiftClock0307(artifactsRoot.transform, new Vector3(11.40f, BaseY + 0.98f, -11.45f), Quaternion.Euler(0f, 180f, 0f),
+                safeGunmetalMat, antiqueBrassMat, porcelainMat, obsidianMat);
 
-            // 3. Babadook Pop-Up Storybook lying alone on the damp carpet in quiet NE Dead-End Alcove
-            BuildBabadookBook(artifactsRoot.transform, new Vector3(9.80f, BaseY + 0.04f, 10.60f), Quaternion.Euler(0f, 128f, 0f),
-                obsidianMat, saltWhiteMat, crimsonVelvetMat);
+            // 3. Notebook of Sealed Pages resting on the damp carpet in quiet NE Dead-End Alcove
+            BuildSealedNotebook(artifactsRoot.transform, new Vector3(9.80f, BaseY + 0.04f, 10.60f), Quaternion.Euler(0f, 128f, 0f),
+                agedLeatherMat, porcelainMat, antiqueBrassMat, darkMahoganyMat);
 
-            // 4. The Black Rotary Phone mounted on Pillar_CentralHall_Phone (-1.5, +1.4) facing East (+X)
-            BuildBlackRotaryPhone(artifactsRoot.transform, new Vector3(-1.12f, BaseY + 1.42f, 1.40f), Quaternion.Euler(0f, 180f, 0f),
-                obsidianMat, aluminumMat);
+            // 4. Unwired Service Intercom mounted on Pillar_CentralHall_Phone (-1.5, +1.4) facing East (+X)
+            BuildServiceIntercom(artifactsRoot.transform, new Vector3(-1.12f, BaseY + 1.42f, 1.40f), Quaternion.Euler(0f, 180f, 0f),
+                safeGunmetalMat, aluminumMat, obsidianMat, antiqueBrassMat, safeLedAmberMat);
 
-            // 5. 90s CRT TV + Cursed VHS ("7 DÍAS") on rolling AV cart in West Niche (-18.9, -1.6)
+            // 5. Unsourced Signal Monitor on rolling AV cart in West Niche (-18.9, -1.6)
             CreateBox("CrtTv_RollingCart", propsRoot.transform, new Vector3(-18.90f, BaseY + 0.34f, -1.60f), new Vector3(0.54f, 0.68f, 0.68f), rackSteelMat, keepCollider: true);
-            BuildCrtTvAndVhs(artifactsRoot.transform, new Vector3(-18.88f, BaseY + 0.68f, -1.60f), Quaternion.Euler(0f, 90f, 0f),
-                rackSteelMat, crtStaticMat, saltWhiteMat, obsidianMat);
+            BuildSignalMonitor(artifactsRoot.transform, new Vector3(-18.88f, BaseY + 0.68f, -1.60f), Quaternion.Euler(0f, 90f, 0f),
+                safeGunmetalMat, crtStaticMat, aluminumMat, obsidianMat);
 
             // 6. Anomalous Astral Compass on a lone pedestal in Central Pillared Hall (points SW toward Portal!)
             CreateBox("Compass_SideTable", propsRoot.transform, new Vector3(2.50f, BaseY + 0.42f, -1.40f), new Vector3(0.48f, 0.84f, 0.48f), darkMahoganyMat, keepCollider: true);
             BuildAnomalousCompass(artifactsRoot.transform, new Vector3(2.50f, BaseY + 0.86f, -1.40f), Quaternion.Euler(0f, -112f, 0f),
                 antiqueBrassMat, astrolabeCoreMat);
 
-            // 7. Annabelle Sealed Glass Vitrine centered inside North-Central Containment Room (-5.2, +10.2)
-            CreateBox("DollVitrine_Pedestal", propsRoot.transform, new Vector3(-5.20f, BaseY + 0.46f, 10.40f), new Vector3(0.54f, 0.92f, 0.48f), darkMahoganyMat, keepCollider: true);
-            BuildDollGlassCase(artifactsRoot.transform, new Vector3(-5.20f, BaseY + 0.92f, 10.40f), Quaternion.Euler(0f, 180f, 0f),
-                darkMahoganyMat, vitrineGlassMat, saltWhiteMat, redThreadMat, porcelainMat, crimsonVelvetMat, obsidianMat, agedLeatherMat);
+            // 7. Specimen Vitrine: Featureless Figure centered inside North-Central Containment Room (-5.2, +10.4)
+            CreateBox("SpecimenVitrine_Pedestal", propsRoot.transform, new Vector3(-5.20f, BaseY + 0.46f, 10.40f), new Vector3(0.54f, 0.92f, 0.48f), darkMahoganyMat, keepCollider: true);
+            BuildSpecimenVitrine(artifactsRoot.transform, new Vector3(-5.20f, BaseY + 0.92f, 10.40f), Quaternion.Euler(0f, 180f, 0f),
+                darkMahoganyMat, vitrineGlassMat, porcelainMat, obsidianMat, antiqueBrassMat);
 
-            // 8. Billy Spiral-Cheek Puppet perched on a lone wooden crate (NO extra office chair!) in West Corridor
-            CreateBox("Billy_WoodenCrate", propsRoot.transform, new Vector3(-11.20f, BaseY + 0.28f, 3.00f), new Vector3(0.54f, 0.56f, 0.54f), cardboardMat, keepCollider: true);
-            BuildSpiralPuppet(artifactsRoot.transform, new Vector3(-11.20f, BaseY + 0.56f, 3.00f), Quaternion.Euler(0f, 145f, 0f),
-                obsidianMat, saltWhiteMat, redThreadMat);
+            // 8. Articulated Wooden Assembly resting on a lone archive crate in West Corridor
+            CreateBox("Archive_WoodenCrate", propsRoot.transform, new Vector3(-11.20f, BaseY + 0.28f, 3.00f), new Vector3(0.54f, 0.56f, 0.54f), cardboardMat, keepCollider: true);
+            BuildArticulatedWoodAssembly(artifactsRoot.transform, new Vector3(-11.20f, BaseY + 0.56f, 3.00f), Quaternion.Euler(0f, 145f, 0f),
+                walnutWoodMat, darkMahoganyMat, antiqueBrassMat);
 
-            // 9. Good Guy Yellow Box (Chucky) resting on archive boxes in Far-North Corridor (+2.0, +10.9)
-            BuildPossessedDollBox(artifactsRoot.transform, new Vector3(1.85f, BaseY + 0.92f, 10.90f), Quaternion.Euler(0f, 175f, 0f),
-                goodGuyYellowMat, toyBoxBlueMat, redThreadMat, rackSteelMat);
+            // 9. Archive Case 06 resting on archive boxes in Far-North Corridor (+1.85, +10.9)
+            BuildArchiveCase06(artifactsRoot.transform, new Vector3(1.85f, BaseY + 0.92f, 10.90f), Quaternion.Euler(0f, 175f, 0f),
+                rackSteelMat, officeBeigeMat, aluminumMat, obsidianMat);
 
-            // 10. Chained Dybbuk Box inside a white salt ring on the damp carpet in South-West Labyrinth
-            BuildDybbukBox(artifactsRoot.transform, new Vector3(-8.40f, BaseY + 0.02f, -10.40f), Quaternion.Euler(0f, -25f, 0f),
-                darkMahoganyMat, saltWhiteMat, rackSteelMat, redThreadMat);
+            // 10. Sealed Custody Case resting on the damp carpet in South-West Labyrinth
+            BuildSealedCustodyCase(artifactsRoot.transform, new Vector3(-8.40f, BaseY + 0.02f, -10.40f), Quaternion.Euler(0f, -25f, 0f),
+                darkMahoganyMat, safeGunmetalMat, rackSteelMat, aluminumMat);
 
-            // 11. Embalmed Ceramic Hand (Talk to Me) on a dark pedestal in South-West Corridor (-4.0, -10.5)
-            CreateBox("CeramicHand_Pedestal", propsRoot.transform, new Vector3(-4.00f, BaseY + 0.44f, -10.80f), new Vector3(0.44f, 0.88f, 0.44f), obsidianMat, keepCollider: true);
-            BuildCeramicHand(artifactsRoot.transform, new Vector3(-4.00f, BaseY + 0.88f, -10.80f), Quaternion.Euler(0f, 180f, 0f),
-                saltWhiteMat, porcelainMat, obsidianMat);
+            // 11. Fractured Ceramic Insulator on a dark pedestal in South-West Corridor (-4.0, -10.8)
+            CreateBox("Insulator_Pedestal", propsRoot.transform, new Vector3(-4.00f, BaseY + 0.44f, -10.80f), new Vector3(0.44f, 0.88f, 0.44f), obsidianMat, keepCollider: true);
+            BuildFracturedInsulator(artifactsRoot.transform, new Vector3(-4.00f, BaseY + 0.88f, -10.80f), Quaternion.Euler(0f, 180f, 0f),
+                porcelainMat, obsidianMat, antiqueBrassMat, rackSteelMat);
 
-            // 12. Ouija Spirit Board & Planchette on a low relic table in South-Central Alcove (+6.5, -10.9)
-            CreateBox("Ouija_RelicTable", propsRoot.transform, new Vector3(6.50f, BaseY + 0.38f, -11.10f), new Vector3(0.96f, 0.76f, 0.52f), darkMahoganyMat, keepCollider: true);
-            BuildOuijaBoard(artifactsRoot.transform, new Vector3(6.50f, BaseY + 0.78f, -11.10f), Quaternion.Euler(0f, 180f, 0f),
-                agedLeatherMat, obsidianMat, porcelainMat);
+            // 12. Coordinate Plotting Plate on a low survey table in South-Central Alcove (+6.5, -11.1)
+            CreateBox("Survey_RelicTable", propsRoot.transform, new Vector3(6.50f, BaseY + 0.38f, -11.10f), new Vector3(0.96f, 0.76f, 0.52f), darkMahoganyMat, keepCollider: true);
+            BuildCoordinatePlottingPlate(artifactsRoot.transform, new Vector3(6.50f, BaseY + 0.78f, -11.10f), Quaternion.Euler(0f, 180f, 0f),
+                safeGunmetalMat, antiqueBrassMat, aluminumMat);
 
             // 13. Paquimé Obsidian & Turquoise Ceremonial Mask on a dark display plinth in West Corridor (-18.8, +2.6)
             CreateBox("PaquimeMask_Plinth", propsRoot.transform, new Vector3(-19.10f, BaseY + 0.54f, 2.60f), new Vector3(0.42f, 1.08f, 0.42f), obsidianMat, keepCollider: true);
@@ -447,12 +447,12 @@ namespace MyVirtualCommunity.Editor
                 astrolabeCoreMat: astrolabeCoreMat,
                 portalRuneVioletMat: portalRuneVioletMat);
 
-            // Relic Table along West Wall of NW Vault Room holding Necronomicon Grimoire & Lament Configuration
+            // Relic Table along West Wall of NW Vault Room holding Atlas of Anomalous Geometry & Folded Topology Core
             CreateBox("NWVault_RelicTable", propsRoot.transform, new Vector3(-19.20f, BaseY + 0.42f, 8.20f), new Vector3(0.68f, 0.84f, 2.20f), darkMahoganyMat, keepCollider: true);
-            BuildNecronomiconGrimoire(artifactsRoot.transform, new Vector3(-19.15f, BaseY + 0.84f, 8.75f), Quaternion.Euler(0f, 90f, 0f),
-                rackSteelMat, agedLeatherMat, antiqueBrassMat, safeLedAmberMat);
-            BuildLamentPuzzleBox(artifactsRoot.transform, new Vector3(-19.15f, BaseY + 0.84f, 7.65f), Quaternion.Euler(0f, 90f, 0f),
-                crimsonVelvetMat, obsidianMat, antiqueBrassMat);
+            BuildAnomalousGeometryAtlas(artifactsRoot.transform, new Vector3(-19.15f, BaseY + 0.84f, 8.75f), Quaternion.Euler(0f, 90f, 0f),
+                rackSteelMat, agedLeatherMat, antiqueBrassMat, aluminumMat, safeLedAmberMat);
+            BuildFoldedTopologyCore(artifactsRoot.transform, new Vector3(-19.15f, BaseY + 0.84f, 7.65f), Quaternion.Euler(0f, 90f, 0f),
+                safeGunmetalMat, porcelainMat, aluminumMat, antiqueBrassMat);
 
             // =========================================================================
             // 8. ZONE SW: FAR DEEP PORTAL CHAMBER (X=-20..-12.5, Z=-12..-4.0) —
@@ -473,7 +473,181 @@ namespace MyVirtualCommunity.Editor
             EditorSceneManager.SaveScene(scene, ScenePath);
             EnsureSceneInBuildSettings(ScenePath);
             AssetDatabase.SaveAssets();
-            Debug.Log($"[BackroomsLevel1Builder] Built & saved 40m x 24m (960 m²) real-scale Backrooms Level 0 maze with all 13 artifacts, 8 Reality-Bridge props, NW Level-Omega Safe & far SW Monumental Portal at {ScenePath}.");
+            Debug.Log($"[BackroomsLevel1Builder] Built & saved 40m x 24m (960 m²) real-scale Backrooms Level 0 maze with 15 original artifacts, 8 Reality-Bridge props, NW Level-Omega Safe & far SW Monumental Portal at {ScenePath}.");
+        }
+
+        /// <summary>
+        /// Targeted, idempotent IP-01 scene migration utility.
+        /// Opens the EXISTING BackroomsLevel1Scene.unity without recreating the scene, replaces ONLY the
+        /// 12 retired horror-franchise artifact subhierarchies under Backrooms_DispersedArtifacts, and
+        /// renames the 4 franchise-named pedestals in-place while preserving every unrelated GameObject,
+        /// Transform fileID, component fileID, light, architecture wall, safe, portal, and material asset.
+        /// </summary>
+        [MenuItem("MyVirtualCommunity/Migrate IP-01 Backrooms Artifacts (In-Place)")]
+        public static void MigrateIp01ArtifactsAndSave()
+        {
+            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            if (!scene.IsValid())
+            {
+                throw new InvalidOperationException($"Failed to open existing scene at {ScenePath}.");
+            }
+
+            MigrateIp01ArtifactsInOpenScene(scene);
+            EditorSceneManager.MarkSceneDirty(scene);
+            if (!EditorSceneManager.SaveScene(scene, ScenePath))
+            {
+                throw new InvalidOperationException($"Failed to save migrated scene at {ScenePath}.");
+            }
+            Debug.Log($"[BackroomsLevel1Builder] Targeted IP-01 in-place migration completed and saved to {ScenePath}.");
+        }
+
+        private static readonly HashSet<string> MigratedArtifactRootNames = new HashSet<string>(StringComparer.Ordinal)
+        {
+            // Retired prototype artifact roots
+            "Artifact_Clock307",
+            "Artifact_BabadookBook",
+            "Artifact_BlackRotaryPhone",
+            "Artifact_CrtTv_Root",
+            "Artifact_DollGlassCase",
+            "Artifact_SpiralPuppet",
+            "Artifact_PossessedDollBox",
+            "Artifact_DybbukBox_Group",
+            "Artifact_NecronomiconGrimoire",
+            "Artifact_CeramicHand",
+            "Artifact_LamentPuzzleBox",
+            "Artifact_OuijaBoard",
+            // Canonical original replacement artifact roots (removed & rebuilt for idempotency)
+            "Artifact_ShiftClock0307",
+            "Artifact_SealedNotebook",
+            "Artifact_ServiceIntercom",
+            "Artifact_SignalMonitor_Root",
+            "Artifact_SpecimenVitrine",
+            "Artifact_ArticulatedWoodAssembly",
+            "Artifact_ArchiveCase06",
+            "Artifact_SealedCustodyCase",
+            "Artifact_FracturedInsulator",
+            "Artifact_CoordinatePlottingPlate",
+            "Artifact_AnomalousGeometryAtlas",
+            "Artifact_FoldedTopologyCore"
+        };
+
+        private static readonly Dictionary<string, string> PedestalRenameMap = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["DollVitrine_Pedestal"] = "SpecimenVitrine_Pedestal",
+            ["Billy_WoodenCrate"] = "Archive_WoodenCrate",
+            ["CeramicHand_Pedestal"] = "Insulator_Pedestal",
+            ["Ouija_RelicTable"] = "Survey_RelicTable"
+        };
+
+        public static void MigrateIp01ArtifactsInOpenScene(UnityEngine.SceneManagement.Scene scene)
+        {
+            GameObject root = null;
+            foreach (GameObject go in scene.GetRootGameObjects())
+            {
+                if (go.name == "BackroomsLevel1_Root")
+                {
+                    root = go;
+                    break;
+                }
+            }
+            if (root == null)
+            {
+                throw new InvalidOperationException("BackroomsLevel1_Root not found in open scene.");
+            }
+
+            Transform artifactsRoot = root.transform.Find("Backrooms_DispersedArtifacts");
+            Transform propsRoot = root.transform.Find("Backrooms_OrdinaryLiminalProps");
+            if (artifactsRoot == null || propsRoot == null)
+            {
+                throw new InvalidOperationException("Expected Backrooms_DispersedArtifacts and Backrooms_OrdinaryLiminalProps under BackroomsLevel1_Root.");
+            }
+
+            // Load existing shared materials read-only (never SetDirty or SaveAssets on unrelated .mat files)
+            Material rackSteelMat = RequireExistingMat("Assets/Settings/West_SecretVault_RackSteel.mat");
+            Material safeGunmetalMat = RequireExistingMat("Assets/Settings/West_SecretVault_SafeGunmetal.mat");
+            Material antiqueBrassMat = RequireExistingMat("Assets/Settings/West_SecretVault_AntiqueBrass.mat");
+            Material obsidianMat = RequireExistingMat("Assets/Settings/West_SecretVault_Obsidian.mat");
+            Material darkMahoganyMat = RequireExistingMat("Assets/Settings/West_SecretVault_Mahogany.mat");
+            Material walnutWoodMat = RequireExistingMat("Assets/Settings/Backrooms_WalnutWood.mat");
+            Material agedLeatherMat = RequireExistingMat("Assets/Settings/West_SecretVault_AgedLeather.mat");
+            Material porcelainMat = RequireExistingMat("Assets/Settings/West_SecretVault_Porcelain.mat");
+            Material officeBeigeMat = RequireExistingMat("Assets/Settings/Backrooms_OfficeBeige.mat");
+            Material aluminumMat = RequireExistingMat("Assets/Settings/West_Aluminum.mat");
+            Material vitrineGlassMat = RequireExistingMat("Assets/Settings/West_StorefrontClearGlass.mat");
+            Material safeLedAmberMat = RequireExistingMat("Assets/Settings/West_SecretVault_SafeLedAmber.mat");
+            Material crtStaticMat = RequireExistingMat("Assets/Settings/West_SecretVault_CrtStatic.mat");
+
+            // 1. Rename the 4 franchise-named pedestals in-place (preserving their existing fileIDs and transforms)
+            for (int i = 0; i < propsRoot.childCount; i++)
+            {
+                Transform child = propsRoot.GetChild(i);
+                if (PedestalRenameMap.TryGetValue(child.name, out string cleanName))
+                {
+                    child.gameObject.name = cleanName;
+                }
+            }
+
+            // 2. Remove ONLY the 12 retired (or previously migrated) artifact children under Backrooms_DispersedArtifacts
+            var toDestroy = new List<GameObject>();
+            for (int i = 0; i < artifactsRoot.childCount; i++)
+            {
+                Transform child = artifactsRoot.GetChild(i);
+                if (MigratedArtifactRootNames.Contains(child.name))
+                {
+                    toDestroy.Add(child.gameObject);
+                }
+            }
+            for (int i = 0; i < toDestroy.Count; i++)
+            {
+                UnityEngine.Object.DestroyImmediate(toDestroy[i]);
+            }
+
+            // 3. Build the 12 original archival & anomalous artifacts at their exact existing world positions & rotations
+            BuildShiftClock0307(artifactsRoot, new Vector3(11.40f, BaseY + 0.98f, -11.45f), Quaternion.Euler(0f, 180f, 0f),
+                safeGunmetalMat, antiqueBrassMat, porcelainMat, obsidianMat);
+
+            BuildSealedNotebook(artifactsRoot, new Vector3(9.80f, BaseY + 0.04f, 10.60f), Quaternion.Euler(0f, 128f, 0f),
+                agedLeatherMat, porcelainMat, antiqueBrassMat, darkMahoganyMat);
+
+            BuildServiceIntercom(artifactsRoot, new Vector3(-1.12f, BaseY + 1.42f, 1.40f), Quaternion.Euler(0f, 180f, 0f),
+                safeGunmetalMat, aluminumMat, obsidianMat, antiqueBrassMat, safeLedAmberMat);
+
+            BuildSignalMonitor(artifactsRoot, new Vector3(-18.88f, BaseY + 0.68f, -1.60f), Quaternion.Euler(0f, 90f, 0f),
+                safeGunmetalMat, crtStaticMat, aluminumMat, obsidianMat);
+
+            BuildSpecimenVitrine(artifactsRoot, new Vector3(-5.20f, BaseY + 0.92f, 10.40f), Quaternion.Euler(0f, 180f, 0f),
+                darkMahoganyMat, vitrineGlassMat, porcelainMat, obsidianMat, antiqueBrassMat);
+
+            BuildArticulatedWoodAssembly(artifactsRoot, new Vector3(-11.20f, BaseY + 0.56f, 3.00f), Quaternion.Euler(0f, 145f, 0f),
+                walnutWoodMat, darkMahoganyMat, antiqueBrassMat);
+
+            BuildArchiveCase06(artifactsRoot, new Vector3(1.85f, BaseY + 0.92f, 10.90f), Quaternion.Euler(0f, 175f, 0f),
+                rackSteelMat, officeBeigeMat, aluminumMat, obsidianMat);
+
+            BuildSealedCustodyCase(artifactsRoot, new Vector3(-8.40f, BaseY + 0.02f, -10.40f), Quaternion.Euler(0f, -25f, 0f),
+                darkMahoganyMat, safeGunmetalMat, rackSteelMat, aluminumMat);
+
+            BuildFracturedInsulator(artifactsRoot, new Vector3(-4.00f, BaseY + 0.88f, -10.80f), Quaternion.Euler(0f, 180f, 0f),
+                porcelainMat, obsidianMat, antiqueBrassMat, rackSteelMat);
+
+            BuildCoordinatePlottingPlate(artifactsRoot, new Vector3(6.50f, BaseY + 0.78f, -11.10f), Quaternion.Euler(0f, 180f, 0f),
+                safeGunmetalMat, antiqueBrassMat, aluminumMat);
+
+            BuildAnomalousGeometryAtlas(artifactsRoot, new Vector3(-19.15f, BaseY + 0.84f, 8.75f), Quaternion.Euler(0f, 90f, 0f),
+                rackSteelMat, agedLeatherMat, antiqueBrassMat, aluminumMat, safeLedAmberMat);
+
+            BuildFoldedTopologyCore(artifactsRoot, new Vector3(-19.15f, BaseY + 0.84f, 7.65f), Quaternion.Euler(0f, 90f, 0f),
+                safeGunmetalMat, porcelainMat, aluminumMat, antiqueBrassMat);
+        }
+
+        private static Material RequireExistingMat(string assetPath)
+        {
+            Material mat = AssetDatabase.LoadAssetAtPath<Material>(assetPath);
+            if (mat == null)
+            {
+                throw new InvalidOperationException($"Required existing material asset missing at {assetPath}.");
+            }
+            return mat;
         }
 
         private static void EnsureSceneInBuildSettings(string scenePath)
@@ -1111,94 +1285,120 @@ namespace MyVirtualCommunity.Editor
             t2.transform.localRotation = Quaternion.Euler(-40f, 0f, 0f);
         }
 
-        private static void BuildClock307(Transform parent, Vector3 pos, Quaternion rot, Material brassMat, Material faceMat, Material darkMat)
+        // =====================================================================
+        // 12 ORIGINAL ARCHIVAL & ANOMALOUS ARTIFACTS (IP-01 REPLACEMENTS)
+        // =====================================================================
+        private static void BuildShiftClock0307(Transform parent, Vector3 pos, Quaternion rot,
+            Material steelMat, Material brassMat, Material faceMat, Material darkMat)
         {
-            GameObject r = new GameObject("Artifact_Clock307");
+            GameObject r = new GameObject("Artifact_ShiftClock0307");
             r.transform.SetParent(parent, false);
             r.transform.position = pos;
             r.transform.rotation = rot;
-            GameObject body = CreateBox("Clock307_Body", r.transform, Vector3.zero, new Vector3(0.14f, 0.14f, 0.06f), brassMat, keepCollider: false);
-            BoxCollider col = body.AddComponent<BoxCollider>();
-            col.size = new Vector3(1.6f, 1.6f, 2.0f);
+
+            // Rectangular industrial shift timekeeper housing with recessed punch-card slot
+            GameObject housing = CreateBox("ShiftClock_Housing", r.transform, new Vector3(0f, 0.06f, 0f), new Vector3(0.20f, 0.24f, 0.11f), steelMat, keepCollider: false);
+            BoxCollider col = housing.AddComponent<BoxCollider>();
+            col.size = new Vector3(1.5f, 1.4f, 2.2f);
             col.isTrigger = true;
-            AttachDesc(body, "artifact:reloj-0307",
-                "Reloj Despertador Detenido a las 03:07 AM (EXP-00 • El Conjuro)",
-                "Alarm Clock Frozen at 03:07 AM (EXP-00 • The Conjuring)",
-                "Todos los relojes dentro de los Backrooms se detienen exactamente a las 03:07 AM sin importar la hora de Ciudad Juárez.",
-                "Every clock inside the Backrooms stops at exactly 03:07 AM regardless of the real time in Ciudad Juárez.",
+            AttachDesc(housing, ProgressionIds.ArtifactShiftClock0307,
+                "Reloj de Turno 03:07",
+                "Shift Clock 03:07",
+                "Reloj checador industrial detenido a las 03:07. Sin importar la hora en Ciudad Juárez ni el turno del corredor fronterizo, sus manecillas jamás avanzan.",
+                "Industrial shift timekeeper frozen at 03:07. Regardless of the local hour in Ciudad Juárez or the border corridor shift, its hands never move.",
                 new Color(1.0f, 0.80f, 0.34f));
-            CreateBox("Clock307_Dial", r.transform, new Vector3(0f, 0f, 0.034f), new Vector3(0.115f, 0.115f, 0.006f), faceMat, keepCollider: false);
-            CreateBox("Clock307_Hour", r.transform, new Vector3(0.02f, 0f, 0.04f), new Vector3(0.04f, 0.008f, 0.005f), darkMat, keepCollider: false);
-            GameObject minH = CreateBox("Clock307_Min", r.transform, new Vector3(0.012f, 0.02f, 0.04f), new Vector3(0.007f, 0.048f, 0.005f), darkMat, keepCollider: false);
-            minH.transform.localRotation = Quaternion.Euler(0f, 0f, -35f);
-            CreateBox("Clock307_BellL", r.transform, new Vector3(-0.06f, 0.085f, 0f), new Vector3(0.045f, 0.03f, 0.045f), brassMat, keepCollider: false);
-            CreateBox("Clock307_BellR", r.transform, new Vector3(0.06f, 0.085f, 0f), new Vector3(0.045f, 0.03f, 0.045f), brassMat, keepCollider: false);
+
+            CreateBox("ShiftClock_BaseFoot", r.transform, new Vector3(0f, -0.065f, 0f), new Vector3(0.23f, 0.024f, 0.14f), darkMat, keepCollider: false);
+            CreateBox("ShiftClock_BrassBezel", r.transform, new Vector3(0f, 0.095f, 0.056f), new Vector3(0.145f, 0.125f, 0.012f), brassMat, keepCollider: false);
+            CreateBox("ShiftClock_DialFace", r.transform, new Vector3(0f, 0.095f, 0.064f), new Vector3(0.120f, 0.102f, 0.006f), faceMat, keepCollider: false);
+            CreateBox("ShiftClock_HourHand", r.transform, new Vector3(0.018f, 0.095f, 0.070f), new Vector3(0.036f, 0.008f, 0.005f), darkMat, keepCollider: false);
+            GameObject minHand = CreateBox("ShiftClock_MinuteHand", r.transform, new Vector3(0.010f, 0.114f, 0.070f), new Vector3(0.007f, 0.044f, 0.005f), darkMat, keepCollider: false);
+            minHand.transform.localRotation = Quaternion.Euler(0f, 0f, -35f);
+            CreateBox("ShiftClock_CardSlot", r.transform, new Vector3(0f, -0.015f, 0.056f), new Vector3(0.110f, 0.016f, 0.014f), darkMat, keepCollider: false);
         }
 
-        private static void BuildBabadookBook(Transform parent, Vector3 pos, Quaternion rot, Material obsidianMat, Material whiteMat, Material crimsonMat)
+        private static void BuildSealedNotebook(Transform parent, Vector3 pos, Quaternion rot,
+            Material leatherMat, Material pageMat, Material brassMat, Material strapMat)
         {
-            GameObject book = CreateBox("Artifact_BabadookBook", parent, pos, new Vector3(0.24f, 0.06f, 0.32f), obsidianMat, keepCollider: false);
-            book.transform.rotation = rot;
-            BoxCollider col = book.AddComponent<BoxCollider>();
-            col.size = new Vector3(1.3f, 3.0f, 1.3f);
+            GameObject notebook = CreateBox("Artifact_SealedNotebook", parent, pos, new Vector3(0.22f, 0.048f, 0.30f), leatherMat, keepCollider: false);
+            notebook.transform.rotation = rot;
+            BoxCollider col = notebook.AddComponent<BoxCollider>();
+            col.size = new Vector3(1.4f, 3.6f, 1.4f);
             col.isTrigger = true;
-            AttachDesc(book, "artifact:libro-babadook",
-                "Libro Emergente 'Mister Babadook' (EXP-02)",
-                "'Mister Babadook' Pop-Up Storybook (EXP-02)",
-                "Libro infantil de tapa carbonizada abandonado sobre la alfombra húmeda. Atado con correa para impedir que sus páginas emergentes se abran.",
-                "Charcoal-black pop-up book lying alone on the damp carpet. Strapped shut so its pop-up pages cannot unfold.",
+            AttachDesc(notebook, ProgressionIds.ArtifactSealedNotebook,
+                "Cuaderno de Páginas Selladas",
+                "Notebook of Sealed Pages",
+                "Cuaderno de campo manchado por la humedad con diagramas técnicos doblados y varias hojas pegadas entre sí. Sus márgenes registran lecturas de un plano que no coincide con la superficie.",
+                "Water-damaged field notebook filled with folded technical diagrams and pages sealed together. Its margins log survey measurements that do not match the surface grid.",
                 new Color(0.82f, 0.84f, 0.90f));
-            CreateBox("Babadook_CoverArt", book.transform, new Vector3(0f, 0.55f, 0f), new Vector3(0.56f, 0.06f, 0.68f), whiteMat, keepCollider: false);
-            CreateBox("Babadook_RedSpine", book.transform, new Vector3(-0.46f, 0f, 0f), new Vector3(0.12f, 1.04f, 1.02f), crimsonMat, keepCollider: false);
+
+            CreateBox("Notebook_PageBlock", notebook.transform, new Vector3(0.05f, 0f, 0f), new Vector3(0.92f, 0.72f, 0.94f), pageMat, keepCollider: false);
+            GameObject foldedSheet = CreateBox("Notebook_FoldedDiagramSheet", notebook.transform, new Vector3(0.22f, 0.12f, 0.10f), new Vector3(0.76f, 0.08f, 0.60f), pageMat, keepCollider: false);
+            foldedSheet.transform.localRotation = Quaternion.Euler(0f, 14f, 0f);
+            CreateBox("Notebook_TieBand", notebook.transform, new Vector3(0.08f, 0f, 0f), new Vector3(0.14f, 1.08f, 1.04f), strapMat, keepCollider: false);
+            CreateBox("Notebook_CornerClasp", notebook.transform, new Vector3(0.42f, 0.44f, -0.40f), new Vector3(0.18f, 0.22f, 0.16f), brassMat, keepCollider: false);
         }
 
-        private static void BuildBlackRotaryPhone(Transform parent, Vector3 pos, Quaternion rot, Material obsidianMat, Material aluminumMat)
+        private static void BuildServiceIntercom(Transform parent, Vector3 pos, Quaternion rot,
+            Material steelMat, Material aluminumMat, Material obsidianMat, Material brassMat, Material ledMat)
         {
-            GameObject r = new GameObject("Artifact_BlackRotaryPhone");
+            GameObject r = new GameObject("Artifact_ServiceIntercom");
             r.transform.SetParent(parent, false);
             r.transform.position = pos;
             r.transform.rotation = rot;
-            GameObject body = CreateBox("BlackPhone_WallBox", r.transform, Vector3.zero, new Vector3(0.08f, 0.26f, 0.18f), obsidianMat, keepCollider: false);
-            BoxCollider col = body.AddComponent<BoxCollider>();
-            col.size = new Vector3(2.0f, 1.4f, 1.4f);
+
+            GameObject housing = CreateBox("Intercom_SteelHousing", r.transform, Vector3.zero, new Vector3(0.09f, 0.28f, 0.20f), steelMat, keepCollider: false);
+            BoxCollider col = housing.AddComponent<BoxCollider>();
+            col.size = new Vector3(2.2f, 1.4f, 1.4f);
             col.isTrigger = true;
-            AttachDesc(body, "artifact:telefono-negro",
-                "El Teléfono Negro con Cable Cortado (EXP-11 • The Black Phone)",
-                "The Black Rotary Phone with Severed Cord (EXP-11 • The Black Phone)",
-                "Teléfono mural de baquelita montado en una columna amarilla del gran salón. Su cable está cortado, pero a veces timbra en el silencio de los pasillos.",
-                "Black Bakelite wall telephone mounted on a yellow column in the great pillared hall. Its cord is severed, yet it still rings in the silence.",
+            AttachDesc(housing, ProgressionIds.ArtifactServiceIntercom,
+                "Intercomunicador de Servicio sin Línea",
+                "Unwired Service Intercom",
+                "Caja de intercomunicación municipal fijada a la columna con el ducto eléctrico cortado. Aunque no existe tendido conectado, el altavoz emite breves chasquidos de portadora en los pasillos vacíos.",
+                "Municipal-style wall intercom box bolted to the column with its conduit sheared off. Though no line is connected, the speaker emits brief carrier clicks across the empty halls.",
                 new Color(0.75f, 0.80f, 0.90f));
-            CreateBox("BlackPhone_Dial", r.transform, new Vector3(-0.045f, -0.01f, 0f), new Vector3(0.015f, 0.10f, 0.10f), aluminumMat, keepCollider: false);
-            CreateBox("BlackPhone_Handset", r.transform, new Vector3(-0.04f, 0.15f, 0f), new Vector3(0.055f, 0.05f, 0.22f), obsidianMat, keepCollider: false);
-            CreateBox("BlackPhone_Cord", r.transform, new Vector3(-0.02f, -0.22f, -0.04f), new Vector3(0.02f, 0.22f, 0.02f), obsidianMat, keepCollider: false);
+
+            CreateBox("Intercom_FacePlate", r.transform, new Vector3(-0.048f, 0f, 0f), new Vector3(0.012f, 0.24f, 0.17f), aluminumMat, keepCollider: false);
+            CreateBox("Intercom_GrilleSlat_1", r.transform, new Vector3(-0.056f, 0.075f, 0f), new Vector3(0.008f, 0.014f, 0.12f), obsidianMat, keepCollider: false);
+            CreateBox("Intercom_GrilleSlat_2", r.transform, new Vector3(-0.056f, 0.048f, 0f), new Vector3(0.008f, 0.014f, 0.12f), obsidianMat, keepCollider: false);
+            CreateBox("Intercom_GrilleSlat_3", r.transform, new Vector3(-0.056f, 0.021f, 0f), new Vector3(0.008f, 0.014f, 0.12f), obsidianMat, keepCollider: false);
+            CreateBox("Intercom_CallButton", r.transform, new Vector3(-0.058f, -0.055f, 0.028f), new Vector3(0.016f, 0.032f, 0.032f), brassMat, keepCollider: false);
+            CreateBox("Intercom_StatusLamp", r.transform, new Vector3(-0.058f, -0.055f, -0.042f), new Vector3(0.012f, 0.020f, 0.020f), ledMat, keepCollider: false);
+            CreateBox("Intercom_CutConduitStub", r.transform, new Vector3(-0.010f, -0.20f, 0f), new Vector3(0.026f, 0.14f, 0.026f), aluminumMat, keepCollider: false);
         }
 
-        private static void BuildCrtTvAndVhs(Transform parent, Vector3 pos, Quaternion rot,
-            Material steelMat, Material crtStaticMat, Material whiteMat, Material obsidianMat)
+        private static void BuildSignalMonitor(Transform parent, Vector3 pos, Quaternion rot,
+            Material gunmetalMat, Material crtStaticMat, Material aluminumMat, Material obsidianMat)
         {
-            GameObject r = new GameObject("Artifact_CrtTv_Root");
+            GameObject r = new GameObject("Artifact_SignalMonitor_Root");
             r.transform.SetParent(parent, false);
             r.transform.position = pos;
             r.transform.rotation = rot;
-            GameObject cab = CreateBox("Artifact_CrtTv_Cabinet", r.transform, new Vector3(0f, 0.26f, 0f), new Vector3(0.48f, 0.44f, 0.36f), steelMat, keepCollider: false);
+
+            GameObject cab = CreateBox("SignalMonitor_Chassis", r.transform, new Vector3(0f, 0.25f, 0f), new Vector3(0.50f, 0.42f, 0.36f), gunmetalMat, keepCollider: false);
             BoxCollider col = cab.AddComponent<BoxCollider>();
             col.isTrigger = true;
-            AttachDesc(cab, "artifact:cinta-vhs-el-aro",
-                "Televisor CRT y Cinta VHS '7 DÍAS' (EXP-04 • El Aro / Ringu)",
-                "CRT Television & '7 DAYS' Cursed VHS (EXP-04 • The Ring)",
-                "Televisor de los 90 encendido sin estar enchufado en un nicho del ala Oeste. Reproduce en bucle un eclipse circular de estática. Etiqueta: '7 DÍAS'.",
-                "Unplugged 1990s CRT TV glowing in a West wing niche, looping a circular eclipse of static. Tape label: '7 DAYS'.",
+            AttachDesc(cab, ProgressionIds.ArtifactSignalMonitor,
+                "Monitor de Señal sin Origen",
+                "Unsourced Signal Monitor",
+                "Monitor CRT industrial encendido sin cable de alimentación en un nicho del ala Oeste. Sus barras horizontales de interferencia barren la pantalla en un ciclo irregular sin fuente identificable.",
+                "Industrial CRT test monitor glowing without a power cord in a West wing niche. Irregular horizontal scan bars drift across its screen with no traceable broadcast source.",
                 new Color(0.55f, 0.84f, 1.0f));
-            CreateBox("Artifact_CrtTv_StaticScreen", r.transform, new Vector3(-0.02f, 0.28f, 0.184f), new Vector3(0.36f, 0.28f, 0.012f), crtStaticMat, keepCollider: false);
-            CreateBox("Artifact_CrtTv_RingOuter", r.transform, new Vector3(-0.02f, 0.28f, 0.190f), new Vector3(0.14f, 0.14f, 0.01f), whiteMat, keepCollider: false);
-            CreateBox("Artifact_CrtTv_RingInnerVoid", r.transform, new Vector3(-0.02f, 0.28f, 0.196f), new Vector3(0.11f, 0.11f, 0.01f), obsidianMat, keepCollider: false);
-            CreateBox("Artifact_CursedVhsTape", r.transform, new Vector3(0.10f, 0.02f, 0.22f), new Vector3(0.18f, 0.03f, 0.11f), obsidianMat, keepCollider: false);
-            CreateBox("Artifact_CursedVhsLabel", r.transform, new Vector3(0.10f, 0.038f, 0.22f), new Vector3(0.11f, 0.006f, 0.055f), whiteMat, keepCollider: false);
 
-            GameObject tvGlow = new GameObject("Artifact_CrtTv_BlueGlow");
-            tvGlow.transform.SetParent(r.transform, false);
-            tvGlow.transform.localPosition = new Vector3(0f, 0.30f, 0.45f);
-            Light l = tvGlow.AddComponent<Light>();
+            // Recessed bezel & glowing interference screen with irregular horizontal scan bars (no circular ring, no VHS)
+            CreateBox("SignalMonitor_Bezel", r.transform, new Vector3(-0.04f, 0.27f, 0.182f), new Vector3(0.36f, 0.29f, 0.014f), obsidianMat, keepCollider: false);
+            CreateBox("SignalMonitor_Screen", r.transform, new Vector3(-0.04f, 0.27f, 0.190f), new Vector3(0.32f, 0.25f, 0.008f), crtStaticMat, keepCollider: false);
+            CreateBox("SignalMonitor_ScanBar_A", r.transform, new Vector3(-0.04f, 0.335f, 0.196f), new Vector3(0.31f, 0.018f, 0.004f), obsidianMat, keepCollider: false);
+            CreateBox("SignalMonitor_ScanBar_B", r.transform, new Vector3(-0.08f, 0.255f, 0.196f), new Vector3(0.22f, 0.012f, 0.004f), aluminumMat, keepCollider: false);
+            CreateBox("SignalMonitor_ScanBar_C", r.transform, new Vector3(0.01f, 0.195f, 0.196f), new Vector3(0.24f, 0.016f, 0.004f), obsidianMat, keepCollider: false);
+            CreateBox("SignalMonitor_ControlStrip", r.transform, new Vector3(0.185f, 0.26f, 0.185f), new Vector3(0.055f, 0.28f, 0.012f), aluminumMat, keepCollider: false);
+            CreateBox("SignalMonitor_DialTop", r.transform, new Vector3(0.185f, 0.33f, 0.198f), new Vector3(0.028f, 0.028f, 0.018f), obsidianMat, keepCollider: false);
+            CreateBox("SignalMonitor_DialBottom", r.transform, new Vector3(0.185f, 0.26f, 0.198f), new Vector3(0.028f, 0.028f, 0.018f), obsidianMat, keepCollider: false);
+
+            GameObject glow = new GameObject("SignalMonitor_Glow");
+            glow.transform.SetParent(r.transform, false);
+            glow.transform.localPosition = new Vector3(0f, 0.30f, 0.45f);
+            Light l = glow.AddComponent<Light>();
             l.type = LightType.Point;
             l.color = new Color(0.45f, 0.78f, 1.0f);
             l.intensity = 0.85f;
@@ -1206,188 +1406,254 @@ namespace MyVirtualCommunity.Editor
             l.shadows = LightShadows.None;
         }
 
-        private static void BuildDollGlassCase(Transform parent, Vector3 pos, Quaternion rot,
-            Material woodMat, Material glassMat, Material whiteMat, Material redMat, Material porcelainMat,
-            Material crimsonMat, Material obsidianMat, Material leatherMat)
+        private static void BuildSpecimenVitrine(Transform parent, Vector3 pos, Quaternion rot,
+            Material woodMat, Material glassMat, Material ceramicMat, Material obsidianMat, Material brassMat)
         {
-            GameObject r = new GameObject("Artifact_DollGlassCase");
+            GameObject r = new GameObject("Artifact_SpecimenVitrine");
             r.transform.SetParent(parent, false);
             r.transform.position = pos;
             r.transform.rotation = rot;
+
             CreateBox("Vitrine_WoodBase", r.transform, new Vector3(0f, 0.025f, 0f), new Vector3(0.46f, 0.05f, 0.34f), woodMat, keepCollider: false);
-            CreateBox("Vitrine_WoodTop", r.transform, new Vector3(0f, 0.72f, 0f), new Vector3(0.46f, 0.05f, 0.34f), woodMat, keepCollider: false);
-            CreateBox("Vitrine_Back", r.transform, new Vector3(0f, 0.37f, -0.15f), new Vector3(0.44f, 0.68f, 0.03f), woodMat, keepCollider: false);
-            GameObject glass = CreateBox("Vitrine_GlassEnclosure", r.transform, new Vector3(0f, 0.37f, 0.01f), new Vector3(0.43f, 0.66f, 0.31f), glassMat, keepCollider: false);
+            CreateBox("Vitrine_WoodTop", r.transform, new Vector3(0f, 0.70f, 0f), new Vector3(0.46f, 0.045f, 0.34f), woodMat, keepCollider: false);
+            CreateBox("Vitrine_BackPanel", r.transform, new Vector3(0f, 0.36f, -0.15f), new Vector3(0.44f, 0.64f, 0.028f), woodMat, keepCollider: false);
+            GameObject glass = CreateBox("Vitrine_GlassEnclosure", r.transform, new Vector3(0f, 0.36f, 0.01f), new Vector3(0.43f, 0.64f, 0.31f), glassMat, keepCollider: false);
             BoxCollider col = glass.AddComponent<BoxCollider>();
             col.isTrigger = true;
-            AttachDesc(glass, "artifact:muneca-porcelana",
-                "Vitrina de Contención: Muñeca de Porcelana (EXP-03 • Annabelle)",
-                "Containment Vitrine: Porcelain Conduit Doll (EXP-03 • Annabelle)",
-                "Muñeca de porcelana agrietada encerrada tras cristal bendecido. Letrero superior: 'ADVERTENCIA: POSITIVAMENTE NO ABRIR'.",
-                "Cracked porcelain doll sealed behind blessed glass. Warning plaque: 'WARNING: POSITIVELY DO NOT OPEN'.",
-                new Color(1.0f, 0.36f, 0.38f));
-            CreateBox("Vitrine_SignBg", r.transform, new Vector3(0f, 0.63f, 0.168f), new Vector3(0.34f, 0.08f, 0.01f), whiteMat, keepCollider: false);
-            CreateBox("Vitrine_SignStripe", r.transform, new Vector3(0f, 0.65f, 0.174f), new Vector3(0.32f, 0.028f, 0.008f), redMat, keepCollider: false);
-            CreateBox("Doll_Chair", r.transform, new Vector3(0f, 0.16f, -0.04f), new Vector3(0.20f, 0.24f, 0.14f), woodMat, keepCollider: false);
-            CreateBox("Doll_Skirt", r.transform, new Vector3(0f, 0.18f, 0.02f), new Vector3(0.20f, 0.22f, 0.14f), porcelainMat, keepCollider: false);
-            CreateBox("Doll_Ribbon", r.transform, new Vector3(0f, 0.28f, 0.03f), new Vector3(0.17f, 0.045f, 0.12f), crimsonMat, keepCollider: false);
-            CreateBox("Doll_Torso", r.transform, new Vector3(0f, 0.35f, 0.01f), new Vector3(0.14f, 0.13f, 0.09f), porcelainMat, keepCollider: false);
-            CreateBox("Doll_Head", r.transform, new Vector3(0f, 0.48f, 0.02f), new Vector3(0.12f, 0.13f, 0.11f), porcelainMat, keepCollider: false);
-            CreateBox("Doll_EyeL", r.transform, new Vector3(-0.028f, 0.49f, 0.078f), new Vector3(0.02f, 0.02f, 0.008f), obsidianMat, keepCollider: false);
-            CreateBox("Doll_EyeR", r.transform, new Vector3(0.028f, 0.49f, 0.078f), new Vector3(0.02f, 0.02f, 0.008f), obsidianMat, keepCollider: false);
-            CreateBox("Doll_BraidL", r.transform, new Vector3(-0.065f, 0.42f, 0.02f), new Vector3(0.03f, 0.15f, 0.03f), leatherMat, keepCollider: false);
-            CreateBox("Doll_BraidR", r.transform, new Vector3(0.065f, 0.42f, 0.02f), new Vector3(0.03f, 0.15f, 0.03f), leatherMat, keepCollider: false);
+            AttachDesc(glass, ProgressionIds.ArtifactSpecimenVitrine,
+                "Vitrina de Muestra: Figura sin Rasgos",
+                "Specimen Vitrine: Featureless Figure",
+                "Vitrina sellada de archivo que resguarda una forma cerámica lisa y sin rostro ni inscripción. Su placa de inventario carece de fecha de ingreso o procedencia.",
+                "Sealed archival vitrine housing a smooth, featureless ceramic form with no markings. Its brass inventory tag carries neither an intake date nor a point of origin.",
+                new Color(0.84f, 0.78f, 0.66f));
+
+            // Small unlabelled brass catalog plaque on base front + abstract non-human tapered ceramic monolith
+            CreateBox("Vitrine_CatalogPlaque", r.transform, new Vector3(0f, 0.028f, 0.175f), new Vector3(0.14f, 0.032f, 0.010f), brassMat, keepCollider: false);
+            CreateBox("Specimen_Plinth", r.transform, new Vector3(0f, 0.09f, 0f), new Vector3(0.22f, 0.08f, 0.18f), obsidianMat, keepCollider: false);
+            CreateBox("Specimen_LowerTier", r.transform, new Vector3(0f, 0.21f, 0f), new Vector3(0.15f, 0.16f, 0.12f), ceramicMat, keepCollider: false);
+            GameObject midTier = CreateBox("Specimen_MidPrism", r.transform, new Vector3(0f, 0.36f, 0f), new Vector3(0.11f, 0.18f, 0.11f), ceramicMat, keepCollider: false);
+            midTier.transform.localRotation = Quaternion.Euler(0f, 45f, 0f);
+            CreateBox("Specimen_BrassCollar", r.transform, new Vector3(0f, 0.455f, 0f), new Vector3(0.12f, 0.018f, 0.12f), brassMat, keepCollider: false);
+            CreateBox("Specimen_UpperMonolith", r.transform, new Vector3(0f, 0.535f, 0f), new Vector3(0.085f, 0.14f, 0.085f), ceramicMat, keepCollider: false);
         }
 
-        private static void BuildSpiralPuppet(Transform parent, Vector3 pos, Quaternion rot, Material obsidianMat, Material whiteMat, Material redMat)
+        private static void BuildArticulatedWoodAssembly(Transform parent, Vector3 pos, Quaternion rot,
+            Material walnutMat, Material mahoganyMat, Material brassMat)
         {
-            GameObject r = new GameObject("Artifact_SpiralPuppet");
+            GameObject r = new GameObject("Artifact_ArticulatedWoodAssembly");
             r.transform.SetParent(parent, false);
             r.transform.position = pos;
             r.transform.rotation = rot;
-            GameObject torso = CreateBox("Puppet_TuxedoTorso", r.transform, new Vector3(0f, 0.18f, 0f), new Vector3(0.22f, 0.28f, 0.14f), obsidianMat, keepCollider: false);
-            BoxCollider col = torso.AddComponent<BoxCollider>();
-            col.size = new Vector3(1.5f, 2.2f, 1.5f);
+
+            // Abstract jointed wooden workshop calibration linkage & hanging brass plumb weight
+            GameObject baseBlock = CreateBox("WoodAssembly_BaseBlock", r.transform, new Vector3(0f, 0.035f, 0f), new Vector3(0.26f, 0.07f, 0.18f), mahoganyMat, keepCollider: false);
+            BoxCollider col = baseBlock.AddComponent<BoxCollider>();
+            col.center = new Vector3(0f, 3.2f, 0f);
+            col.size = new Vector3(1.5f, 7.2f, 1.8f);
             col.isTrigger = true;
-            AttachDesc(torso, "artifact:titere-espiral",
-                "Títere de Mejillas en Espiral (EXP-05 • Billy / Saw)",
-                "Spiral-Cheek Ventriloquist Puppet (EXP-05 • Billy / Saw)",
-                "Posado sobre un cajón solitario con smoking negro y corbatín rojo. Su grabadora interna murmura: 'Quiero jugar un juego...'.",
-                "Perched atop a lone wooden crate in black tuxedo and red bow tie. Its internal recorder whispers: 'I want to play a game...'.",
-                new Color(0.95f, 0.22f, 0.24f));
-            CreateBox("Puppet_Shirt", r.transform, new Vector3(0f, 0.20f, 0.072f), new Vector3(0.08f, 0.18f, 0.01f), whiteMat, keepCollider: false);
-            CreateBox("Puppet_BowTie", r.transform, new Vector3(0f, 0.28f, 0.078f), new Vector3(0.085f, 0.036f, 0.015f), redMat, keepCollider: false);
-            CreateBox("Puppet_Head", r.transform, new Vector3(0f, 0.41f, 0.01f), new Vector3(0.14f, 0.16f, 0.13f), whiteMat, keepCollider: false);
-            CreateBox("Puppet_SpiralL", r.transform, new Vector3(-0.04f, 0.39f, 0.078f), new Vector3(0.036f, 0.036f, 0.008f), redMat, keepCollider: false);
-            CreateBox("Puppet_SpiralR", r.transform, new Vector3(0.04f, 0.39f, 0.078f), new Vector3(0.036f, 0.036f, 0.008f), redMat, keepCollider: false);
-            CreateBox("Puppet_EyeL", r.transform, new Vector3(-0.03f, 0.435f, 0.078f), new Vector3(0.02f, 0.018f, 0.008f), redMat, keepCollider: false);
-            CreateBox("Puppet_EyeR", r.transform, new Vector3(0.03f, 0.435f, 0.078f), new Vector3(0.02f, 0.018f, 0.008f), redMat, keepCollider: false);
+            AttachDesc(baseBlock, ProgressionIds.ArtifactArticulatedWoodAssembly,
+                "Ensamble de Madera Articulado",
+                "Articulated Wooden Assembly",
+                "Estructura articulada de madera y pernos de latón abandonada sobre una caja de archivo. Sus brazos móviles conservan marcas de calibración a lápiz, aunque no corresponde a ningún instrumento convencional.",
+                "Hand-built jointed wooden frame with brass pivot pins left atop an archive crate. Its hinged arms bear pencil calibration marks, yet it matches no standard drafting or survey tool.",
+                new Color(0.86f, 0.68f, 0.42f));
+
+            GameObject strutL = CreateBox("WoodAssembly_StrutLeft", r.transform, new Vector3(-0.07f, 0.21f, 0f), new Vector3(0.032f, 0.30f, 0.036f), walnutMat, keepCollider: false);
+            strutL.transform.localRotation = Quaternion.Euler(0f, 0f, -14f);
+            GameObject strutR = CreateBox("WoodAssembly_StrutRight", r.transform, new Vector3(0.07f, 0.21f, 0f), new Vector3(0.032f, 0.30f, 0.036f), walnutMat, keepCollider: false);
+            strutR.transform.localRotation = Quaternion.Euler(0f, 0f, 14f);
+            CreateBox("WoodAssembly_CrossBeam", r.transform, new Vector3(0f, 0.35f, 0f), new Vector3(0.24f, 0.030f, 0.042f), mahoganyMat, keepCollider: false);
+            GameObject upperArm = CreateBox("WoodAssembly_CantileverArm", r.transform, new Vector3(0.05f, 0.43f, 0.01f), new Vector3(0.22f, 0.026f, 0.032f), walnutMat, keepCollider: false);
+            upperArm.transform.localRotation = Quaternion.Euler(0f, 0f, 20f);
+            CreateBox("WoodAssembly_PivotPinL", r.transform, new Vector3(-0.045f, 0.35f, 0.024f), new Vector3(0.024f, 0.024f, 0.022f), brassMat, keepCollider: false);
+            CreateBox("WoodAssembly_PivotPinR", r.transform, new Vector3(0.045f, 0.35f, 0.024f), new Vector3(0.024f, 0.024f, 0.022f), brassMat, keepCollider: false);
+            CreateBox("WoodAssembly_PlumbWeight", r.transform, new Vector3(0.0f, 0.19f, 0.01f), new Vector3(0.038f, 0.075f, 0.038f), brassMat, keepCollider: false);
         }
 
-        private static void BuildPossessedDollBox(Transform parent, Vector3 pos, Quaternion rot, Material yellowMat, Material blueMat, Material redMat, Material steelMat)
+        private static void BuildArchiveCase06(Transform parent, Vector3 pos, Quaternion rot,
+            Material steelMat, Material beigeMat, Material aluminumMat, Material obsidianMat)
         {
-            GameObject box = CreateBox("Artifact_PossessedDollBox", parent, pos, new Vector3(0.28f, 0.40f, 0.18f), yellowMat, keepCollider: false);
+            GameObject box = CreateBox("Artifact_ArchiveCase06", parent, pos, new Vector3(0.30f, 0.34f, 0.22f), steelMat, keepCollider: false);
             box.transform.rotation = rot;
             BoxCollider col = box.AddComponent<BoxCollider>();
+            col.size = new Vector3(1.2f, 1.3f, 1.4f);
             col.isTrigger = true;
-            AttachDesc(box, "artifact:muneco-good-guy",
-                "Caja de Juguete 'Good Guy' con Rasguños Internos (EXP-10 • Chucky)",
-                "'Good Guy' Toy Box with Internal Claw Marks (EXP-10 • Child's Play)",
-                "Caja amarilla asegurada con fleje de acero sobre cajas de archivo húmedas. Hay marcas de rasguños hechas desde el interior.",
-                "Factory yellow toy box strapped in steel atop damp archive boxes. Deep claw marks tear outward from inside.",
-                new Color(1.0f, 0.82f, 0.18f));
-            CreateBox("GoodGuy_Window", box.transform, new Vector3(0f, -0.04f, 0.52f), new Vector3(0.68f, 0.64f, 0.06f), blueMat, keepCollider: false);
-            CreateBox("GoodGuy_Head", box.transform, new Vector3(0f, 0.10f, 0.55f), new Vector3(0.36f, 0.24f, 0.06f), redMat, keepCollider: false);
-            CreateBox("GoodGuy_Strap", box.transform, Vector3.zero, new Vector3(1.05f, 0.10f, 1.06f), steelMat, keepCollider: false);
+            AttachDesc(box, ProgressionIds.ArtifactArchiveCase06,
+                "Caja de Archivo 06",
+                "Archive Case 06",
+                "Contenedor metálico de archivo sin logotipo comercial, asegurado con cierre de acero sobre las cajas húmedas del pasillo Norte. Su etiqueta numerada '06' está en blanco en el reverso.",
+                "Unbranded archival storage case secured with a steel latch atop damp corridor cartons in the North hall. Its numbered index tag '06' bears no sender or contents manifest.",
+                new Color(0.76f, 0.80f, 0.84f));
+
+            CreateBox("ArchiveCase_LidSeam", box.transform, new Vector3(0f, 0.34f, 0f), new Vector3(1.03f, 0.06f, 1.03f), obsidianMat, keepCollider: false);
+            CreateBox("ArchiveCase_Latch", box.transform, new Vector3(0f, 0.24f, 0.52f), new Vector3(0.18f, 0.24f, 0.08f), aluminumMat, keepCollider: false);
+            CreateBox("ArchiveCase_LabelPlate", box.transform, new Vector3(0f, -0.08f, 0.52f), new Vector3(0.46f, 0.26f, 0.04f), beigeMat, keepCollider: false);
+            CreateBox("ArchiveCase_HandleTop", box.transform, new Vector3(0f, 0.54f, 0f), new Vector3(0.42f, 0.08f, 0.14f), aluminumMat, keepCollider: false);
         }
 
-        private static void BuildDybbukBox(Transform parent, Vector3 pos, Quaternion rot, Material woodMat, Material saltMat, Material steelMat, Material redMat)
+        private static void BuildSealedCustodyCase(Transform parent, Vector3 pos, Quaternion rot,
+            Material woodMat, Material gunmetalMat, Material steelMat, Material aluminumMat)
         {
-            GameObject r = new GameObject("Artifact_DybbukBox_Group");
+            GameObject r = new GameObject("Artifact_SealedCustodyCase");
             r.transform.SetParent(parent, false);
             r.transform.position = pos;
             r.transform.rotation = rot;
-            CreateBox("Dybbuk_SaltRing", r.transform, new Vector3(0f, 0.008f, 0f), new Vector3(0.46f, 0.016f, 0.36f), saltMat, keepCollider: false);
-            GameObject box = CreateBox("Artifact_DybbukBox", r.transform, new Vector3(0f, 0.22f, 0f), new Vector3(0.32f, 0.40f, 0.24f), woodMat, keepCollider: false);
-            BoxCollider col = box.AddComponent<BoxCollider>();
+
+            // Low steel transit skid pad + reinforced archival mahogany custody case with clamp bars & metal seal tag
+            CreateBox("CustodyCase_SkidPad", r.transform, new Vector3(0f, 0.014f, 0f), new Vector3(0.40f, 0.028f, 0.30f), gunmetalMat, keepCollider: false);
+            GameObject chest = CreateBox("CustodyCase_Body", r.transform, new Vector3(0f, 0.21f, 0f), new Vector3(0.34f, 0.36f, 0.24f), woodMat, keepCollider: false);
+            BoxCollider col = chest.AddComponent<BoxCollider>();
             col.isTrigger = true;
-            AttachDesc(box, "artifact:caja-dybbuk",
-                "La Caja Dybbuk Sellada con Cadenas (EXP-01 • El Origen del Mal)",
-                "Chained Dybbuk Wine Cabinet (EXP-01 • The Possession)",
-                "Antigua licorera de caoba atada con cadenas de hierro y rodeada por un cerco de sal blanca sobre la alfombra húmeda.",
-                "Antique mahogany wine cabinet bound in iron chains inside a white salt perimeter on the damp carpet.",
+            AttachDesc(chest, ProgressionIds.ArtifactSealedCustodyCase,
+                "Estuche de Custodia Sellado",
+                "Sealed Custody Case",
+                "Estuche de madera oscura reforzado con barras de sujeción de acero y precinto metálico de custodia municipal. Al acercarse se percibe un zumbido sordo amortiguado en su interior.",
+                "Dark wood custody chest clamped shut with industrial steel retention bars and a metal transit seal. Up close, a faint muffled resonance vibrates against the casing.",
                 new Color(0.92f, 0.64f, 0.28f));
-            CreateBox("Dybbuk_ChainH", box.transform, Vector3.zero, new Vector3(1.06f, 0.14f, 1.06f), steelMat, keepCollider: false);
-            CreateBox("Dybbuk_ChainV", box.transform, Vector3.zero, new Vector3(0.14f, 1.06f, 1.06f), steelMat, keepCollider: false);
-            CreateBox("Dybbuk_WaxSeal", box.transform, new Vector3(0f, 0f, 0.54f), new Vector3(0.22f, 0.22f, 0.08f), redMat, keepCollider: false);
+
+            CreateBox("CustodyCase_ClampBarL", chest.transform, new Vector3(-0.34f, 0f, 0f), new Vector3(0.11f, 1.05f, 1.06f), steelMat, keepCollider: false);
+            CreateBox("CustodyCase_ClampBarR", chest.transform, new Vector3(0.34f, 0f, 0f), new Vector3(0.11f, 1.05f, 1.06f), steelMat, keepCollider: false);
+            CreateBox("CustodyCase_LockBridge", chest.transform, new Vector3(0f, 0.04f, 0.52f), new Vector3(0.84f, 0.14f, 0.08f), gunmetalMat, keepCollider: false);
+            CreateBox("CustodyCase_TransitTag", chest.transform, new Vector3(0f, 0.04f, 0.58f), new Vector3(0.24f, 0.16f, 0.05f), aluminumMat, keepCollider: false);
         }
 
-        private static void BuildNecronomiconGrimoire(Transform parent, Vector3 pos, Quaternion rot,
-            Material steelMat, Material leatherMat, Material brassMat, Material glowMat)
+        private static void BuildAnomalousGeometryAtlas(Transform parent, Vector3 pos, Quaternion rot,
+            Material steelMat, Material leatherMat, Material brassMat, Material aluminumMat, Material accentMat)
         {
-            GameObject r = new GameObject("Artifact_NecronomiconGrimoire");
+            GameObject r = new GameObject("Artifact_AnomalousGeometryAtlas");
             r.transform.SetParent(parent, false);
             r.transform.position = pos;
             r.transform.rotation = rot;
-            CreateBox("Grimoire_Lectern", r.transform, new Vector3(0f, 0.07f, 0f), new Vector3(0.28f, 0.14f, 0.20f), steelMat, keepCollider: false);
-            GameObject tome = CreateBox("Grimoire_BoundTome", r.transform, new Vector3(0f, 0.20f, 0.02f), new Vector3(0.28f, 0.32f, 0.07f), leatherMat, keepCollider: false);
-            tome.transform.localRotation = Quaternion.Euler(-24f, 0f, 0f);
-            BoxCollider col = tome.AddComponent<BoxCollider>();
+
+            CreateBox("Atlas_DraftingStand", r.transform, new Vector3(0f, 0.07f, 0f), new Vector3(0.30f, 0.14f, 0.22f), steelMat, keepCollider: false);
+            GameObject folio = CreateBox("Atlas_TechnicalFolio", r.transform, new Vector3(0f, 0.20f, 0.02f), new Vector3(0.30f, 0.34f, 0.055f), leatherMat, keepCollider: false);
+            folio.transform.localRotation = Quaternion.Euler(-24f, 0f, 0f);
+            BoxCollider col = folio.AddComponent<BoxCollider>();
             col.isTrigger = true;
-            AttachDesc(tome, "artifact:grimorio-necronomicon",
-                "Grimorio Encuadernado / Libro de los Muertos (EXP-06 • Evil Dead / Hamunaptra)",
-                "Bound Grimoire / Book of the Dead (EXP-06 • Evil Dead / Hamunaptra)",
-                "Códice antiguo con relieves orgánicos y herrajes egipcios de oro. Permanece sellado junto a la Caja Fuerte Nivel Ω en el Ala Noroeste.",
-                "Ancient codex bound with organic ridges and golden Egyptian clasps, sealed beside the Level-Ω Vault Safe in the NW Wing.",
+            AttachDesc(folio, ProgressionIds.ArtifactAnomalousGeometryAtlas,
+                "Atlas de Geometría Anómala",
+                "Atlas of Anomalous Geometry",
+                "Folio técnico de gran formato colocado sobre un atril de acero junto a la bóveda Nivel Ω. Contiene levantamientos topográficos de pasillos cerrados en bucle y ángulos imposibles.",
+                "Oversized technical archival folio resting on a steel drafting stand beside the Level-Ω vault. Its bound plates chart closed-loop corridors and non-Euclidean interior angles.",
                 new Color(0.95f, 0.68f, 0.24f));
-            CreateBox("Grimoire_ClaspT", tome.transform, new Vector3(0f, 0.44f, 0.52f), new Vector3(0.86f, 0.10f, 0.18f), brassMat, keepCollider: false);
-            CreateBox("Grimoire_ClaspB", tome.transform, new Vector3(0f, -0.44f, 0.52f), new Vector3(0.86f, 0.10f, 0.18f), brassMat, keepCollider: false);
-            CreateBox("Grimoire_Sigil", tome.transform, new Vector3(0f, 0f, 0.54f), new Vector3(0.45f, 0.48f, 0.12f), glowMat, keepCollider: false);
+
+            CreateBox("Atlas_SpineRail", folio.transform, new Vector3(-0.46f, 0f, 0f), new Vector3(0.10f, 1.02f, 1.15f), aluminumMat, keepCollider: false);
+            CreateBox("Atlas_CornerTL", folio.transform, new Vector3(-0.42f, 0.44f, 0.52f), new Vector3(0.14f, 0.12f, 0.14f), brassMat, keepCollider: false);
+            CreateBox("Atlas_CornerTR", folio.transform, new Vector3(0.42f, 0.44f, 0.52f), new Vector3(0.14f, 0.12f, 0.14f), brassMat, keepCollider: false);
+            CreateBox("Atlas_CornerBL", folio.transform, new Vector3(-0.42f, -0.44f, 0.52f), new Vector3(0.14f, 0.12f, 0.14f), brassMat, keepCollider: false);
+            CreateBox("Atlas_CornerBR", folio.transform, new Vector3(0.42f, -0.44f, 0.52f), new Vector3(0.14f, 0.12f, 0.14f), brassMat, keepCollider: false);
+            CreateBox("Atlas_DiagramPlate", folio.transform, new Vector3(0.04f, 0.04f, 0.54f), new Vector3(0.56f, 0.44f, 0.08f), steelMat, keepCollider: false);
+            CreateBox("Atlas_GridAxisH", folio.transform, new Vector3(0.04f, 0.04f, 0.60f), new Vector3(0.46f, 0.04f, 0.06f), accentMat, keepCollider: false);
+            CreateBox("Atlas_GridAxisV", folio.transform, new Vector3(0.04f, 0.04f, 0.60f), new Vector3(0.04f, 0.36f, 0.06f), accentMat, keepCollider: false);
         }
 
-        private static void BuildCeramicHand(Transform parent, Vector3 pos, Quaternion rot, Material saltMat, Material porcelainMat, Material obsidianMat)
+        private static void BuildFracturedInsulator(Transform parent, Vector3 pos, Quaternion rot,
+            Material porcelainMat, Material obsidianMat, Material brassMat, Material steelMat)
         {
-            GameObject r = new GameObject("Artifact_CeramicHand");
+            GameObject r = new GameObject("Artifact_FracturedInsulator");
             r.transform.SetParent(parent, false);
             r.transform.position = pos;
             r.transform.rotation = rot;
-            CreateBox("Hand_SaltRing", r.transform, new Vector3(0f, 0.01f, 0f), new Vector3(0.22f, 0.015f, 0.20f), saltMat, keepCollider: false);
-            GameObject arm = CreateBox("Hand_CeramicForearm", r.transform, new Vector3(0f, 0.15f, 0f), new Vector3(0.08f, 0.24f, 0.08f), porcelainMat, keepCollider: false);
-            BoxCollider col = arm.AddComponent<BoxCollider>();
-            col.size = new Vector3(2.2f, 2.0f, 2.2f);
+
+            // High-voltage ribbed ceramic electrical insulator with dark fracture seam and brass top cap
+            CreateBox("Insulator_BaseCollar", r.transform, new Vector3(0f, 0.02f, 0f), new Vector3(0.18f, 0.04f, 0.18f), steelMat, keepCollider: false);
+
+            GameObject core = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            core.name = "Insulator_CoreColumn";
+            core.transform.SetParent(r.transform, false);
+            core.transform.localPosition = new Vector3(0f, 0.19f, 0f);
+            core.transform.localScale = new Vector3(0.10f, 0.16f, 0.10f);
+            SetMat(core, porcelainMat);
+            UnityEngine.Object.DestroyImmediate(core.GetComponent<Collider>());
+
+            BoxCollider col = core.AddComponent<BoxCollider>();
+            col.size = new Vector3(2.2f, 2.2f, 2.2f);
             col.isTrigger = true;
-            AttachDesc(arm, "artifact:mano-ceramica",
-                "La Mano Embalsamada de Cerámica (EXP-07 • Háblame / Talk to Me)",
-                "Embalmed Ceramic Hand (EXP-07 • Talk to Me)",
-                "Antebrazo de cerámica blanca cubierto de firmas oscuras. Regla: jamás sostenerla por más de 90 segundos.",
-                "White ceramic forearm covered in dark signatures. Rule: never hold it for longer than 90 seconds.",
+            AttachDesc(core, ProgressionIds.ArtifactFracturedInsulator,
+                "Aislador Cerámico Fracturado",
+                "Fractured Ceramic Insulator",
+                "Aislador de porcelana de alta tensión con tres campanas acanaladas y una fractura vítrea en el núcleo. Conserva restos de hollín eléctrico pese a hallarse lejos de cualquier subestación.",
+                "Ribbed high-voltage porcelain insulator split by a glassy fracture seam across its core. It retains traces of arc scorch despite sitting far from any utility line or substation.",
                 new Color(0.92f, 0.88f, 0.78f));
-            CreateBox("Hand_Palm", r.transform, new Vector3(0f, 0.30f, 0f), new Vector3(0.11f, 0.095f, 0.05f), porcelainMat, keepCollider: false);
-            float[] fXs = new float[] { -0.038f, -0.012f, 0.012f, 0.038f };
-            for (int f = 0; f < fXs.Length; f++)
-                CreateBox($"Hand_Finger_{f}", r.transform, new Vector3(fXs[f], 0.39f, 0f), new Vector3(0.018f, 0.095f, 0.022f), porcelainMat, keepCollider: false);
-            CreateBox("Hand_Thumb", r.transform, new Vector3(-0.065f, 0.32f, 0.01f), new Vector3(0.036f, 0.055f, 0.022f), porcelainMat, keepCollider: false);
-            CreateBox("Hand_Ink", r.transform, new Vector3(0f, 0.17f, 0.044f), new Vector3(0.055f, 0.12f, 0.006f), obsidianMat, keepCollider: false);
+
+            float[] shedYs = new float[] { 0.09f, 0.185f, 0.28f };
+            float[] shedRadii = new float[] { 0.20f, 0.18f, 0.155f };
+            for (int i = 0; i < shedYs.Length; i++)
+            {
+                GameObject shed = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                shed.name = $"Insulator_Shed_{i}";
+                shed.transform.SetParent(r.transform, false);
+                shed.transform.localPosition = new Vector3(0f, shedYs[i], 0f);
+                shed.transform.localScale = new Vector3(shedRadii[i], 0.022f, shedRadii[i]);
+                SetMat(shed, porcelainMat);
+                UnityEngine.Object.DestroyImmediate(shed.GetComponent<Collider>());
+            }
+
+            GameObject cap = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            cap.name = "Insulator_BrassCap";
+            cap.transform.SetParent(r.transform, false);
+            cap.transform.localPosition = new Vector3(0f, 0.365f, 0f);
+            cap.transform.localScale = new Vector3(0.075f, 0.032f, 0.075f);
+            SetMat(cap, brassMat);
+            UnityEngine.Object.DestroyImmediate(cap.GetComponent<Collider>());
+
+            GameObject fracture = CreateBox("Insulator_FractureSeam", r.transform, new Vector3(0.015f, 0.19f, 0.088f), new Vector3(0.020f, 0.19f, 0.024f), obsidianMat, keepCollider: false);
+            fracture.transform.localRotation = Quaternion.Euler(0f, 0f, 18f);
         }
 
-        private static void BuildLamentPuzzleBox(Transform parent, Vector3 pos, Quaternion rot, Material velvetMat, Material obsidianMat, Material brassMat)
+        private static void BuildFoldedTopologyCore(Transform parent, Vector3 pos, Quaternion rot,
+            Material gunmetalMat, Material ceramicMat, Material aluminumMat, Material brassMat)
         {
-            GameObject r = new GameObject("Artifact_LamentPuzzleBox");
+            GameObject r = new GameObject("Artifact_FoldedTopologyCore");
             r.transform.SetParent(parent, false);
             r.transform.position = pos;
             r.transform.rotation = rot;
-            CreateBox("Lament_VelvetCushion", r.transform, new Vector3(0f, 0.03f, 0f), new Vector3(0.24f, 0.06f, 0.20f), velvetMat, keepCollider: false);
-            GameObject cube = CreateBox("Lament_PuzzleCube", r.transform, new Vector3(0f, 0.15f, 0f), new Vector3(0.15f, 0.15f, 0.15f), obsidianMat, keepCollider: false);
-            cube.transform.localRotation = Quaternion.Euler(14f, 32f, -10f);
-            BoxCollider col = cube.AddComponent<BoxCollider>();
+
+            // Low gunmetal steel calibration cradle + three offset asymmetric ceramic/aluminum stepped plates
+            CreateBox("TopologyCore_SteelCradle", r.transform, new Vector3(0f, 0.025f, 0f), new Vector3(0.24f, 0.05f, 0.18f), gunmetalMat, keepCollider: false);
+            GameObject plateLow = CreateBox("TopologyCore_LowerPlate", r.transform, new Vector3(0f, 0.085f, 0f), new Vector3(0.18f, 0.042f, 0.14f), aluminumMat, keepCollider: false);
+            plateLow.transform.localRotation = Quaternion.Euler(0f, 12f, 0f);
+            BoxCollider col = plateLow.AddComponent<BoxCollider>();
+            col.center = new Vector3(0f, 1.8f, 0f);
+            col.size = new Vector3(1.5f, 5.2f, 1.7f);
             col.isTrigger = true;
-            AttachDesc(cube, "artifact:configuracion-lamento",
-                "Caja Rompecabezas de Filigrana (EXP-08 • La Configuración del Lamento)",
-                "Filigree Puzzle Box (EXP-08 • The Lament Configuration)",
-                "Cubo mecánico de laca negra y latón grabado con anillos concéntricos, bloqueado a mitad de su secuencia.",
-                "Mechanical cube of black lacquer and etched brass locked mid-sequence to prevent opening a rift.",
-                new Color(1.0f, 0.78f, 0.28f));
-            CreateBox("Lament_GoldF", cube.transform, new Vector3(0f, 0f, 0.52f), new Vector3(0.76f, 0.76f, 0.04f), brassMat, keepCollider: false);
-            CreateBox("Lament_GoldT", cube.transform, new Vector3(0f, 0.52f, 0f), new Vector3(0.76f, 0.04f, 0.76f), brassMat, keepCollider: false);
-            CreateBox("Lament_GoldS", cube.transform, new Vector3(0.52f, 0f, 0f), new Vector3(0.04f, 0.76f, 0.76f), brassMat, keepCollider: false);
+            AttachDesc(plateLow, ProgressionIds.ArtifactFoldedTopologyCore,
+                "Núcleo de Topología Plegada",
+                "Folded Topology Core",
+                "Ensamble mecánico asimétrico de placas cerámicas y aluminio montado sobre una cuna de acero. Sus secciones escalonadas se desfasan entre sí como un modelo a escala de un espacio plegado.",
+                "Asymmetric mechanical assembly of stepped ceramic and aluminum plates seated in a steel cradle. Its offset tiers shift out of phase like a scale model of folded architectural space.",
+                new Color(0.74f, 0.86f, 0.96f));
+
+            GameObject plateMid = CreateBox("TopologyCore_MidCeramicTier", r.transform, new Vector3(0.018f, 0.142f, -0.012f), new Vector3(0.15f, 0.052f, 0.12f), ceramicMat, keepCollider: false);
+            plateMid.transform.localRotation = Quaternion.Euler(8f, -24f, 6f);
+            GameObject plateTop = CreateBox("TopologyCore_UpperAluminumTier", r.transform, new Vector3(-0.014f, 0.205f, 0.010f), new Vector3(0.12f, 0.038f, 0.10f), aluminumMat, keepCollider: false);
+            plateTop.transform.localRotation = Quaternion.Euler(-10f, 34f, -8f);
+            CreateBox("TopologyCore_BrassAxle", r.transform, new Vector3(0f, 0.145f, 0f), new Vector3(0.024f, 0.22f, 0.024f), brassMat, keepCollider: false);
         }
 
-        private static void BuildOuijaBoard(Transform parent, Vector3 pos, Quaternion rot, Material woodMat, Material darkMat, Material porcelainMat)
+        private static void BuildCoordinatePlottingPlate(Transform parent, Vector3 pos, Quaternion rot,
+            Material slateMat, Material brassMat, Material aluminumMat)
         {
-            GameObject board = CreateBox("Artifact_OuijaBoard", parent, pos, new Vector3(0.48f, 0.03f, 0.34f), woodMat, keepCollider: false);
-            board.transform.rotation = rot;
-            BoxCollider col = board.AddComponent<BoxCollider>();
-            col.size = new Vector3(1.2f, 4.0f, 1.2f);
+            GameObject plate = CreateBox("Artifact_CoordinatePlottingPlate", parent, pos, new Vector3(0.48f, 0.026f, 0.34f), slateMat, keepCollider: false);
+            plate.transform.rotation = rot;
+            BoxCollider col = plate.AddComponent<BoxCollider>();
+            col.size = new Vector3(1.2f, 4.5f, 1.2f);
             col.isTrigger = true;
-            AttachDesc(board, "artifact:tablero-ouija",
-                "Tablero Espiritista y Planchette (EXP-09 • El Exorcista / Ouija)",
-                "Spirit Board & Planchette (EXP-09 • The Exorcist / Ouija)",
-                "Tablero clásico de madera grabada con el puntero clavado sobre 'GOODBYE'.",
-                "Classic engraved spirit board with its planchette pinned over 'GOODBYE'.",
+            AttachDesc(plate, ProgressionIds.ArtifactCoordinatePlottingPlate,
+                "Lámina de Trazado de Coordenadas",
+                "Coordinate Plotting Plate",
+                "Placa cartográfica de pizarra y latón con retícula ortogonal y regla deslizable. Sus coordenadas trazan intersecciones bajo la Avenida Benito Juárez que no figuran en los planos catastrales.",
+                "Slate-and-brass cartographic plotting plate fitted with an orthogonal grid and sliding vernier rule. Its etched intersections map chambers beneath Avenida Benito Juárez absent from civic surveys.",
                 new Color(0.86f, 0.72f, 0.46f));
-            CreateBox("Ouija_Arc1", board.transform, new Vector3(0f, 0.58f, 0.14f), new Vector3(0.74f, 0.08f, 0.08f), darkMat, keepCollider: false);
-            CreateBox("Ouija_Arc2", board.transform, new Vector3(0f, 0.58f, -0.02f), new Vector3(0.68f, 0.08f, 0.08f), darkMat, keepCollider: false);
-            CreateBox("Ouija_Planchette", board.transform, new Vector3(0.14f, 0.82f, -0.22f), new Vector3(0.22f, 0.45f, 0.24f), porcelainMat, keepCollider: false);
+
+            // Orthogonal brass border frame, straight survey grid lines & sliding vernier arm (no arcs, no planchette)
+            CreateBox("PlotPlate_RailNorth", plate.transform, new Vector3(0f, 0.56f, 0.45f), new Vector3(0.96f, 0.18f, 0.06f), brassMat, keepCollider: false);
+            CreateBox("PlotPlate_RailSouth", plate.transform, new Vector3(0f, 0.56f, -0.45f), new Vector3(0.96f, 0.18f, 0.06f), brassMat, keepCollider: false);
+            CreateBox("PlotPlate_GridX1", plate.transform, new Vector3(0f, 0.54f, 0.15f), new Vector3(0.86f, 0.08f, 0.025f), aluminumMat, keepCollider: false);
+            CreateBox("PlotPlate_GridX2", plate.transform, new Vector3(0f, 0.54f, -0.15f), new Vector3(0.86f, 0.08f, 0.025f), aluminumMat, keepCollider: false);
+            CreateBox("PlotPlate_GridZ1", plate.transform, new Vector3(-0.22f, 0.54f, 0f), new Vector3(0.025f, 0.08f, 0.80f), aluminumMat, keepCollider: false);
+            CreateBox("PlotPlate_GridZ2", plate.transform, new Vector3(0.22f, 0.54f, 0f), new Vector3(0.025f, 0.08f, 0.80f), aluminumMat, keepCollider: false);
+            CreateBox("PlotPlate_VernierRule", plate.transform, new Vector3(0.10f, 0.72f, 0f), new Vector3(0.08f, 0.24f, 0.96f), brassMat, keepCollider: false);
         }
 
         private static void BuildPaquimeMask(Transform parent, Vector3 pos, Quaternion rot, Material obsidianMat, Material turquoiseMat, Material brassMat)

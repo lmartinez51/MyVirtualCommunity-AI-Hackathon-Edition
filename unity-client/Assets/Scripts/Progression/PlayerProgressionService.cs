@@ -270,7 +270,8 @@ namespace MyVirtualCommunity.Client.Progression
 
         public bool HasDiscoveredEvidence(string evidenceId)
         {
-            return ContainsId(CurrentData.permanent.discoveredEvidenceIds, evidenceId);
+            string canonical = ProgressionIds.CanonicalizeEvidenceId(evidenceId);
+            return ContainsId(CurrentData.permanent.discoveredEvidenceIds, canonical);
         }
 
         public bool HasLearnedCode(string codeId)
@@ -500,9 +501,9 @@ namespace MyVirtualCommunity.Client.Progression
         public bool RecordEvidenceInspected(string evidenceId, bool autoSave = true)
         {
             EnsureInitialized();
-            if (string.IsNullOrWhiteSpace(evidenceId)) return false;
+            string trimmed = ProgressionIds.CanonicalizeEvidenceId(evidenceId);
+            if (string.IsNullOrEmpty(trimmed)) return false;
 
-            string trimmed = evidenceId.Trim();
             bool addedEvidence = AddUnique(currentData.permanent.discoveredEvidenceIds, trimmed);
             bool changed = addedEvidence;
             bool addedOmegaCode = false;

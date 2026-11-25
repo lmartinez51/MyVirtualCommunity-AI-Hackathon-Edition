@@ -42,10 +42,10 @@ Each beat below explicitly separates **`[EXISTING NOW]` (`CONFIRMED`)** from **`
 - **`[PROPOSED FOR SLICE]`:**
   - Add responsive audio/visual cues (keypad beeps, heavy latch, low hum behind the Threshold Veil) reinforcing the shift from grounded border street into liminal space.
 
-### Beat 4 — Backrooms Level 1 Exploration (IP-Cleared Liminal Labyrinth)
-- **`[EXISTING NOW]`:** `BackroomsLevel1Scene.unity` (`40 m × 24 m` at `Y = -50.0 m`) loads additively with flickering fluorescent fixtures, central pillared hall, NE return door, 13 dispersed artifacts, and 8 Reality-Bridge prop models.
+### Beat 4 — Backrooms Level 1 Exploration (Liminal Labyrinth — IP-01 Replaced)
+- **`[EXISTING NOW]`:** `BackroomsLevel1Scene.unity` (`40 m × 24 m` at `Y = -50.0 m`) loads additively with flickering fluorescent fixtures, central pillared hall, NE return door, **15 original dispersed artifacts** (the 12 retired IP-01 horror-franchise props replaced with original archival/anomalous artifacts alongside Evidence Board PDN-00, the *Paquimé* mask, and the *Anomalous Astral Compass* — `REPLACED — creator visual review complete; not formal legal clearance`), and 8 Reality-Bridge prop models.
 - **`[PROPOSED FOR SLICE]`:**
-  - **Mandatory IP Replacement:** Replace all third-party horror franchise artifacts and trademarked consumer/newspaper props with **100% original borderland/anomalous artifacts and generic diegetic devices** (retaining original assets such as the *Paquimé* mask and *Anomalous Astral Compass*).
+  - **Remaining IP Replacement (`IP-03` / `IP-05`):** Complete creator naming review for liminal-layer terminology (`IP-03`) and replace trademarked consumer/newspaper Reality-Bridge props (`IP-05`) with generic or original diegetic devices.
   - Wire at least **1–2 Reality-Bridge props** (such as the Juárez telemetry wall monitor or thermal printer) to display deterministic local World Core clock/corridor state offline so the "living world beyond reality" theme pays off diegetically.
 
 ### Beat 5 — Evidence Board & Level-Ω Safe Puzzle

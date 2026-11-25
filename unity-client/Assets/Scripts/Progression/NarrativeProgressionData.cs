@@ -27,6 +27,48 @@ namespace MyVirtualCommunity.Client.Progression
         public const string PortalUmbralDeLasser = "portal:umbral-de-lasser";
         public const string PortalCuencaOctagonal = "portal:cuenca-octagonal";
 
+        // Original Backrooms Level 1 archival & anomalous artifact identifiers (IP-01 replacements)
+        public const string ArtifactShiftClock0307 = "artifact:reloj-turno-0307";
+        public const string ArtifactSealedNotebook = "artifact:cuaderno-paginas-selladas";
+        public const string ArtifactServiceIntercom = "artifact:intercomunicador-servicio";
+        public const string ArtifactSignalMonitor = "artifact:monitor-senal-sin-origen";
+        public const string ArtifactSpecimenVitrine = "artifact:vitrina-figura-sin-rasgos";
+        public const string ArtifactArticulatedWoodAssembly = "artifact:ensamble-madera-articulado";
+        public const string ArtifactArchiveCase06 = "artifact:caja-archivo-06";
+        public const string ArtifactSealedCustodyCase = "artifact:estuche-custodia-sellado";
+        public const string ArtifactFracturedInsulator = "artifact:aislador-ceramico-fracturado";
+        public const string ArtifactCoordinatePlottingPlate = "artifact:lamina-trazado-coordenadas";
+        public const string ArtifactAnomalousGeometryAtlas = "artifact:atlas-geometria-anomala";
+        public const string ArtifactFoldedTopologyCore = "artifact:nucleo-topologia-plegada";
+
+        // Backward-compatible save-data migration map from retired prototype artifact IDs to canonical IDs.
+        // Ensures pre-existing local progression saves keep all discovered entries without data loss.
+        private static readonly Dictionary<string, string> LegacyEvidenceIdAliases =
+            new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["artifact:reloj-0307"] = ArtifactShiftClock0307,
+                ["artifact:libro-babadook"] = ArtifactSealedNotebook,
+                ["artifact:telefono-negro"] = ArtifactServiceIntercom,
+                ["artifact:cinta-vhs-el-aro"] = ArtifactSignalMonitor,
+                ["artifact:muneca-porcelana"] = ArtifactSpecimenVitrine,
+                ["artifact:titere-espiral"] = ArtifactArticulatedWoodAssembly,
+                ["artifact:muneco-good-guy"] = ArtifactArchiveCase06,
+                ["artifact:caja-dybbuk"] = ArtifactSealedCustodyCase,
+                ["artifact:mano-ceramica"] = ArtifactFracturedInsulator,
+                ["artifact:tablero-ouija"] = ArtifactCoordinatePlottingPlate,
+                ["artifact:grimorio-necronomicon"] = ArtifactAnomalousGeometryAtlas,
+                ["artifact:configuracion-lamento"] = ArtifactFoldedTopologyCore
+            };
+
+        public static IReadOnlyDictionary<string, string> LegacyEvidenceIdMigrationMap => LegacyEvidenceIdAliases;
+
+        public static string CanonicalizeEvidenceId(string evidenceId)
+        {
+            if (string.IsNullOrWhiteSpace(evidenceId)) return string.Empty;
+            string trimmed = evidenceId.Trim();
+            return LegacyEvidenceIdAliases.TryGetValue(trimmed, out string canonical) ? canonical : trimmed;
+        }
+
         // Learned code identifiers (logical knowledge, never rotating/authoritative backend state)
         // Legacy demo code ID retained for backward compatibility without granting the new sewer-clue code
         public const string CodeBuildingASouthSecretDoor = "code:building-a-south-secret-door";
@@ -205,11 +247,28 @@ namespace MyVirtualCommunity.Client.Progression
 
         public void Normalize()
         {
-            discoveredEvidenceIds = DeduplicateStrings(discoveredEvidenceIds);
+            discoveredEvidenceIds = CanonicalizeAndDeduplicateEvidenceIds(discoveredEvidenceIds);
             learnedCodeIds = DeduplicateStrings(learnedCodeIds);
             solvedPuzzleIds = DeduplicateStrings(solvedPuzzleIds);
             acquiredArtifactIds = DeduplicateStrings(acquiredArtifactIds);
             unlockedMilestoneIds = DeduplicateStrings(unlockedMilestoneIds);
+        }
+
+        private static List<string> CanonicalizeAndDeduplicateEvidenceIds(List<string> source)
+        {
+            var result = new List<string>();
+            if (source == null) return result;
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            for (int i = 0; i < source.Count; i++)
+            {
+                string canonical = ProgressionIds.CanonicalizeEvidenceId(source[i]);
+                if (string.IsNullOrEmpty(canonical)) continue;
+                if (seen.Add(canonical))
+                {
+                    result.Add(canonical);
+                }
+            }
+            return result;
         }
 
         public PermanentProgressionState DeepClone()

@@ -260,16 +260,21 @@ namespace MyVirtualCommunity.Editor
             GameObject socketGo = GameObject.Find("Portal_KeystoneSocket_Root");
             GameObject exitDoorGo = GameObject.Find("Backrooms_ExitDoor_ToStreet");
             GameObject spawnGo = GameObject.Find("Backrooms_SpawnPoint");
-            GameObject crtGo = GameObject.Find("Artifact_CrtTv_Root");
-            GameObject dollCaseGo = GameObject.Find("Artifact_DollGlassCase");
-            GameObject grimoireGo = GameObject.Find("Artifact_NecronomiconGrimoire");
-            GameObject handGo = GameObject.Find("Artifact_CeramicHand");
-            GameObject lamentGo = GameObject.Find("Artifact_LamentPuzzleBox");
-            GameObject dybbukGo = GameObject.Find("Artifact_DybbukBox");
+            GameObject crtGo = GameObject.Find("Artifact_SignalMonitor_Root");
+            GameObject specimenVitrineGo = GameObject.Find("Artifact_SpecimenVitrine");
+            GameObject atlasGo = GameObject.Find("Artifact_AnomalousGeometryAtlas");
+            GameObject insulatorGo = GameObject.Find("Artifact_FracturedInsulator");
+            GameObject topologyCoreGo = GameObject.Find("Artifact_FoldedTopologyCore");
+            GameObject custodyCaseGo = GameObject.Find("Artifact_SealedCustodyCase");
             GameObject corkboardGo = GameObject.Find("Artifact_EvidenceCorkboard");
-            GameObject blackPhoneGo = GameObject.Find("Artifact_BlackRotaryPhone");
+            GameObject intercomGo = GameObject.Find("Artifact_ServiceIntercom");
             GameObject paquimeMaskGo = GameObject.Find("Artifact_PaquimeObsidianMask");
             GameObject compassGo = GameObject.Find("Artifact_AnomalousCompass");
+            GameObject shiftClockGo = GameObject.Find("Artifact_ShiftClock0307");
+            GameObject sealedNotebookGo = GameObject.Find("Artifact_SealedNotebook");
+            GameObject woodAssemblyGo = GameObject.Find("Artifact_ArticulatedWoodAssembly");
+            GameObject archiveCaseGo = GameObject.Find("Artifact_ArchiveCase06");
+            GameObject plottingPlateGo = GameObject.Find("Artifact_CoordinatePlottingPlate");
 
             // Reality-Bridge props & furniture restraint check (strictly 1 desk + 1 chair!)
             GameObject laptopGo = GameObject.Find("RealityBridge_LaptopWorkstation");
@@ -319,11 +324,11 @@ namespace MyVirtualCommunity.Editor
                 new Vector3( 15.5f, BackroomsLevel1Builder.BaseY, -8.4f), // SE Payphone Corridor
                 new Vector3(  4.0f, BackroomsLevel1Builder.BaseY, -8.5f), // S-Center Evidence Corkboard Alcove
                 new Vector3( -3.5f, BackroomsLevel1Builder.BaseY, -2.2f), // Central Pillared Hall & Alexa
-                new Vector3( -9.5f, BackroomsLevel1Builder.BaseY, -8.4f), // SW Labyrinth (Dybbuk & Border Clock)
+                new Vector3( -9.5f, BackroomsLevel1Builder.BaseY, -8.4f), // SW Labyrinth (Custody Case & Border Clock)
                 new Vector3(-16.5f, BackroomsLevel1Builder.BaseY, -8.2f), // Far SW Monumental Portal Chamber
-                new Vector3(-14.5f, BackroomsLevel1Builder.BaseY, -1.6f), // West CRT Niche & CCTV Frame
+                new Vector3(-14.5f, BackroomsLevel1Builder.BaseY, -1.6f), // West Signal Monitor Niche & CCTV Frame
                 new Vector3(-16.4f, BackroomsLevel1Builder.BaseY,  8.8f), // Far NW Level-Omega Vault Safe
-                new Vector3( -5.2f, BackroomsLevel1Builder.BaseY,  8.5f), // N-Center Annabelle Containment Room
+                new Vector3( -5.2f, BackroomsLevel1Builder.BaseY,  8.5f), // N-Center Specimen Vitrine Room
                 new Vector3(  4.5f, BackroomsLevel1Builder.BaseY,  7.4f)  // N-East Diario de Juárez iPad
             };
             bool brWalkClear = true;
@@ -338,12 +343,13 @@ namespace MyVirtualCommunity.Editor
             }
 
             Check(
-                $"BackroomsLevel1Scene (40x24m real scale, portalDist={spawnToPortalDist:F1}m, desks={deskCount}, chairs={chairCount}) verified: 13 artifacts, 8 Reality-Bridge props, Safe ('654321'), Astrolabe & far SW Portal",
+                $"BackroomsLevel1Scene (40x24m real scale, portalDist={spawnToPortalDist:F1}m, desks={deskCount}, chairs={chairCount}) verified: 15 original artifacts, 8 Reality-Bridge props, Safe ('654321'), Astrolabe & far SW Portal",
                 floorRealScale && portalFarFromSpawn && deskCount == 1 && chairCount == 1 &&
                 safeGo != null && portalGo != null && socketGo != null && exitDoorGo != null && spawnGo != null &&
-                crtGo != null && dollCaseGo != null && grimoireGo != null && handGo != null &&
-                lamentGo != null && dybbukGo != null && corkboardGo != null && blackPhoneGo != null &&
-                paquimeMaskGo != null && compassGo != null &&
+                crtGo != null && specimenVitrineGo != null && atlasGo != null && insulatorGo != null &&
+                topologyCoreGo != null && custodyCaseGo != null && corkboardGo != null && intercomGo != null &&
+                paquimeMaskGo != null && compassGo != null && shiftClockGo != null && sealedNotebookGo != null &&
+                woodAssemblyGo != null && archiveCaseGo != null && plottingPlateGo != null &&
                 laptopGo != null && fmRadioGo != null && alexaGo != null && diarioIpadGo != null &&
                 borderTermGo != null && payphoneGo != null && cctvFrameGo != null && printerGo != null &&
                 safeRejectsOuterCode && safeAcceptsOwnCode && tookAstrolabe && activatedPortal && brWalkClear
@@ -428,7 +434,7 @@ namespace MyVirtualCommunity.Editor
 
             float yEye = BackroomsLevel1Builder.BaseY + 1.55f;
 
-            // Shot A: Vast Central Pillared Hall (12 yellow columns receding into foggy depth + Black Phone + Alexa Corner)
+            // Shot A: Vast Central Pillared Hall (12 yellow columns receding into foggy depth + Service Intercom + Alexa Corner)
             RenderView(
                 new Vector3(4.20f, yEye, 2.80f),
                 new Vector3(-7.50f, yEye - 0.15f, -1.60f),
