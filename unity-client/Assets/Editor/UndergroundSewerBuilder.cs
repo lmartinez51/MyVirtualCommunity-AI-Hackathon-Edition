@@ -21,7 +21,7 @@ namespace MyVirtualCommunity.Editor
     ///   recessed-channel junction chambers, and the Northern Outflow ramp.
     /// - Dark, dense, oppressive storm-drain lighting (making the [F] flashlight essential) with
     ///   sparse rusty-amber lamps, sputtering cages, dead/shattered fixtures & feathered curbside
-    ///   "Georgie" daylight shafts.
+    ///   storm-drain daylight shafts.
     /// - 65-year aging & decay pass: 512x512 cracked/mossy/efflorescence concrete, crumbling
     ///   soot-stained brickwork, pitted flaking rust, gossamer cobwebs, twisted ceiling roots,
     ///   broken brick rubble piles, corroded valve wheels, sagging Vault rails, overflow water
@@ -137,9 +137,9 @@ namespace MyVirtualCommunity.Editor
                 new Color(0.17f, 0.13f, 0.09f), 0.10f, 0.0f);
             Material soggyPlankMat = CreateOrGetColorMat("Assets/Settings/Sewer/Sewer_SoggyPlank.mat",
                 new Color(0.22f, 0.18f, 0.13f), 0.28f, 0.0f);
-            Material paperWhiteMat = CreateOrGetTexturedMat("Assets/Settings/Sewer/Sewer_PaperBoat.mat",
-                "Assets/Textures/Sewer/T_Sewer_PaperBoat_Newspaper.png", new Color(0.95f, 0.93f, 0.86f), 0.06f, 0.0f, Vector2.one);
-            paperWhiteMat.SetFloat("_Cull", 0f); // Double-sided crisp origami paper folds!
+            Material collectorNoticeMat = CreateOrGetTexturedMat("Assets/Settings/Sewer/Sewer_CollectorNotice.mat",
+                "Assets/Textures/Sewer/T_Sewer_CollectorNotice.png", new Color(0.95f, 0.93f, 0.86f), 0.06f, 0.0f, Vector2.one);
+            collectorNoticeMat.SetFloat("_Cull", 0f); // Double-sided damp folded paper sheet
 
             // Bilingual crimson graffiti, English Crop Circle symbols & Paris Catacombs wooden plaque
             Material graffitiSalDeAquiMat = CreateOrGetLitDecalMat("Assets/Settings/Sewer/Sewer_Graffiti_SalDeAqui.mat",
@@ -355,8 +355,8 @@ namespace MyVirtualCommunity.Editor
                 triggerBackroomsTwist: false,
                 manholeCoverMat, darkIronMat, brickArchMat, rustedIronMat, manholeVentGlowMat);
 
-            // 8. 6 "Efecto Georgie" Curbside Storm-Drain Intake Slots + Soft Light Shafts + Paper Boat
-            BuildGeorgieStormDrainSlots(root.transform, darkIronMat, concreteWallMat, lightShaftMat, paperWhiteMat);
+            // 8. 6 Curbside Storm-Drain Intake Slots + Soft Light Shafts + Folded Collector Maintenance Notice
+            BuildCurbsideDrainIntakes(root.transform, darkIronMat, concreteWallMat, lightShaftMat, collectorNoticeMat);
 
             // 9. Aged Rio Bravo Storm Outflow Headwall, Interactive Rusted Iron Gate & Walkable Riverbank
             BuildRioBravoOutflowAndRiverbank(root.transform, concreteWallMat, mossSludgeMat, rustedIronMat, darkIronMat, waterMat, rubbleConcreteMat);
@@ -1846,33 +1846,150 @@ namespace MyVirtualCommunity.Editor
         }
 
         // =========================================================================
-        // 6 "EFECTO GEORGIE" CURBSIDE STORM-DRAIN SLOTS + LIGHT SHAFTS + PAPER BOAT
+        // 6 CURBSIDE STORM-DRAIN INTAKE SLOTS + LIGHT SHAFTS + FOLDED COLLECTOR NOTICE
         // =========================================================================
 
-        private static void BuildGeorgieStormDrainSlots(Transform root, Material darkIronMat, Material concreteMat,
-            Material lightShaftMat, Material paperWhiteMat)
+        public const string DrainIntakesRootName = "Curbside_DrainIntakes_Root";
+        public const string CollectorNoticeObjectName = "FoldedCollectorMaintenanceNotice";
+        public const string CollectorNoticeMeshObjectName = "CollectorNotice_FoldedSheet_Mesh";
+        public const string CollectorNoticeMaterialPath = "Assets/Settings/Sewer/Sewer_CollectorNotice.mat";
+        public const string CollectorNoticeTexturePath = "Assets/Textures/Sewer/T_Sewer_CollectorNotice.png";
+
+        public static readonly Vector3 CollectorNoticeWorldPosition =
+            new Vector3(-9.80f, WaterSurfaceY + 0.008f, AzucenasAxisZ + 0.08f);
+
+        private static readonly string[] RetiredIntakeRootNames = { "Georgie_StormDrain_Slots_Root" };
+        private const string RetiredIntakeSlotPrefix = "GeorgieSlot_";
+        private const string CanonicalIntakeSlotPrefix = "DrainIntakeSlot_";
+        private const string RetiredNoticeObjectName = "PaperBoat_Georgie";
+
+        /// <summary>
+        /// Targeted, idempotent IP-02 scene migration utility.
+        /// Opens existing BorderCorridorScene.unity without running BuildInOpenScene(),
+        /// renames only the curbside drain intake root and its 6 slot groups in-place,
+        /// regenerates the fictional notice texture, and replaces only the retired paper prop
+        /// with FoldedCollectorMaintenanceNotice while preserving all unrelated sewer GameObjects,
+        /// Transform fileIDs, component fileIDs, lights, clues, and serialized references.
+        /// </summary>
+        [MenuItem("MyVirtualCommunity/Migrate IP-02 Drain Intake Notice (In-Place)")]
+        public static void MigrateIp02DrainNoticeAndSave()
         {
-            var slotsRoot = new GameObject("Georgie_StormDrain_Slots_Root").transform;
+            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            if (!scene.IsValid())
+            {
+                throw new InvalidOperationException($"[UndergroundSewerBuilder] Failed to open scene: {ScenePath}");
+            }
+
+            // Regenerate only the original collector notice texture on disk and reimport it cleanly
+            string texDir = Path.GetDirectoryName(CollectorNoticeTexturePath);
+            if (!string.IsNullOrEmpty(texDir) && !Directory.Exists(texDir))
+            {
+                Directory.CreateDirectory(texDir);
+            }
+            GenerateFictionalDrainNoticeTex(CollectorNoticeTexturePath);
+            AssetDatabase.ImportAsset(CollectorNoticeTexturePath, ImportAssetOptions.ForceUpdate);
+
+            MigrateIp02DrainNoticeInOpenScene(scene);
+
+            EditorSceneManager.MarkSceneDirty(scene);
+            if (!EditorSceneManager.SaveScene(scene, ScenePath))
+            {
+                throw new InvalidOperationException($"[UndergroundSewerBuilder] Failed to save migrated scene: {ScenePath}");
+            }
+            Debug.Log("[UndergroundSewerBuilder] Targeted IP-02 in-place migration completed and saved to BorderCorridorScene.unity.");
+        }
+
+        public static void MigrateIp02DrainNoticeInOpenScene(UnityEngine.SceneManagement.Scene scene)
+        {
+            GameObject sewerRoot = null;
+            foreach (GameObject go in scene.GetRootGameObjects())
+            {
+                if (go.name == RootName)
+                {
+                    sewerRoot = go;
+                    break;
+                }
+            }
+            if (sewerRoot == null)
+            {
+                throw new InvalidOperationException($"[UndergroundSewerBuilder] {RootName} not found in open scene.");
+            }
+
+            Transform intakesRoot = sewerRoot.transform.Find(DrainIntakesRootName);
+            if (intakesRoot == null)
+            {
+                foreach (string retiredName in RetiredIntakeRootNames)
+                {
+                    intakesRoot = sewerRoot.transform.Find(retiredName);
+                    if (intakesRoot != null) break;
+                }
+            }
+            if (intakesRoot == null)
+            {
+                throw new InvalidOperationException("[UndergroundSewerBuilder] Curbside drain intakes root not found under Underground_Sewer_Network_Root.");
+            }
+
+            // 1. Rename intake root and its 6 surface/underground slot pairs in-place (preserving fileIDs & lights)
+            intakesRoot.gameObject.name = DrainIntakesRootName;
+            for (int i = 0; i < intakesRoot.childCount; i++)
+            {
+                Transform child = intakesRoot.GetChild(i);
+                if (child.name.StartsWith(RetiredIntakeSlotPrefix, StringComparison.Ordinal))
+                {
+                    child.gameObject.name = CanonicalIntakeSlotPrefix + child.name.Substring(RetiredIntakeSlotPrefix.Length);
+                }
+            }
+
+            // 2. Remove ONLY the retired prop (or previously migrated prop for 100% idempotency)
+            var toDestroy = new List<GameObject>();
+            for (int i = 0; i < intakesRoot.childCount; i++)
+            {
+                Transform child = intakesRoot.GetChild(i);
+                if (child.name == RetiredNoticeObjectName || child.name == CollectorNoticeObjectName)
+                {
+                    toDestroy.Add(child.gameObject);
+                }
+            }
+            for (int i = 0; i < toDestroy.Count; i++)
+            {
+                UnityEngine.Object.DestroyImmediate(toDestroy[i]);
+            }
+
+            // 3. Load existing renamed material read-only (preserves GUID & avoids dirtying unrelated .mat assets)
+            Material noticeMat = AssetDatabase.LoadAssetAtPath<Material>(CollectorNoticeMaterialPath);
+            if (noticeMat == null)
+            {
+                throw new InvalidOperationException($"[UndergroundSewerBuilder] Required material missing at {CollectorNoticeMaterialPath}.");
+            }
+
+            // 4. Construct original decorative folded maintenance notice using the shared builder helper
+            BuildFoldedCollectorNotice(CollectorNoticeObjectName, intakesRoot, CollectorNoticeWorldPosition, noticeMat);
+        }
+
+        private static void BuildCurbsideDrainIntakes(Transform root, Material darkIronMat, Material concreteMat,
+            Material lightShaftMat, Material collectorNoticeMat)
+        {
+            var slotsRoot = new GameObject(DrainIntakesRootName).transform;
             slotsRoot.SetParent(root);
 
-            var slots = new (string name, Vector3 curbPos, float curbYaw, Vector3 tunnelBeamPos, float beamYaw, bool addPaperBoat)[]
+            var slots = new (string name, Vector3 curbPos, float curbYaw, Vector3 tunnelBeamPos, float beamYaw, bool addCollectorNotice)[]
             {
-                ("GeorgieSlot_Juarez_Azucenas_NW",
+                ("DrainIntakeSlot_Juarez_Azucenas_NW",
                     new Vector3(-9.80f, 0.09f, -29.10f), 0f,
                     new Vector3(-9.80f, ArchSpringY + 0.35f, AzucenasAxisZ + TunnelHalfW - 0.15f), 180f, true),
-                ("GeorgieSlot_Juarez_MidCorridor_W",
+                ("DrainIntakeSlot_Juarez_MidCorridor_W",
                     new Vector3(-2.60f, 0.09f, -4.00f), 90f,
                     new Vector3(JuarezAxisX - TunnelHalfW + 0.15f, ArchSpringY + 0.35f, -4.00f), 90f, false),
-                ("GeorgieSlot_Mariscal_Azucenas_SW",
+                ("DrainIntakeSlot_Mariscal_Azucenas_SW",
                     new Vector3(-54.50f, 0.09f, -23.00f), -90f,
                     new Vector3(MariscalAxisX + TunnelHalfW - 0.15f, ArchSpringY + 0.35f, -23.00f), -90f, false),
-                ("GeorgieSlot_Mariscal_Gardenias_NW",
+                ("DrainIntakeSlot_Mariscal_Gardenias_NW",
                     new Vector3(-54.50f, 0.09f, 16.00f), -90f,
                     new Vector3(MariscalAxisX + TunnelHalfW - 0.15f, ArchSpringY + 0.35f, 16.00f), -90f, false),
-                ("GeorgieSlot_Gardenias_West_N",
+                ("DrainIntakeSlot_Gardenias_West_N",
                     new Vector3(-26.00f, 0.09f, 24.30f), 180f,
                     new Vector3(-26.00f, ArchSpringY + 0.35f, GardeniasAxisZ - TunnelHalfW + 0.15f), 0f, false),
-                ("GeorgieSlot_NorthTrunk_Mid",
+                ("DrainIntakeSlot_NorthTrunk_Mid",
                     new Vector3(JuarezAxisX, 0.005f, 118.00f), 0f,
                     new Vector3(JuarezAxisX - TunnelHalfW + 0.15f, ArchSpringY + 0.35f, 118.00f), 90f, false),
             };
@@ -1922,26 +2039,27 @@ namespace MyVirtualCommunity.Editor
                 sl.innerSpotAngle = 18f;
                 sl.shadows = LightShadows.None;
 
-                if (s.addPaperBoat)
+                if (s.addCollectorNotice)
                 {
-                    BuildFoldedPaperBoat("PaperBoat_Georgie", slotsRoot,
-                        new Vector3(s.tunnelBeamPos.x, WaterSurfaceY + 0.008f, AzucenasAxisZ + 0.08f),
-                        paperWhiteMat);
+                    BuildFoldedCollectorNotice(CollectorNoticeObjectName, slotsRoot,
+                        CollectorNoticeWorldPosition,
+                        collectorNoticeMat);
                 }
             }
         }
 
         /// <summary>
-        /// Builds a genuine, unmistakable 3D folded origami paper boat ("S.S. Georgie") mesh:
-        /// sharp angled prow & stern peaks, flared folded gunwales, hollow interior folded trough,
-        /// and iconic tall central triangular origami sail peak floating in the dark drain water!
+        /// Builds an original decorative damp folded collector maintenance notice ("Aviso Plegado del Colector"):
+        /// an irregular low-profile creased paper sheet with an off-center fold ridge, a small torn corner
+        /// notch, and a slightly curled damp dog-ear edge resting near the storm-drain intake.
+        /// Purely decorative: carries no collider, no interaction component, and no progression binding.
         /// </summary>
-        private static void BuildFoldedPaperBoat(string name, Transform parent, Vector3 pos, Material paperMat)
+        private static void BuildFoldedCollectorNotice(string name, Transform parent, Vector3 pos, Material noticeMat)
         {
-            var boat = new GameObject(name);
-            boat.transform.SetParent(parent);
-            boat.transform.position = pos;
-            boat.transform.rotation = Quaternion.Euler(-2.5f, 32f, 4.0f);
+            var notice = new GameObject(name);
+            notice.transform.SetParent(parent);
+            notice.transform.position = pos;
+            notice.transform.rotation = Quaternion.Euler(1.5f, 24f, -2.0f);
 
             var verts = new List<Vector3>();
             var tris = new List<int>();
@@ -1955,65 +2073,62 @@ namespace MyVirtualCommunity.Editor
                 tris.Add(idx); tris.Add(idx + 1); tris.Add(idx + 2);
             }
 
-            // Crisp flat-shaded origami triangles (each fold gets its own vertices so creases catch flashlight cleanly!)
-            Vector3 keelBow   = new Vector3(0f,     0.000f, +0.125f);
-            Vector3 keelStern = new Vector3(0f,     0.000f, -0.125f);
-            Vector3 keelPort  = new Vector3(-0.056f, 0.000f, 0.000f);
-            Vector3 keelStbd  = new Vector3(+0.056f, 0.000f, 0.000f);
+            // Asymmetric folded bulletin sheet (~0.29m x 0.22m footprint, max height ~0.036m — flat creased paper, not a boat)
+            // Left outer edge (slightly irregular + torn upper-left corner notch)
+            Vector3 pLeftBack   = new Vector3(-0.145f, 0.004f, -0.098f);
+            Vector3 pLeftMid    = new Vector3(-0.148f, 0.007f,  0.038f);
+            Vector3 pTearInner  = new Vector3(-0.112f, 0.006f,  0.068f);
+            Vector3 pTearTop    = new Vector3(-0.088f, 0.005f,  0.104f);
 
-            Vector3 rimBow    = new Vector3(0f,     0.084f, +0.190f); // Sharp upturned origami bow peak
-            Vector3 rimStern  = new Vector3(0f,     0.084f, -0.190f); // Sharp upturned origami stern peak
-            Vector3 rimPort   = new Vector3(-0.092f, 0.062f, 0.000f); // Flared port folded paper gunwale
-            Vector3 rimStbd   = new Vector3(+0.092f, 0.062f, 0.000f); // Flared starboard folded paper gunwale
+            // First vertical valley crease (u ~ 0.30) resting low in damp channel
+            Vector3 pValleyBack = new Vector3(-0.048f, 0.006f, -0.106f);
+            Vector3 pValleyFront = new Vector3(-0.042f, 0.009f,  0.106f);
 
-            // Inner folded paper trough floor slightly above waterline
-            Vector3 inBow     = new Vector3(0f,     0.014f, +0.105f);
-            Vector3 inStern   = new Vector3(0f,     0.014f, -0.105f);
-            Vector3 inPort    = new Vector3(-0.048f, 0.014f, 0.000f);
-            Vector3 inStbd    = new Vector3(+0.048f, 0.014f, 0.000f);
+            // Off-center folded ridge spine (u ~ 0.56, gentle low tent fold Y = 0.034..0.038m)
+            Vector3 pRidgeBack  = new Vector3( 0.022f, 0.032f, -0.102f);
+            Vector3 pRidgeFront = new Vector3( 0.030f, 0.038f,  0.102f);
 
-            // Tall central folded triangular origami pyramid sail
-            Vector3 sailBow   = new Vector3(0f,     0.014f, +0.095f);
-            Vector3 sailStern = new Vector3(0f,     0.014f, -0.095f);
-            Vector3 sailPort  = new Vector3(-0.036f, 0.014f, 0.000f);
-            Vector3 sailStbd  = new Vector3(+0.036f, 0.014f, 0.000f);
-            Vector3 sailPeak  = new Vector3(0f,     0.172f,  0.000f);
+            // Right sloped display face descending toward damp waterline (u ~ 0.88)
+            Vector3 pRightBack  = new Vector3( 0.132f, 0.011f, -0.104f);
+            Vector3 pRightMid   = new Vector3( 0.136f, 0.014f,  0.042f);
+            Vector3 pDogEarBase = new Vector3( 0.095f, 0.016f,  0.100f);
 
-            // 1. Outer Hull Sides (4 crisp folded quads = 8 triangles, outward-facing normals, mapped to S.S. GEORGIE side print!)
-            // Port-Forward
-            AddTri(keelBow, rimBow, rimPort, new Vector2(0.05f, 0.05f), new Vector2(0.02f, 0.45f), new Vector2(0.50f, 0.45f));
-            AddTri(keelBow, rimPort, keelPort, new Vector2(0.05f, 0.05f), new Vector2(0.50f, 0.45f), new Vector2(0.50f, 0.05f));
-            // Port-Aft
-            AddTri(keelPort, rimPort, rimStern, new Vector2(0.50f, 0.05f), new Vector2(0.50f, 0.45f), new Vector2(0.98f, 0.45f));
-            AddTri(keelPort, rimStern, keelStern, new Vector2(0.50f, 0.05f), new Vector2(0.98f, 0.45f), new Vector2(0.95f, 0.05f));
-            // Starboard-Forward (looking at starboard from +X: Stern=-Z is LEFT u=0.02, Bow=+Z is RIGHT u=0.98 -> reads left-to-right!)
-            AddTri(keelStbd, rimStbd, rimBow, new Vector2(0.50f, 0.05f), new Vector2(0.50f, 0.45f), new Vector2(0.98f, 0.45f));
-            AddTri(keelStbd, rimBow, keelBow, new Vector2(0.50f, 0.05f), new Vector2(0.98f, 0.45f), new Vector2(0.95f, 0.05f));
-            // Starboard-Aft
-            AddTri(keelStern, rimStern, rimStbd, new Vector2(0.05f, 0.05f), new Vector2(0.02f, 0.45f), new Vector2(0.50f, 0.45f));
-            AddTri(keelStern, rimStbd, keelStbd, new Vector2(0.05f, 0.05f), new Vector2(0.50f, 0.45f), new Vector2(0.50f, 0.05f));
+            // Curled damp dog-ear corner tip folded slightly upward (u ~ 0.98, v ~ 0.96)
+            Vector3 pDogEarTip  = new Vector3( 0.128f, 0.029f,  0.082f);
 
-            // 2. Inner Hull Trough Walls (so looking straight down shows the classic folded paper pocket!)
-            AddTri(rimPort, rimBow, inBow, new Vector2(0.50f, 0.50f), new Vector2(0.05f, 0.50f), new Vector2(0.15f, 0.85f));
-            AddTri(rimPort, inBow, inPort, new Vector2(0.50f, 0.50f), new Vector2(0.15f, 0.85f), new Vector2(0.50f, 0.85f));
-            AddTri(rimStern, rimPort, inPort, new Vector2(0.95f, 0.50f), new Vector2(0.50f, 0.50f), new Vector2(0.50f, 0.85f));
-            AddTri(rimStern, inPort, inStern, new Vector2(0.95f, 0.50f), new Vector2(0.50f, 0.85f), new Vector2(0.85f, 0.85f));
-            AddTri(rimBow, rimStbd, inStbd, new Vector2(0.05f, 0.50f), new Vector2(0.50f, 0.50f), new Vector2(0.50f, 0.85f));
-            AddTri(rimBow, inStbd, inBow, new Vector2(0.05f, 0.50f), new Vector2(0.50f, 0.85f), new Vector2(0.15f, 0.85f));
-            AddTri(rimStbd, rimStern, inStern, new Vector2(0.50f, 0.50f), new Vector2(0.95f, 0.50f), new Vector2(0.85f, 0.85f));
-            AddTri(rimStbd, inStern, inStbd, new Vector2(0.50f, 0.50f), new Vector2(0.85f, 0.85f), new Vector2(0.50f, 0.85f));
+            // UV coordinates across the 256x256 notice sheet
+            Vector2 uvLB = new Vector2(0.02f, 0.04f);
+            Vector2 uvLM = new Vector2(0.02f, 0.68f);
+            Vector2 uvTI = new Vector2(0.14f, 0.82f);
+            Vector2 uvTT = new Vector2(0.22f, 0.96f);
+            Vector2 uvVB = new Vector2(0.32f, 0.03f);
+            Vector2 uvVF = new Vector2(0.34f, 0.97f);
+            Vector2 uvRB = new Vector2(0.56f, 0.04f);
+            Vector2 uvRF = new Vector2(0.58f, 0.96f);
+            Vector2 uvEB = new Vector2(0.95f, 0.04f);
+            Vector2 uvEM = new Vector2(0.96f, 0.70f);
+            Vector2 uvDB = new Vector2(0.82f, 0.95f);
+            Vector2 uvDT = new Vector2(0.97f, 0.94f);
 
-            // 3. Inner Trough Floor & Bottom Keel Diamond
-            AddTri(inBow, inStbd, inStern, new Vector2(0.5f, 0.95f), new Vector2(0.8f, 0.75f), new Vector2(0.5f, 0.55f));
-            AddTri(inBow, inStern, inPort, new Vector2(0.5f, 0.95f), new Vector2(0.5f, 0.55f), new Vector2(0.2f, 0.75f));
+            // Panel 1: Left damp panel with irregular torn upper-left corner notch
+            AddTri(pLeftBack, pLeftMid, pValleyBack, uvLB, uvLM, uvVB);
+            AddTri(pValleyBack, pLeftMid, pTearInner, uvVB, uvLM, uvTI);
+            AddTri(pValleyBack, pTearInner, pValleyFront, uvVB, uvTI, uvVF);
+            AddTri(pTearInner, pTearTop, pValleyFront, uvTI, uvTT, uvVF);
 
-            // 4. Iconic Tall Central Origami Triangular Pyramid Sail (4 crisp faceted sides meeting at sailPeak!)
-            AddTri(sailBow, sailPeak, sailPort, new Vector2(0.15f, 0.52f), new Vector2(0.50f, 0.98f), new Vector2(0.50f, 0.52f));
-            AddTri(sailPort, sailPeak, sailStern, new Vector2(0.50f, 0.52f), new Vector2(0.50f, 0.98f), new Vector2(0.85f, 0.52f));
-            AddTri(sailStbd, sailPeak, sailBow, new Vector2(0.50f, 0.52f), new Vector2(0.50f, 0.98f), new Vector2(0.15f, 0.52f));
-            AddTri(sailStern, sailPeak, sailStbd, new Vector2(0.85f, 0.52f), new Vector2(0.50f, 0.98f), new Vector2(0.50f, 0.52f));
+            // Panel 2: Center-left sloped fold rising to off-center ridge
+            AddTri(pValleyBack, pValleyFront, pRidgeBack, uvVB, uvVF, uvRB);
+            AddTri(pRidgeBack, pValleyFront, pRidgeFront, uvRB, uvVF, uvRF);
 
-            CreateMeshObject("Origami_PaperBoat_Mesh", boat.transform, verts, tris, uvs, paperMat, ShadowCastingMode.TwoSided);
+            // Panel 3: Primary sloped right bulletin face (clearly displays fictional heading under flashlight)
+            AddTri(pRidgeBack, pRidgeFront, pRightBack, uvRB, uvRF, uvEB);
+            AddTri(pRightBack, pRidgeFront, pRightMid, uvEB, uvRF, uvEM);
+            AddTri(pRidgeFront, pDogEarBase, pRightMid, uvRF, uvDB, uvEM);
+
+            // Panel 4: Curled damp dog-ear corner flap folded slightly back up
+            AddTri(pRightMid, pDogEarBase, pDogEarTip, uvEM, uvDB, uvDT);
+
+            CreateMeshObject(CollectorNoticeMeshObjectName, notice.transform, verts, tris, uvs, noticeMat, ShadowCastingMode.TwoSided);
         }
 
         // =========================================================================
@@ -2215,9 +2330,27 @@ namespace MyVirtualCommunity.Editor
                 GameObject.Find("CatacombsSign_EmpireDeLaMort") != null &&
                 GameObject.Find("Vault_OverflowStream_0") != null);
 
-            Check("Lore bulkhead under La Esquina de Chihuas & PaperBoat_Georgie exist",
+            GameObject intakesRootGo = GameObject.Find(DrainIntakesRootName);
+            GameObject noticeGo = GameObject.Find(CollectorNoticeObjectName);
+            int intakeCurbCount = 0, intakeShaftCount = 0;
+            if (intakesRootGo != null)
+            {
+                for (int i = 0; i < intakesRootGo.transform.childCount; i++)
+                {
+                    string childName = intakesRootGo.transform.GetChild(i).name;
+                    if (childName.StartsWith(CanonicalIntakeSlotPrefix, StringComparison.Ordinal) && childName.EndsWith("_SurfaceCurb", StringComparison.Ordinal))
+                        intakeCurbCount++;
+                    else if (childName.StartsWith(CanonicalIntakeSlotPrefix, StringComparison.Ordinal) && childName.EndsWith("_UndergroundLightShaft", StringComparison.Ordinal))
+                        intakeShaftCount++;
+                }
+            }
+            Check("Lore bulkhead under La Esquina de Chihuas, 6 curbside drain intakes & FoldedCollectorMaintenanceNotice exist (zero retired paper-boat objects)",
                 GameObject.Find("LoreBulkhead_SectorC0_UnderChihuas") != null &&
-                GameObject.Find("PaperBoat_Georgie") != null);
+                intakesRootGo != null &&
+                intakeCurbCount == 6 &&
+                intakeShaftCount == 6 &&
+                noticeGo != null &&
+                GameObject.Find(RetiredNoticeObjectName) == null);
 
             // Verify the 3 physical underground maintenance clue plates exist, have UndergroundSewer scope,
             // non-blocking trigger colliders, and unobstructed player-facing sightlines
@@ -2532,7 +2665,7 @@ namespace MyVirtualCommunity.Editor
             GenerateMaintenancePlateTex(Path.Combine(dir, "T_Sewer_CluePlate_01.png"), "REG. I", "58", 101);
             GenerateMaintenancePlateTex(Path.Combine(dir, "T_Sewer_CluePlate_02.png"), "REG. II", "19", 202);
             GenerateMaintenancePlateTex(Path.Combine(dir, "T_Sewer_CluePlate_03.png"), "REG. III", "26", 303);
-            GenerateNewspaperBoatTex(Path.Combine(dir, "T_Sewer_PaperBoat_Newspaper.png"));
+            GenerateFictionalDrainNoticeTex(Path.Combine(dir, "T_Sewer_CollectorNotice.png"));
 
             AssetDatabase.Refresh();
 
@@ -2564,9 +2697,9 @@ namespace MyVirtualCommunity.Editor
             }
         }
 
-        private static void GenerateNewspaperBoatTex(string path)
+        private static void GenerateFictionalDrainNoticeTex(string path)
         {
-            int sz = 256;
+            const int sz = 256;
             var tex = new Texture2D(sz, sz, TextureFormat.RGB24, false);
             for (int y = 0; y < sz; y++)
             {
@@ -2574,37 +2707,64 @@ namespace MyVirtualCommunity.Editor
                 for (int x = 0; x < sz; x++)
                 {
                     float u = (float)x / (sz - 1);
-                    // Aged damp newsprint off-white base with slight waterline darkening near bottom (v < 0.14)
-                    float grain = Mathf.PerlinNoise(u * 28f + 3.1f, v * 28f + 7.4f);
-                    float wet = v < 0.14f ? Mathf.Lerp(0.76f, 1.0f, v / 0.14f) : 1.0f;
-                    float r = (0.91f + (grain - 0.5f) * 0.08f) * wet;
-                    float g = (0.88f + (grain - 0.5f) * 0.08f) * wet;
-                    float b = (0.80f + (grain - 0.5f) * 0.08f) * wet;
+                    // Damp aged newsprint/bulletin paper with fiber grain, edge discoloration & water blotches
+                    float grain = Mathf.PerlinNoise(u * 30f + 4.3f, v * 30f + 8.1f);
+                    float stain = Mathf.PerlinNoise(u * 6.5f + 1.9f, v * 6.5f + 11.2f);
+                    float edgeDist = Mathf.Min(Mathf.Min(u, 1f - u), Mathf.Min(v, 1f - v));
+                    float edgeDark = edgeDist < 0.08f ? Mathf.Lerp(0.76f, 1.0f, edgeDist / 0.08f) : 1.0f;
+                    float waterBlotch = stain > 0.62f ? Mathf.Lerp(1.0f, 0.80f, (stain - 0.62f) / 0.38f) : 1.0f;
 
-                    // Subtle newspaper print columns & thin horizontal text lines
-                    bool inCol = (u > 0.08f && u < 0.44f) || (u > 0.54f && u < 0.92f);
-                    if (inCol && v > 0.16f && v < 0.90f && ((y % 7) == 0 || (y % 7) == 1))
+                    float r = (0.90f + (grain - 0.5f) * 0.07f) * edgeDark * waterBlotch;
+                    float g = (0.86f + (grain - 0.5f) * 0.07f) * edgeDark * waterBlotch;
+                    float b = (0.76f + (grain - 0.5f) * 0.06f) * edgeDark * waterBlotch;
+
+                    // Thin archival header/footer rules & faint horizontal printed-notice ink lines
+                    bool headerRule = u > 0.08f && u < 0.92f && (Mathf.Abs(v - 0.78f) < 0.008f || Mathf.Abs(v - 0.92f) < 0.006f);
+                    bool footerRule = u > 0.08f && u < 0.92f && Mathf.Abs(v - 0.22f) < 0.006f;
+                    if (headerRule || footerRule)
                     {
-                        float wordMask = Mathf.PerlinNoise(u * 65f, y * 0.4f);
-                        if (wordMask > 0.38f)
+                        r *= 0.42f; g *= 0.40f; b *= 0.38f;
+                    }
+
+                    // Body text columns (left column + upper right technical summary + small schematic box lower right)
+                    bool inLeftBody = u > 0.08f && u < 0.48f && v > 0.26f && v < 0.72f;
+                    bool inRightBody = u > 0.58f && u < 0.92f && v > 0.48f && v < 0.72f;
+                    if ((inLeftBody || inRightBody) && ((y % 8) == 0 || (y % 8) == 1))
+                    {
+                        float wordMask = Mathf.PerlinNoise(u * 58f + 2.1f, y * 0.35f);
+                        if (wordMask > 0.36f)
                         {
-                            r *= 0.72f; g *= 0.71f; b *= 0.69f;
+                            r *= 0.62f; g *= 0.60f; b *= 0.57f;
                         }
                     }
 
-                    // Crisp origami fold crease line along v = 0.46 and vertical center fold u = 0.50
-                    if (Mathf.Abs(v - 0.46f) < 0.012f || Mathf.Abs(u - 0.50f) < 0.008f)
+                    // Small schematic collector cross-section box in lower right corner (u = 0.60..0.90, v = 0.26..0.44)
+                    bool inBoxX = u >= 0.60f && u <= 0.90f;
+                    bool inBoxY = v >= 0.26f && v <= 0.44f;
+                    if (inBoxX && inBoxY)
                     {
-                        r *= 0.80f; g *= 0.78f; b *= 0.74f;
+                        bool boxBorder = Mathf.Abs(u - 0.60f) < 0.008f || Mathf.Abs(u - 0.90f) < 0.008f ||
+                                         Mathf.Abs(v - 0.26f) < 0.008f || Mathf.Abs(v - 0.44f) < 0.008f;
+                        bool crossAxis = Mathf.Abs(u - 0.75f) < 0.006f || Mathf.Abs(v - 0.35f) < 0.006f;
+                        if (boxBorder || crossAxis)
+                        {
+                            r *= 0.52f; g *= 0.50f; b *= 0.46f;
+                        }
+                    }
+
+                    // Damp fold creases matching the 3D sheet valleys & ridge (u ~ 0.33, u ~ 0.57, plus subtle diagonal wear)
+                    if (Mathf.Abs(u - 0.33f) < 0.011f || Mathf.Abs(u - 0.57f) < 0.012f || Mathf.Abs(v - 0.49f) < 0.008f)
+                    {
+                        r *= 0.80f; g *= 0.77f; b *= 0.72f;
                     }
 
                     tex.SetPixel(x, y, new Color(Mathf.Clamp01(r), Mathf.Clamp01(g), Mathf.Clamp01(b)));
                 }
             }
-            // Subtle hand-inked "SS GEORGIE" hull stamp along the lower-mid hull band (v = 0.22..0.34)
-            void DrawInk(string text, int startX, int startY, int scale)
+
+            // Fictional Spanish-language technical collector bulletin heading (zero real brands/institutions/codes)
+            void DrawBulletinInk(string text, int startX, int startY, int scale, Color ink)
             {
-                Color ink = new Color(0.14f, 0.17f, 0.26f);
                 int cx = startX;
                 foreach (char ch in text)
                 {
@@ -2630,7 +2790,12 @@ namespace MyVirtualCommunity.Editor
                     cx += 6 * scale;
                 }
             }
-            DrawInk("SS GEORGIE", 64, 58, 2);
+
+            Color headingInk = new Color(0.18f, 0.17f, 0.15f);
+            Color subInk = new Color(0.26f, 0.24f, 0.21f);
+            DrawBulletinInk("AVISO COLECTOR", 38, 212, 2, headingInk);
+            DrawBulletinInk("RED PLUVIAL", 150, 184, 1, subInk);
+            DrawBulletinInk("REVISION GENERAL", 36, 30, 1, subInk);
 
             tex.Apply();
             File.WriteAllBytes(path, tex.EncodeToPNG());

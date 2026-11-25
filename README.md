@@ -70,7 +70,7 @@ The current prototype physically constructs four interconnected narrative spaces
 - **Visual-only Lasser portal:** No playable realm exists beyond *El Umbral de Lasser*.
 - **No authored audio assets yet:** All current SFX/ambience are procedurally synthesized in C# (`AudioClip.Create`).
 - **Developer-only runtime coupling:** Running the full world currently requires launching the local Node.js backend alongside the Unity executable (see Developer Quickstart below).
-- **Pre-commercial IP clearance in progress:** `IP-01` (all 12 horror-franchise Backrooms artifacts) has been replaced with original archival/anomalous artifacts (`REPLACED — creator visual review complete; not formal legal clearance`, with backward-compatible legacy save migration). Remaining `HIGH` items (`IP-02` through `IP-07`: `"SS GEORGIE"`, liminal-layer naming, real-world storefront/consumer trademarks, sample arch video `media/arch-ads/camila_loop.mp4`, and external stream links) remain tracked in [docs/IP_AND_ASSET_PROVENANCE.md](docs/IP_AND_ASSET_PROVENANCE.md).
+- **Pre-commercial IP clearance in progress:** `IP-01` (all 12 horror-franchise Backrooms artifacts) and `IP-02` (former underground storm-drain paper boat prop, replaced with an original decorative folded collector maintenance notice) are both `REPLACED — creator visual review complete; not formal legal clearance`. Remaining `HIGH` items (`IP-03` through `IP-07`: liminal-layer naming, real-world storefront/consumer trademarks, sample arch video `media/arch-ads/camila_loop.mp4`, and external stream links) remain tracked in [docs/IP_AND_ASSET_PROVENANCE.md](docs/IP_AND_ASSET_PROVENANCE.md).
 
 See [docs/FEATURE_STATUS_MATRIX.md](docs/FEATURE_STATUS_MATRIX.md) for the complete system-by-system breakdown.
 
