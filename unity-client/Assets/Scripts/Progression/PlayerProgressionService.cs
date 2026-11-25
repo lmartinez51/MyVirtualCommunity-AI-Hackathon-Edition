@@ -282,8 +282,9 @@ namespace MyVirtualCommunity.Client.Progression
         {
             if (doorId == ProgressionIds.DoorBuildingASouth)
             {
-                return HasLearnedCode(ProgressionIds.CodeBuildingASouthSecretDoor) ||
-                       IsDoorPuzzleSolved(ProgressionIds.DoorBuildingASouth);
+                // Explicitly require the sewer-clue sequence learned-code ID so legacy saves
+                // holding the old demonstration code do not falsely claim discovery of 581926.
+                return HasLearnedCode(ProgressionIds.CodeBuildingASouthFromSewerClues);
             }
             if (doorId == ProgressionIds.SafeBackroomsOmegaVault)
             {
@@ -291,6 +292,13 @@ namespace MyVirtualCommunity.Client.Progression
                        IsDoorPuzzleSolved(ProgressionIds.SafeBackroomsOmegaVault);
             }
             return IsDoorPuzzleSolved(doorId);
+        }
+
+        public bool HasDiscoveredAllThreeSewerClues()
+        {
+            return HasDiscoveredEvidence(ProgressionIds.ClueSewerSectorC0) &&
+                   HasDiscoveredEvidence(ProgressionIds.ClueCisternElNudo) &&
+                   HasDiscoveredEvidence(ProgressionIds.ClueAbasoloSiphon);
         }
 
         public bool IsPuzzleSolved(string puzzleId)
@@ -404,7 +412,7 @@ namespace MyVirtualCommunity.Client.Progression
             ProgressionDiscoveryNotification notification = null;
             if (doorId == ProgressionIds.DoorBuildingASouth)
             {
-                bool addedCode = AddUnique(currentData.permanent.learnedCodeIds, ProgressionIds.CodeBuildingASouthSecretDoor);
+                bool addedCode = AddUnique(currentData.permanent.learnedCodeIds, ProgressionIds.CodeBuildingASouthFromSewerClues);
                 changed |= addedCode;
                 changed |= AddUnique(currentData.permanent.unlockedMilestoneIds, ProgressionIds.MilestoneSecretRoomKeypadUnlocked);
                 changed |= TryAdvanceCheckpoint(ProgressionIds.CheckpointSecretDoorUnlocked);
@@ -412,7 +420,7 @@ namespace MyVirtualCommunity.Client.Progression
                 {
                     notification = new ProgressionDiscoveryNotification(
                         DiscoveryNotificationKind.Knowledge,
-                        addedCode ? ProgressionIds.CodeBuildingASouthSecretDoor : puzzleId);
+                        addedCode ? ProgressionIds.CodeBuildingASouthFromSewerClues : puzzleId);
                 }
             }
             else if (doorId == ProgressionIds.SafeBackroomsOmegaVault)
@@ -472,6 +480,23 @@ namespace MyVirtualCommunity.Client.Progression
             return FinalizeMutation(added, autoSave, notification);
         }
 
+        /// <summary>
+        /// Explicitly and idempotently records that the player learned the Building A South
+        /// Secret Room access code from the three underground clues, independently of whether
+        /// the keypad door has been unlocked yet.
+        /// </summary>
+        public bool RecordBuildingASouthCodeLearnedFromSewerClues(bool autoSave = true)
+        {
+            EnsureInitialized();
+            bool addedCode = AddUnique(currentData.permanent.learnedCodeIds, ProgressionIds.CodeBuildingASouthFromSewerClues);
+            if (!addedCode) return false;
+
+            var notification = new ProgressionDiscoveryNotification(
+                DiscoveryNotificationKind.Knowledge,
+                ProgressionIds.CodeBuildingASouthFromSewerClues);
+            return FinalizeMutation(true, autoSave, notification);
+        }
+
         public bool RecordEvidenceInspected(string evidenceId, bool autoSave = true)
         {
             EnsureInitialized();
@@ -480,27 +505,43 @@ namespace MyVirtualCommunity.Client.Progression
             string trimmed = evidenceId.Trim();
             bool addedEvidence = AddUnique(currentData.permanent.discoveredEvidenceIds, trimmed);
             bool changed = addedEvidence;
-            bool addedCode = false;
+            bool addedOmegaCode = false;
 
             if (trimmed == ProgressionIds.ArtifactEvidenceBoardPdn00)
             {
-                addedCode = AddUnique(currentData.permanent.learnedCodeIds, ProgressionIds.CodeOmegaVaultSafe);
-                changed |= addedCode;
+                addedOmegaCode = AddUnique(currentData.permanent.learnedCodeIds, ProgressionIds.CodeOmegaVaultSafe);
+                changed |= addedOmegaCode;
                 changed |= AddUnique(currentData.permanent.unlockedMilestoneIds, ProgressionIds.MilestoneEvidenceBoardPdn00Discovered);
                 changed |= TryAdvanceCheckpoint(ProgressionIds.CheckpointEvidenceBoardPdn00Inspected);
             }
 
-            ProgressionDiscoveryNotification notification = null;
-            if (addedCode)
+            ProgressionDiscoveryNotification primaryNotification = null;
+            if (addedOmegaCode)
             {
-                notification = new ProgressionDiscoveryNotification(DiscoveryNotificationKind.Knowledge, ProgressionIds.CodeOmegaVaultSafe);
+                primaryNotification = new ProgressionDiscoveryNotification(DiscoveryNotificationKind.Knowledge, ProgressionIds.CodeOmegaVaultSafe);
             }
             else if (addedEvidence)
             {
-                notification = new ProgressionDiscoveryNotification(DiscoveryNotificationKind.Evidence, trimmed);
+                primaryNotification = new ProgressionDiscoveryNotification(DiscoveryNotificationKind.Evidence, trimmed);
             }
 
-            return FinalizeMutation(changed, autoSave, notification);
+            bool sewerSequenceCompletedNow =
+                (trimmed == ProgressionIds.ClueSewerSectorC0 ||
+                 trimmed == ProgressionIds.ClueCisternElNudo ||
+                 trimmed == ProgressionIds.ClueAbasoloSiphon) &&
+                HasDiscoveredAllThreeSewerClues() &&
+                !HasLearnedCode(ProgressionIds.CodeBuildingASouthFromSewerClues);
+
+            // If all three sewer clues are now discovered, defer the disk flush until the learned-code
+            // entry is also recorded so both mutations persist atomically while emitting both deduplicated notifications.
+            bool recordedPrimary = FinalizeMutation(changed, autoSave && !sewerSequenceCompletedNow, primaryNotification);
+            bool recordedCode = false;
+            if (sewerSequenceCompletedNow)
+            {
+                recordedCode = RecordBuildingASouthCodeLearnedFromSewerClues(autoSave);
+            }
+
+            return recordedPrimary || recordedCode;
         }
 
         public bool RecordOjoDelUmbralAcquired(bool autoSave = true)

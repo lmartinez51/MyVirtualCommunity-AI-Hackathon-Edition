@@ -57,6 +57,28 @@ namespace MyVirtualCommunity.Client.Progression
         private static readonly Dictionary<string, LocalizedEntryMetadata> EvidenceCatalog =
             new Dictionary<string, LocalizedEntryMetadata>(StringComparer.Ordinal)
             {
+                // Underground maintenance clue chain (Sector C-0 -> La Cisterna -> Abasolo Siphon)
+                [ProgressionIds.ClueSewerSectorC0] = new LocalizedEntryMetadata(
+                    "Marcación de mantenimiento I — Sector C-0",
+                    "Maintenance Marking I — Sector C-0",
+                    "Una placa industrial deteriorada muestra el primer fragmento de una secuencia: 58. La numeración indica que existen otros registros.",
+                    "A weathered industrial plate displays the first fragment of a sequence: 58. Its numbering suggests that other records exist.",
+                    new Color(0.98f, 0.80f, 0.34f)),
+
+                [ProgressionIds.ClueCisternElNudo] = new LocalizedEntryMetadata(
+                    "Marcación de mantenimiento II — La Cisterna",
+                    "Maintenance Marking II — The Cistern",
+                    "Una segunda placa conserva el fragmento 19. La secuencia debe respetar el orden de sus marcaciones.",
+                    "A second plate preserves fragment 19. The sequence must respect the order of its markings.",
+                    new Color(0.98f, 0.80f, 0.34f)),
+
+                [ProgressionIds.ClueAbasoloSiphon] = new LocalizedEntryMetadata(
+                    "Marcación de mantenimiento III — Sifón de Abasolo",
+                    "Maintenance Marking III — Abasolo Siphon",
+                    "El último registro contiene el fragmento 26. Tres marcaciones, dos cifras cada una.",
+                    "The final record contains fragment 26. Three markings, two digits each.",
+                    new Color(0.98f, 0.80f, 0.34f)),
+
                 [ProgressionIds.ArtifactEvidenceBoardPdn00] = new LocalizedEntryMetadata(
                     "Muro de Evidencias Conspirativas PDN-00",
                     "Conspiracy Evidence Board PDN-00",
@@ -243,12 +265,20 @@ namespace MyVirtualCommunity.Client.Progression
         private static readonly Dictionary<string, LearnedCodeMetadata> LearnedCodeCatalog =
             new Dictionary<string, LearnedCodeMetadata>(StringComparer.Ordinal)
             {
-                [ProgressionIds.CodeBuildingASouthSecretDoor] = new LearnedCodeMetadata(
-                    "Código de acceso — Puerta misteriosa (Edificio A Sur)",
-                    "Access Code — Mysterious Door (Building A South)",
-                    "Combinación de la chapa electrónica que da acceso al cuarto reservado en el costado sur del Edificio A.",
-                    "Electronic keypad combination granting entry to the concealed chamber on the south bay of Building A.",
+                [ProgressionIds.CodeBuildingASouthFromSewerClues] = new LearnedCodeMetadata(
+                    "Secuencia de acceso — Puerta misteriosa (Edificio A Sur)",
+                    "Access Sequence — Mysterious Door (Building A South)",
+                    "Secuencia de seis cifras reunida a partir de las tres marcaciones subterráneas (I → II → III) para la puerta oculta del Edificio A Sur.",
+                    "Six-digit sequence assembled from the three underground markings (I → II → III) for the concealed door at Building A South.",
                     ProgressionIds.DoorBuildingASouth),
+
+                // Legacy pre-clue-chain demo code entry: intentionally does NOT resolve the new live door code
+                [ProgressionIds.CodeBuildingASouthSecretDoor] = new LearnedCodeMetadata(
+                    "Registro previo — Puerta misteriosa (Edificio A Sur)",
+                    "Legacy Access Record — Mysterious Door (Building A South)",
+                    "Registro histórico de una versión anterior del acceso al Edificio A Sur. La secuencia actual requiere reunir las tres marcaciones subterráneas.",
+                    "Historical record from an earlier build of Building A South access. The current sequence requires gathering the three underground markings.",
+                    null),
 
                 [ProgressionIds.CodeOmegaVaultSafe] = new LearnedCodeMetadata(
                     "Código de acceso — Caja Fuerte de Contención (Nivel Ω)",

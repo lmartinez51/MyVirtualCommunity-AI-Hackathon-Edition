@@ -107,7 +107,7 @@ namespace MyVirtualCommunity.Editor
             Assert.IsTrue(reader.HasMilestone(ProgressionIds.MilestoneOmegaSafeUnlocked));
             Assert.IsTrue(reader.HasMilestone(ProgressionIds.MilestoneOjoDelUmbralAcquired));
             Assert.IsTrue(reader.HasMilestone(ProgressionIds.MilestoneLasserPortalActivated));
-            Assert.IsTrue(reader.HasLearnedCode(ProgressionIds.CodeBuildingASouthSecretDoor));
+            Assert.IsTrue(reader.HasLearnedCode(ProgressionIds.CodeBuildingASouthFromSewerClues));
             Assert.IsTrue(reader.HasLearnedCode(ProgressionIds.CodeOmegaVaultSafe));
             Assert.IsTrue(reader.IsDoorPuzzleSolved(ProgressionIds.DoorBuildingASouth));
             Assert.IsTrue(reader.IsDoorPuzzleSolved(ProgressionIds.SafeBackroomsOmegaVault));
@@ -362,11 +362,11 @@ namespace MyVirtualCommunity.Editor
                 var streetDoor = new GameObject("StreetDoor").AddComponent<SecretKeypadDoorController>();
                 streetDoor.transform.SetParent(root1.transform);
                 streetDoor.doorId = ProgressionIds.DoorBuildingASouth;
-                streetDoor.activeAccessCode = "123456";
+                streetDoor.activeAccessCode = ProgressionIds.DefaultBuildingASouthAccessCode;
                 streetDoor.allowInteriorSafetyBypass = true;
                 streetDoor.SetProgressionServiceForTesting(session1);
 
-                Assert.IsTrue(streetDoor.TrySubmitCode("123456"));
+                Assert.IsTrue(streetDoor.TrySubmitCode(ProgressionIds.DefaultBuildingASouthAccessCode));
                 session1.RecordBackroomsEntered(viaAzucenasManhole: false);
                 session1.RecordEvidenceInspected(ProgressionIds.ArtifactEvidenceBoardPdn00);
 
@@ -510,13 +510,13 @@ namespace MyVirtualCommunity.Editor
                 var streetDoor = new GameObject("BuildingASouthDoor").AddComponent<SecretKeypadDoorController>();
                 streetDoor.transform.SetParent(root1.transform);
                 streetDoor.doorId = ProgressionIds.DoorBuildingASouth;
-                streetDoor.activeAccessCode = "123456";
+                streetDoor.activeAccessCode = ProgressionIds.DefaultBuildingASouthAccessCode;
                 streetDoor.allowInteriorSafetyBypass = true;
                 streetDoor.SetProgressionServiceForTesting(session1);
 
                 Assert.IsFalse(session1.HasLearnedCodeForDoor(ProgressionIds.DoorBuildingASouth));
-                Assert.IsTrue(streetDoor.TrySubmitCode("123456"));
-                Assert.IsTrue(session1.HasLearnedCode(ProgressionIds.CodeBuildingASouthSecretDoor));
+                Assert.IsTrue(streetDoor.TrySubmitCode(ProgressionIds.DefaultBuildingASouthAccessCode));
+                Assert.IsTrue(session1.HasLearnedCode(ProgressionIds.CodeBuildingASouthFromSewerClues));
                 Assert.IsTrue(session1.HasLearnedCodeForDoor(ProgressionIds.DoorBuildingASouth));
                 Assert.IsTrue(session1.IsDoorPuzzleSolved(ProgressionIds.DoorBuildingASouth));
 
@@ -532,7 +532,7 @@ namespace MyVirtualCommunity.Editor
             // Simulate application restart
             var session2 = new PlayerProgressionService(storage);
             Assert.AreEqual(ProgressionLoadStatus.Loaded, session2.EnsureInitialized().Status);
-            Assert.IsTrue(session2.HasLearnedCode(ProgressionIds.CodeBuildingASouthSecretDoor));
+            Assert.IsTrue(session2.HasLearnedCode(ProgressionIds.CodeBuildingASouthFromSewerClues));
             Assert.IsTrue(session2.HasLearnedCodeForDoor(ProgressionIds.DoorBuildingASouth));
             Assert.IsTrue(session2.IsDoorPuzzleSolved(ProgressionIds.DoorBuildingASouth));
 
@@ -542,7 +542,7 @@ namespace MyVirtualCommunity.Editor
                 var streetDoor2 = new GameObject("BuildingASouthDoor2").AddComponent<SecretKeypadDoorController>();
                 streetDoor2.transform.SetParent(root2.transform);
                 streetDoor2.doorId = ProgressionIds.DoorBuildingASouth;
-                streetDoor2.activeAccessCode = "123456";
+                streetDoor2.activeAccessCode = ProgressionIds.DefaultBuildingASouthAccessCode;
                 streetDoor2.allowInteriorSafetyBypass = true;
                 streetDoor2.SetProgressionServiceForTesting(session2);
                 streetDoor2.ApplyProgressionState(session2);
@@ -551,7 +551,7 @@ namespace MyVirtualCommunity.Editor
                 Assert.IsFalse(streetDoor2.IsUnlocked);
                 Assert.IsFalse(streetDoor2.IsOpen);
                 // Previously learned code remains accepted cleanly after restart
-                Assert.IsTrue(streetDoor2.TrySubmitCode("123456"));
+                Assert.IsTrue(streetDoor2.TrySubmitCode(ProgressionIds.DefaultBuildingASouthAccessCode));
                 Assert.IsTrue(streetDoor2.IsUnlocked);
                 Assert.IsTrue(streetDoor2.IsOpen);
             }

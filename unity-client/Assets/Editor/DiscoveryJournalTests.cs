@@ -94,7 +94,7 @@ namespace MyVirtualCommunity.Editor
 
             // Even if a live door resolver knows the code, unlearned codes MUST remain hidden
             Func<string, string> liveResolver = doorId =>
-                doorId == ProgressionIds.DoorBuildingASouth ? "123456" : null;
+                doorId == ProgressionIds.DoorBuildingASouth ? ProgressionIds.DefaultBuildingASouthAccessCode : null;
 
             DiscoveryJournalSnapshot beforeLearn = DiscoveryJournalPresenter.BuildSnapshot(service, isEs: false, liveResolver);
             Assert.AreEqual(0, beforeLearn.KnowledgeEntries.Count);
@@ -113,7 +113,7 @@ namespace MyVirtualCommunity.Editor
             // Building A South code resolved from live controller -> exact value shown
             JournalEntryView streetCodeEntry = FindByTitleFragment(enLoadedStreet.KnowledgeEntries, "Building A South");
             Assert.IsNotNull(streetCodeEntry);
-            StringAssert.Contains("123456", streetCodeEntry.SecondaryNote);
+            StringAssert.Contains(ProgressionIds.DefaultBuildingASouthAccessCode, streetCodeEntry.SecondaryNote);
 
             // Level-Omega safe code when Backrooms scene is unloaded -> learned status shown WITHOUT hardcoding unreliable digits
             JournalEntryView safeCodeEntryEn = FindByTitleFragment(enLoadedStreet.KnowledgeEntries, "Level Ω");

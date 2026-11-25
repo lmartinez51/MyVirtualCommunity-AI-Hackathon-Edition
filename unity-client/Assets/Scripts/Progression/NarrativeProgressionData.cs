@@ -13,6 +13,14 @@ namespace MyVirtualCommunity.Client.Progression
         public const string DoorBuildingASouth = "door:building-a-south-secret-wedge";
         public const string SafeBackroomsOmegaVault = "safe:backrooms-level1-omega-vault";
 
+        // Stable fictional gameplay access code assembled from the three underground clues (58 + 19 + 26)
+        public const string DefaultBuildingASouthAccessCode = "581926";
+
+        // Environmental clue identifiers (Underground Storm-Drain Network -> Building A South Secret Room)
+        public const string ClueSewerSectorC0 = "clue:sewer-sector-c0-sequence-01";
+        public const string ClueCisternElNudo = "clue:cistern-el-nudo-sequence-02";
+        public const string ClueAbasoloSiphon = "clue:abasolo-siphon-sequence-03";
+
         // Existing artifact & portal identifiers (matching BackroomsLevel1Builder)
         public const string ArtifactEvidenceBoardPdn00 = "artifact:muro-evidencias-pdn";
         public const string ArtifactOjoDelUmbral = "artifact:ojo-del-umbral";
@@ -20,7 +28,9 @@ namespace MyVirtualCommunity.Client.Progression
         public const string PortalCuencaOctagonal = "portal:cuenca-octagonal";
 
         // Learned code identifiers (logical knowledge, never rotating/authoritative backend state)
+        // Legacy demo code ID retained for backward compatibility without granting the new sewer-clue code
         public const string CodeBuildingASouthSecretDoor = "code:building-a-south-secret-door";
+        public const string CodeBuildingASouthFromSewerClues = "code:building-a-south-secret-door-from-sewer-clues";
         public const string CodeOmegaVaultSafe = "code:omega-vault-safe";
 
         // Permanently solved puzzle identifiers

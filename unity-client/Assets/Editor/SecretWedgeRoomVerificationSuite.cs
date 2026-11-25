@@ -100,14 +100,14 @@ namespace MyVirtualCommunity.Editor
                 rightDiagLen >= 2.00f && rightDiagLen <= 2.25f
             );
 
-            // 4. 3D Keypad lock + SecretKeypadDoorController wired with default 6-digit code "123456"
+            // 4. 3D Keypad lock + SecretKeypadDoorController wired with underground clue-chain 6-digit code "581926"
             SecretKeypadDoorController doorCtrl = doorRoot != null ? doorRoot.GetComponent<SecretKeypadDoorController>() : null;
             GameObject keypadHousing = GameObject.Find("Keypad_Housing");
             GameObject keypadLed = GameObject.Find("Keypad_StatusLED");
             Check(
-                "3D Keypad lock (housing + LED) & SecretKeypadDoorController wired with default code '123456'",
+                "3D Keypad lock (housing + LED) & SecretKeypadDoorController wired with underground clue-chain code '581926'",
                 doorCtrl != null &&
-                doorCtrl.activeAccessCode == "123456" &&
+                doorCtrl.activeAccessCode == "581926" &&
                 doorCtrl.RequiredCodeLength == 6 &&
                 doorCtrl.southLeafPivot != null &&
                 doorCtrl.northLeafPivot != null &&
@@ -116,10 +116,10 @@ namespace MyVirtualCommunity.Editor
                 keypadLed != null
             );
 
-            // 5. Locked state blocks entry & rejects wrong codes; correct code "123456" unlocks & swings leaves outward; closing relocks cleanly
-            bool wrongRejected = doorCtrl != null && !doorCtrl.TrySubmitCode("000000") && !doorCtrl.IsUnlocked;
+            // 5. Locked state blocks entry & rejects wrong/legacy codes; correct code "581926" unlocks & swings leaves outward; closing relocks cleanly
+            bool wrongRejected = doorCtrl != null && !doorCtrl.TrySubmitCode("000000") && !doorCtrl.TrySubmitCode("123456") && !doorCtrl.IsUnlocked;
             bool blockerWhenLocked = doorCtrl != null && doorCtrl.closedDoorBlockerCollider.enabled;
-            bool rightAccepted = doorCtrl != null && doorCtrl.TrySubmitCode("123456") && doorCtrl.IsUnlocked && doorCtrl.IsOpen;
+            bool rightAccepted = doorCtrl != null && doorCtrl.TrySubmitCode("581926") && doorCtrl.IsUnlocked && doorCtrl.IsOpen;
             if (doorCtrl != null)
             {
                 for (int i = 0; i < 30; i++) doorCtrl.StepDoorForVerification(0.05f);
@@ -141,12 +141,12 @@ namespace MyVirtualCommunity.Editor
                 relockedOnClose = stayedLockedAfterToggle && !doorCtrl.IsUnlocked && !doorCtrl.IsOpen;
 
                 // Re-open with valid code so walkability check #7 runs with open doorway
-                doorCtrl.TrySubmitCode("123456");
+                doorCtrl.TrySubmitCode("581926");
                 for (int i = 0; i < 30; i++) doorCtrl.StepDoorForVerification(0.05f);
             }
 
             Check(
-                $"Keypad rejects wrong code, accepts '123456', swings leaves ±{doorCtrl?.openAngleDegrees:F0}°, and relocks automatically on close",
+                $"Keypad rejects wrong/legacy codes, accepts '581926', swings leaves ±{doorCtrl?.openAngleDegrees:F0}°, and relocks automatically on close",
                 wrongRejected && blockerWhenLocked && rightAccepted && openedCleanly && relockedOnClose
             );
 
@@ -293,7 +293,7 @@ namespace MyVirtualCommunity.Editor
 
             SecretRoomDimensionVaultController vaultCtrl = UnityEngine.Object.FindFirstObjectByType<SecretRoomDimensionVaultController>();
             SecretKeypadDoorController safeDoorCtrl = safeGo != null ? safeGo.GetComponent<SecretKeypadDoorController>() : null;
-            bool safeRejectsOuterCode = safeDoorCtrl != null && !safeDoorCtrl.allowInteriorSafetyBypass && !safeDoorCtrl.TrySubmitCode("123456") && !safeDoorCtrl.IsUnlocked;
+            bool safeRejectsOuterCode = safeDoorCtrl != null && !safeDoorCtrl.allowInteriorSafetyBypass && !safeDoorCtrl.TrySubmitCode("581926") && !safeDoorCtrl.IsUnlocked;
             bool safeAcceptsOwnCode = safeDoorCtrl != null && safeDoorCtrl.TrySubmitCode("654321") && safeDoorCtrl.IsUnlocked && safeDoorCtrl.IsOpen;
             if (safeDoorCtrl != null)
             {
@@ -407,7 +407,7 @@ namespace MyVirtualCommunity.Editor
             SecretKeypadDoorController doorCtrl = doorRoot != null ? doorRoot.GetComponent<SecretKeypadDoorController>() : null;
             if (doorCtrl != null)
             {
-                doorCtrl.TrySubmitCode("123456");
+                doorCtrl.TrySubmitCode("581926");
                 for (int i = 0; i < 30; i++) doorCtrl.StepDoorForVerification(0.05f);
             }
             RenderView(

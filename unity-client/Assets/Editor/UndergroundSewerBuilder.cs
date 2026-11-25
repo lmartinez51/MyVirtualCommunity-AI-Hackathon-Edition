@@ -5,6 +5,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
+using MyVirtualCommunity.Client.Progression;
 using MyVirtualCommunity.Client.World;
 
 namespace MyVirtualCommunity.Editor
@@ -262,6 +263,15 @@ namespace MyVirtualCommunity.Editor
             // 5. Subtle Lore Bulkhead directly underneath La Esquina de Chihuas (centered cleanly between wall ribs!) + Paris Catacombs Wooden Plaque!
             BuildBackroomsLoreBulkhead(root.transform, new Vector3(JuarezAxisX - TunnelHalfW + 0.04f, WalkwayY, -14.80f),
                 darkIronMat, rustedIronMat, backroomsLeakMat, rootWoodMat, catacombsSignMat);
+
+            // 5B. Three Physical Underground Maintenance Markings (Environmental Clue Chain -> 58-19-26)
+            Material cluePlate1Mat = CreateOrGetTexturedMat("Assets/Settings/Sewer/Sewer_CluePlate_01.mat",
+                "Assets/Textures/Sewer/T_Sewer_CluePlate_01.png", Color.white, 0.22f, 0.35f, new Vector2(1f, 1f));
+            Material cluePlate2Mat = CreateOrGetTexturedMat("Assets/Settings/Sewer/Sewer_CluePlate_02.mat",
+                "Assets/Textures/Sewer/T_Sewer_CluePlate_02.png", Color.white, 0.22f, 0.35f, new Vector2(1f, 1f));
+            Material cluePlate3Mat = CreateOrGetTexturedMat("Assets/Settings/Sewer/Sewer_CluePlate_03.mat",
+                "Assets/Textures/Sewer/T_Sewer_CluePlate_03.png", Color.white, 0.22f, 0.35f, new Vector2(1f, 1f));
+            BuildUndergroundMaintenanceClues(root.transform, darkIronMat, rustedIronMat, cluePlate1Mat, cluePlate2Mat, cluePlate3Mat);
 
             // 6. Comprehensive 65-Year Aging, Bilingual Horror Graffiti & Crop Circle Pass (ZERO cobwebs!)
             BuildAgingAndDecayDetails(root.transform, rubbleConcreteMat, brickArchMat, rootWoodMat,
@@ -1564,6 +1574,131 @@ namespace MyVirtualCommunity.Editor
         }
 
         // =========================================================================
+        // UNDERGROUND ENVIRONMENTAL CLUE CHAIN — THREE MAINTENANCE MARKINGS
+        // =========================================================================
+
+        private static void BuildUndergroundMaintenanceClues(
+            Transform root,
+            Material darkIronMat,
+            Material rustedIronMat,
+            Material plate1Mat,
+            Material plate2Mat,
+            Material plate3Mat)
+        {
+            var cluesRoot = new GameObject("Sewer_Maintenance_Clues_Root");
+            cluesRoot.transform.SetParent(root, false);
+
+            // Clue 1: Player-facing (+X) steel door leaf of sealed Sector C-0 bulkhead (south of valve wheel)
+            // Bulkhead root is at (JuarezAxisX - TunnelHalfW + 0.04 = 0.49, WalkwayY = -3.20, -14.80).
+            // Door front face is at localX = +0.07; plate backing sits at localX = +0.085 -> world X = 0.575.
+            BuildMaintenanceCluePlate(
+                "CluePlate_01_SectorC0",
+                cluesRoot.transform,
+                new Vector3(JuarezAxisX - TunnelHalfW + 0.125f, WalkwayY + 1.22f, -15.12f),
+                Quaternion.Euler(0f, -90f, 0f), // Quad front (-Z) rotates to +X facing the walkable tunnel
+                darkIronMat,
+                rustedIronMat,
+                plate1Mat,
+                ProgressionIds.ClueSewerSectorC0,
+                "Marcación de mantenimiento I — Sector C-0",
+                "Maintenance Marking I — Sector C-0",
+                "Una placa industrial deteriorada muestra el primer fragmento de una secuencia: 58. La numeración indica que existen otros registros.",
+                "A weathered industrial plate displays the first fragment of a sequence: 58. Its numbering suggests that other records exist.");
+
+            // Clue 2: La Cisterna / El Nudo — SE diagonal inner wall (i=3, 135°), clear of all decals/stairs/railings
+            // Inner brick wall face sits at r = VaultApothem (8.20m); place plate at r - 0.035m = 8.165m facing inward (-faceDir).
+            float seRad = 135f * Mathf.Deg2Rad;
+            Vector3 seDir = new Vector3(Mathf.Sin(seRad), 0f, Mathf.Cos(seRad));
+            Vector3 cisternPlatePos = new Vector3(
+                VaultCenterX + seDir.x * (VaultApothem - 0.035f),
+                WalkwayY + 1.24f,
+                VaultCenterZ + seDir.z * (VaultApothem - 0.035f));
+            BuildMaintenanceCluePlate(
+                "CluePlate_02_CisternElNudo",
+                cluesRoot.transform,
+                cisternPlatePos,
+                Quaternion.Euler(0f, 135f, 0f), // Quad front (-Z) rotates to -seDir facing inward onto balcony
+                darkIronMat,
+                rustedIronMat,
+                plate2Mat,
+                ProgressionIds.ClueCisternElNudo,
+                "Marcación de mantenimiento II — La Cisterna",
+                "Maintenance Marking II — The Cistern",
+                "Una segunda placa conserva el fragmento 19. La secuencia debe respetar el orden de sus marcaciones.",
+                "A second plate preserves fragment 19. The sequence must respect the order of its markings.");
+
+            // Clue 3: Deep under-Abasolo Siphon (Y = -8.45m, Z = 52.0..67.5m) — West wall facing +X across siphon walkway
+            // West wall inner face sits at X = JuarezAxisX - TunnelHalfW = 0.45m; plate sits at +0.025m proud -> 0.475m.
+            const float AbasoloDeepY = -8.45f;
+            BuildMaintenanceCluePlate(
+                "CluePlate_03_AbasoloSiphon",
+                cluesRoot.transform,
+                new Vector3(JuarezAxisX - TunnelHalfW + 0.025f, AbasoloDeepY + 1.24f, 61.50f),
+                Quaternion.Euler(0f, -90f, 0f), // Faces +X into the siphon tunnel
+                darkIronMat,
+                rustedIronMat,
+                plate3Mat,
+                ProgressionIds.ClueAbasoloSiphon,
+                "Marcación de mantenimiento III — Sifón de Abasolo",
+                "Maintenance Marking III — Abasolo Siphon",
+                "El último registro contiene el fragmento 26. Tres marcaciones, dos cifras cada una.",
+                "The final record contains fragment 26. Three markings, two digits each.");
+        }
+
+        private static void BuildMaintenanceCluePlate(
+            string objectName,
+            Transform parent,
+            Vector3 worldPos,
+            Quaternion worldRot,
+            Material darkIronMat,
+            Material rustedIronMat,
+            Material plateFaceMat,
+            string clueId,
+            string titleEs,
+            string titleEn,
+            string descEs,
+            string descEn)
+        {
+            var plateRoot = new GameObject(objectName);
+            plateRoot.transform.SetParent(parent, false);
+            plateRoot.transform.position = worldPos;
+            plateRoot.transform.rotation = worldRot;
+
+            // Generic weathered industrial steel backing plate (non-colliding so traversal is never obstructed)
+            CreateBoxLocal("Plate_BackingSteel", plateRoot.transform, new Vector3(0f, 0f, 0f), new Vector3(0.46f, 0.30f, 0.020f), darkIronMat, false);
+            // Subtle riveted outer rim brackets
+            CreateBoxLocal("Plate_RivetTL", plateRoot.transform, new Vector3(-0.20f,  0.12f, -0.012f), new Vector3(0.024f, 0.024f, 0.012f), rustedIronMat, false);
+            CreateBoxLocal("Plate_RivetTR", plateRoot.transform, new Vector3( 0.20f,  0.12f, -0.012f), new Vector3(0.024f, 0.024f, 0.012f), rustedIronMat, false);
+            CreateBoxLocal("Plate_RivetBL", plateRoot.transform, new Vector3(-0.20f, -0.12f, -0.012f), new Vector3(0.024f, 0.024f, 0.012f), rustedIronMat, false);
+            CreateBoxLocal("Plate_RivetBR", plateRoot.transform, new Vector3( 0.20f, -0.12f, -0.012f), new Vector3(0.024f, 0.024f, 0.012f), rustedIronMat, false);
+
+            // Front face quad offset -0.014m along local -Z (proud of backing box front at -0.010m -> ZERO Z-fighting)
+            var faceQuad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            faceQuad.name = "Plate_InscriptionFace";
+            faceQuad.transform.SetParent(plateRoot.transform, false);
+            faceQuad.transform.localPosition = new Vector3(0f, 0f, -0.014f);
+            faceQuad.transform.localRotation = Quaternion.identity;
+            faceQuad.transform.localScale = new Vector3(0.43f, 0.27f, 1f);
+            faceQuad.GetComponent<MeshRenderer>().sharedMaterial = plateFaceMat;
+            UnityEngine.Object.DestroyImmediate(faceQuad.GetComponent<Collider>());
+
+            // Non-blocking inspection trigger collider (raycast-only; walls still occlude via QueryTriggerInteraction.Ignore)
+            var triggerCol = plateRoot.AddComponent<BoxCollider>();
+            triggerCol.center = new Vector3(0f, 0f, -0.04f);
+            triggerCol.size = new Vector3(0.56f, 0.40f, 0.22f);
+            triggerCol.isTrigger = true;
+
+            var descriptor = plateRoot.AddComponent<SecretContainmentArtifactDescriptor>();
+            descriptor.artifactId = clueId;
+            descriptor.titleEs = titleEs;
+            descriptor.titleEn = titleEn;
+            descriptor.loreEs = descEs;
+            descriptor.loreEn = descEn;
+            descriptor.accentColor = new Color(0.98f, 0.80f, 0.34f);
+            descriptor.inspectionScope = ArtifactInspectionScope.UndergroundSewer;
+        }
+
+        // =========================================================================
         // INTERACTIVE ROUND CAST-IRON MANHOLES + VERTICAL BRICK SHAFTS & LADDERS
         // =========================================================================
 
@@ -2084,6 +2219,30 @@ namespace MyVirtualCommunity.Editor
                 GameObject.Find("LoreBulkhead_SectorC0_UnderChihuas") != null &&
                 GameObject.Find("PaperBoat_Georgie") != null);
 
+            // Verify the 3 physical underground maintenance clue plates exist, have UndergroundSewer scope,
+            // non-blocking trigger colliders, and unobstructed player-facing sightlines
+            var clue1Go = GameObject.Find("CluePlate_01_SectorC0");
+            var clue2Go = GameObject.Find("CluePlate_02_CisternElNudo");
+            var clue3Go = GameObject.Find("CluePlate_03_AbasoloSiphon");
+            var d1 = clue1Go != null ? clue1Go.GetComponent<SecretContainmentArtifactDescriptor>() : null;
+            var d2 = clue2Go != null ? clue2Go.GetComponent<SecretContainmentArtifactDescriptor>() : null;
+            var d3 = clue3Go != null ? clue3Go.GetComponent<SecretContainmentArtifactDescriptor>() : null;
+            bool HasNonBlockingTriggerOnly(GameObject g)
+            {
+                if (g == null) return false;
+                var cols = g.GetComponentsInChildren<Collider>(true);
+                if (cols.Length == 0) return false;
+                for (int i = 0; i < cols.Length; i++)
+                {
+                    if (!cols[i].isTrigger) return false;
+                }
+                return true;
+            }
+            Check("All 3 underground maintenance clue plates exist with exact IDs, UndergroundSewer scope, and non-blocking trigger colliders",
+                d1 != null && d1.artifactId == ProgressionIds.ClueSewerSectorC0 && d1.inspectionScope == ArtifactInspectionScope.UndergroundSewer && HasNonBlockingTriggerOnly(clue1Go) &&
+                d2 != null && d2.artifactId == ProgressionIds.ClueCisternElNudo && d2.inspectionScope == ArtifactInspectionScope.UndergroundSewer && HasNonBlockingTriggerOnly(clue2Go) &&
+                d3 != null && d3.artifactId == ProgressionIds.ClueAbasoloSiphon && d3.inspectionScope == ArtifactInspectionScope.UndergroundSewer && HasNonBlockingTriggerOnly(clue3Go));
+
             var gate = UnityEngine.Object.FindFirstObjectByType<SewerOutflowGateController>();
             Check("Rio Bravo interactive storm outflow gate & split levee wings exist",
                 gate != null &&
@@ -2370,6 +2529,9 @@ namespace MyVirtualCommunity.Editor
             GenerateStencilTex(Path.Combine(dir, "T_Sewer_Stencil_RioBravo.png"), "<- RIO BRAVO", "DESAGUE NORTE");
             GenerateStencilTex(Path.Combine(dir, "T_Sewer_Stencil_Warning.png"), "NO PASAR", "NIVEL AVENIDA");
             GenerateStencilTex(Path.Combine(dir, "T_Sewer_Stencil_Clausurado.png"), "SECTOR ESTE", "CLAUSURADO");
+            GenerateMaintenancePlateTex(Path.Combine(dir, "T_Sewer_CluePlate_01.png"), "REG. I", "58", 101);
+            GenerateMaintenancePlateTex(Path.Combine(dir, "T_Sewer_CluePlate_02.png"), "REG. II", "19", 202);
+            GenerateMaintenancePlateTex(Path.Combine(dir, "T_Sewer_CluePlate_03.png"), "REG. III", "26", 303);
             GenerateNewspaperBoatTex(Path.Combine(dir, "T_Sewer_PaperBoat_Newspaper.png"));
 
             AssetDatabase.Refresh();
@@ -2710,14 +2872,70 @@ namespace MyVirtualCommunity.Editor
                 case 'T': return new[] { "#####", "  #  ", "  #  ", "  #  ", "  #  ", "  #  ", "  #  " };
                 case 'U': return new[] { "#   #", "#   #", "#   #", "#   #", "#   #", "#   #", " ### " };
                 case 'V': return new[] { "#   #", "#   #", "#   #", "#   #", "#   #", " # # ", "  #  " };
+                case '0': return new[] { " ### ", "#   #", "#  ##", "# # #", "##  #", "#   #", " ### " };
                 case '1': return new[] { "  #  ", " ##  ", "  #  ", "  #  ", "  #  ", "  #  ", " ### " };
+                case '2': return new[] { " ### ", "#   #", "    #", "  ## ", " #   ", "#    ", "#####" };
                 case '5': return new[] { "#####", "#    ", "#### ", "    #", "    #", "#   #", " ### " };
+                case '6': return new[] { " ### ", "#    ", "#### ", "#   #", "#   #", "#   #", " ### " };
                 case '8': return new[] { " ### ", "#   #", "#   #", " ### ", "#   #", "#   #", " ### " };
                 case '9': return new[] { " ### ", "#   #", "#   #", " ####", "    #", "    #", " ### " };
+                case '.': return new[] { "     ", "     ", "     ", "     ", "     ", " ##  ", " ##  " };
+                case '/': return new[] { "    #", "   # ", "   # ", "  #  ", " #   ", " #   ", "#    " };
                 case '<': return new[] { "   # ", "  #  ", " #   ", "#    ", " #   ", "  #  ", "   # " };
                 case '-': return new[] { "     ", "     ", "     ", "#####", "     ", "     ", "     " };
                 default:  return new[] { "     ", "     ", "     ", "     ", "     ", "     ", "     " };
             }
+        }
+
+        private static void GenerateMaintenancePlateTex(string path, string headerLine, string fragmentDigits, int seed)
+        {
+            const int w = 256;
+            const int h = 160;
+            var tex = new Texture2D(w, h, TextureFormat.RGB24, false);
+            for (int y = 0; y < h; y++)
+            {
+                for (int x = 0; x < w; x++)
+                {
+                    float n1 = Mathf.PerlinNoise(x * 0.06f + seed, y * 0.06f + seed * 0.3f);
+                    float n2 = Mathf.PerlinNoise(x * 0.22f + seed * 1.7f, y * 0.22f);
+                    bool border = x < 8 || x >= w - 8 || y < 8 || y >= h - 8;
+                    bool innerLine = (x >= 13 && x < w - 13 && (y == 13 || y == 14 || y == h - 14 || y == h - 15)) ||
+                                     (y >= 13 && y < h - 13 && (x == 13 || x == 14 || x == w - 14 || x == w - 15));
+                    bool divider = y >= 92 && y <= 94 && x >= 22 && x < w - 22;
+
+                    Color baseCol = border
+                        ? new Color(0.18f + n1 * 0.06f, 0.14f + n1 * 0.04f, 0.11f + n1 * 0.03f)
+                        : new Color(0.22f + n1 * 0.07f, 0.24f + n1 * 0.06f, 0.25f + n1 * 0.05f);
+
+                    // Subtle weathered rust patches along edges
+                    if (n2 > 0.66f && (x < 34 || x > w - 34 || y < 26 || y > h - 26))
+                    {
+                        baseCol = Color.Lerp(baseCol, new Color(0.36f, 0.20f, 0.11f), 0.55f);
+                    }
+                    if (innerLine || divider)
+                    {
+                        baseCol = new Color(0.76f, 0.66f, 0.34f);
+                    }
+
+                    tex.SetPixel(x, y, baseCol);
+                }
+            }
+
+            // Stamp centered header (e.g. "REG. I") in crisp weathered industrial amber-white
+            Color headerCol = new Color(0.92f, 0.86f, 0.64f);
+            Color digitCol = new Color(1.0f, 0.90f, 0.42f);
+
+            int hdrScale = 4;
+            int hdrW = headerLine.Length * 6 * hdrScale - hdrScale;
+            DrawWeatheredBitmapText(tex, headerLine, (w - hdrW) / 2, 110, hdrScale, headerCol);
+
+            int digScale = 9;
+            int digW = fragmentDigits.Length * 6 * digScale - digScale;
+            DrawWeatheredBitmapText(tex, fragmentDigits, (w - digW) / 2, 22, digScale, digitCol);
+
+            tex.Apply();
+            File.WriteAllBytes(path, tex.EncodeToPNG());
+            UnityEngine.Object.DestroyImmediate(tex);
         }
 
         private static void GenerateManholeCoverTex(string path)

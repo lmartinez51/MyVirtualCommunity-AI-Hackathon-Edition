@@ -462,7 +462,7 @@ namespace MyVirtualCommunity.Editor
             doorCtrl.doorId = "door:building-a-south-secret-wedge";
             doorCtrl.doorTitleEs = "Puerta misteriosa";
             doorCtrl.doorTitleEn = "Mysterious Door";
-            doorCtrl.activeAccessCode = "123456";
+            doorCtrl.activeAccessCode = "581926";
             doorCtrl.requiredCodeLength = 6;
             doorCtrl.southLeafPivot = southPivot.transform;
             doorCtrl.northLeafPivot = northPivot.transform;

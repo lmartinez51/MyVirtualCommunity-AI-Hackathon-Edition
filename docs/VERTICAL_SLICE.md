@@ -32,17 +32,14 @@ Each beat below explicitly separates **`[EXISTING NOW]` (`CONFIRMED`)** from **`
   - Introduce a brief **opening curiosity hook** (`AUTHOR DECISION REQUIRED` on exact narrative framing) that draws the player to investigate the street corner around Av. Juárez × Azucenas, the locked Building A South steel door, and the storm-drain manholes.
   - Complete the commercial **IP/brand clearance pass** on street signage and arch video (`camila_loop.mp4` replacement).
 
-### Beat 2 — Discovery of Underground Clues (*La Cisterna / El Nudo* & *Sector C-0*)
-- **`[EXISTING NOW]`:** 4 functional cast-iron street manholes descend into the `Y = -3.20 m` storm-drain network beneath `BorderCorridorScene.unity`, featuring near-black atmosphere (`[F]` flashlight required), *La Cisterna*, *Sector C-0* bulkhead, the `Y = -8.45 m` Abasolo siphon, and the interactive Río Bravo outflow gate.
+### Beat 2 — Discovery of Underground Clues (*La Cisterna / El Nudo*, *Sector C-0* & *Sifón de Abasolo*)
+- **`[EXISTING NOW]`:** 4 functional cast-iron street manholes descend into the `Y = -3.20 m` storm-drain network beneath `BorderCorridorScene.unity`, featuring near-black atmosphere (`[F]` flashlight required), *La Cisterna*, *Sector C-0* bulkhead, the `Y = -8.45 m` Abasolo siphon, the interactive Río Bravo outflow gate, and **3 inspectable original maintenance markings** (`58`, `19`, `26`) that log into the local **Discovery Journal (`[J]`)** and permanently unlock knowledge of the **6-digit Building A South access code (`581926`)** once all three are discovered.
 - **`[PROPOSED FOR SLICE]`:**
-  - Place **2–3 inspectable original environmental clues** inside the storm-drain network (e.g., near *Sector C-0* and on the *La Cisterna* balcony/island) that can be logged into a lightweight **Discovery Journal**.
-  - Have those underground clues reveal (or allow the player to deduce) the **6-digit access code** for the Building A South mystery door, replacing the unmotivated hardcoded `"123456"` default. (`AUTHOR DECISION REQUIRED` on exact clue text and code-puzzle design.)
-  - Retain Manhole #1 (`Av. Juárez × Azucenas`) as a hidden alternate/Easter-egg ceiling no-clip entry into Backrooms, or decide whether to gate it until after first discovery (`AUTHOR DECISION REQUIRED`).
+  - Refine opening surface hints and optional narrative framing guiding first-time players toward the underground network (`AUTHOR DECISION REQUIRED` on narrative voice and whether to keep or gate Manhole #1's silent ceiling no-clip drop into Backrooms).
 
 ### Beat 3 — Return to the Surface & Access to the Secret Room
-- **`[EXISTING NOW]`:** Player climbs any underground ladder (or exits via the Río Bravo outflow gate and walks south along Av. Juárez), enters the 6-digit code on `SecretKeypadDoorController.cs`, opens the steel double doors, and steps through the opaque `SecretRoom_ThresholdVeil` to trigger `SecretBackroomsTransitionController.cs`.
+- **`[EXISTING NOW]`:** Player climbs any underground ladder (or exits via the Río Bravo outflow gate and walks south along Av. Juárez), enters the learned 6-digit code (`581926`) on `SecretKeypadDoorController.cs` (persisted in local single-player progression and visible in the Discovery Journal once learned), opens the steel double doors, and steps through the opaque `SecretRoom_ThresholdVeil` to trigger `SecretBackroomsTransitionController.cs`.
 - **`[PROPOSED FOR SLICE]`:**
-  - Persist keypad discovery/unlock status in the local slice save state.
   - Add responsive audio/visual cues (keypad beeps, heavy latch, low hum behind the Threshold Veil) reinforcing the shift from grounded border street into liminal space.
 
 ### Beat 4 — Backrooms Level 1 Exploration (IP-Cleared Liminal Labyrinth)

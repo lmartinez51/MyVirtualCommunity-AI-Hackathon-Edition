@@ -131,6 +131,7 @@ namespace MyVirtualCommunity.Client.World
         private readonly DiscoveryJournalOverlay discoveryJournalOverlay = new DiscoveryJournalOverlay();
         private PlayerProgressionService subscribedProgressionService = null;
         private string discoveryToastMessage = "";
+        private string discoveryToastSecondaryMessage = "";
         private float discoveryToastUntilTime = -1f;
 
         // Dynamic Modal Auto-Height & Scroll State
@@ -749,8 +750,22 @@ namespace MyVirtualCommunity.Client.World
             if (notification == null) return;
             string formatted = DiscoveryJournalPresenter.FormatNewDiscoveryFeedback(notification, currentLanguage == "es");
             if (string.IsNullOrEmpty(formatted)) return;
-            discoveryToastMessage = formatted;
-            discoveryToastUntilTime = Time.unscaledTime + 3.8f;
+
+            // If a second genuinely new notification arrives while one is already active on the same
+            // action (e.g. third underground clue completing the learned access sequence), show both cleanly.
+            if (!string.IsNullOrEmpty(discoveryToastMessage) &&
+                Time.unscaledTime < discoveryToastUntilTime &&
+                !string.Equals(discoveryToastMessage, formatted, StringComparison.Ordinal))
+            {
+                discoveryToastSecondaryMessage = formatted;
+                discoveryToastUntilTime = Time.unscaledTime + 4.8f;
+            }
+            else
+            {
+                discoveryToastMessage = formatted;
+                discoveryToastSecondaryMessage = "";
+                discoveryToastUntilTime = Time.unscaledTime + 3.8f;
+            }
         }
 
         private void FlushLocalProgressionOnExit()
@@ -1186,8 +1201,10 @@ namespace MyVirtualCommunity.Client.World
                 cachedDimensionVault = FindFirstObjectByType<SecretRoomDimensionVaultController>();
             }
 
-            // Player can inspect artifacts/safe only when inside Backrooms Level 1 OR inside the small secret room
+            // Player can inspect Backrooms/Secret Room artifacts inside those spaces,
+            // and underground maintenance clues strictly when physically inside the underground sewer.
             bool inBackrooms = IsInBackroomsMode();
+            bool inUndergroundSewer = !inBackrooms && IsPlayerInUndergroundSewer();
             bool isInsideSecretRoom = inBackrooms || (playerPos.x < -12.02f && playerPos.z >= -13.52f && playerPos.z <= -11.15f);
 
             currentNearbyBackroomsExit = null;
@@ -1225,11 +1242,14 @@ namespace MyVirtualCommunity.Client.World
                         if (c == null) continue;
                         if (hits[i].distance > maxSolidDist) continue;
 
-                        // Containment artifact dossiers (EXP-01..13, Astrolabe, Portal) are ONLY visible once inside the secret room!
-                        if (isInsideSecretRoom)
+                        // Scope-gated artifact & environmental clue inspection (protected by solid-obstacle maxSolidDist!)
+                        var art = c.GetComponentInParent<SecretContainmentArtifactDescriptor>();
+                        if (art != null && hits[i].distance < bestArtDist)
                         {
-                            var art = c.GetComponentInParent<SecretContainmentArtifactDescriptor>();
-                            if (art != null && hits[i].distance < bestArtDist)
+                            bool scopeAllowed = art.inspectionScope == ArtifactInspectionScope.UndergroundSewer
+                                ? inUndergroundSewer
+                                : isInsideSecretRoom;
+                            if (scopeAllowed)
                             {
                                 if (art.artifactId == "artifact:ojo-del-umbral" &&
                                     cachedDimensionVault != null && !cachedDimensionVault.IsSafeOpen)
@@ -6292,8 +6312,9 @@ namespace MyVirtualCommunity.Client.World
 
         private void DrawDiscoveryToastHUD()
         {
-            float width = Mathf.Min(420f, Screen.width - 32f);
-            float height = 42f;
+            bool hasSecondary = !string.IsNullOrEmpty(discoveryToastSecondaryMessage);
+            float width = Mathf.Min(440f, Screen.width - 32f);
+            float height = hasSecondary ? 72f : 42f;
             float x = Screen.width - width - 16f;
             float y = 48f;
 
@@ -6306,7 +6327,19 @@ namespace MyVirtualCommunity.Client.World
                 wordWrap = true,
                 normal = { textColor = new Color(0.42f, 0.94f, 0.88f) }
             };
-            GUI.Label(new Rect(x + 12f, y + 4f, width - 24f, height - 8f), discoveryToastMessage, toastStyle);
+            if (!hasSecondary)
+            {
+                GUI.Label(new Rect(x + 12f, y + 4f, width - 24f, height - 8f), discoveryToastMessage, toastStyle);
+            }
+            else
+            {
+                GUI.Label(new Rect(x + 12f, y + 4f, width - 24f, 30f), discoveryToastMessage, toastStyle);
+                GUIStyle secondStyle = new GUIStyle(toastStyle)
+                {
+                    normal = { textColor = new Color(0.98f, 0.86f, 0.36f) }
+                };
+                GUI.Label(new Rect(x + 12f, y + 34f, width - 24f, 32f), discoveryToastSecondaryMessage, secondStyle);
+            }
         }
 
         private void OnDestroy()
@@ -8969,7 +9002,9 @@ namespace MyVirtualCommunity.Client.World
             }
             else if (hasLearnedDoorCode)
             {
-                string rememberedCode = string.IsNullOrEmpty(activeKeypadDoor.activeAccessCode) ? "123456" : activeKeypadDoor.activeAccessCode.Trim();
+                string rememberedCode = string.IsNullOrEmpty(activeKeypadDoor.activeAccessCode)
+                    ? ProgressionIds.DefaultBuildingASouthAccessCode
+                    : activeKeypadDoor.activeAccessCode.Trim();
                 statusLine = isEs
                     ? $"● Código aprendido: {rememberedCode}"
                     : $"● Learned code: {rememberedCode}";

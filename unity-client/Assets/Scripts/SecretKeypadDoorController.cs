@@ -6,9 +6,8 @@ namespace MyVirtualCommunity.Client.World
 {
     /// <summary>
     /// Controls a double-leaf metal door equipped with a 6-digit electronic keypad lock.
-    /// Designed so future increments can supply deterministic daily randomized 6-digit codes
-    /// from the World Core backend via <see cref="SetAuthoritativeDailyCode"/>, while defaulting
-    /// to "123456" for initial interior construction and player entry.
+    /// Defaults to "581926" (assembled from the three underground maintenance markings)
+    /// while preserving the optional <see cref="SetAuthoritativeDailyCode"/> hook.
     /// </summary>
     public class SecretKeypadDoorController : MonoBehaviour
     {
@@ -20,8 +19,8 @@ namespace MyVirtualCommunity.Client.World
         public string doorTitleEs = "Puerta misteriosa";
         public string doorTitleEn = "Mysterious Door";
 
-        [Tooltip("Active 6-digit access code (default '123456'; can be overridden daily by backend).")]
-        public string activeAccessCode = "123456";
+        [Tooltip("Active 6-digit access code (default '581926' from underground maintenance clue chain).")]
+        public string activeAccessCode = ProgressionIds.DefaultBuildingASouthAccessCode;
 
         [Tooltip("Exact number of digits required by the electronic keypad.")]
         public int requiredCodeLength = 6;
@@ -183,7 +182,7 @@ namespace MyVirtualCommunity.Client.World
         /// </summary>
         public bool TrySubmitCode(string enteredCode)
         {
-            string expected = string.IsNullOrEmpty(activeAccessCode) ? "123456" : activeAccessCode.Trim();
+            string expected = string.IsNullOrEmpty(activeAccessCode) ? ProgressionIds.DefaultBuildingASouthAccessCode : activeAccessCode.Trim();
             string candidate = string.IsNullOrEmpty(enteredCode) ? "" : enteredCode.Trim();
 
             if (string.Equals(candidate, expected, StringComparison.Ordinal))
