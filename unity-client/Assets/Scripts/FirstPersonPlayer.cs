@@ -22,7 +22,8 @@ namespace MyVirtualCommunity.Client.World
         Exploration,
         ControlsGuide,
         PauseMenu,
-        Dialogue
+        Dialogue,
+        Journal
     }
 
     /// <summary>
@@ -126,6 +127,11 @@ namespace MyVirtualCommunity.Client.World
         // UI & State Machine (Authoritative mutually exclusive primary states)
         private PrimaryUIState currentState = PrimaryUIState.ControlsGuide; // Active on first launch
         private PrimaryUIState controlsGuideOrigin = PrimaryUIState.Exploration;
+        private PrimaryUIState journalOrigin = PrimaryUIState.Exploration;
+        private readonly DiscoveryJournalOverlay discoveryJournalOverlay = new DiscoveryJournalOverlay();
+        private PlayerProgressionService subscribedProgressionService = null;
+        private string discoveryToastMessage = "";
+        private float discoveryToastUntilTime = -1f;
 
         // Dynamic Modal Auto-Height & Scroll State
         private float dynamicControlsHeight = 520f;
@@ -410,6 +416,7 @@ namespace MyVirtualCommunity.Client.World
         public bool IsDialogueOpen => currentState == PrimaryUIState.Dialogue;
         public bool IsPauseMenuOpen => currentState == PrimaryUIState.PauseMenu;
         public bool IsControlsGuideOpen => currentState == PrimaryUIState.ControlsGuide;
+        public bool IsDiscoveryJournalOpen => currentState == PrimaryUIState.Journal;
         public bool IsCursorLocked => isCursorLocked;
         public bool CanPlayerMove => currentState == PrimaryUIState.Exploration;
 
@@ -700,7 +707,18 @@ namespace MyVirtualCommunity.Client.World
 
         private void InitializeLocalProgression()
         {
-            ProgressionLoadResult loadResult = PlayerProgressionService.Shared.EnsureInitialized();
+            PlayerProgressionService progression = PlayerProgressionService.Shared;
+            if (subscribedProgressionService != progression)
+            {
+                if (subscribedProgressionService != null)
+                {
+                    subscribedProgressionService.OnNewDiscoveryRecorded -= HandleNewDiscoveryRecorded;
+                }
+                subscribedProgressionService = progression;
+                subscribedProgressionService.OnNewDiscoveryRecorded += HandleNewDiscoveryRecorded;
+            }
+
+            ProgressionLoadResult loadResult = progression.EnsureInitialized();
             if (loadResult == null) return;
 
             bool isEs = currentLanguage == "es";
@@ -724,6 +742,15 @@ namespace MyVirtualCommunity.Client.World
                     new Color(1.0f, 0.45f, 0.35f),
                     6.0f);
             }
+        }
+
+        private void HandleNewDiscoveryRecorded(ProgressionDiscoveryNotification notification)
+        {
+            if (notification == null) return;
+            string formatted = DiscoveryJournalPresenter.FormatNewDiscoveryFeedback(notification, currentLanguage == "es");
+            if (string.IsNullOrEmpty(formatted)) return;
+            discoveryToastMessage = formatted;
+            discoveryToastUntilTime = Time.unscaledTime + 3.8f;
         }
 
         private void FlushLocalProgressionOnExit()
@@ -829,12 +856,25 @@ namespace MyVirtualCommunity.Client.World
                         OpenControlsGuide(PrimaryUIState.PauseMenu);
                         return;
                     }
+                    if (!isSettingsDrawerOpen && WasJournalKeyPressed())
+                    {
+                        OpenDiscoveryJournal(PrimaryUIState.PauseMenu);
+                        return;
+                    }
                     return;
 
                 case PrimaryUIState.ControlsGuide:
                     if (WasEscapePressed() || WasF1Pressed())
                     {
                         CloseControlsGuide();
+                        return;
+                    }
+                    return;
+
+                case PrimaryUIState.Journal:
+                    if (WasEscapePressed() || WasJournalKeyPressed())
+                    {
+                        CloseDiscoveryJournal();
                         return;
                     }
                     return;
@@ -864,6 +904,11 @@ namespace MyVirtualCommunity.Client.World
                     if (WasF1Pressed())
                     {
                         OpenControlsGuide(PrimaryUIState.Exploration);
+                        return;
+                    }
+                    if (WasJournalKeyPressed())
+                    {
+                        OpenDiscoveryJournal(PrimaryUIState.Exploration);
                         return;
                     }
                     bool inBackroomsNow = IsInBackroomsMode();
@@ -1254,7 +1299,9 @@ namespace MyVirtualCommunity.Client.World
         public void OpenInteractionModal(InteractionPoint point)
         {
             if (point == null || point.IsSuppressedOutsideServiceHours()) return;
-            if (currentState == PrimaryUIState.PauseMenu || currentState == PrimaryUIState.ControlsGuide) return;
+            if (currentState == PrimaryUIState.PauseMenu ||
+                currentState == PrimaryUIState.ControlsGuide ||
+                currentState == PrimaryUIState.Journal) return;
 
             if (point.category == InteractionCategory.Informational || string.IsNullOrEmpty(point.characterId))
             {
@@ -1414,7 +1461,9 @@ namespace MyVirtualCommunity.Client.World
 
         private void OpenAuthorizedInteractionModal(InteractionPoint point)
         {
-            if (currentState == PrimaryUIState.PauseMenu || currentState == PrimaryUIState.ControlsGuide) return;
+            if (currentState == PrimaryUIState.PauseMenu ||
+                currentState == PrimaryUIState.ControlsGuide ||
+                currentState == PrimaryUIState.Journal) return;
 
             activeModalPoint = point;
             currentState = PrimaryUIState.Dialogue;
@@ -2456,6 +2505,38 @@ namespace MyVirtualCommunity.Client.World
                 currentState = PrimaryUIState.PauseMenu;
                 LockCursor(false);
             }
+            else if (controlsGuideOrigin == PrimaryUIState.Journal)
+            {
+                currentState = PrimaryUIState.Journal;
+                LockCursor(false);
+            }
+            else
+            {
+                currentState = PrimaryUIState.Exploration;
+                LockCursor(currentAerialMode != AerialViewMode.SatelliteTopDown);
+            }
+        }
+
+        public void OpenDiscoveryJournal(PrimaryUIState origin)
+        {
+            if (currentState == PrimaryUIState.Dialogue) return;
+            isSettingsDrawerOpen = false;
+            confirmNewGameReset = false;
+            journalOrigin = origin == PrimaryUIState.PauseMenu
+                ? PrimaryUIState.PauseMenu
+                : PrimaryUIState.Exploration;
+            currentState = PrimaryUIState.Journal;
+            discoveryJournalOverlay.ResetScroll();
+            LockCursor(false);
+        }
+
+        public void CloseDiscoveryJournal()
+        {
+            if (journalOrigin == PrimaryUIState.PauseMenu)
+            {
+                currentState = PrimaryUIState.PauseMenu;
+                LockCursor(false);
+            }
             else
             {
                 currentState = PrimaryUIState.Exploration;
@@ -2630,6 +2711,22 @@ namespace MyVirtualCommunity.Client.World
             return false;
         }
 
+        private bool WasJournalKeyPressed()
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (Keyboard.current != null && Keyboard.current.jKey.wasPressedThisFrame) return true;
+#endif
+
+#if ENABLE_LEGACY_INPUT_MANAGER
+            try
+            {
+                if (Input.GetKeyDown(KeyCode.J)) return true;
+            }
+            catch { }
+#endif
+            return false;
+        }
+
         #endregion
 
         #region In-World UI & Modal Rendering
@@ -2668,6 +2765,12 @@ namespace MyVirtualCommunity.Client.World
                     DrawHUD();
                     DrawModalScrim();
                     DrawControlsOverlay();
+                    break;
+
+                case PrimaryUIState.Journal:
+                    DrawHUD();
+                    DrawModalScrim();
+                    DrawDiscoveryJournalModal();
                     break;
 
                 case PrimaryUIState.Exploration:
@@ -2739,6 +2842,10 @@ namespace MyVirtualCommunity.Client.World
                     if (!string.IsNullOrEmpty(interactionFeedbackMessage) && Time.unscaledTime < interactionFeedbackUntilTime)
                     {
                         DrawInteractionFeedbackBanner();
+                    }
+                    if (activeKeypadDoor == null && !string.IsNullOrEmpty(discoveryToastMessage) && Time.unscaledTime < discoveryToastUntilTime)
+                    {
+                        DrawDiscoveryToastHUD();
                     }
                     if (isFideicomisoCameraPipOpen)
                     {
@@ -2822,9 +2929,27 @@ namespace MyVirtualCommunity.Client.World
                 GUILayout.Space(6);
             }
 
-            // Help [F1] Toggle in HUD (hidden during dialogue to prevent interruption)
+            // Discovery Journal [J] & Help [F1] Toggles in HUD (hidden during dialogue to prevent interruption)
             if (currentState != PrimaryUIState.Dialogue)
             {
+                string journalBtnLabel = (currentState == PrimaryUIState.Journal)
+                    ? (isEs ? "Diario [J] [OK]" : "Journal [J] [OK]")
+                    : (isEs ? "Diario [J]" : "Journal [J]");
+
+                if (GUILayout.Button(journalBtnLabel, GUILayout.Width(96), GUILayout.Height(24)))
+                {
+                    if (currentState == PrimaryUIState.Journal)
+                    {
+                        CloseDiscoveryJournal();
+                    }
+                    else
+                    {
+                        OpenDiscoveryJournal(currentState);
+                    }
+                }
+
+                GUILayout.Space(4);
+
                 string helpBtnLabel = (currentState == PrimaryUIState.ControlsGuide)
                     ? (isEs ? "Ayuda [F1] [OK]" : "Help [F1] [OK]")
                     : (isEs ? "Ayuda [F1]" : "Help [F1]");
@@ -3121,6 +3246,13 @@ namespace MyVirtualCommunity.Client.World
             if (GUILayout.Button(isEs ? "[?] Guía de Controles [F1]" : "[?] Controls Guide [F1]", GUILayout.Height(32)))
             {
                 OpenControlsGuide(PrimaryUIState.PauseMenu);
+            }
+
+            GUILayout.Space(6);
+
+            if (GUILayout.Button(isEs ? "[J] Diario de Descubrimientos [J]" : "[J] Discovery Journal [J]", GUILayout.Height(32)))
+            {
+                OpenDiscoveryJournal(PrimaryUIState.PauseMenu);
             }
 
             GUILayout.Space(6);
@@ -3858,6 +3990,7 @@ namespace MyVirtualCommunity.Client.World
             GUILayout.Space(6);
             GUILayout.Label(isEs ? "Interacción con Personajes:" : "NPC & Landmark Interaction:", sectionStyle);
             GUILayout.Label(isEs ? "• E: Hablar con personajes al ver el aviso [E]" : "• E: Talk to characters when [E] prompt appears", GetMutedStyle());
+            GUILayout.Label(isEs ? "• J: Abrir / cerrar Diario de Descubrimientos" : "• J: Open / close Discovery Journal", GetMutedStyle());
             GUILayout.Label(isEs ? "• Esc: Menú de Pausa y Ajustes (o cerrar diálogo activo)" : "• Esc: Open Pause Menu & Settings (or close active dialogue)", GetMutedStyle());
             GUILayout.Label(isEs ? "• F1: Mostrar / ocultar esta guía en cualquier momento" : "• F1: Toggle this controls guide anytime", GetMutedStyle());
 
@@ -6124,8 +6257,66 @@ namespace MyVirtualCommunity.Client.World
             }
         }
 
+        private void DrawDiscoveryJournalModal()
+        {
+            bool isEs = currentLanguage == "es";
+            DiscoveryJournalSnapshot snapshot = DiscoveryJournalPresenter.BuildSnapshot(
+                PlayerProgressionService.Shared,
+                isEs,
+                ResolveLiveDoorCodeForJournal);
+
+            discoveryJournalOverlay.Draw(
+                snapshot,
+                isEs,
+                journalOrigin == PrimaryUIState.PauseMenu,
+                GetOpaqueCardStyle(),
+                GetModalTitleStyle(),
+                GetModalSubtitleStyle(),
+                GetMutedStyle(),
+                CloseDiscoveryJournal);
+        }
+
+        private string ResolveLiveDoorCodeForJournal(string doorId)
+        {
+            if (string.IsNullOrWhiteSpace(doorId)) return null;
+            SecretKeypadDoorController[] doors = FindObjectsByType<SecretKeypadDoorController>(FindObjectsSortMode.None);
+            for (int i = 0; i < doors.Length; i++)
+            {
+                if (doors[i] != null && string.Equals(doors[i].doorId, doorId, StringComparison.Ordinal))
+                {
+                    return doors[i].activeAccessCode;
+                }
+            }
+            return null;
+        }
+
+        private void DrawDiscoveryToastHUD()
+        {
+            float width = Mathf.Min(420f, Screen.width - 32f);
+            float height = 42f;
+            float x = Screen.width - width - 16f;
+            float y = 48f;
+
+            GUI.Box(new Rect(x, y, width, height), GUIContent.none, GetOpaquePromptStyle());
+            GUIStyle toastStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 12,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleLeft,
+                wordWrap = true,
+                normal = { textColor = new Color(0.42f, 0.94f, 0.88f) }
+            };
+            GUI.Label(new Rect(x + 12f, y + 4f, width - 24f, height - 8f), discoveryToastMessage, toastStyle);
+        }
+
         private void OnDestroy()
         {
+            if (subscribedProgressionService != null)
+            {
+                subscribedProgressionService.OnNewDiscoveryRecorded -= HandleNewDiscoveryRecorded;
+                subscribedProgressionService = null;
+            }
+            discoveryJournalOverlay.Dispose();
             FlushLocalProgressionOnExit();
             DestroyOverlayTexture();
             if (modalBackdropTex != null)

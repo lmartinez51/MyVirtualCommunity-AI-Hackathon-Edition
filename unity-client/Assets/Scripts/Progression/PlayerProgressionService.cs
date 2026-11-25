@@ -4,6 +4,26 @@ using UnityEngine;
 
 namespace MyVirtualCommunity.Client.Progression
 {
+    public enum DiscoveryNotificationKind
+    {
+        Evidence,
+        Knowledge,
+        Artifact,
+        Milestone
+    }
+
+    public sealed class ProgressionDiscoveryNotification
+    {
+        public DiscoveryNotificationKind Kind { get; }
+        public string EntryId { get; }
+
+        public ProgressionDiscoveryNotification(DiscoveryNotificationKind kind, string entryId)
+        {
+            Kind = kind;
+            EntryId = entryId ?? string.Empty;
+        }
+    }
+
     /// <summary>
     /// Authoritative local single-player narrative progression service.
     /// Operates 100% offline using LocalProgressionStorage (Application.persistentDataPath),
@@ -27,6 +47,7 @@ namespace MyVirtualCommunity.Client.Progression
         private bool hasUnsavedChanges = false;
 
         public event Action<ProgressionSaveData> OnProgressionChanged;
+        public event Action<ProgressionDiscoveryNotification> OnNewDiscoveryRecorded;
 
         public LocalProgressionStorage Storage => storage;
         public ProgressionSaveData CurrentData
@@ -340,26 +361,34 @@ namespace MyVirtualCommunity.Client.Progression
         public bool RecordUndergroundEntered(bool autoSave = true)
         {
             EnsureInitialized();
-            bool changed = false;
-            changed |= AddUnique(currentData.permanent.unlockedMilestoneIds, ProgressionIds.MilestoneUndergroundNetworkEntered);
+            bool addedMilestone = AddUnique(currentData.permanent.unlockedMilestoneIds, ProgressionIds.MilestoneUndergroundNetworkEntered);
+            bool changed = addedMilestone;
             changed |= TryAdvanceCheckpoint(ProgressionIds.CheckpointUndergroundEntered);
-            return FinalizeMutation(changed, autoSave);
+            ProgressionDiscoveryNotification notification = addedMilestone
+                ? new ProgressionDiscoveryNotification(DiscoveryNotificationKind.Milestone, ProgressionIds.MilestoneUndergroundNetworkEntered)
+                : null;
+            return FinalizeMutation(changed, autoSave, notification);
         }
 
         public bool RecordSewerOutflowGateState(bool isOpen, bool autoSave = true)
         {
             EnsureInitialized();
+            bool addedMilestone = false;
             bool changed = false;
             if (isOpen)
             {
-                changed |= AddUnique(currentData.permanent.unlockedMilestoneIds, ProgressionIds.MilestoneRioBravoOutflowOpened);
+                addedMilestone = AddUnique(currentData.permanent.unlockedMilestoneIds, ProgressionIds.MilestoneRioBravoOutflowOpened);
+                changed |= addedMilestone;
             }
             if (currentData.evolving.sewerOutflowGateOpened != isOpen)
             {
                 currentData.evolving.sewerOutflowGateOpened = isOpen;
                 changed = true;
             }
-            return FinalizeMutation(changed, autoSave);
+            ProgressionDiscoveryNotification notification = addedMilestone
+                ? new ProgressionDiscoveryNotification(DiscoveryNotificationKind.Milestone, ProgressionIds.MilestoneRioBravoOutflowOpened)
+                : null;
+            return FinalizeMutation(changed, autoSave, notification);
         }
 
         public bool RecordKeypadDoorUnlocked(string doorId, bool autoSave = true)
@@ -369,36 +398,64 @@ namespace MyVirtualCommunity.Client.Progression
 
             bool changed = false;
             string puzzleId = ProgressionIds.PuzzleForDoor(doorId);
-            changed |= AddUnique(currentData.permanent.solvedPuzzleIds, puzzleId);
+            bool addedPuzzle = AddUnique(currentData.permanent.solvedPuzzleIds, puzzleId);
+            changed |= addedPuzzle;
 
+            ProgressionDiscoveryNotification notification = null;
             if (doorId == ProgressionIds.DoorBuildingASouth)
             {
-                changed |= AddUnique(currentData.permanent.learnedCodeIds, ProgressionIds.CodeBuildingASouthSecretDoor);
+                bool addedCode = AddUnique(currentData.permanent.learnedCodeIds, ProgressionIds.CodeBuildingASouthSecretDoor);
+                changed |= addedCode;
                 changed |= AddUnique(currentData.permanent.unlockedMilestoneIds, ProgressionIds.MilestoneSecretRoomKeypadUnlocked);
                 changed |= TryAdvanceCheckpoint(ProgressionIds.CheckpointSecretDoorUnlocked);
+                if (addedCode || addedPuzzle)
+                {
+                    notification = new ProgressionDiscoveryNotification(
+                        DiscoveryNotificationKind.Knowledge,
+                        addedCode ? ProgressionIds.CodeBuildingASouthSecretDoor : puzzleId);
+                }
             }
             else if (doorId == ProgressionIds.SafeBackroomsOmegaVault)
             {
-                changed |= AddUnique(currentData.permanent.learnedCodeIds, ProgressionIds.CodeOmegaVaultSafe);
+                bool addedCode = AddUnique(currentData.permanent.learnedCodeIds, ProgressionIds.CodeOmegaVaultSafe);
+                changed |= addedCode;
                 changed |= AddUnique(currentData.permanent.unlockedMilestoneIds, ProgressionIds.MilestoneOmegaSafeUnlocked);
                 changed |= TryAdvanceCheckpoint(ProgressionIds.CheckpointOmegaSafeUnlocked);
+                if (addedPuzzle)
+                {
+                    notification = new ProgressionDiscoveryNotification(DiscoveryNotificationKind.Knowledge, puzzleId);
+                }
+            }
+            else if (addedPuzzle)
+            {
+                notification = new ProgressionDiscoveryNotification(DiscoveryNotificationKind.Knowledge, puzzleId);
             }
 
-            return FinalizeMutation(changed, autoSave);
+            return FinalizeMutation(changed, autoSave, notification);
         }
 
         public bool RecordBackroomsEntered(bool viaAzucenasManhole, bool autoSave = true)
         {
             EnsureInitialized();
-            bool changed = false;
-            changed |= AddUnique(currentData.permanent.unlockedMilestoneIds, ProgressionIds.MilestoneBackroomsEntered);
-            changed |= AddUnique(
-                currentData.permanent.unlockedMilestoneIds,
-                viaAzucenasManhole
-                    ? ProgressionIds.MilestoneBackroomsEnteredViaAzucenas
-                    : ProgressionIds.MilestoneBackroomsEnteredViaVeil);
+            bool addedMain = AddUnique(currentData.permanent.unlockedMilestoneIds, ProgressionIds.MilestoneBackroomsEntered);
+            string routeMilestone = viaAzucenasManhole
+                ? ProgressionIds.MilestoneBackroomsEnteredViaAzucenas
+                : ProgressionIds.MilestoneBackroomsEnteredViaVeil;
+            bool addedRoute = AddUnique(currentData.permanent.unlockedMilestoneIds, routeMilestone);
+            bool changed = addedMain || addedRoute;
             changed |= TryAdvanceCheckpoint(ProgressionIds.CheckpointBackroomsEntered);
-            return FinalizeMutation(changed, autoSave);
+
+            ProgressionDiscoveryNotification notification = null;
+            if (addedMain)
+            {
+                notification = new ProgressionDiscoveryNotification(DiscoveryNotificationKind.Milestone, ProgressionIds.MilestoneBackroomsEntered);
+            }
+            else if (addedRoute)
+            {
+                notification = new ProgressionDiscoveryNotification(DiscoveryNotificationKind.Milestone, routeMilestone);
+            }
+
+            return FinalizeMutation(changed, autoSave, notification);
         }
 
         /// <summary>
@@ -408,8 +465,11 @@ namespace MyVirtualCommunity.Client.Progression
         public bool RecordReturnedFromBackroomsToCorridor(bool autoSave = true)
         {
             EnsureInitialized();
-            bool changed = AddUnique(currentData.permanent.unlockedMilestoneIds, ProgressionIds.MilestoneReturnedFromBackrooms);
-            return FinalizeMutation(changed, autoSave);
+            bool added = AddUnique(currentData.permanent.unlockedMilestoneIds, ProgressionIds.MilestoneReturnedFromBackrooms);
+            ProgressionDiscoveryNotification notification = added
+                ? new ProgressionDiscoveryNotification(DiscoveryNotificationKind.Milestone, ProgressionIds.MilestoneReturnedFromBackrooms)
+                : null;
+            return FinalizeMutation(added, autoSave, notification);
         }
 
         public bool RecordEvidenceInspected(string evidenceId, bool autoSave = true)
@@ -418,23 +478,36 @@ namespace MyVirtualCommunity.Client.Progression
             if (string.IsNullOrWhiteSpace(evidenceId)) return false;
 
             string trimmed = evidenceId.Trim();
-            bool changed = AddUnique(currentData.permanent.discoveredEvidenceIds, trimmed);
+            bool addedEvidence = AddUnique(currentData.permanent.discoveredEvidenceIds, trimmed);
+            bool changed = addedEvidence;
+            bool addedCode = false;
 
             if (trimmed == ProgressionIds.ArtifactEvidenceBoardPdn00)
             {
-                changed |= AddUnique(currentData.permanent.learnedCodeIds, ProgressionIds.CodeOmegaVaultSafe);
+                addedCode = AddUnique(currentData.permanent.learnedCodeIds, ProgressionIds.CodeOmegaVaultSafe);
+                changed |= addedCode;
                 changed |= AddUnique(currentData.permanent.unlockedMilestoneIds, ProgressionIds.MilestoneEvidenceBoardPdn00Discovered);
                 changed |= TryAdvanceCheckpoint(ProgressionIds.CheckpointEvidenceBoardPdn00Inspected);
             }
 
-            return FinalizeMutation(changed, autoSave);
+            ProgressionDiscoveryNotification notification = null;
+            if (addedCode)
+            {
+                notification = new ProgressionDiscoveryNotification(DiscoveryNotificationKind.Knowledge, ProgressionIds.CodeOmegaVaultSafe);
+            }
+            else if (addedEvidence)
+            {
+                notification = new ProgressionDiscoveryNotification(DiscoveryNotificationKind.Evidence, trimmed);
+            }
+
+            return FinalizeMutation(changed, autoSave, notification);
         }
 
         public bool RecordOjoDelUmbralAcquired(bool autoSave = true)
         {
             EnsureInitialized();
-            bool changed = false;
-            changed |= AddUnique(currentData.permanent.acquiredArtifactIds, ProgressionIds.ArtifactOjoDelUmbral);
+            bool addedArtifact = AddUnique(currentData.permanent.acquiredArtifactIds, ProgressionIds.ArtifactOjoDelUmbral);
+            bool changed = addedArtifact;
             changed |= AddUnique(currentData.permanent.unlockedMilestoneIds, ProgressionIds.MilestoneOjoDelUmbralAcquired);
 
             // Idempotent placement transition: only transition None -> Carried so calling this
@@ -446,13 +519,17 @@ namespace MyVirtualCommunity.Client.Progression
             }
 
             changed |= TryAdvanceCheckpoint(ProgressionIds.CheckpointOjoDelUmbralAcquired);
-            return FinalizeMutation(changed, autoSave);
+            ProgressionDiscoveryNotification notification = addedArtifact
+                ? new ProgressionDiscoveryNotification(DiscoveryNotificationKind.Artifact, ProgressionIds.ArtifactOjoDelUmbral)
+                : null;
+            return FinalizeMutation(changed, autoSave, notification);
         }
 
         public bool RecordLasserPortalState(bool isPortalActivated, bool autoSave = true)
         {
             EnsureInitialized();
             bool changed = false;
+            ProgressionDiscoveryNotification notification = null;
 
             // Interacting with the portal socket always implies the player acquired El Ojo del Umbral
             changed |= AddUnique(currentData.permanent.acquiredArtifactIds, ProgressionIds.ArtifactOjoDelUmbral);
@@ -460,9 +537,15 @@ namespace MyVirtualCommunity.Client.Progression
 
             if (isPortalActivated)
             {
-                changed |= AddUnique(currentData.permanent.solvedPuzzleIds, ProgressionIds.PuzzleLasserPortalActivation);
-                changed |= AddUnique(currentData.permanent.unlockedMilestoneIds, ProgressionIds.MilestoneLasserPortalActivated);
+                bool addedPuzzle = AddUnique(currentData.permanent.solvedPuzzleIds, ProgressionIds.PuzzleLasserPortalActivation);
+                bool addedMilestone = AddUnique(currentData.permanent.unlockedMilestoneIds, ProgressionIds.MilestoneLasserPortalActivated);
+                changed |= addedPuzzle || addedMilestone;
                 changed |= TryAdvanceCheckpoint(ProgressionIds.CheckpointLasserPortalActivated);
+
+                if (addedMilestone || addedPuzzle)
+                {
+                    notification = new ProgressionDiscoveryNotification(DiscoveryNotificationKind.Milestone, ProgressionIds.MilestoneLasserPortalActivated);
+                }
 
                 if (currentData.evolving.ojoDelUmbralPlacement != ProgressionIds.PlacementSocketedLasserPortal)
                 {
@@ -490,7 +573,7 @@ namespace MyVirtualCommunity.Client.Progression
                 }
             }
 
-            return FinalizeMutation(changed, autoSave);
+            return FinalizeMutation(changed, autoSave, notification);
         }
 
         public bool SetEvolvingFlag(string key, string value, bool autoSave = true)
@@ -649,7 +732,7 @@ namespace MyVirtualCommunity.Client.Progression
             return false;
         }
 
-        private bool FinalizeMutation(bool changed, bool autoSave)
+        private bool FinalizeMutation(bool changed, bool autoSave, ProgressionDiscoveryNotification notification = null)
         {
             if (!changed) return false;
             hasUnsavedChanges = true;
@@ -658,6 +741,10 @@ namespace MyVirtualCommunity.Client.Progression
                 SaveNow();
             }
             OnProgressionChanged?.Invoke(currentData);
+            if (notification != null)
+            {
+                OnNewDiscoveryRecorded?.Invoke(notification);
+            }
             return true;
         }
 
