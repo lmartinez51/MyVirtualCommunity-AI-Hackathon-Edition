@@ -1,4 +1,5 @@
 using UnityEngine;
+using MyVirtualCommunity.Client.Progression;
 
 namespace MyVirtualCommunity.Client.World
 {
@@ -20,8 +21,43 @@ namespace MyVirtualCommunity.Client.World
         private float currentYaw = 0f;
         private AudioSource audioSource;
         private AudioClip creakClip;
+        private PlayerProgressionService progressionServiceOverride;
 
         public bool IsOpen => isOpen;
+
+        public void SetProgressionServiceForTesting(PlayerProgressionService service)
+        {
+            progressionServiceOverride = service;
+        }
+
+        private PlayerProgressionService GetActiveProgressionService()
+        {
+            if (progressionServiceOverride != null) return progressionServiceOverride;
+            return Application.isPlaying ? PlayerProgressionService.Shared : null;
+        }
+
+        public void ApplyProgressionState(PlayerProgressionService progression)
+        {
+            if (progression == null) return;
+            isOpen = progression.IsSewerOutflowGateOpened;
+            currentYaw = isOpen ? openYaw : closedYaw;
+            if (gateHingePivot != null)
+            {
+                gateHingePivot.localRotation = Quaternion.Euler(0f, currentYaw, 0f);
+                Physics.SyncTransforms();
+            }
+        }
+
+        public void ResetRuntimeStateToDefault()
+        {
+            isOpen = false;
+            currentYaw = closedYaw;
+            if (gateHingePivot != null)
+            {
+                gateHingePivot.localRotation = Quaternion.Euler(0f, currentYaw, 0f);
+                Physics.SyncTransforms();
+            }
+        }
 
         private void Awake()
         {
@@ -31,6 +67,11 @@ namespace MyVirtualCommunity.Client.World
             audioSource.spatialBlend = 0.85f;
             audioSource.volume = 0.65f;
             creakClip = CreateGateCreakClip();
+        }
+
+        private void Start()
+        {
+            ApplyProgressionState(GetActiveProgressionService());
         }
 
         public bool IsPlayerInRange(Vector3 playerPos)
@@ -52,6 +93,7 @@ namespace MyVirtualCommunity.Client.World
             {
                 audioSource.PlayOneShot(creakClip, 0.7f);
             }
+            GetActiveProgressionService()?.RecordSewerOutflowGateState(isOpen);
         }
 
         private void Update()

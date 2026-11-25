@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using MyVirtualCommunity.Client.Progression;
 
 namespace MyVirtualCommunity.Client.World
 {
@@ -140,6 +141,11 @@ namespace MyVirtualCommunity.Client.World
             player.transform.rotation = Quaternion.Euler(0f, targetYaw, 0f);
             Physics.SyncTransforms();
             if (cc != null) cc.enabled = true;
+
+            if (goingDown && Application.isPlaying)
+            {
+                PlayerProgressionService.Shared.RecordUndergroundEntered();
+            }
 
             // Close lid back flush with street so traffic/pedestrians never see an open pit
             if (lidPivot != null && hasSavedLidPos)

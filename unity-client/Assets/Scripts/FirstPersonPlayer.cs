@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
 using MyVirtualCommunity.Client.Api;
+using MyVirtualCommunity.Client.Progression;
 using MyVirtualCommunity.Client.Util;
 
 #if ENABLE_INPUT_SYSTEM
@@ -89,6 +90,11 @@ namespace MyVirtualCommunity.Client.World
         private SecretBackroomsTransitionController cachedBackroomsTransition = null;
         private BackroomsExitDoorTrigger currentNearbyBackroomsExit = null;
         private bool lastKnownInBackrooms = false;
+        private string lastRecordedArtifactId = null;
+        private bool confirmNewGameReset = false;
+        private string pauseProgressionFeedback = "";
+        private Color pauseProgressionFeedbackColor = new Color(0.32f, 0.96f, 0.52f);
+        private float pauseProgressionFeedbackUntilTime = -1f;
 
         // Underground Storm-Drain Network & Handheld Flashlight State
         private PlayerFlashlightController playerFlashlight = null;
@@ -685,10 +691,91 @@ namespace MyVirtualCommunity.Client.World
             {
                 LockCursor(true);
             }
+            InitializeLocalProgression();
             CheckBackendConnection();
             RefreshNpcRosterActivity();
             EnsureEnvironmentController();
             EnsureMovementController();
+        }
+
+        private void InitializeLocalProgression()
+        {
+            ProgressionLoadResult loadResult = PlayerProgressionService.Shared.EnsureInitialized();
+            if (loadResult == null) return;
+
+            bool isEs = currentLanguage == "es";
+            if (loadResult.Status == ProgressionLoadStatus.LoadedFromBackup)
+            {
+                ShowInteractionFeedback(
+                    isEs
+                        ? "Progreso local recuperado desde copia de respaldo."
+                        : "Local progress recovered from backup save.",
+                    new Color(1.0f, 0.82f, 0.32f),
+                    4.5f);
+            }
+            else if (loadResult.Status == ProgressionLoadStatus.Corrupted ||
+                     loadResult.Status == ProgressionLoadStatus.UnsupportedVersion ||
+                     loadResult.Status == ProgressionLoadStatus.IoError)
+            {
+                ShowInteractionFeedback(
+                    isEs
+                        ? "No se pudo cargar el guardado local (archivo conservado intacto). Usa 'Nueva Partida' en Pausa para reiniciar."
+                        : "Could not load local save (original file preserved). Use 'New Game' in Pause Menu to start fresh.",
+                    new Color(1.0f, 0.45f, 0.35f),
+                    6.0f);
+            }
+        }
+
+        private void FlushLocalProgressionOnExit()
+        {
+            if (PlayerProgressionService.HasSharedInstance &&
+                PlayerProgressionService.Shared.HasUnsavedChanges &&
+                !PlayerProgressionService.Shared.IsWriteProtectedDueToLoadFailure)
+            {
+                PlayerProgressionService.Shared.SaveNow();
+            }
+        }
+
+        private void SetPauseProgressionFeedback(string message, Color color, float durationSeconds = 4.0f)
+        {
+            pauseProgressionFeedback = message ?? "";
+            pauseProgressionFeedbackColor = color;
+            pauseProgressionFeedbackUntilTime = Time.unscaledTime + Mathf.Max(1.0f, durationSeconds);
+            ShowInteractionFeedback(message, color, durationSeconds);
+        }
+
+        private void StartNewLocalGame()
+        {
+            ProgressionSaveResult result = PlayerProgressionService.Shared.StartNewGame(archiveExisting: true);
+            confirmNewGameReset = false;
+            lastRecordedArtifactId = null;
+
+            SecretRoomDimensionVaultController vault = FindFirstObjectByType<SecretRoomDimensionVaultController>();
+            if (vault != null)
+            {
+                vault.ResetRuntimeStateToDefault();
+            }
+            SecretKeypadDoorController[] doors = FindObjectsByType<SecretKeypadDoorController>(FindObjectsSortMode.None);
+            for (int i = 0; i < doors.Length; i++)
+            {
+                if (doors[i] != null && (doors[i].IsOpen || doors[i].IsUnlocked))
+                {
+                    doors[i].CloseAndRelock();
+                }
+            }
+            SewerOutflowGateController gate = FindFirstObjectByType<SewerOutflowGateController>();
+            if (gate != null)
+            {
+                gate.ResetRuntimeStateToDefault();
+            }
+
+            bool isEs = currentLanguage == "es";
+            SetPauseProgressionFeedback(
+                result.Success
+                    ? (isEs ? "Nueva partida iniciada y guardada localmente." : "New game started and saved locally.")
+                    : (isEs ? $"Error al crear nueva partida: {result.ErrorMessage}" : $"Failed to start new game: {result.ErrorMessage}"),
+                result.Success ? new Color(0.32f, 0.96f, 0.52f) : new Color(1.0f, 0.40f, 0.35f),
+                4.0f);
         }
 
         private void Update()
@@ -1119,6 +1206,21 @@ namespace MyVirtualCommunity.Client.World
                         }
                     }
                 }
+            }
+
+            if (currentAimedArtifact != null &&
+                !string.IsNullOrEmpty(currentAimedArtifact.artifactId) &&
+                currentAimedArtifact.artifactId != lastRecordedArtifactId)
+            {
+                lastRecordedArtifactId = currentAimedArtifact.artifactId;
+                if (Application.isPlaying)
+                {
+                    PlayerProgressionService.Shared.RecordEvidenceInspected(currentAimedArtifact.artifactId);
+                }
+            }
+            else if (currentAimedArtifact == null)
+            {
+                lastRecordedArtifactId = null;
             }
 
             SecretKeypadDoorController nearestDoor = aimedDoor;
@@ -2326,6 +2428,7 @@ namespace MyVirtualCommunity.Client.World
         {
             if (currentState == PrimaryUIState.Dialogue) return;
             isSettingsDrawerOpen = false;
+            confirmNewGameReset = false;
             currentState = PrimaryUIState.PauseMenu;
             LockCursor(false);
         }
@@ -2333,6 +2436,7 @@ namespace MyVirtualCommunity.Client.World
         public void ResumeFromPauseMenu()
         {
             isSettingsDrawerOpen = false;
+            confirmNewGameReset = false;
             currentState = PrimaryUIState.Exploration;
             LockCursor(currentAerialMode != AerialViewMode.SatelliteTopDown);
         }
@@ -2361,6 +2465,7 @@ namespace MyVirtualCommunity.Client.World
 
         public void QuitGame()
         {
+            FlushLocalProgressionOnExit();
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
 #else
@@ -2623,7 +2728,9 @@ namespace MyVirtualCommunity.Client.World
                         {
                             DrawKeypadDoorPrompt(currentNearbyKeypadDoor);
                         }
-                        if (cachedDimensionVault != null && cachedDimensionVault.HasAstrolabeInInventory && isCursorLocked)
+                        bool holdingOjoDelUmbral = (cachedDimensionVault != null && cachedDimensionVault.HasAstrolabeInInventory) ||
+                                                   (Application.isPlaying && PlayerProgressionService.HasSharedInstance && PlayerProgressionService.Shared.IsHoldingOjoDelUmbral);
+                        if (holdingOjoDelUmbral && isCursorLocked)
                         {
                             DrawEquippedAstrolabeBadgeHUD();
                         }
@@ -3031,7 +3138,72 @@ namespace MyVirtualCommunity.Client.World
                 CurrentLanguage = isEs ? "en" : "es";
             }
 
-            GUILayout.Space(12);
+            GUILayout.Space(10);
+
+            PlayerProgressionService progression = PlayerProgressionService.Shared;
+            string checkpointLabel = progression.GetLocalizedCheckpointLabel(isEs);
+            int evidenceCount = progression.CurrentData.permanent.discoveredEvidenceIds.Count;
+            GUILayout.Label(
+                isEs
+                    ? $"Progreso local: {checkpointLabel} • Evidencias: {evidenceCount}"
+                    : $"Local Progress: {checkpointLabel} • Evidence: {evidenceCount}",
+                GetMutedStyle());
+
+            if (progression.IsWriteProtectedDueToLoadFailure)
+            {
+                Color warnPrev = GUI.color;
+                GUI.color = new Color(1f, 0.72f, 0.30f);
+                GUILayout.Label(
+                    isEs
+                        ? "Aviso: archivo de guardado previo ilegible/no compatible (conservado intacto)."
+                        : "Notice: previous save unreadable/unsupported (preserved untouched).",
+                    GetMutedStyle());
+                GUI.color = warnPrev;
+            }
+
+            GUILayout.BeginHorizontal();
+            if (!confirmNewGameReset)
+            {
+                if (GUILayout.Button(isEs ? "Guardar Progreso" : "Save Progress", GUILayout.Height(30)))
+                {
+                    ProgressionSaveResult saveRes = progression.SaveNow();
+                    SetPauseProgressionFeedback(
+                        saveRes.Success
+                            ? (isEs ? "Progreso guardado localmente." : "Progress saved locally.")
+                            : (isEs ? $"No se guardó: {saveRes.ErrorMessage}" : $"Save skipped: {saveRes.ErrorMessage}"),
+                        saveRes.Success ? new Color(0.32f, 0.96f, 0.52f) : new Color(1.0f, 0.62f, 0.30f),
+                        3.5f);
+                }
+                if (GUILayout.Button(isEs ? "Nueva Partida" : "New Game", GUILayout.Height(30)))
+                {
+                    confirmNewGameReset = true;
+                }
+            }
+            else
+            {
+                Color cPrev = GUI.color;
+                GUI.color = new Color(1f, 0.75f, 0.35f);
+                if (GUILayout.Button(isEs ? "Confirmar Nueva Partida" : "Confirm New Game", GUILayout.Height(30)))
+                {
+                    StartNewLocalGame();
+                }
+                GUI.color = cPrev;
+                if (GUILayout.Button(isEs ? "Cancelar" : "Cancel", GUILayout.Height(30), GUILayout.Width(100)))
+                {
+                    confirmNewGameReset = false;
+                }
+            }
+            GUILayout.EndHorizontal();
+
+            if (!string.IsNullOrEmpty(pauseProgressionFeedback) && Time.unscaledTime < pauseProgressionFeedbackUntilTime)
+            {
+                Color fbPrev = GUI.color;
+                GUI.color = pauseProgressionFeedbackColor;
+                GUILayout.Label(pauseProgressionFeedback, GetMutedStyle());
+                GUI.color = fbPrev;
+            }
+
+            GUILayout.Space(10);
 
             Color prevColor = GUI.color;
             GUI.color = new Color(1f, 0.55f, 0.55f);
@@ -5954,6 +6126,7 @@ namespace MyVirtualCommunity.Client.World
 
         private void OnDestroy()
         {
+            FlushLocalProgressionOnExit();
             DestroyOverlayTexture();
             if (modalBackdropTex != null)
             {
@@ -8584,17 +8757,36 @@ namespace MyVirtualCommunity.Client.World
             };
             GUILayout.Box(displayCode, displayBoxStyle, GUILayout.Height(46f), GUILayout.ExpandWidth(true));
 
-            // Status / error line
+            // Status / error line (displays permanently learned code when known so restarts never require re-investigation)
+            bool hasLearnedDoorCode = Application.isPlaying &&
+                                      PlayerProgressionService.Shared.HasLearnedCodeForDoor(activeKeypadDoor.doorId);
+            bool hasTemporaryStatus = Time.unscaledTime < keypadStatusUntilTime && !string.IsNullOrEmpty(keypadStatusMessage);
+            Color statusColor = hasTemporaryStatus
+                ? keypadStatusColor
+                : (hasLearnedDoorCode ? new Color(0.42f, 0.92f, 0.72f) : new Color(0.95f, 0.35f, 0.35f));
             GUIStyle statusStyle = new GUIStyle(GUI.skin.label)
             {
                 fontSize = 11,
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleCenter,
-                normal = { textColor = (Time.unscaledTime < keypadStatusUntilTime) ? keypadStatusColor : new Color(0.95f, 0.35f, 0.35f) }
+                normal = { textColor = statusColor }
             };
-            string statusLine = (Time.unscaledTime < keypadStatusUntilTime && !string.IsNullOrEmpty(keypadStatusMessage))
-                ? keypadStatusMessage
-                : (isEs ? "● BLOQUEADA — Ingresa el código" : "● LOCKED — Enter access code");
+            string statusLine;
+            if (hasTemporaryStatus)
+            {
+                statusLine = keypadStatusMessage;
+            }
+            else if (hasLearnedDoorCode)
+            {
+                string rememberedCode = string.IsNullOrEmpty(activeKeypadDoor.activeAccessCode) ? "123456" : activeKeypadDoor.activeAccessCode.Trim();
+                statusLine = isEs
+                    ? $"● Código aprendido: {rememberedCode}"
+                    : $"● Learned code: {rememberedCode}";
+            }
+            else
+            {
+                statusLine = isEs ? "● BLOQUEADA — Ingresa el código" : "● LOCKED — Enter access code";
+            }
             GUILayout.Label(statusLine, statusStyle, GUILayout.Height(20f));
 
             GUILayout.Space(6f);

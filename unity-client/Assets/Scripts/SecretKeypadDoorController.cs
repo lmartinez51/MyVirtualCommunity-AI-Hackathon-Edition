@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using MyVirtualCommunity.Client.Progression;
 
 namespace MyVirtualCommunity.Client.World
 {
@@ -67,6 +68,7 @@ namespace MyVirtualCommunity.Client.World
 
         private float errorFlashUntilTime = -1f;
         private Material runtimeLedMat;
+        private PlayerProgressionService progressionServiceOverride;
 
         private static readonly Color LockedLedColor = new Color(0.95f, 0.12f, 0.12f);
         private static readonly Color UnlockedLedColor = new Color(0.14f, 0.95f, 0.36f);
@@ -77,8 +79,46 @@ namespace MyVirtualCommunity.Client.World
         public float OpenProgress => openProgress;
         public int RequiredCodeLength => Mathf.Clamp(requiredCodeLength, 4, 8);
 
+        public void SetProgressionServiceForTesting(PlayerProgressionService service)
+        {
+            progressionServiceOverride = service;
+        }
+
+        private PlayerProgressionService GetActiveProgressionService()
+        {
+            if (progressionServiceOverride != null) return progressionServiceOverride;
+            return Application.isPlaying ? PlayerProgressionService.Shared : null;
+        }
+
+        /// <summary>
+        /// Restores persisted unlocked/open state for interior safes/vaults (allowInteriorSafetyBypass == false)
+        /// without altering the locked exterior street doorway behavior.
+        /// </summary>
+        public void ApplyProgressionState(PlayerProgressionService progression)
+        {
+            if (progression == null || allowInteriorSafetyBypass) return;
+            if (progression.IsDoorPuzzleSolved(doorId))
+            {
+                RestorePersistedUnlockedOpenState();
+            }
+        }
+
+        /// <summary>
+        /// Immediately snaps this keypad door/safe to its unlocked & open pose after restoring persisted progress.
+        /// </summary>
+        public void RestorePersistedUnlockedOpenState()
+        {
+            isUnlocked = true;
+            isOpen = true;
+            openProgress = 1f;
+            errorFlashUntilTime = -1f;
+            ApplyDoorVisuals();
+            UpdateLedVisuals();
+        }
+
         private void Start()
         {
+            ApplyProgressionState(GetActiveProgressionService());
             ApplyDoorVisuals();
             UpdateLedVisuals();
         }
@@ -152,6 +192,7 @@ namespace MyVirtualCommunity.Client.World
                 isOpen = true;
                 errorFlashUntilTime = -1f;
                 UpdateLedVisuals();
+                GetActiveProgressionService()?.RecordKeypadDoorUnlocked(doorId);
                 return true;
             }
 

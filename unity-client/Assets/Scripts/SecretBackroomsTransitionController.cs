@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using MyVirtualCommunity.Client.Api;
+using MyVirtualCommunity.Client.Progression;
 
 namespace MyVirtualCommunity.Client.World
 {
@@ -279,6 +280,11 @@ namespace MyVirtualCommunity.Client.World
             isPlayerInBackrooms = true;
             RefreshThresholdVeilVisibility();
             ApplyBackroomsAtmosphere();
+            if (Application.isPlaying)
+            {
+                PlayerProgressionService.Shared.RecordBackroomsEntered(viaAzucenasManhole: true);
+                RestoreLoadedBackroomsProgression(PlayerProgressionService.Shared);
+            }
             Physics.SyncTransforms();
 
             // 5. Pick a random verified wall-free drop zone far from the NE exit door + random disorienting yaw
@@ -494,6 +500,11 @@ namespace MyVirtualCommunity.Client.World
             // 5. Mark Backrooms mode active BEFORE teleporting so void-fall & street reconciliation guards never race
             isPlayerInBackrooms = true;
             RefreshThresholdVeilVisibility();
+            if (Application.isPlaying)
+            {
+                PlayerProgressionService.Shared.RecordBackroomsEntered(viaAzucenasManhole: false);
+                RestoreLoadedBackroomsProgression(PlayerProgressionService.Shared);
+            }
 
             // 6. Switch lighting & fog to classic Backrooms Level 0 fluorescent liminal atmosphere
             ApplyBackroomsAtmosphere();
@@ -549,10 +560,38 @@ namespace MyVirtualCommunity.Client.World
             isPlayerInBackrooms = false;
             occupiedByOtherPlayer = false;
             RefreshThresholdVeilVisibility();
+            if (Application.isPlaying)
+            {
+                PlayerProgressionService.Shared.RecordReturnedFromBackroomsToCorridor();
+            }
 
             yield return new WaitForSecondsRealtime(0.08f);
             yield return FadeTo(0f, 0.32f);
             isTransitioning = false;
+        }
+
+        /// <summary>
+        /// Hydrates loaded BackroomsLevel1Scene vault/safe/portal controllers from local progression
+        /// so previously unlocked safes, acquired relics, and activated portals survive scene unload/reload.
+        /// </summary>
+        public static void RestoreLoadedBackroomsProgression(PlayerProgressionService progression)
+        {
+            if (progression == null) return;
+
+            SecretRoomDimensionVaultController vault = FindFirstObjectByType<SecretRoomDimensionVaultController>();
+            if (vault != null)
+            {
+                vault.ApplyProgressionState(progression);
+            }
+
+            SecretKeypadDoorController[] doors = FindObjectsByType<SecretKeypadDoorController>(FindObjectsSortMode.None);
+            for (int i = 0; i < doors.Length; i++)
+            {
+                if (doors[i] != null && !doors[i].allowInteriorSafetyBypass)
+                {
+                    doors[i].ApplyProgressionState(progression);
+                }
+            }
         }
 
         private void TeleportPlayer(Vector3 worldPos, Quaternion worldRot)

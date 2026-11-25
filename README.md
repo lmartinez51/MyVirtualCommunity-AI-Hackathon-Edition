@@ -61,9 +61,10 @@ The current prototype physically constructs four interconnected narrative spaces
 - 7 distinct canonical Bobblehead NPCs (Border Concierge, Citizen Reporting Representative, 2 Storefront Attendants, and 3 disclaimed Synthetic Community Witnesses) with deterministic movement and dialogue.
 - Working multi-world transitions: Street ↔ Underground Storm Drains, Street → Backrooms (Secret Room veil & Azucenas manhole no-clip drop), and Backrooms → Street return door.
 - Local Backrooms micro-puzzle (Evidence Board → Level-Ω Safe → *El Ojo del Umbral* → visual activation of *El Umbral de Lasser*).
+- **Offline single-player progression foundation (`unity-client/Assets/Scripts/Progression/`):** Versioned local JSON persistence under `Application.persistentDataPath` with atomic writes, `.bak` recovery, and write-protection for corrupted/unsupported saves — preserving Permanent, Evolving, and Temporal narrative state (keypad codes/unlocks, Evidence Board PDN-00, Level-Ω Safe, *El Ojo del Umbral*, *El Umbral de Lasser*, and underground milestones) across Backrooms scene unloads and application restarts without requiring Node.js.
 
 ### Current Limitations (Not Yet Implemented)
-- **No complete commercial adventure loop yet:** No title screen, New Game / Continue flow, general save/load, persistent player progression, clue journal, general inventory, or slice completion state. Exiting Backrooms resets the safe, astrolabe, and portal state.
+- **No complete commercial adventure loop yet:** No title screen, clue journal UI, general inventory UI, or slice completion state (local progression save/load and Pause Menu Save / New Game controls are now implemented, while full vertical-slice onboarding and ending flows remain planned).
 - **Visual-only Lasser portal:** No playable realm exists beyond *El Umbral de Lasser*.
 - **No authored audio assets yet:** All current SFX/ambience are procedurally synthesized in C# (`AudioClip.Create`).
 - **Developer-only runtime coupling:** Running the full world currently requires launching the local Node.js backend alongside the Unity executable (see Developer Quickstart below).

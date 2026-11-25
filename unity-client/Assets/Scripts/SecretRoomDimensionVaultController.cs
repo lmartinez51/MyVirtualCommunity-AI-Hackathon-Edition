@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using MyVirtualCommunity.Client.Progression;
 
 namespace MyVirtualCommunity.Client.World
 {
@@ -45,12 +46,60 @@ namespace MyVirtualCommunity.Client.World
         [SerializeField] private bool isPortalActivated = false;
         [SerializeField] private float socketLockProgress = 0f;
 
+        private PlayerProgressionService progressionServiceOverride;
+
         public bool HasAstrolabeInInventory => hasAstrolabeInInventory;
         public bool IsPortalActivated => isPortalActivated;
         public bool IsSafeOpen => vaultSafeDoorController != null && vaultSafeDoorController.IsOpen && vaultSafeDoorController.OpenProgress > 0.45f;
 
+        public void SetProgressionServiceForTesting(PlayerProgressionService service)
+        {
+            progressionServiceOverride = service;
+        }
+
+        private PlayerProgressionService GetActiveProgressionService()
+        {
+            if (progressionServiceOverride != null) return progressionServiceOverride;
+            return Application.isPlaying ? PlayerProgressionService.Shared : null;
+        }
+
+        /// <summary>
+        /// Hydrates the Level-Omega safe, El Ojo del Umbral, and El Umbral de Lasser portal
+        /// from the player's local narrative progression so state survives scene unloads and restarts.
+        /// </summary>
+        public void ApplyProgressionState(PlayerProgressionService progression)
+        {
+            if (progression == null) return;
+
+            if (vaultSafeDoorController != null && progression.IsDoorPuzzleSolved(vaultSafeDoorController.doorId))
+            {
+                vaultSafeDoorController.RestorePersistedUnlockedOpenState();
+            }
+
+            hasAstrolabeInInventory = progression.IsHoldingOjoDelUmbral;
+            isPortalActivated = progression.IsLasserPortalCurrentlyActive;
+            socketLockProgress = isPortalActivated ? 1f : 0f;
+            RefreshVisualState();
+        }
+
+        /// <summary>
+        /// Resets runtime vault/portal state back to fresh initial defaults (used when starting a New Game).
+        /// </summary>
+        public void ResetRuntimeStateToDefault()
+        {
+            hasAstrolabeInInventory = false;
+            isPortalActivated = false;
+            socketLockProgress = 0f;
+            if (vaultSafeDoorController != null)
+            {
+                vaultSafeDoorController.CloseAndRelock();
+            }
+            RefreshVisualState();
+        }
+
         private void Start()
         {
+            ApplyProgressionState(GetActiveProgressionService());
             RefreshVisualState();
         }
 
@@ -98,6 +147,7 @@ namespace MyVirtualCommunity.Client.World
 
             hasAstrolabeInInventory = true;
             RefreshVisualState();
+            GetActiveProgressionService()?.RecordOjoDelUmbralAcquired();
             return true;
         }
 
@@ -113,6 +163,7 @@ namespace MyVirtualCommunity.Client.World
                 isPortalActivated = false;
                 hasAstrolabeInInventory = true;
                 RefreshVisualState();
+                GetActiveProgressionService()?.RecordLasserPortalState(isPortalActivated: false);
                 return true;
             }
 
@@ -124,6 +175,7 @@ namespace MyVirtualCommunity.Client.World
             hasAstrolabeInInventory = false;
             isPortalActivated = true;
             RefreshVisualState();
+            GetActiveProgressionService()?.RecordLasserPortalState(isPortalActivated: true);
             return true;
         }
 
