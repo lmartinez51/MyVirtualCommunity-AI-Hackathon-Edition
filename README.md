@@ -1,539 +1,157 @@
-# MyVirtualCommunity — AI Hackathon Edition
+# My Virtual Community
+## *A Living World Beyond Reality.*
 
-An authoritative, grounded multimodal AI foundation and interactive 3D simulation for the **Ciudad Juárez–El Paso international border corridor** (Avenida Benito Juárez and Puente Internacional Paso del Norte).
+> *"An interconnected first-person exploration adventure where authentic border life conceals an extraordinary network of hidden worlds."*
 
-Built with **Meta Muse Spark 1.3**, **Meta Segment Anything 3.1 (SAM 3.1)**, **Unity 6 (6000.3.25f1)**, and an authoritative **Node.js/TypeScript World Core**.
+**My Virtual Community — A Living World Beyond Reality.** is a **single-player, first-person exploration and environmental mystery adventure** in active development for **Windows PC** using **Unity 6 (`6000.3.25f1`)**.
 
-![MyVirtualCommunity AI Hackathon Edition Overview](docs/assets/myvirtualcommunity-hackathon-overview.jpg)
-
----
-
-## 1. Project Overview & Problem Statement
-
-In conversational AI applications for local civic environments and international border communities, commercial large language models suffer from three fundamental vulnerabilities:
-
-1. **Schedule Hallucination:** Models frequently invent business opening hours, confuse timezones (such as `America/Ciudad_Juarez` vs. `America/Denver` during daylight saving time offsets), or present outdated schedules as current fact.
-2. **Fabricated Border Metrics:** Chatbots routinely fabricate live border wait times or mistake informal eyewitness estimates for official government port-of-entry measurements.
-3. **Unverifiable Visual Claims:** Multimodal systems claim to inspect municipal damage or civic issues without providing auditable visual segmentations, masks, or explicit privacy sanitization.
-
-**MyVirtualCommunity (AI Hackathon Edition)** solves these problems through an **authoritative hexagonal architecture** that enforces strict boundaries between deterministic factual truth and generative natural-language synthesis:
-
-- **Authoritative World Core:** Business schedules, admission rules, spatial coordinates, deterministic waypoint movement, and citizen reports are managed deterministically in pure domain code. The generative AI model is never permitted to invent or alter facts.
-- **Strict Factual Grounding:** Meta Muse Spark 1.3 is provided with verified atomic snapshots and constrained to natural-language presentation without hallucinating state.
-- **Verifiable Visual Segmentation:** Meta SAM 3.1 generates auditable 2D bounding boxes and binary segmentation masks for municipal photographic evidence, with mandatory user consent before any external processing.
-- **Clear Data Provenance:** Official U.S. Customs and Border Protection (CBP) pedestrian wait-time observations are strictly separated from the fictional testimonies of simulated synthetic witnesses.
+> **Development & Repository Notice:** This game is currently an **in-development playable prototype** transitioning toward its commercial vertical slice (*Unity Fellowship 2027* track on branch `product/unity-fellowship-2027`). It is **not** a finished commercial product, an AI assistant, an MMO, a persistent multiplayer metaverse, or a consumer-ready installer yet. The repository retains its original GitHub name (`MyVirtualCommunity-AI-Hackathon-Edition`) to preserve full Git history; all historical 2026 hackathon documentation is preserved verbatim in [`docs/archive/ai-hackathon-2026/`](docs/archive/ai-hackathon-2026/INDEX.md). The separate baseline repository `lmartinez51/MyVirtualCommunity` remains strictly read-only.
 
 ---
 
-## 2. The Ciudad Juárez–El Paso Virtual Corridor
+## 1. Game Overview & Creative Direction
 
-The simulation reproduces the binational urban environment of **Avenida Benito Juárez** in historic downtown Ciudad Juárez, extending north toward the **Puente Internacional Paso del Norte / Santa Fe Street Bridge** crossing into El Paso, Texas:
+Set along an authentic urban reconstruction of the **Ciudad Juárez–El Paso international border corridor** (**Avenida Benito Juárez** and the **Puente Internacional Paso del Norte**), *My Virtual Community* grounds the player in a living, schedule-driven binational city — and then peels back its ordinary surface to reveal concealed subterranean infrastructure and non-Euclidean liminal spaces.
 
-- **Photographic Architectural Grounding:** Authentic reconstruction grounded in official photographic survey:
-  - **East Sidewalk Commercial Block:** Farmacias Benavides, Consultorio Médico, Comercial Uno, Joyería Minerva, Curiosidades Azteca, La Michoacana, Atención Dental, Cambios Puente, and APPLE DENTAL CARE · DENTISTA, fronted by continuous solid white 3-lane bridge-queue roadway markings.
-  - **West Sidewalk Commercial Block:**
-    - **SW Corner Annex (`WestAzucenasCornerBuilder`, 6 establishments):** `Óptica MGR.` (display window with `"LENTES"` decal & black-framed Push/Pull door), `Farmalivio` (3D extruded turquoise channel-letter sign, double aluminum Push/Pull glass doors, and 3-line `"El alivio empieza aquí"` wall quote), `Cambios Bonanza` (permanently closed white corrugated roll-up shutter), twin 3D CFE electric meters, `Grupo Billemex` (armored employee door, reinforced teller window with cash tray, and cantilevered simultaneous green/red `COMPRA`/`VENTA` live LED sign), `La Esquina de Chihuas · Resto-Bar` (straightened frameless double-glass entrance, backlit amber wall sign, and 38-bulb rooftop `"LA ESQ DE CH"` marquee with extruded golden arrowhead), and `México Mágico · Café Express-O` (protruding rosa mexicano pavilion, 4-bay glass coffee bar, neon pink banner, arrow box, and cantilevered circular cutout lightbox).
-    - **Building A South Wing, Secret Room & Backrooms Level 1 (`WestSidewalkBlockBuilder`, `SecretWedgeRoomBuilder`, `BackroomsLevel1Builder`, `SecretKeypadDoorController`, `SecretBackroomsTransitionController`):** Upper 2-story diagonal chamfer joined flush with the 1-story SW annex at their shared diagonal vertex (`Z = -13.45 m`), street-aligned ground-floor mystery-door false wall (`X = -12.00 m`) with taupe-gray relief molding, electrical register box, solid double metal doors with an interactive **3D 6-digit electronic keypad lock** (default code `123456`, automatic relock on close, ready for daily randomized codes), and an opaque **Threshold Veil** backed by authoritative single-occupant World Core state (`GET /api/secret-vault/status`, `POST /api/secret-vault/enter`, `POST /api/secret-vault/leave`): when another player is inside, newcomers see only the small empty dusty room (`decoy_empty`); when free, crossing the veil slams & relocks the street door, disables street HUD navigation, and additively loads `BackroomsLevel1Scene.unity` — a real south-block-scale **`40 m × 24 m` (`960 m²`)** Level 0 yellow-wallpaper liminal labyrinth featuring a central pillared hall, flickering fluorescent fixtures, strictly 1 lone workstation (desk + laptop + chair), 8 API-ready "Reality-Bridge" props (Laptop, FM Radio, Alexa smart speaker, *El Diario de Juárez* digital iPad, Juárez Live Border Terminal, 90s Wall Payphone, CCTV Frame, Thermal Printer), all 13 dispersed horror/esoteric containment artifacts, the **Level-Ω Vault Safe** (`654321`) in the far NW holding *"El Ojo del Umbral"* (Dimensional Astrolabe Keystone), and the monumental **Dimensional Mirror-Portal** (*"El Umbral de Lasser"*) in the far SW (~41 m diagonally from the NE entry); followed by vertical `"PHARMACY"` pilaster lettering, `Farmacia Juárez` (illuminated white `"FJ Juárez"` lightbox, aluminum storefront & pharmacy interior), unnamed 24/7 `Casa de Cambio` (warm peach-cream plaster, teller alcove, and cantilevered live green/magenta `COMPRA`/`VENTA` LED sign), `Dental México` (3D extruded electric-blue channel-letter sign spanning the upper fascia, modern black/gold door & services window, doormat, and 3D CFE meter) — all three fitted with **white roll-up metal shutters** dynamically synchronized to authoritative per-day backend schedules (`GET /api/businesses/:id/status`: `Farmacia Juárez` Mon–Fri 08:00–20:00 & Sun 08:00–16:00, closed Sat; `Dental México` Mon–Fri 09:00–17:00 & Sat 09:00–15:00, closed Sun; `Casa de Cambio` 24/7 open).
-    - **Building A–C North Wing:** `Farma / Pharmacy`, `Óptica Fashion` (full-height bronze-framed glass storefront with inward-opening north door leaf, `"ABIERTO"` LED and `"Bienvenidos / HORARIO"` signage, physically traversable reconstructed showroom & rear consultation/calibration room via `OpticaFashionInteriorBuilder`, and dynamic white roll-up metal shutter synced with World Core Mon–Sat 09:00–17:00 / closed Sun), `Cambios Santa Fe` (diagonal Building A return, recessed open vestibule, armored door, bulletproof teller window, `"OPEN"` LED sign, 24h shutter, 3D CFE meters, and cantilevered dual-arm live USD/MXN LED sign powered by `GET /api/world/exchange-rate`), `Bar La Cucaracha`, `Taquería El Trompo`, and recessed `Dental Jarquín`.
-- **West Manzana Perimeter, Calle Ignacio Mariscal & Plaza Peatonal (`WestManzanaPerimeterBuilder`):** Full OSM-grounded delimitation of the West Manzana (`40.0 m` E–W urban lot pad up to `X = -52.00 m`) with continuous U-shaped perimeter sidewalks and curbs, rounded SW ($R = 3.0\text{ m}$) and NW ($R = 3.5\text{ m}$) corners, complete **Calle Ignacio Mariscal** roadway (`X = -54.50` to `-64.00 m`, `9.5 m` wide) connecting Calle Azucenas north into an open T-junction with Calle Gardenias West (plus south intersection stub, zebra crosswalks, corner bollards & street signs), and the opposing sweeping curved **Plaza Peatonal** ($R = 8.0\text{ m}$ SE curve) along the west side of Ignacio Mariscal.
-- **Underground Storm-Drain Network ("Third World") & Silent Manhole No-Clip Easter Egg (`UndergroundSewerBuilder`, `UndergroundSewerAtmosphereController`, `SewerManholeInteractable`, `SewerOutflowGateController`):** Coherent 65-year-aged vaulted underground storm-drain collector network physically built underneath `BorderCorridorScene.unity` (`Y = -3.20 m` seamless Z-fighting-free walkways with central flowing water channel, sealed double-sided brick arch spandrels, sparse natural water drips, near-black fog with suppressed skybox reflections and outdoor streetlight bleed, elevation-isolated HUD hiding surface NPCs while underground, rubble/roots/corroded valves, bilingual crimson border graffiti, and Wiltshire-style Crop Circle glyphs), accessible via 5 interactive round cast-iron municipal manholes (`[E]`) featuring real open hollow 16-sided circular brick chimneys and unbroken wall-bolted iron ladders. Includes 6 curbside "Georgie" storm-drain intake slots casting feathered diagonal light shafts (with a 3D folded newspaper origami `"SS GEORGIE"` boat at Azucenas × Juárez), a sealed *Sector C-0* lore bulkhead directly beneath *La Esquina de Chihuas* crowned by a hanging weathered wooden Paris Catacombs plaque (*«Arrête ! C'est ici l'empire de la mort»*), `"SECTOR ESTE / CLAUSURADO"` markers on closed east branches, the **Grand Octagonal Central Cistern Vault ("La Cisterna / El Nudo")** beneath Av. Juárez × Calle Gardenias (`16.4 m` diameter × `6.0 m` sunken flooded basin with seamless octagonal balcony ring, flickering hanging lamps, and a symmetrical 45°-radial dual-handrail industrial staircase with integrated circular island landing apron ready for future subterranean inhabitants), and a northern trunk collector descending cleanly through a deep **`Y = -8.45 m` inverted-siphon gallery underneath the sunken Av. Abasolo underpass** before ramping out through a split levee bank into a weathered concrete **Río Bravo Storm Outflow Headwall + Interactive Rusted Iron Gate (`[E]`)** with clear day/night sightlines and under-bridge lighting onto the walkable south bank beneath Puente Internacional Paso del Norte. Descending the Av. Benito Juárez × Calle Azucenas manhole triggers a silent, hint-free Kane Pixels-style ceiling no-clip drop into one of 10 random collision-verified corridors inside `BackroomsLevel1Scene`.
-- **Calle Gardenias Intersection:** Full civil engineering intersection featuring continuous asphalt roadway, 4 curved corner fillet radii (1.80 m), ADA-compliant yellow tactile curb ramps, zebra crosswalks, designated taxi parking stalls, and dual street nomenclature signposts.
-- **Av. Benito Juárez × Calle Azucenas West & NW Corner (`WestAzucenasCornerBuilder`):** Symmetric NW corner fillet ($R = 3.0\text{ m}$ at $Z = -26.11\text{ m}$), continuous Calle Azucenas West corridor ($Z = -36.71\text{ m}$ to $-29.11\text{ m}$) with zebra crosswalk and SW counterpart ($R = 3.5\text{ m}$), accessible pedestrian curb ramps, black cylindrical corner bollards, diagonal SW tactile guide strip, and expanded 1-story 6-shop NW corner commercial annex (`NWCorner_AnnexBuilding`, extended south to $Z = -26.80\text{ m}$) with terracotta parapet coping, beige sloped awnings, and corner gas riser.
-- **Puente Internacional Paso del Norte (PC-51):** Monumental arched concrete canopy, 3D relief blue lane identifiers (1, 2, 3, 4) on toll booth pillars, dual Fideicomiso surveillance camera Easter Eggs (**Vista Sur** & rear **Vista Norte**) with live YouTube streams, diagonal barricades to Pillar 4, and open pedestrian concourse with Elena Ramos' CBP information kiosk.
-- **Dynamic Toll Barrier Gates (Plumas de Peaje):** 4 electromechanical toll barrier units across Arcos 1–4 with animated red/white hazard striped arms, physical collision synchronization, dual-aspect traffic signals (green/red), and live backend World Core control.
-- **Extended Paso del Norte International Bridge Viaduct:** Continuous modular bridge deck ($Z = 40\text{ m}$ to $350\text{ m}$) spanning across under-bridge avenues (`Av. Heroico Colegio Militar`, `Francisco Villa`, `Abasolo`) and crossing the curving Río Bravo / Rio Grande international border canal into El Paso, Texas. Features vertical hump elevation profiles, curved superelevation, 4 equal traffic lanes with directional arrows, white tubular bollards and straight-aligned orange plastic New Jersey barriers delimiting the east Línea Express / SENTRI lane (keeping the south pedestrian zebra crosswalk completely clear), an overhead green `"CHIHUAHUA LES DESEA / FELIZ VIAJE"` gantry sign, symmetrical East & West covered pedestrian walkways (curved terracotta roofs, Warren steel trusses, 3-tube galvanized guardrails, and South-extended West transition from $Z = 53.0\text{ m}$), a street-level East accessible ramp exit linked by an alternating yellow/white zebra crosswalk to a matching West guardrail opening, sloped East queue NPC waypoints/railings ($Y = 0.200\text{–}0.520\text{ m}$), monumental canopy downlights, and an authentic East-to-West solar trajectory.
-- **U.S. Inspection Plaza & Border Port of Entry (El Paso):** CBP inspection booths, vehicle descent ramp, pedestrian walkway extension, and "El Aguacero" convergence zone terminating the international border corridor.
-- **Citizen Service Relocation:** Lic. Patricia Morales's "Enlace de Atención Ciudadana" municipal kiosk is positioned along the West sidewalk at $X = -7.60\text{ m}, Z = 18.80\text{ m}$ in front of Building C / Dental Jarquín, leaving the neighboring storefronts completely unobstructed.
-- **Binational Context:** Real-time port-of-entry dynamics where thousands of students, retail workers, and daily commuters cross between Mexico and the United States.
+- **Genre & Perspective:** Single-player first-person exploration and mystery adventure (`1.60 m` standing eye level, handheld flashlight `[F]`, direct environmental interaction `[E]`).
+- **Tonal Contrast:** Everyday urban border realism (storefront schedules, bilingual street life, sunlit viaduct architecture) contrasting against dark subterranean storm drains and eerie liminal vaults.
+- **Core Philosophy:** Observation-first spatial discovery backed by deterministic world rules, designed to operate offline-first with optional real-world bridges.
+
+See [docs/GAME_VISION.md](docs/GAME_VISION.md) for the working creative pillars and open creator decisions.
 
 ---
 
-## 3. Main User Experience & Playable Features
+## 2. Main Gameplay Concept
 
-The project delivers a fully interactive first-person experience built in **Unity 6 (6000.3.25f1)**:
+The commercial adventure loop (`PLANNED`, see [docs/CORE_GAME_LOOP.md](docs/CORE_GAME_LOOP.md) and [docs/VERTICAL_SLICE.md](docs/VERTICAL_SLICE.md)) centers on:
 
-- **First-Person Corridor Navigation & Handheld Flashlight:** Smooth keyboard/mouse movement (`W/A/S/D` to walk, `Shift` to sprint, `Mouse` to look, `Space` to jump) with auto-anchored standing head camera (1.60 m eye level), elevation-aware NPC visibility filtering (hiding surface NPC nameplates, radar, and minimap dots while underground), and a high-contrast URP Forward+ handheld tactical flashlight (`F` via `PlayerFlashlightController`) for exploring the pitch-dark underground storm-drain network and nighttime streets.
-- **Proximity & Raycast Interaction:** Aim at any interactive NPC, service desk, or landmark and press `E` to initiate a dialogue or service flow.
-- **2D Corridor Architectural Minimap:** Press `M` anytime to toggle a translucent 2D minimap overlay with real-time player orientation cone, avenue boundaries, bridge canopy, and color-coded landmark blips.
-- **Real-Time Compass & Orientation Ribbon:** Compass strip displaying player heading degrees (0–359°), cardinal directions (N, NE, E, SE, S, SW, W, NW), and real-time destination hints.
-- **Dynamic Auto-Sizing HUD Windows:** Self-measuring, anti-clipping IMGUI windows across the Controls & Exploration Guide (`F1`), Pause Menu (`Esc`), and Settings Drawer. Content height is measured dynamically on repaint, adapting automatically whenever text or options change, with automatic scrollbar fallback on smaller screens.
-- **Interactive Live YouTube Camera Easter Eggs (Vista Sur & Vista Norte):** Clickable Fideicomiso surveillance cameras mounted on the south facade (`Bridge_Fideicomiso_Camera_VistaSur`, `https://www.youtube.com/watch?v=IcvugJWPXz8`) and north rear cornice (`Bridge_Fideicomiso_Camera_VistaNorte`, `https://www.youtube.com/watch?v=0Pg3S6s76IE`) of the international bridge canopy. Clicking either opens an interactive Picture-in-Picture (PiP) dark-mode player with a live 3D CCTV mirror, blinking "● LIVE / ● EN VIVO" status badge, YouTube preview toggle, and one-click redirect to the official live YouTube stream.
-- **Av. Juárez Digital Gateway Arch & Dynamic LED Billboard:** Lattice steel gateway arch at the south entry block (`Z = -23.50 m`, north of Calle Azucenas) featuring `"CIUDAD JUÁREZ"` and `"BIENVENIDOS"` plaques, `"15 km/h MÁXIMO"` signage, time-of-day LED garland bulbs, curved `ROGER` side panels, and a `5.00 m × 3.20 m` central LED display cycling `10–45 s` `.mp4` videos synchronized from `media/arch-ads/` (`ArchCache/` pre-download with `StreamingAssets/ArchMedia/` fallback) with `7 s` pauses showing live World Core clock, Open-Meteo Ciudad Juárez weather, Paso del Norte CBP wait times, and cultural promo slides.
-- **Dynamic Border Lane Barrier Control:** Real-time electromechanical toll barrier synchronization between the Unity client and World Core REST API (`GET /api/border/lane-barriers` & `POST /api/border/lane-barriers/:laneId`), with in-game Settings drawer debug toggles.
-- **Autonomous NPC Locomotion, Bridge Patrols & Social Lifecycle:** 7 corridor NPCs with identity-aware autonomous behavior synchronized from World Core: full-bridge pedestrian patrol loops for community proxies (`Mateo Navarro`, `Sofía Alarcón`, `Don Héctor Méndez`), boundary-aware business wandering (`Carlos Méndez`, `Valeria Domínguez` with full indoor/outdoor Óptica Fashion locomotion, scheduled rear-room optical calibration, opening/closing shutter-coordinated lifecycle, and interaction-safe movement suspension), personal-space separation, grounded leg-synchronized locomotion, and deterministic NPC-to-NPC social interactions.
-- **Interactive NPC Dialogue Trees:** Grounded question chips, custom query text input, and authoritative responses with latency and model badges.
-- **Multimodal Citizen Reporting Desk:** Complete intake modal for reporting municipal issues with optional photo attachment, client-side metadata sanitization, SAM 3.1 segmentation preview, and World Core registration.
-- **Visual Evidence Inspection Viewer:** Modal inspection tool allowing users to examine original photographs, extracted SAM 3.1 segmentation masks, and blended visual overlays in 3 distinct viewing modes.
-- **Dual Aerial Inspection System (3D Free Drone & Google Maps Satellite View):** Full aerial 6-DOF drone flight (`V`) and Google Maps/Earth-style top-down & oblique satellite inspection (`G`), complete with 90° nadir tilt toggles (`R`), 3rd-person quadcopter visualization (`F`), ground player teleportation (`T`), sector quick-jumps (`1`–`5`), and live overhead mini-preview HUD layer switcher card.
-
-### Dual Aerial Inspection System (3D Free-Flight Drone & Google Maps Satellite View)
-
-The corridor features a fully integrated aerial inspection engine rendered in runtime without modifying static scene assets:
-
-1. **Modalidad 1: Dron Libre 3D (`Tecla [V]`):**
-   - **6-DOF Flight:** Horizontal flight with `W/A/S/D`, vertical lift with `Space` / `E`, descent with `Q`, `C`, or `Ctrl`. Hold `Shift` for Sport Mode ($15\text{ m/s} \rightarrow 34\text{ m/s}$).
-   - **Full Gimbal Range:** $-40^\circ$ (skyward) to $+89.5^\circ$ (**true sky-to-ground perpendicular nadir view**).
-   - **Instant Nadir Toggle (`[R]`):** Flip instantly between $34^\circ$ oblique and $89.5^\circ$ pure top-down to inspect street surfaces, lane dividers, and curbs.
-   - **3rd-Person Quadcopter View (`[F]`):** Toggle between 1st-person FPV and an external chase camera viewing a procedural 3D quadcopter model with 4 spinning rotors, aerodynamic velocity tilting, and telemetry LEDs.
-   - **Optical Zoom:** Mouse scroll wheel scales camera FOV between $22^\circ$ (telephoto) and $78^\circ$ (wide angle).
-   - **Instant Ground Teleport (`[T]`):** Drop the first-person player immediately to ground level at the current drone coordinates.
-   - **Corridor Sector Hotkeys (`[1]`–`[5]`):** Quick auto-pilot to South Entry (`1`), Calle Gardenias (`2`), Toll Plaza (`3`), Bridge Deck (`4`), and Río Bravo / Loop 375 (`5`).
-
-2. **Modalidad 2: Satélite estilo Google Maps / Google Earth (`Tecla [G]`):**
-   - **Interactive Cursor Navigation:** Unlocked mouse cursor; click and drag to pan across the corridor smoothly.
-   - **Altitude Zoom:** Mouse scroll wheel scales altitude continuously from $12\text{ m}$ (street close-up) to $240\text{ m}$ (panoramic regional view).
-   - **Bearing & Compass:** Right-click drag or `Q`/`E` rotates compass heading; press `N` to snap back to true North ($0^\circ$).
-   - **2D Nadir vs. 3D Oblique Relief (`[R]`):** Switch between $90^\circ$ orthogonal-like nadir and Google Earth-style $58^\circ$ 3D relief with focal-point compensation.
-   - **Hybrid Real-Time 3D Pins:** Projected in-world labels for player location (*"🧍 TÚ (JUGADOR)"*), key municipal infrastructure, and dynamic walking NPCs.
-   - **Ground Teleport (`[T]`):** Teleports player to ground level centered at the current map view.
-
-3. **HUD Google Maps Layer Switcher Card:**
-   - Floating card at bottom-left corner with a live overhead satellite thumbnail ($58\text{ m}$ altitude) rendering in real time with player position and quick-access buttons (`[🛰️ Satélite]` and `[🚁 Dron Libre]`).
+1. **Exploring the Living Surface:** Navigating Avenida Benito Juárez, local storefronts, and the Paso del Norte pedestrian corridor while observing daily schedules, architectural anomalies, and distinct residents.
+2. **Uncovering Hidden Spaces:** Descending into the storm-drain network beneath the streets and breaching concealed doors through discovered clues and access codes.
+3. **Crossing Thresholds & Solving Puzzles:** Navigating additively loaded liminal layers, assembling clues, recovering key relics (*El Ojo del Umbral*), and awakening dimensional thresholds (*El Umbral de Lasser*).
 
 ---
 
-## 4. NPC Character Guide
+## 3. Verified World Inventory (`CONFIRMED`)
 
-The corridor features seven distinct non-player characters (NPCs), each fulfilling an explicit architectural role:
+The current prototype physically constructs four interconnected narrative spaces across **two primary playable Unity scenes** (see [docs/WORLD_ATLAS.md](docs/WORLD_ATLAS.md) for full spatial details and the verified transition matrix):
 
-| Character | Role / Identification | Canonical Location | Capabilities & Grounding |
-| :--- | :--- | :--- | :--- |
-| **Elena Ramos** | **Border Pedestrian Concierge** (`elena-border-concierge`) | Puente Paso del Norte pedestrian queue | Interprets official CBP pedestrian wait times, compares Paso del Norte vs. BOTA (Bridge of the Americas), and explains data freshness. |
-| **Lic. Patricia Morales** | **Enlace de Atención Ciudadana** (`patricia-citizen-rep`, alias `patricia-morales`) | Municipal intake desk (Av. Juárez west sidewalk, $X = -7.60\text{ m}, Z = 18.80\text{ m}$ in front of Dental Jarquín) | Intake representative for citywide citizen issue reporting (9 categories), visual evidence validation, and simulated municipal routing. |
-| **Carlos Méndez** | **Virtual Storefront Attendant** (`carlos-farmacia-attendant`) | Farmacias Benavides storefront (East sidewalk) | Answers hours, location, and operational inquiries grounded strictly in verified World Core business schedules. |
-| **Valeria Domínguez** | **Virtual Storefront Attendant** (`valeria-optica-attendant`) | Óptica Fashion storefront (West sidewalk) | Answers optical service hours, address, and admission policies grounded in authoritative domain data. |
-| **Mateo Navarro** | **Synthetic Community Witness** (`mateo-student`) | Puente Paso del Norte patrol loop | 21-year-old UTEP engineering student; shares simulated perspective on daily student commuting. Fictional testimony explicitly disclaimed. |
-| **Sofía Alarcón** | **Synthetic Community Witness** (`sofia-cross-border-retail`) | Puente Paso del Norte patrol loop | Cross-border retail employee; shares simulated perspective on shopping and pedestrian peak wait times. |
-| **Don Héctor Méndez** | **Synthetic Community Witness** (`hector-artisan`) | Puente Paso del Norte patrol loop | Traditional downtown artisan; shares simulated perspective on historical corridor foot traffic and heritage. |
-
----
-
-## 5. Border Concierge & Official CBP Pedestrian Observations
-
-Stationed at the international crossing, **Elena Ramos** provides orientation to cross-border pedestrians using authoritative data:
-
-- **Official Source Authority:** Pedestrian wait times are ingested from the official **U.S. Customs and Border Protection (CBP) Border Wait Times (BWT) API**.
-- **Canonical Ports Compared:**
-  - `infrastructure:puente-paso-del-norte` (Paso del Norte / PDN / Santa Fe Bridge — standard pedestrian lane).
-  - `infrastructure:puente-cordova-americas` (Bridge of the Americas / BOTA / Libre — standard pedestrian lane).
-- **Anti-Hallucination Guardrails:**
-  - The model is never permitted to guess or calculate wait times. It only explains the raw numbers returned by the CBP port.
-  - Every observation reports its source timestamp, observation age in minutes, lane count, and operational status.
-  - If official data is unavailable or the external API is unreachable, the system displays an explicit `Unavailable` badge rather than inventing numbers.
-
----
-
-## 6. Synthetic Community Witnesses & Fictional Status
-
-To explore community sentiment and cultural nuances of cross-border life without misleading users, the simulation includes **Synthetic Community Witnesses** (Mateo, Sofía, and Don Héctor):
-
-- **Prominent Provenance Markers:** Every response carries an un-bypassable provenance header: `Testigo sintético · Simulación` / `Synthetic witness · Simulation`.
-- **Fictional Boundary:** The UI prominently warns: *"Fictional scenario witness. Not an actual traveler. Statements are simulated testimony separate from official CBP bridge measurements."*
-- **Role Scoping:** Witnesses cannot modify simulation state, answer municipal intake questions, or alter business hours.
-
----
-
-## 7. Citizen Reporting Workflow
-
-Citizens can report urban infrastructure problems through **Lic. Patricia Morales**:
-
-```text
-[ PLAYER ]
-    │
-    ▼
-1. Select Category (9 Municipal Categories)
-    │
-    ▼
-2. Describe Observed Civic Problem
-    │
-    ▼
-3. Specify Incident Location (Av. Juárez Corridor or Citywide Juárez Sector)
-    │
-    ▼
-4. Optional Photographic Evidence (JPEG / PNG, max 5 MB)
-    │
-    ├─ If photo attached: User grants/declines external AI processing consent
-    │     │
-    │     ├─ Consent GRANTED   ──► SAM 3.1 Visual Segmentation (Masks & Boxes)
-    │     └─ Consent DECLINED  ──► Image stored locally; external AI skipped
-    │
-    ▼
-5. Generate Report Draft (Meta Muse Spark 1.3 synthesizes structured summary)
-    │
-    ▼
-6. Player Confirmation & Submission
-    │
-    ▼
-7. World Core Atomic Persistence (.runtime/citizen-reports.json)
-    │
-    ▼
-8. Traceable Folio Issued (e.g. CJ-029411) & Simulated Routing
-```
-
-### Visual Walkthrough & Evaluator Evidence
-
-The citizen reporting lifecycle and user interface are illustrated below across four interface states:
-
-#### 1. In-World Desk Approach
-![Approach Lic. Patricia Morales](screenshots/511_01_patricia_desk_approach.png)
-*Actual in-engine 3D capture: First-person player perspective approaching Lic. Patricia Morales at the simulated municipal citizen attention desk on Avenida Benito Juárez.*
-
-#### 2. Category & Issue Intake Modal
-![Citizen Reporting Modal Form](screenshots/511_02_citizen_reporting_modal_form.png)
-*Actual application HUD interface: Intake modal form supporting 9 municipal categories, detailed problem description, street location, and optional photographic evidence attachment.*
-
-#### 3. Multimodal Draft Review & Segmentation (Illustrative UI Mockup)
-![SAM and Spark Draft Review](screenshots/511_03_sam_and_spark_draft_review.png)
-*Illustrative UI demonstration layout: Synthetic mockup demonstrating how the draft review screen displays civic issue summaries alongside simulated SAM 3.1 visual segmentation results.*
-
-#### 4. World Core Demonstration Receipt (Local Simulation)
-![World Core Confirmed Receipt](screenshots/511_04_world_core_confirmed_receipt.png)
-*Local demonstration receipt: Illustrates registration confirmation issued by the local World Core displaying a demonstration folio (`CJ-029411`), simulated department canalization, and local file persistence capability (`Persistencia local disponible: .runtime/citizen-reports.json`) under the `RECEIVED` lifecycle state.*
-
-> **Simulation Notice & Evaluator Transparency:**
-> - **Civic Registration:** Citizen reporting operates strictly within the local MyVirtualCommunity demonstration. Folios, receipts, and departmental canalization are simulated by the local World Core and are **not** transmitted to, registered with, or approved by real-world municipal or government authorities.
-> - **Demonstration Folio vs. Configured Persistence:** The displayed folio (`CJ-029411`) is fixed demonstration data in the screenshot layout. Local atomic file persistence (`.runtime/citizen-reports.json`) is a genuine backend capability configured in local mode (independently verified by automated restart recovery tests), clearly distinguished from in-memory fixtures.
-
-### SAM 3.1 Evidence Classification & Provenance Matrix
-
-To maintain strict scientific and evaluator integrity, the implementation of **Meta Segment Anything 3.1 (SAM 3.1)** is organized into four distinct evidence layers:
-
-| Layer | Component | Nature & Scope | Verification Method |
-| :--- | :--- | :--- | :--- |
-| **1. Synthetic UI Illustration** | `screenshots/511_03_sam_and_spark_draft_review.png` | Procedural GDI+ visual layout demonstrating draft review modal layout and bounding box placement. | Evaluator visual reference; does not represent live model execution. |
-| **2. Automated Domain Testing** | `tests/domain/sam-mask-overlay.test.ts` | Complete deterministic domain verification of polygon parsing, bounding box arithmetic, run-length mask compositing, and overlay blending on test fixtures. | Automated test suite (`npm test`, 100% passing; does not make external network requests). |
-| **3. Provider Adapter Implementation** | `src/adapters/meta-model-api-adapter.ts` | Production SSE streaming pipeline supporting live SAM 3.1 inference when `MODEL_API_KEY` is configured, with graceful fallback. | Architectural contract & mocked unit/integration test coverage (does not constitute automated live external provider testing). |
-| **4. Manual User-Observed Inference** | In-engine Visual Evidence Inspector (Unity HUD) | Empirical test session where a real photograph was submitted with user authorization, returning 2 detected segmentation regions verified in the 3-mode visual inspector. | Manual interactive verification during live client evaluation sessions. |
-
-### 9 Municipal Issue Categories
-1. **Road Surface & Potholes** (`road-surface-damage`)
-2. **Sidewalks & Accessibility** (`sidewalk-obstruction`)
-3. **Waste & Public Cleaning** (`cleaning-and-waste`)
-4. **Water & Drainage** (`water-and-drainage`)
-5. **Public Lighting** (`public-lighting`)
-6. **Traffic Signs & Signals** (`traffic-signage`)
-7. **Parks & Public Spaces** (`parks-and-public-spaces`)
-8. **Urban Trees & Green Areas** (`trees-and-green-areas`)
-9. **Other Civic Issues** (`other`)
-
----
-
-## 8. Meta Muse Spark 1.3 Integration
-
-**Meta Muse Spark 1.3** (`muse-spark-1.3`) is utilized as the core natural-language synthesis engine across four domains:
-
-1. **Business Hours Assistant:** Formulates concise bilingual answers from deterministic operating schedules.
-2. **Border Concierge:** Explains bridge wait differences and traveler orientation based strictly on CBP facts.
-3. **Synthetic Witnesses:** Generates culturally authentic, character-voiced community perspectives.
-4. **Citizen Report Draft Synthesis:** Translates raw citizen descriptions and category selections into clear, professional municipal draft summaries with non-emergency safety assessments.
-
-### Anti-Hallucination Contract
-- Temperature and prompt parameters enforce deterministic grounding.
-- Prompts include explicit system instructions prohibiting the generation of unverified schedules or wait times.
-- If the World Core or CBP API returns an error or empty state, the server returns a structured HTTP 502/503 response and **never calls the language model**.
-
----
-
-## 9. Meta SAM 3.1 Integration & Photographic Segmentation
-
-When photographic evidence is provided for an urban issue report and external processing is authorized, the system invokes **Meta Segment Anything 3.1 (SAM 3.1)**:
-
-- **Targeted Visual Extraction:** Identifies damaged asphalt, pooling water, fallen trees, garbage heaps, or broken lighting fixtures.
-- **Standardized Coordinate Output:** Returns normalized 2D bounding boxes (`ymin`, `xmin`, `ymax`, `xmax`) with detected object labels and confidence scores.
-- **Binary Segmentation Masks:** Extracts precise pixel-level masks encoded as RLE or binary bitmasks.
-- **Visual Evidence Inspection Viewer:** The Unity client provides an enlarged 3-mode visual inspector:
-  1. **Combined Mode:** Blended overlay showing original photograph with translucent SAM masks and bounding boxes.
-  2. **Mask Only Mode:** High-contrast binary view showing segmented damage regions on a neutral backdrop.
-  3. **Original Photo Mode:** Clean view of the input photograph with metadata stripped.
-- **Engineering Disclaimer:** Prominently displays: *"Visual detection and segmentation only — does not certify structural engineering condition, depth, or road safety severity."*
-
----
-
-## 10. World Core Authority & Persistence
-
-The **World Core** acts as the single source of authoritative simulation state:
-
-- **Hexagonal Decoupling:** Implemented behind `WorldCorePort`. Can run as an in-memory fixture (100% offline) or communicate with an external authoritative simulation over HTTP (`RemoteWorldCoreAdapter`).
-- **Atomic File Persistence:** In local mode, citizen reports and simulated municipal tickets are written atomically to `.runtime/citizen-reports.json` using atomic temporary file replacement (`write -> fsync -> rename`), preventing data corruption upon process termination.
-- **Traceable Folio Generation:** Every confirmed report receives an immutable identifier (`CJ-XXXXXX`, e.g. `CJ-029411`), cryptographic content hash (SHA-256), and simulated municipal routing department assignment.
-- **Authoritative Waypoint Graph & Movement Roster:** Deterministic waypoint network (`CORRIDOR_WAYPOINTS`) and schedule-driven movement profiles for all 7 corridor characters. The client smoothly interpolates presentation transforms towards backend-provided positions without fabricating paths.
-- **Authoritative Electromechanical Barrier State:** Maintains the operational open/closed state of the 4 international bridge toll barrier units across Arcos 1–4.
-
----
-
-## 11. System Architecture & REST API Endpoints
-
-```text
-┌────────────────────────────────────────────────────────────────────────┐
-│                          PRESENTATION LAYER                            │
-│                                                                        │
-│   ┌────────────────────────────────┐   ┌───────────────────────────┐   │
-│   │     Unity 6 Standalone 3D      │   │    Web Assistant Client   │   │
-│   │   (Av. Benito Juárez Client)   │   │     (Browser UI / HUD)    │   │
-│   └───────────────┬────────────────┘   └─────────────┬─────────────┘   │
-└───────────────────┼──────────────────────────────────┼─────────────────┘
-                    │  HTTP / JSON                     │  HTTP / JSON
-                    ▼                                  ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│                        APPLICATION & PORTS LAYER                       │
-│                                                                        │
-│    ┌─────────────────────────┐        ┌───────────────────────────┐    │
-│    │ Assistant Express/HTTP  │◄───────┤ AnswerBusinessHours       │    │
-│    │ Server (Port 3000)      │        │ AskBorderConcierge        │    │
-│    └──────────┬──────────────┘        │ TalkToSyntheticWitness    │    │
-│               │                       │ TalkToBusinessAttendant   │    │
-│               ▼                       │ CreateCitizenReportDraft  │    │
-│      [ Domain Invariants ]            │ SubmitCitizenReport       │    │
-│                                       └─────────────┬─────────────┘    │
-└─────────────────────────────────────────────────────┼──────────────────┘
-                                                      │
-         ┌────────────────────────┬───────────────────┴──────────────────┐
-         ▼                        ▼                                      ▼
-┌──────────────────┐    ┌──────────────────┐                   ┌──────────────────┐
-│  WorldCorePort   │    │  MetaModelPort   │                   │BorderCrossingPort│
-└────────┬─────────┘    └────────┬─────────┘                   └────────┬─────────┘
-         │                       │                                      │
-         ▼                       ▼                                      ▼
-┌──────────────────┐    ┌──────────────────┐                   ┌──────────────────┐
-│ InMemoryAdapter  │    │ MetaModelApi     │                   │ CbpBorderWait    │
-│ (.runtime JSON)  │    │ (Muse Spark 1.3) │                   │ Time Adapter     │
-│       OR         │    │ (SAM 3.1)        │                   │ (Official CBP)   │
-│ RemoteWorldCore  │    │       OR         │                   └──────────────────┘
-└──────────────────┘    │ MockMetaAdapter  │
-                        └──────────────────┘
-```
-
-### Authoritative Backend REST API
-
-| Method | Endpoint | Description |
+| World Layer | Unity Scene | Verified Current State |
 | :--- | :--- | :--- |
-| `GET` | `/health` | System health check and service identity probe (`status: "ok"`). |
-| `GET` | `/api/spatial/corridor` | Spatial corridor metadata and bounding coordinates for Avenida Benito Juárez. |
-| `GET` | `/api/businesses` | Canonical business catalog with deterministic operating schedules (`operatingDays`, per-day `hoursByDay`, `is24Hours`) and admission rules. |
-| `GET` | `/api/businesses/:id/status` | Authoritative real-time open/closed status for any registered business (used by dynamic Unity storefront roll-up shutters). |
-| `GET` | `/api/world/exchange-rate` | Authoritative live USD/MXN border cash buy/sell quote driving cantilevered LED signs (`Cambios Santa Fe`, `Grupo Billemex`, `Casa de Cambio`). |
-| `GET` | `/api/world/npcs/movement` | Authoritative 7-NPC waypoint movement snapshot (Cartesian positions, headings, progression). |
-| `GET` | `/api/world/npcs/activity` | Evaluated NPC routine activity states based on local Ciudad Juárez civil time. |
-| `GET` | `/api/world/npcs/interaction-context` | Context-aware dialogue chips and status badges for proximate NPCs. |
-| `GET` | `/api/world/environment` | Environmental simulation state (sun azimuth, lighting profile, ambient audio profile). |
-| `GET` | `/api/world/weather` | Authoritative Ciudad Juárez Centro weather observation (Open-Meteo with bounded cache & `unavailable` fallback). |
-| `GET` | `/api/world/arch-playlist` | Authoritative active billboard video playlist from `media/arch-ads/` (with optional `playlist.json` ordering & schedule windows). |
-| `GET` | `/api/media/arch/:fileName` | Streams validated arch billboard videos with HTTP `Range` (`206 Partial Content`) support. |
-| `POST` | `/api/assistant/query` | Structured business hours and admission inquiries. |
-| `GET` | `/api/border/wait-times` | Official CBP pedestrian wait-time observations (Paso del Norte & BOTA). |
-| `GET` | `/api/border/lane-barriers` | Current physical state of the 4 bridge toll barrier gates (`open` / `closed`). |
-| `POST` | `/api/border/lane-barriers/:laneId` | Command toll barrier gate to open, close, or toggle state dynamically. |
-| `GET` | `/api/border/witnesses` | Roster of synthetic community witnesses (Mateo, Sofía, Don Héctor). |
-| `POST` | `/api/border/witnesses/chat` | Conversational endpoint for synthetic witness dialogue with provenance disclosures. |
-| `GET` | `/api/border/concierge` | Concierge status and port overview for Elena Ramos. |
-| `POST` | `/api/border/concierge/chat` | Conversational endpoint for border wait-time orientation. |
-| `GET` | `/api/businesses/attendants` | Storefront attendants catalog (Carlos Méndez & Valeria Domínguez). |
-| `POST` | `/api/businesses/attendants/chat` | Conversational endpoint for storefront attendants. |
-| `GET` | `/api/citizen-reports/representative`| Municipal representative profile (Lic. Patricia Morales). |
-| `GET` | `/api/citizen-reports/categories` | Catalog of 9 supported municipal issue categories. |
-| `POST` | `/api/citizen-reports/draft` | Synthesize citizen issue report draft with optional SAM 3.1 visual evidence. |
-| `POST` | `/api/citizen-reports/submit` | Confirm and atomically persist citizen report with issued tracking folio. |
-| `GET` | `/api/citizen-reports` | List confirmed reports persisted in local World Core storage. |
+| **Main Reality Layer** *(Av. Benito Juárez, West Manzana, Paso del Norte Bridge & El Paso Inspection Plaza)* | `BorderCorridorScene.unity` | Physically constructed, playable, interactive: East & West commercial blocks, traversable *Óptica Fashion* interior, schedule-synced roll-up shutters, 4 dynamic toll barriers, Av. Juárez Digital Arch, and 7 autonomous Bobblehead NPCs with distinct roles. |
+| **Underground Storm-Drain Network** *(La Cisterna / El Nudo, Sector C-0, Abasolo Siphon & Río Bravo Outflow)* | `BorderCorridorScene.unity` *(integrated beneath street level, not a separate scene)* | Physically constructed, playable, partially interactive: vaulted brick/concrete drains (`Y = -3.20 m` to `-8.45 m`), 4 sewer-entry manholes, dark fog atmosphere requiring `[F]` flashlight, interactive Río Bravo outflow gate. **No underground NPCs or puzzles exist yet.** |
+| **Secret Room** *(Building A South Bay)* | `BorderCorridorScene.unity` | Physically constructed empty/dusty trapezoid vestibule behind a false wall with a 6-digit steel keypad door (default `"123456"`) and an opaque `Threshold Veil` that additively loads Backrooms Level 1. *(Artifacts, safe, and Lasser portal are inside `BackroomsLevel1Scene.unity`, not inside this small room.)* |
+| **Backrooms Level 1** *(Liminal Vault)* | `BackroomsLevel1Scene.unity` *(loaded/unloaded additively)* | `40 m × 24 m` (`960 m²`) labyrinth with flickering fluorescents, 13 dispersed artifacts, 8 inspectable visual-prototype Reality-Bridge props (not wired to live APIs), Evidence Board (`654321`), Level-Ω Vault Safe, *El Ojo del Umbral*, and ***El Umbral de Lasser***. Accessible via the Secret Room veil or a silent ceiling no-clip drop from the Av. Juárez × Azucenas manhole; exits back to Av. Juárez. |
+
+> **Verified Portal Scope (`CONFIRMED`):** ***El Umbral de Lasser* currently performs visual and local state activation only.** Inserting *El Ojo del Umbral* retracts the chains and ignites the spinning vortex, but it **does not** teleport the player or load another world yet.
 
 ---
 
-## 12. Technologies & Prerequisites
+## 4. Technical Architecture Overview (`CONFIRMED`)
 
-### System Requirements
-- **Operating System:** Windows 10 / 11 (64-bit)
-- **Node.js:** v20.18.0 or higher (v20.19.0+ recommended)
+- **Unity 6 Client — Presentation & Spatial Layer (`unity-client/`):** Unity `6000.3.25f1` with Universal Render Pipeline (`URP 17.3.0`, Forward+ renderer), Input System `1.20.0`, first-person navigation and UI, additive multi-scene management (`SecretBackroomsTransitionController.cs`), procedural Bobblehead character pipeline (`BobbleheadGeometry.cs` / `BobbleheadPrefabBaker.cs`), and HTTP REST client (`ApiClient.cs`). Unity handles rendering, spatial interaction, and client-side transitions while respecting authoritative backend schedules and states.
+- **Authoritative World Core Backend (`src/`):** Hexagonal TypeScript / Node.js server (`src/server/index.ts`, native `node:http`) separating pure domain rules (`src/domain/`: schedules, civil time, 7-NPC autonomous locomotion, social awareness, time-of-day, barriers, citizen reports) from ports (`src/ports/`) and swappable adapters (`src/adapters/`).
+- **Offline Default:** Runs locally with `InMemoryWorldCoreAdapter` and `MockMetaModelAdapter` when no external API credentials are set.
+
+---
+
+## 5. Current Capabilities vs. Current Limitations (`CONFIRMED`)
+
+### Implemented Today
+- Smooth first-person exploration (`WASD`, `Shift`, `Space`, mouse look, `[F]` flashlight, `[E]` interact, `[M]` minimap, compass, `[F1]` controls, `[Esc]` pause menu).
+- 7 distinct canonical Bobblehead NPCs (Border Concierge, Citizen Reporting Representative, 2 Storefront Attendants, and 3 disclaimed Synthetic Community Witnesses) with deterministic movement and dialogue.
+- Working multi-world transitions: Street ↔ Underground Storm Drains, Street → Backrooms (Secret Room veil & Azucenas manhole no-clip drop), and Backrooms → Street return door.
+- Local Backrooms micro-puzzle (Evidence Board → Level-Ω Safe → *El Ojo del Umbral* → visual activation of *El Umbral de Lasser*).
+
+### Current Limitations (Not Yet Implemented)
+- **No complete commercial adventure loop yet:** No title screen, New Game / Continue flow, general save/load, persistent player progression, clue journal, general inventory, or slice completion state. Exiting Backrooms resets the safe, astrolabe, and portal state.
+- **Visual-only Lasser portal:** No playable realm exists beyond *El Umbral de Lasser*.
+- **No authored audio assets yet:** All current SFX/ambience are procedurally synthesized in C# (`AudioClip.Create`).
+- **Developer-only runtime coupling:** Running the full world currently requires launching the local Node.js backend alongside the Unity executable (see Developer Quickstart below).
+- **Pre-commercial IP clearance required:** Prototype scenes currently contain third-party horror references, real-world storefront/consumer trademarks, and sample arch video (`media/arch-ads/camila_loop.mp4`) tracked for replacement or permission in [docs/IP_AND_ASSET_PROVENANCE.md](docs/IP_AND_ASSET_PROVENANCE.md).
+
+See [docs/FEATURE_STATUS_MATRIX.md](docs/FEATURE_STATUS_MATRIX.md) for the complete system-by-system breakdown.
+
+---
+
+## 6. Developer Requirements & Development Quickstart
+
+> **Developer Setup vs. Future Player Experience:** The instructions below are for **developers and technical reviewers** running directly from source on Windows. A future commercial Windows release (`PLANNED`) will ship as a self-contained PC installation requiring zero Node.js, npm, or PowerShell setup.
+
+### Prerequisites (Developer Environment)
+- **OS:** Windows 10 / 11 (64-bit)
+- **Node.js:** v20.18.0+ (required to run the local TypeScript World Core server and tests)
 - **PowerShell:** Windows PowerShell 5.1 or PowerShell 7+
-- **Unity Engine:** Unity 6 (`6000.3.25f1`) (required for building from source)
-- **Graphics:** DirectX 11 / DirectX 12 capable GPU (for Unity Standalone client)
-- **Disk Space:** ~350 MB free disk space (repository + Standalone package)
+- **Unity Editor:** Unity 6 (`6000.3.25f1`) — required to open `unity-client/` or rebuild `MyVirtualCommunity.exe`
 
----
-
-## 13. Environment Configuration
-
-The application requires zero mandatory configuration to run in **Local Mock Mode**.
-
-To enable live Meta AI features or connect to an external World Core, create a `.env` file in the repository root:
-
-```bash
-# Copy template
-cp .env.example .env
-```
-
-### Supported Environment Variables
-
-| Variable | Required | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `MODEL_API_KEY` | Optional | *None* | Meta Model API Key. When provided, enables live Muse Spark 1.3 and SAM 3.1 calls. |
-| `MODEL_API_BASE_URL` | Optional | `https://api.meta.ai/v1` | Endpoint URL for the Meta Model API. |
-| `MODEL_NAME` | Optional | `muse-spark-1.3` | Model identifier for text and draft synthesis. |
-| `PORT` | Optional | `3000` | Port for the local Node.js Assistant & World Core server. |
-| `HOST` | Optional | `127.0.0.1` | Host address to bind the local server. |
-| `WORLD_CORE_BASE_URL` | Optional | *None* | When set, proxies World Core calls to an external HTTP server. |
-
-> [!NOTE]
-> In accordance with strict security standards, API keys are masked in logs and diagnostic outputs (`[CONFIGURED]` or `[NOT CONFIGURED]`). Keys and `.env` files are never tracked in version control.
-
----
-
-## 14. Installation & Evaluator Quickstart
-
-### Step 1: Clone Repository & Install Dependencies
-Open PowerShell in your terminal:
-
+### Run From Source (Offline Local Mode)
 ```powershell
-git clone https://github.com/lmartinez51/MyVirtualCommunity-AI-Hackathon-Edition.git
-cd MyVirtualCommunity-AI-Hackathon-Edition
+# 1. Install Node.js dependencies
 npm install
-```
 
-### Step 2: Ensure Standalone Client Is Available
-The verified Windows Standalone client package is provided in `Builds/Release/MyVirtualCommunity-Windows-x64.zip`.
+# 2. Optional: copy environment template (not required for offline mode)
+Copy-Item .env.example .env
 
-If you received the repository with the prebuilt client in `unity-client/Builds/Windows/`, the launcher will find it automatically. Otherwise, extract the zip:
+# 3. Verify or build the Windows Standalone client (requires Unity 6000.3.25f1)
+.\scripts\build-standalone.ps1
 
-```powershell
-Expand-Archive -Path "Builds\Release\MyVirtualCommunity-Windows-x64.zip" -DestinationPath "unity-client\Builds\Windows"
-```
-
-### Step 3: Run the Evaluator Launcher
-Execute the unified, process-safe demonstration launcher:
-
-```powershell
+# 4. Launch the local World Core backend + Unity Standalone client safely
 .\scripts\launch-demo.ps1
+# (or: npm run demo)
 ```
+When the Unity window closes, `scripts/launch-demo.ps1` cleanly shuts down only the backend process tree it started.
 
-*Or via npm shortcut:*
-```powershell
-npm run demo
-```
-
-The launcher performs all of the following automatically:
-1. Validates Node.js prerequisites and dependencies.
-2. Checks port 3000 availability (reports conflicts safely without killing unrelated processes).
-3. Spawns the local backend server.
-4. Polls `http://127.0.0.1:3000/health` until ready.
-5. Locates and launches `MyVirtualCommunity.exe`.
-6. Waits for the Unity game process to exit.
-7. Cleanly terminates **only** the backend process tree spawned by the launcher upon exit.
+### Optional External Integrations
+External services are **strictly optional** and are **not** assumed permanently connected or commercially cleared for shipping without review (see [docs/THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md)):
+- **Meta Muse Spark 1.3 & SAM 3.1:** Configured only when `MODEL_API_KEY` is provided in a local `.env` file (git-ignored). Without it, the backend runs deterministically offline via `MockMetaModelAdapter`.
+- **External Live Data Feeds:** Official CBP Border Wait Times (`bwt.cbp.gov`), Open-Meteo weather, public USD/MXN exchange rates, and Fideicomiso bridge camera links degrade gracefully to `unavailable` or offline fallback when unreachable.
+- **External World Core Proxy:** Set `WORLD_CORE_BASE_URL` in `.env` to proxy `WorldCorePort` to a separate HTTP World Core instance.
 
 ---
 
-## 15. Operating Modes: Mock vs. Live Integration
+## 7. Build & Testing References
 
-The platform supports three clearly delineated operating modes:
-
-### Mode A: Local World Core with Mock AI (100% Offline)
-- **Configuration:** No `MODEL_API_KEY` in `.env` (or `.env` absent).
-- **Behavior:** The backend automatically boots `MockMetaModelAdapter` and `InMemoryWorldCoreAdapter`.
-- **Capabilities:** Fully functional NPC dialogue, business inquiries, draft generation, and simulated citizen reporting.
-- **External Dependencies:** Zero. No network access required for AI features.
-- **CBP Behavior:** If internet access is unavailable, Border Concierge displays an explicit `Unavailable` observation badge without crashing.
-
-### Mode B: Live Meta AI Mode (Muse Spark 1.3 & SAM 3.1)
-- **Configuration:** Set `MODEL_API_KEY=your_actual_key` in `.env`.
-- **Behavior:** Direct live API requests to Meta Muse Spark 1.3 for text generation and SAM 3.1 for photographic segmentation.
-- **Privacy Enforcement:** SAM 3.1 image segmentation is executed **only** if the citizen explicitly clicks `Authorize External Visual Processing` in the reporting UI. If declined, the image remains strictly local and SAM is bypassed.
-
-### Mode C: Live External CBP Border Data
-- **Source:** Queries `https://bwt.cbp.gov/api/borderwaittimes` in real-time.
-- **Connectivity:** Requires outbound internet access to the official U.S. government endpoint.
-- **Fallback:** If CBP is unreachable or rate-limited, the system falls back gracefully to bounded in-memory caching or presents an explicit unavailable notice. It never fabricates simulated wait times as real data.
-
----
-
-## 16. Evaluator Golden Path Walkthrough
-
-Follow this 16-step walkthrough to evaluate the complete integrated experience:
-
-1. **Launch:** Run `.\scripts\launch-demo.ps1`. The console confirms backend health and boots the Unity client.
-2. **Corridor Entry:** You spawn on the sidewalk of Avenida Benito Juárez facing north toward the international bridge. Press `F1` to inspect the dynamic auto-sized Controls Guide; press `Esc` to resume.
-3. **2D Minimap & Compass:** Press `M` to toggle the 2D corridor minimap. Observe your real-time heading and landmark blips. Look at the top compass ribbon.
-4. **Storefront Interaction:** Walk to **Farmacias Benavides** on the east sidewalk. Aim at **Carlos Méndez** and press `E`.
-5. **Authoritative Hours Query:** Ask *"¿A qué hora cierran hoy?"* Observe the instantaneous grounded response derived from World Core operating schedules.
-6. **Optical Store Attendant:** Walk across to **Óptica Fashion** on the west sidewalk. Aim at **Valeria Domínguez** and press `E`. Inquire about eye exam appointments and admission status.
-7. **Citizen Reporting Desk:** Walk north along the west sidewalk past Taquería El Trompo to the "Enlace de Atención Ciudadana" municipal kiosk in front of the white roll-up shutter ($Z = 18.55\text{ m}$). Aim at **Lic. Patricia Morales** and press `E`.
-8. **Issue Description & Photo Evidence:** Select category **Roads & Potholes** (or Water & Drainage). Type a description: *"Bache profundo con fuga de agua en carril poniente"*. Click **Attach Photograph (Optional)** and choose a sample image.
-9. **Privacy Consent Choice & Draft Review:** Choose whether to authorize external AI processing. Click **Generate Report Draft**. When the draft appears, click the photograph thumbnail to open the **Enlarged Visual Evidence Viewer**. Toggle between *Combined*, *Mask Only*, and *Original Photo* modes. Close inspector.
-10. **Submit & Confirm:** Click **Confirm & Submit to World Core**. A confirmed municipal folio (e.g. `CJ-029411`) is issued and persisted to disk.
-11. **Calle Gardenias Intersection:** Continue walking north across the authentic Calle Gardenias intersection with curved corners, ADA tactile yellow ramps, and zebra crosswalks.
-12. **Bridge Approach & Toll Barriers:** Approach the monumental canopy of **Puente Paso del Norte**. Inspect the 4 electromechanical toll barrier units (plumas) and blue numbers 1–4 across Arcos 1–4.
-13. **Live Camera Easter Egg:** Aim at the Fideicomiso surveillance camera on Pillar 1 and click it. Watch the interactive PiP video player with blinking "● LIVE" badge open, and click to view the live YouTube stream of the bridge.
-14. **Border Concierge:** Walk to the pedestrian plaza on the east side of the bridge. Aim at **Elena Ramos** (`Border Pedestrian Concierge`) and press `E`.
-15. **Live CBP Wait Time:** Ask *"How long is the pedestrian wait at Paso del Norte?"* Notice the verified observation with source timestamp and lane count, or click the chip comparing **Paso del Norte vs. BOTA**.
-16. **Synthetic Witness Perspectives:** Aim at **Mateo Navarro** (student with backpack) in the pedestrian queue and press `E`. Read the synthetic testimony disclosure and ask about his commute to UTEP. Press `ESC` to open the Pause Menu, click **Quit to Desktop**, and verify clean launcher termination.
-
----
-
-## 17. Automated Testing & Verification Suite
-
-The repository includes a comprehensive, multi-layer automated test suite ensuring factual grounding, domain invariants, and regression safety:
+Execute verification commands directly from the repository root to observe live results:
 
 ```powershell
-# Run all automated tests (527 tests across 39 suites)
+# TypeScript static typecheck (tsc --noEmit)
+npm run build
+
+# Automated Node.js / TypeScript domain, adapter, application, and HTTP test suites
 npm test
+
+# Additional verification & build scripts
+npm run verify:recovery
+npm run verify:npcs
+npm run test:launcher
+.\scripts\build-standalone.ps1 -CheckOnly
+.\scripts\package-release.ps1
 ```
 
-### Key Verification Suites
+- **Latest Verified Backend Run (PREPARATION 0.3, November 24, 2026):** `npm run build` exited with `0` errors and `npm test` passed **615 / 615 tests across 141 suites**. This is a point-in-time verification record rather than a permanent guarantee; always re-run after code changes. Unity PlayMode automated tests have **not** been executed in this transition phase.
 
-| Command | Scope & Verified Invariants |
-| :--- | :--- |
-| `npm test` | Complete test runner executing all 39 unit, domain, integration, and API test suites (**527/527 passing**). |
-| `npm run build` | TypeScript static type verification (`tsc --noEmit`, 0 errors). |
-| `npm run test:integration` | End-to-end HTTP integration test against an external World Core instance (`WORLD_CORE_BASE_URL`). |
-| `npm run verify:npcs` | Validates conversational integrity and provenance disclosures across all 7 corridor NPCs. |
-| `npm run verify:recovery` | Asserts atomic file persistence and zero-loss restart recovery of `.runtime/citizen-reports.json`. |
-| `npm run test:launcher` | Tests launcher process isolation, port availability checks, and clean teardown. |
+See [docs/fellowship/unity-2027/BUILD_DELIVERY.md](docs/fellowship/unity-2027/BUILD_DELIVERY.md) for the Windows build and Fellowship evaluation delivery checklist.
 
 ---
 
-## 18. Privacy, Consent, Geographic Coverage & Boundaries
+## 8. Active Documentation Map
 
-- **Photographic Privacy:** Photographs undergo client-side dimension and format validation. Exif metadata is scrubbed. External transmission occurs only with explicit opt-in consent.
-- **Emergency Limitation:** The reporting desk is strictly for non-urgent municipal issues. Reports describing active fires, violent crimes, or medical emergencies trigger immediate guidance directing the user to real-world 911 emergency services.
-- **Geographic Bounding:** The detailed 3D demonstration corridor covers Avenida Benito Juárez from the commercial zone to the international bridge (`IN_DEMO_CORRIDOR`). Citywide Ciudad Juárez reports are accepted and classified descriptively (`OUTSIDE_DEMO_COVERAGE`) without inventing artificial street coordinates.
-- **Municipal Simulation Disclosure:** The reporting service is a high-fidelity demonstration. Reports are recorded in the local World Core and are not transmitted to municipal government agencies of Ciudad Juárez.
+### Product, World & Vertical Slice
+- [docs/GAME_VISION.md](docs/GAME_VISION.md) — Creative vision, genre, core pillars, and open creator decisions
+- [docs/CORE_GAME_LOOP.md](docs/CORE_GAME_LOOP.md) — Implemented mechanics vs. proposed commercial adventure loop
+- [docs/WORLD_ATLAS.md](docs/WORLD_ATLAS.md) — Verified world layers, scenes, and cross-world transition matrix
+- [docs/FEATURE_STATUS_MATRIX.md](docs/FEATURE_STATUS_MATRIX.md) — Truthful system-by-system status & limitations
+- [docs/VERTICAL_SLICE.md](docs/VERTICAL_SLICE.md) — Provisional *Slice 01 — Thresholds of Juárez* specification
 
----
+### Unity Fellowship 2027 Package
+- [docs/fellowship/unity-2027/APPLICATION_BRIEF.md](docs/fellowship/unity-2027/APPLICATION_BRIEF.md) — Master application reference
+- [docs/fellowship/unity-2027/PITCH.md](docs/fellowship/unity-2027/PITCH.md) — Commercial game pitch
+- [docs/fellowship/unity-2027/ROADMAP.md](docs/fellowship/unity-2027/ROADMAP.md) — Production roadmap toward March 2028 PC v1.0
+- [docs/fellowship/unity-2027/FUNDING_PLAN.md](docs/fellowship/unity-2027/FUNDING_PLAN.md) — Funding categories (`TBD` figures pending creator input) & Fellowship support objectives
+- [docs/fellowship/unity-2027/TRAILER_SCRIPT.md](docs/fellowship/unity-2027/TRAILER_SCRIPT.md) — IP-clean game trailer shot plan
+- [docs/fellowship/unity-2027/BUILD_DELIVERY.md](docs/fellowship/unity-2027/BUILD_DELIVERY.md) — Reproducible Windows evaluation build checklist
 
-## 19. Known Limitations
-
-- **Standalone Audio:** Audio cues are synthesized through standard Unity audio listeners; custom voiceover recordings are not included in this edition.
-- **BWT Update Latency:** CBP updates pedestrian wait times intermittently (typically every 15–45 minutes). The system faithfully reflects CBP update cadence and does not interpolate artificially between official updates.
-- **Citywide 3D Coverage:** The playable 3D environment represents the Avenida Benito Juárez corridor; other Ciudad Juárez sectors are supported at the data and routing level, but do not possess custom 3D geometry in this milestone.
-
----
-
-## 20. Windows Standalone Distribution
-
-The complete, verified Windows Standalone client package is packaged as an independent zip archive:
-
-- **Archive Location:** `Builds/Release/MyVirtualCommunity-Windows-x64.zip`
-- **Archive Size:** 37.69 MB (39,520,012 bytes)
-- **Uncompressed Size:** 105.92 MB (111,061,683 bytes)
-- **SHA-256 Checksum:**
-  ```text
-  A3B619F7D32E54BD94DCC3DF3DF11988BE62C6A671B26B8ADA7E68932A99715E
-  ```
-- **Package Contents:**
-  - `MyVirtualCommunity.exe` (Unity 6 Standalone executable)
-  - `UnityPlayer.dll` (Unity 6 runtime core engine)
-  - `UnityCrashHandler64.exe` (Crash telemetry)
-  - `MyVirtualCommunity_Data/` (Compiled scenes, asset bundles, managed assemblies)
-  - `MonoBleedingEdge/` (Mono runtime environment)
-  - `D3D12/` (DirectX 12 rendering binaries)
-
-To verify the archive checksum in PowerShell:
-```powershell
-Get-FileHash -Path "Builds\Release\MyVirtualCommunity-Windows-x64.zip" -Algorithm SHA256
-```
-
----
-
-## 21. License & Third-Party Attributions
-
-- **Codebase License:** MIT License. See [LICENSE](LICENSE) for details.
-- **Meta AI Models:** Meta Muse Spark 1.3 and Segment Anything 3.1 (SAM 3.1) are accessed pursuant to Meta API terms and model licenses.
-- **Border Data:** Public border crossing observation data provided by the U.S. Customs and Border Protection (CBP) Border Wait Time API.
-- **Unity Engine:** Built with Unity 6 (`6000.3.25f1`). Personal/Educational License.
-- **Community Context:** Inspired by and dedicated to the resilient border community of Ciudad Juárez, Chihuahua, and El Paso, Texas.
+### Provenance, Licensing & Historical Archive
+- [LICENSE](LICENSE) — MIT License covering original author-created code and original assets
+- [docs/IP_AND_ASSET_PROVENANCE.md](docs/IP_AND_ASSET_PROVENANCE.md) — Commercial asset provenance & clearance register
+- [docs/THIRD_PARTY_NOTICES.md](docs/THIRD_PARTY_NOTICES.md) — Unity, npm, vendored library, map, and API licensing inventory
+- [docs/archive/ai-hackathon-2026/INDEX.md](docs/archive/ai-hackathon-2026/INDEX.md) — Preserved 2026 AI Hackathon documentation, increment reports, and evaluator evidence
