@@ -100,11 +100,18 @@ namespace MyVirtualCommunity.Editor
         public const string HotelArchitectureRootName = "Hotel_GroundFloor_Architecture";
         public const string HotelEnvironmentalIdentityRootName = "Hotel_Environmental_Identity";
         public const string NorthWingM1RootName = "Hotel_NorthWing_M1";
+        public const string HotelNarrativeEvidenceRootName = "Hotel_Narrative_Evidence";
         public const float NorthWingMinX = -16.0f;
         public const float NorthWingMaxX = 16.0f;
         public const float NorthWingMinZ = 12.0f;
         public const float NorthWingMaxZ = 34.0f;
         public const string LightwellDiffuserMatPath = "Assets/Settings/Remanencia_Level0_LightwellDiffuser.mat";
+        public const string EvidencePlanMatPath = "Assets/Settings/Remanencia_Evidence_ProjectPlan.mat";
+        public const string EvidenceRegisterMatPath = "Assets/Settings/Remanencia_Evidence_RoomRegister.mat";
+        public const string EvidenceMaintenanceMatPath = "Assets/Settings/Remanencia_Evidence_MaintenanceLog.mat";
+        public const string EvidenceCobaltNoteMatPath = "Assets/Settings/Remanencia_Evidence_CobaltRumorNote.mat";
+        public const string AnomalyMineralJointMatPath = "Assets/Settings/Remanencia_Anomaly_MineralJoint.mat";
+        public const string AnomalySurfaceStainMatPath = "Assets/Settings/Remanencia_Anomaly_SurfaceStain.mat";
 
         public const string PipeCopperRustMatPath = "Assets/Settings/Remanencia_Level0_PipeCopperRust.mat";
         public const string UnfinishedWoodDoorMatPath = "Assets/Settings/Remanencia_Level0_UnfinishedWoodDoor.mat";
@@ -714,6 +721,9 @@ namespace MyVirtualCommunity.Editor
 
             // Canonical North Hotel Wing & Courtyard Loop (Module M1)
             BuildOrUpdateNorthWingM1(shellRoot.transform, visualMats);
+
+            // First Environmental Narrative Layer: 4 inspectable hotel history discoveries + subtle anomalies (Implementation 07.6)
+            BuildOrUpdateHotelNarrativeLayer(root.transform, visualMats);
 
             // Save BackroomsLevel1Scene cleanly and ensure it is registered in EditorBuildSettings
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -2196,6 +2206,403 @@ namespace MyVirtualCommunity.Editor
         }
 
         /// <summary>
+        /// Targeted, idempotent Implementation 07.6 environmental narrative layer migration utility.
+        /// Opens the existing BackroomsLevel1Scene.unity without rebuilding the scene or modifying any
+        /// architectural root, elevator bay, existing artifact, light, or progression schema.
+        /// Creates/updates strictly Hotel_Narrative_Evidence (4 inspectable bilingual documents +
+        /// restrained non-colliding anomalous surface traces) directly under BackroomsLevel1_Root.
+        /// </summary>
+        [MenuItem("MyVirtualCommunity/Migrate Remanencia Hotel Narrative Layer (In-Place)")]
+        public static void MigrateRemanenciaHotelNarrativeAndSave()
+        {
+            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            if (!scene.IsValid())
+            {
+                throw new InvalidOperationException($"Failed to open existing scene at {ScenePath}.");
+            }
+
+            MigrateRemanenciaHotelNarrativeInOpenScene(scene);
+            AssetDatabase.SaveAssets();
+            EditorSceneManager.MarkSceneDirty(scene);
+            if (!EditorSceneManager.SaveScene(scene, ScenePath))
+            {
+                throw new InvalidOperationException($"Failed to save migrated scene at {ScenePath}.");
+            }
+            Debug.Log($"[BackroomsLevel1Builder] Remanencia Hotel narrative layer (4 discoveries + subtle anomalies) migrated and saved to {ScenePath}.");
+        }
+
+        public static void MigrateRemanenciaHotelNarrativeInOpenScene(UnityEngine.SceneManagement.Scene scene)
+        {
+            if (!scene.IsValid() || !string.Equals(scene.path, ScenePath, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    $"Remanencia hotel narrative migration requires open scene '{ScenePath}', but found '{scene.path}'.");
+            }
+
+            GameObject root = null;
+            foreach (GameObject go in scene.GetRootGameObjects())
+            {
+                if (go.name == "BackroomsLevel1_Root")
+                {
+                    root = go;
+                    break;
+                }
+            }
+            if (root == null)
+            {
+                throw new InvalidOperationException("BackroomsLevel1_Root not found in open scene.");
+            }
+
+            Transform shellRoot = root.transform.Find("Backrooms_Architecture");
+            if (shellRoot == null || shellRoot.Find(NorthWingM1RootName) == null)
+            {
+                throw new InvalidOperationException($"Expected '{NorthWingM1RootName}' under Backrooms_Architecture before running 07.6 narrative migration.");
+            }
+
+            RemanenciaVisualMaterials mats = EnsureRemanenciaVisualAssets();
+            BuildOrUpdateHotelNarrativeLayer(root.transform, mats);
+        }
+
+        private static void BuildOrUpdateHotelNarrativeLayer(Transform backroomsRoot, RemanenciaVisualMaterials mats)
+        {
+            // Generate modest target-specific procedural textures & matte materials for the 4 documents + subtle anomalies
+            string planTex = EnsureEvidenceProjectPlanTexture("Assets/Textures/Environment/T_Remanencia_Evidence_ProjectPlan.png");
+            string regTex = EnsureEvidenceRoomRegisterTexture("Assets/Textures/Environment/T_Remanencia_Evidence_RoomRegister.png");
+            string maintTex = EnsureEvidenceMaintenanceLogTexture("Assets/Textures/Environment/T_Remanencia_Evidence_MaintenanceLog.png");
+            string rumorTex = EnsureEvidenceCobaltRumorNoteTexture("Assets/Textures/Environment/T_Remanencia_Evidence_CobaltRumorNote.png");
+            AssetDatabase.Refresh();
+
+            ConfigureSignTextureImporter(planTex);
+            ConfigureSignTextureImporter(regTex);
+            ConfigureSignTextureImporter(maintTex);
+            ConfigureSignTextureImporter(rumorTex);
+
+            Material planMat = CreateTexturedMat(EvidencePlanMatPath, planTex, Color.white, 0.14f, Vector2.one);
+            Material regMat = CreateTexturedMat(EvidenceRegisterMatPath, regTex, Color.white, 0.12f, Vector2.one);
+            Material maintMat = CreateTexturedMat(EvidenceMaintenanceMatPath, maintTex, Color.white, 0.12f, Vector2.one);
+            Material rumorMat = CreateTexturedMat(EvidenceCobaltNoteMatPath, rumorTex, Color.white, 0.10f, Vector2.one);
+
+            // Restrained, matte, non-emissive anomaly materials (NO neon green, NO glow, NO radiation icons)
+            Material mineralJointMat = CreateColorMat(AnomalyMineralJointMatPath, new Color(0.56f, 0.55f, 0.50f), 0.08f, 0.0f);
+            Material surfaceStainMat = CreateColorMat(AnomalySurfaceStainMatPath, new Color(0.24f, 0.25f, 0.26f), 0.06f, 0.0f);
+
+            Transform narrativeRoot = EnsureHotelSubgroup(backroomsRoot, HotelNarrativeEvidenceRootName);
+
+            // =========================================================================
+            // 1. EVIDENCE 01 — THE UNFINISHED PROJECT PLAN (Reception North Wall)
+            //    Mounted flush on Reception Alcove back wall (facing South -Z, upright +Z)
+            // =========================================================================
+            GameObject evPlan = EnsureInspectableEvidenceSheet(
+                narrativeRoot,
+                "Hotel_Evidence_UnfinishedProjectPlan",
+                new Vector3(8.85f, BaseY + 1.48f, 11.83f),
+                Quaternion.Euler(0f, 180f, 0f),
+                new Vector3(0.58f, 0.42f, 0.014f),
+                planMat,
+                ProgressionIds.ClueRemanenciaHotelPlan01,
+                "Plano de Obra Inconclusa — Nivel de Acceso",
+                "Unfinished Project Plan — Ground Level",
+                "Pliego de obra pegado al muro sin firma ni fecha definitiva. Muestra el vestíbulo y el patio norte, pero traza un pasillo adicional y una habitación donde hoy existe un muro macizo de concreto.",
+                "Unsigned, undated construction sheet taped to the wall. It charts the lobby and north courtyard, yet draws an extra corridor and room where a solid concrete structural wall stands today.",
+                new Color(0.68f, 0.82f, 0.90f));
+            EnsureHotelBox(evPlan.transform, "TapeStrip_TL", new Vector3( 8.60f, BaseY + 1.68f, 11.822f), Quaternion.Euler(0f, 0f, -12f), new Vector3(0.06f, 0.022f, 0.005f), mats.AgedCeramicPatch, keepCollider: false);
+            EnsureHotelBox(evPlan.transform, "TapeStrip_TR", new Vector3( 9.10f, BaseY + 1.68f, 11.822f), Quaternion.Euler(0f, 0f,  10f), new Vector3(0.06f, 0.022f, 0.005f), mats.AgedCeramicPatch, keepCollider: false);
+
+            // =========================================================================
+            // 2. EVIDENCE 02 — THE ROOM REGISTRATION RECORD (North Corridor, Rooms 109-110)
+            //    Mounted on Corridor wall between Room 110 plaque (-5.05) & Room 109 door (-2.6)
+            // =========================================================================
+            GameObject evReg = EnsureInspectableEvidenceSheet(
+                narrativeRoot,
+                "Hotel_Evidence_RoomRegistrationRecord",
+                new Vector3(-3.85f, BaseY + 1.44f, 28.67f),
+                Quaternion.Euler(0f, 180f, 0f),
+                new Vector3(0.34f, 0.44f, 0.014f),
+                regMat,
+                ProgressionIds.ClueRemanenciaHotelRegister02,
+                "Hoja de Registro de Habitaciones (Fragmento)",
+                "Room Registration Sheet (Fragment)",
+                "Registro arrancado de una bitácora sin encabezado. Anota las habitaciones 107 a 110 como asignadas, junto a un cuarto '111-B' y fechas incompletas de estancias previas a que la obra concluyera.",
+                "Torn ledger page with no letterhead. Lists Rooms 107 through 110 as assigned alongside a '111-B' entry, bearing incomplete stay dates recorded before construction was ever finished.",
+                new Color(0.88f, 0.82f, 0.68f));
+            EnsureHotelBox(evReg.transform, "TapeStrip_Top", new Vector3(-3.85f, BaseY + 1.65f, 28.662f), Quaternion.Euler(0f, 0f, 4f), new Vector3(0.07f, 0.022f, 0.005f), mats.AgedCeramicPatch, keepCollider: false);
+
+            // =========================================================================
+            // 3. EVIDENCE 03 — THE MAINTENANCE RECORD (North Wing Maintenance Access Corridor)
+            //    Mounted on West-facing divider wall just North of Service Panel Box (-8.74, 21.6)
+            // =========================================================================
+            GameObject evMaint = EnsureInspectableEvidenceSheet(
+                narrativeRoot,
+                "Hotel_Evidence_MaintenanceRecord",
+                new Vector3(-8.73f, BaseY + 1.46f, 22.45f),
+                Quaternion.Euler(0f, -90f, 0f),
+                new Vector3(0.34f, 0.44f, 0.014f),
+                maintMat,
+                ProgressionIds.ClueRemanenciaHotelMaintenance03,
+                "Parte de Mantenimiento — Obra Norte",
+                "Maintenance Log — North Wing Works",
+                "Hoja de servicio fijada junto al tablero: 'Manchas grisáceas en juntas secas del concreto. Cortes eléctricos sin falla en línea. Dos resanes anotados el día 14 ya estaban hechos antes del daño; pasillo mide 1.4 m más que en plano.'",
+                "Service sheet fixed near the panel: 'Greyish stains along dry concrete joints. Power drops with no line fault. Two patches logged on the 14th appeared before the damage; corridor measures 1.4 m longer than drawn.'",
+                new Color(0.84f, 0.76f, 0.64f));
+            EnsureHotelBox(evMaint.transform, "TapeStrip_Top", new Vector3(-8.738f, BaseY + 1.67f, 22.45f), Quaternion.Euler(0f, -90f, -3f), new Vector3(0.07f, 0.022f, 0.005f), mats.AgedCeramicPatch, keepCollider: false);
+
+            // =========================================================================
+            // 4. EVIDENCE 04 — THE COBALT-60 RUMOR NOTE (Housekeeping Utility Room, Back-of-House)
+            //    Deep service location away from Entrance & Reception; unsigned folded pencil note
+            // =========================================================================
+            GameObject evRumor = EnsureInspectableEvidenceSheet(
+                narrativeRoot,
+                "Hotel_Evidence_Cobalt60RumorNote",
+                new Vector3(-12.75f, BaseY + 1.38f, 23.27f),
+                Quaternion.Euler(0f, 180f, 3.5f),
+                new Vector3(0.26f, 0.21f, 0.010f),
+                rumorMat,
+                ProgressionIds.ClueRemanenciaHotelCobaltRumor04,
+                "Nota Anónima — Rumor de Obra",
+                "Anonymous Note — Construction Rumor",
+                "Nota doblada a lápiz sin firma: 'Dicen que parte de la varilla llegó contaminada. Algunos mencionan Cobalto-60, pero nadie ha mostrado pruebas. Lo extraño es que las manchas siguen apareciendo incluso donde ya se retiró el material.'",
+                "Unsigned folded pencil note: 'Word is some of the rebar arrived contaminated. A few mention Cobalt-60, though nobody has shown proof. The strange part is the stains keep returning even where the material was removed.'",
+                new Color(0.86f, 0.74f, 0.56f));
+            EnsureHotelBox(evRumor.transform, "PinTab_Top", new Vector3(-12.74f, BaseY + 1.475f, 23.264f), Quaternion.identity, new Vector3(0.032f, 0.018f, 0.005f), mats.IndustrialMetal, keepCollider: false);
+
+            // =========================================================================
+            // 5. SUBTLE ANOMALOUS ENVIRONMENTAL TRACES (NON-COLLIDING, NON-GLOWING)
+            //    Dry mineral joint encrustations, non-water surface discoloration, and a
+            //    subtle stain continuing beneath solid masonry — zero sci-fi / neon effects.
+            // =========================================================================
+            Transform anomalies = EnsureHotelSubgroup(narrativeRoot, "Hotel_Subtle_Anomalies");
+
+            // Irregular dry mineral deposits emerging along vertical concrete joints beside Maintenance Record
+            EnsureHotelBox(anomalies, "Anomaly_ServiceJointDeposit_A",
+                new Vector3(-8.722f, BaseY + 1.18f, 22.08f), Quaternion.Euler(0f, 0f, 0f),
+                new Vector3(0.018f, 0.78f, 0.055f), mineralJointMat, keepCollider: false);
+            EnsureHotelBox(anomalies, "Anomaly_ServiceJointDeposit_B",
+                new Vector3(-8.722f, BaseY + 0.66f, 22.86f), Quaternion.identity,
+                new Vector3(0.016f, 0.54f, 0.048f), mineralJointMat, keepCollider: false);
+            EnsureHotelBox(anomalies, "Anomaly_ServiceJointStainHalo",
+                new Vector3(-8.718f, BaseY + 0.92f, 22.08f), Quaternion.identity,
+                new Vector3(0.008f, 0.96f, 0.34f), surfaceStainMat, keepCollider: false);
+
+            // Floor discoloration appearing to continue beneath the solid concrete service divider wall (X=-8.6)
+            EnsureHotelBox(anomalies, "Anomaly_ServiceFloorUnderwallSeep_W",
+                new Vector3(-8.96f, BaseY + 0.003f, 22.35f), Quaternion.Euler(0f, 14f, 0f),
+                new Vector3(0.68f, 0.005f, 0.52f), surfaceStainMat, keepCollider: false);
+            EnsureHotelBox(anomalies, "Anomaly_ServiceFloorUnderwallSeep_E",
+                new Vector3(-8.22f, BaseY + 0.003f, 22.35f), Quaternion.Euler(0f, -9f, 0f),
+                new Vector3(0.56f, 0.005f, 0.44f), surfaceStainMat, keepCollider: false);
+
+            // Subtly inconsistent concrete discoloration near the Utility Room risers & Cobalt-60 rumor note
+            EnsureHotelBox(anomalies, "Anomaly_UtilityWallDiscoloration_A",
+                new Vector3(-12.75f, BaseY + 0.86f, 23.282f), Quaternion.identity,
+                new Vector3(0.64f, 0.42f, 0.008f), surfaceStainMat, keepCollider: false);
+            EnsureHotelBox(anomalies, "Anomaly_UtilityWallMineralEdge",
+                new Vector3(-15.855f, BaseY + 1.05f, 18.88f), Quaternion.identity,
+                new Vector3(0.014f, 0.62f, 0.14f), mineralJointMat, keepCollider: false);
+
+            // Subtle mismatched concrete patch along North Guest Corridor wall near Room 109-110 register
+            EnsureHotelBox(anomalies, "Anomaly_NorthCorrConcreteMismatch",
+                new Vector3(-3.85f, BaseY + 0.72f, 28.682f), Quaternion.identity,
+                new Vector3(0.84f, 0.68f, 0.008f), mineralJointMat, keepCollider: false);
+
+            // Subtle dry mineral streak along the West flank of the central Courtyard plinth
+            EnsureHotelBox(anomalies, "Anomaly_CourtyardPlinthResidue",
+                new Vector3(-1.106f, BaseY + 0.21f, 21.85f), Quaternion.identity,
+                new Vector3(0.012f, 0.34f, 0.46f), mineralJointMat, keepCollider: false);
+        }
+
+        private static GameObject EnsureInspectableEvidenceSheet(
+            Transform parent, string name, Vector3 worldPos, Quaternion worldRot, Vector3 scale, Material mat,
+            string clueId, string titleEs, string titleEn, string loreEs, string loreEn, Color accentColor)
+        {
+            GameObject go = EnsureHotelBox(parent, name, worldPos, worldRot, scale, mat, keepCollider: true);
+            BoxCollider col = go.GetComponent<BoxCollider>();
+            if (col == null) col = go.AddComponent<BoxCollider>();
+            col.enabled = true;
+            col.isTrigger = true;
+            col.center = new Vector3(0f, 0f, 1.5f);
+            col.size = new Vector3(1.25f, 1.25f, 8.0f);
+
+            SecretContainmentArtifactDescriptor desc = go.GetComponent<SecretContainmentArtifactDescriptor>();
+            if (desc == null) desc = go.AddComponent<SecretContainmentArtifactDescriptor>();
+            desc.artifactId = clueId;
+            desc.titleEs = titleEs;
+            desc.titleEn = titleEn;
+            desc.loreEs = loreEs;
+            desc.loreEn = loreEn;
+            desc.accentColor = accentColor;
+            desc.inspectionScope = ArtifactInspectionScope.SecretRoomOrBackrooms;
+            return go;
+        }
+
+        private static string EnsureEvidenceProjectPlanTexture(string assetPath)
+        {
+            string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", assetPath));
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+            const int w = 256, h = 192;
+            Texture2D tex = new Texture2D(w, h, TextureFormat.RGB24, false);
+
+            Color paper = new Color(0.76f, 0.78f, 0.76f);
+            Color blueprintBg = new Color(0.24f, 0.34f, 0.42f);
+            Color gridLine = new Color(0.32f, 0.44f, 0.53f);
+            Color planLine = new Color(0.84f, 0.89f, 0.92f);
+            Color anomalyLine = new Color(0.76f, 0.38f, 0.32f);
+
+            for (int y = 0; y < h; y++)
+            {
+                for (int x = 0; x < w; x++)
+                {
+                    bool margin = x < 10 || x >= w - 10 || y < 10 || y >= h - 10;
+                    float grain = (PeriodicHash(x, y, w, h, 7601) - 0.5f) * 0.045f;
+                    Color c = margin ? paper : blueprintBg;
+                    if (!margin && ((x - 10) % 16 == 0 || (y - 10) % 16 == 0)) c = gridLine;
+                    // Draw outer hotel footprint & courtyard box
+                    bool outerRect = ((x == 26 || x == 216) && y >= 24 && y <= 162) || ((y == 24 || y == 162) && x >= 26 && x <= 216);
+                    bool courtyardRect = ((x == 86 || x == 150) && y >= 78 && y <= 126) || ((y == 78 || y == 126) && x >= 86 && x <= 150);
+                    bool wingDivide = (y == 68 && x >= 26 && x <= 216) || (x == 60 && y >= 24 && y <= 162) || (x == 176 && y >= 68 && y <= 162);
+                    // Contradictory phantom wing & dashed corridor drawn beyond the actual wall
+                    bool phantomWing = ((x == 216 || x == 238) && y >= 82 && y <= 136 && (y % 6 < 4)) ||
+                                       ((y == 82 || y == 136) && x >= 216 && x <= 238 && (x % 6 < 4)) ||
+                                       (y == 108 && x >= 176 && x <= 236 && (x % 5 < 3));
+                    if (outerRect || courtyardRect || wingDivide) c = planLine;
+                    if (phantomWing) c = anomalyLine;
+                    tex.SetPixel(x, y, new Color(Mathf.Clamp01(c.r + grain), Mathf.Clamp01(c.g + grain), Mathf.Clamp01(c.b + grain)));
+                }
+            }
+            DrawBitmapTextCentered(tex, w, h, "PLANO NIVEL 0", 14, 2, planLine, false);
+            tex.Apply();
+            File.WriteAllBytes(fullPath, tex.EncodeToPNG());
+            UnityEngine.Object.DestroyImmediate(tex);
+            return assetPath;
+        }
+
+        private static string EnsureEvidenceRoomRegisterTexture(string assetPath)
+        {
+            string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", assetPath));
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+            const int w = 192, h = 256;
+            Texture2D tex = new Texture2D(w, h, TextureFormat.RGB24, false);
+
+            Color paper = new Color(0.80f, 0.76f, 0.68f);
+            Color rule = new Color(0.56f, 0.54f, 0.49f);
+            Color ink = new Color(0.18f, 0.19f, 0.21f);
+            Color tearBg = new Color(0.32f, 0.30f, 0.28f);
+
+            for (int y = 0; y < h; y++)
+            {
+                for (int x = 0; x < w; x++)
+                {
+                    // Irregular torn bottom-right corner
+                    bool torn = (y < 28 && x > w - 34 + (int)(Mathf.Sin(y * 0.45f) * 6f));
+                    float grain = (PeriodicHash(x, y, w, h, 7602) - 0.5f) * 0.05f;
+                    Color c = torn ? tearBg : paper;
+                    if (!torn)
+                    {
+                        if (x < 6 || x >= w - 6 || y < 6 || y >= h - 6) c = rule * 0.85f;
+                        else if (y > 22 && y < h - 38 && (y % 26 == 0 || x == 74 || x == 134)) c = rule;
+                        // Simulated anonymous ink scribble dashes in ledger columns
+                        else if (y > 32 && y < h - 50 && (y % 26 >= 10 && y % 26 <= 14) && x > 82 && x < 176)
+                        {
+                            float stroke = PeriodicHash(x / 3, y / 2, w, h, 7612);
+                            if (stroke > 0.58f && x != 134) c = ink;
+                        }
+                    }
+                    tex.SetPixel(x, y, new Color(Mathf.Clamp01(c.r + grain), Mathf.Clamp01(c.g + grain), Mathf.Clamp01(c.b + grain)));
+                }
+            }
+            DrawBitmapTextCentered(tex, w, h, "REGISTRO", h - 30, 2, ink, false);
+            DrawBitmapTextCentered(tex, 74, h, "107", 184, 2, ink, false);
+            DrawBitmapTextCentered(tex, 74, h, "108", 158, 2, ink, false);
+            DrawBitmapTextCentered(tex, 74, h, "109", 132, 2, ink, false);
+            DrawBitmapTextCentered(tex, 74, h, "110", 106, 2, ink, false);
+            DrawBitmapTextCentered(tex, 74, h, "111-B", 80, 2, new Color(0.48f, 0.18f, 0.16f), false);
+            tex.Apply();
+            File.WriteAllBytes(fullPath, tex.EncodeToPNG());
+            UnityEngine.Object.DestroyImmediate(tex);
+            return assetPath;
+        }
+
+        private static string EnsureEvidenceMaintenanceLogTexture(string assetPath)
+        {
+            string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", assetPath));
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+            const int w = 192, h = 256;
+            Texture2D tex = new Texture2D(w, h, TextureFormat.RGB24, false);
+
+            Color paper = new Color(0.75f, 0.74f, 0.70f);
+            Color rule = new Color(0.55f, 0.56f, 0.54f);
+            Color ink = new Color(0.17f, 0.18f, 0.19f);
+            Color smudge = new Color(0.46f, 0.47f, 0.45f);
+
+            for (int y = 0; y < h; y++)
+            {
+                for (int x = 0; x < w; x++)
+                {
+                    float grain = (PeriodicHash(x, y, w, h, 7603) - 0.5f) * 0.05f;
+                    Color c = paper;
+                    if (x < 6 || x >= w - 6 || y < 6 || y >= h - 6) c = rule * 0.85f;
+                    else if (y > 20 && y < h - 36 && y % 20 == 0) c = rule;
+                    else if (y > 24 && y < h - 44 && (y % 20 >= 6 && y % 20 <= 11) && x > 18 && x < w - 22)
+                    {
+                        float stroke = PeriodicHash(x / 2, y / 2, w, h, 7623);
+                        if (stroke > 0.56f) c = ink;
+                    }
+                    // Subtle dry greyish residue smudge on lower-left margin
+                    float dx = (x - 36f) / 34f;
+                    float dy = (y - 38f) / 30f;
+                    if (dx * dx + dy * dy < 1.0f) c = Color.Lerp(c, smudge, 0.45f * (1f - (dx * dx + dy * dy)));
+                    tex.SetPixel(x, y, new Color(Mathf.Clamp01(c.r + grain), Mathf.Clamp01(c.g + grain), Mathf.Clamp01(c.b + grain)));
+                }
+            }
+            DrawBitmapTextCentered(tex, w, h, "MANTENIMIENTO", h - 28, 2, ink, false);
+            tex.Apply();
+            File.WriteAllBytes(fullPath, tex.EncodeToPNG());
+            UnityEngine.Object.DestroyImmediate(tex);
+            return assetPath;
+        }
+
+        private static string EnsureEvidenceCobaltRumorNoteTexture(string assetPath)
+        {
+            string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", assetPath));
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+            const int w = 160, h = 128;
+            Texture2D tex = new Texture2D(w, h, TextureFormat.RGB24, false);
+
+            Color scrapPaper = new Color(0.82f, 0.77f, 0.64f);
+            Color foldedCorner = new Color(0.66f, 0.61f, 0.50f);
+            Color pencil = new Color(0.28f, 0.27f, 0.25f);
+            Color edgeShadow = new Color(0.42f, 0.39f, 0.34f);
+
+            for (int y = 0; y < h; y++)
+            {
+                for (int x = 0; x < w; x++)
+                {
+                    float grain = (PeriodicHash(x, y, w, h, 7604) - 0.5f) * 0.06f;
+                    bool raggedBorder = x < 4 + (int)(Mathf.Sin(y * 0.35f) * 2f) ||
+                                        y < 4 + (int)(Mathf.Cos(x * 0.31f) * 2f) ||
+                                        x >= w - 4 || y >= h - 4;
+                    bool cornerFold = (x > w - 28 && y > h - 28 && (x - (w - 28)) + (y - (h - 28)) > 26);
+                    Color c = raggedBorder ? edgeShadow : (cornerFold ? foldedCorner : scrapPaper);
+                    // Uneven handwritten pencil lines (no letterhead, no seals, no symbols)
+                    if (!raggedBorder && !cornerFold && x > 14 && x < w - 18 && y > 18 && y < h - 18)
+                    {
+                        int band = y % 16;
+                        if (band >= 5 && band <= 8)
+                        {
+                            float jitter = Mathf.Sin(x * 0.28f + y * 0.11f);
+                            float stroke = PeriodicHash(x / 2, y / 2, w, h, 7634);
+                            if (stroke > 0.52f && jitter > -0.35f) c = pencil;
+                        }
+                    }
+                    tex.SetPixel(x, y, new Color(Mathf.Clamp01(c.r + grain), Mathf.Clamp01(c.g + grain), Mathf.Clamp01(c.b + grain)));
+                }
+            }
+            tex.Apply();
+            File.WriteAllBytes(fullPath, tex.EncodeToPNG());
+            UnityEngine.Object.DestroyImmediate(tex);
+            return assetPath;
+        }
+
+        /// <summary>
         /// Unity's built-in PrimitiveType.Cube renders upright UVs on its local +Z face (while its -Z face
         /// has inverted UVs). Ensures all 6 room-number plaques orient their +Z face outward toward the corridor.
         /// </summary>
@@ -2885,6 +3292,9 @@ namespace MyVirtualCommunity.Editor
                 case '0': return new[] { "01110", "10001", "10011", "10101", "11001", "10001", "01110" };
                 case '1': return new[] { "00100", "01100", "00100", "00100", "00100", "00100", "01110" };
                 case '6': return new[] { "01110", "10000", "11110", "10001", "10001", "10001", "01110" };
+                case '7': return new[] { "11111", "00001", "00010", "00100", "01000", "01000", "01000" };
+                case '8': return new[] { "01110", "10001", "10001", "01110", "10001", "10001", "01110" };
+                case '9': return new[] { "01110", "10001", "10001", "01111", "00001", "10001", "01110" };
                 case '-': return new[] { "00000", "00000", "00000", "11111", "00000", "00000", "00000" };
                 default: return null;
             }
@@ -2933,6 +3343,13 @@ namespace MyVirtualCommunity.Editor
             Transform hotelRoot = shell.Find(HotelArchitectureRootName);
             Transform envRoot = hotelRoot != null ? hotelRoot.Find(HotelEnvironmentalIdentityRootName) : null;
             Transform northWingRoot = shell.Find(NorthWingM1RootName);
+            Transform narrativeRoot = root.transform.Find(HotelNarrativeEvidenceRootName);
+            bool hasNarrativeLayer = narrativeRoot != null &&
+                                     narrativeRoot.Find("Hotel_Evidence_UnfinishedProjectPlan") != null &&
+                                     narrativeRoot.Find("Hotel_Evidence_RoomRegistrationRecord") != null &&
+                                     narrativeRoot.Find("Hotel_Evidence_MaintenanceRecord") != null &&
+                                     narrativeRoot.Find("Hotel_Evidence_Cobalt60RumorNote") != null &&
+                                     narrativeRoot.Find("Hotel_Subtle_Anomalies") != null;
             bool hasNorthWing = northWingRoot != null &&
                                 northWingRoot.Find("NorthWing_Connection_Lobby") != null &&
                                 northWingRoot.Find("NorthWing_Connection_Service") != null &&
@@ -2961,7 +3378,8 @@ namespace MyVirtualCommunity.Editor
                                      envRoot.Find("Hotel_Infra_Plumbing") != null &&
                                      envRoot.Find("Hotel_Infra_Structural") != null &&
                                      envRoot.Find("Hotel_Room_Variations") != null &&
-                                     hasNorthWing;
+                                     hasNorthWing &&
+                                     hasNarrativeLayer;
 
             int retainedWallCount = 0, pillarCount = 0, missingVoidCount = 0, crookedHatchCount = 0;
             for (int i = 0; i < shell.childCount; i++)

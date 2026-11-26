@@ -79,6 +79,35 @@ namespace MyVirtualCommunity.Client.Progression
                     "The final record contains fragment 26. Three markings, two digits each.",
                     new Color(0.98f, 0.80f, 0.34f)),
 
+                // Remanencia Nivel 0 — Hotel de las Palomas environmental narrative discoveries (Implementation 07.6)
+                [ProgressionIds.ClueRemanenciaHotelPlan01] = new LocalizedEntryMetadata(
+                    "Plano de Obra Inconclusa — Nivel de Acceso",
+                    "Unfinished Project Plan — Ground Level",
+                    "Plano arquitectónico de obra inconclusa hallado junto a Recepción. Aunque coincide parcialmente con la planta actual, traza un pasillo y una estancia donde hoy existe un muro macizo de concreto; discrepancia sin explicación confirmada.",
+                    "Unfinished architectural plan found near Reception. While it partially matches the current ground floor, it maps an extra corridor and room where a solid concrete wall stands today—an unexplained discrepancy.",
+                    new Color(0.68f, 0.82f, 0.90f)),
+
+                [ProgressionIds.ClueRemanenciaHotelRegister02] = new LocalizedEntryMetadata(
+                    "Hoja de Registro de Habitaciones (Fragmento)",
+                    "Room Registration Sheet (Fragment)",
+                    "Hoja dañada de registro hallada junto a las habitaciones 109 y 110. Anota cuartos aún vacíos y una habitación inexistente ('111-B') con fechas incompletas anteriores al fin de la obra; contradicción sin causa verificada.",
+                    "Damaged room ledger sheet found near Rooms 109 and 110. Lists unfinished empty rooms alongside a non-existent '111-B' entry with incomplete dates recorded before construction ended—an unresolved contradiction.",
+                    new Color(0.88f, 0.82f, 0.68f)),
+
+                [ProgressionIds.ClueRemanenciaHotelMaintenance03] = new LocalizedEntryMetadata(
+                    "Parte de Mantenimiento — Obra Norte",
+                    "Maintenance Log — North Wing Works",
+                    "Registro de servicio localizado en el pasillo de mantenimiento del Ala Norte. Reporta manchas grisáceas en juntas secas del concreto, cortes eléctricos sin falla, resanes previos al daño y medidas que no cuadran con los planos.",
+                    "Service log located in the North Wing maintenance corridor. Reports greyish stains along dry concrete joints, unsourced power drops, repairs logged before damage occurred, and dimensions that contradict the drawings.",
+                    new Color(0.84f, 0.76f, 0.64f)),
+
+                [ProgressionIds.ClueRemanenciaHotelCobaltRumor04] = new LocalizedEntryMetadata(
+                    "Nota Anónima — Rumor de Obra",
+                    "Anonymous Note — Construction Rumor",
+                    "Nota anónima a lápiz sin sustento oficial hallada al fondo del área de servicio. Recoge un rumor no verificado sobre supuesta varilla contaminada con Cobalto-60 dentro de esta versión del hotel; sin pruebas, deja abierto el origen real de las manchas.",
+                    "Unsigned pencil note with no official source found deep in the back-of-house service core. Passes along an unverified rumor about allegedly Cobalt-60-contaminated rebar inside this version of the hotel; offers no proof and leaves the stains' true cause open.",
+                    new Color(0.86f, 0.74f, 0.56f)),
+
                 [ProgressionIds.ArtifactEvidenceBoardPdn00] = new LocalizedEntryMetadata(
                     "Muro de Evidencias Conspirativas PDN-00",
                     "Conspiracy Evidence Board PDN-00",

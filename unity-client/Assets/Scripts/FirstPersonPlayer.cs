@@ -774,9 +774,26 @@ namespace MyVirtualCommunity.Client.World
             }
         }
 
+        /// <summary>
+        /// Ensures Remanencia Nivel 0 hotel narrative discovery toast notifications only display while
+        /// the player is actively inside Remanencia, preventing dimensional transient HUD leakage onto
+        /// the Avenida Benito Juárez surface world while preserving permanent Discovery Journal records.
+        /// </summary>
+        public static bool ShouldShowDiscoveryNotificationToast(
+            ProgressionDiscoveryNotification notification,
+            SecretBackroomsTransitionController transitionController)
+        {
+            if (notification == null) return false;
+            if (ProgressionIds.IsRemanenciaHotelNarrativeClue(notification.EntryId))
+            {
+                return transitionController != null && transitionController.IsPlayerActivelyInRemanencia;
+            }
+            return true;
+        }
+
         private void HandleNewDiscoveryRecorded(ProgressionDiscoveryNotification notification)
         {
-            if (notification == null) return;
+            if (!ShouldShowDiscoveryNotificationToast(notification, cachedBackroomsTransition)) return;
             string formatted = DiscoveryJournalPresenter.FormatNewDiscoveryFeedback(notification, currentLanguage == "es");
             if (string.IsNullOrEmpty(formatted)) return;
 

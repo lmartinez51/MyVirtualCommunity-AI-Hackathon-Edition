@@ -21,6 +21,22 @@ namespace MyVirtualCommunity.Client.Progression
         public const string ClueCisternElNudo = "clue:cistern-el-nudo-sequence-02";
         public const string ClueAbasoloSiphon = "clue:abasolo-siphon-sequence-03";
 
+        // Remanencia Nivel 0 — Hotel de las Palomas environmental narrative discoveries (Implementation 07.6)
+        public const string ClueRemanenciaHotelPlan01 = "clue:remanencia-hotel-plan-01";
+        public const string ClueRemanenciaHotelRegister02 = "clue:remanencia-hotel-register-02";
+        public const string ClueRemanenciaHotelMaintenance03 = "clue:remanencia-hotel-maintenance-03";
+        public const string ClueRemanenciaHotelCobaltRumor04 = "clue:remanencia-hotel-cobalt-rumor-04";
+
+        public static bool IsRemanenciaHotelNarrativeClue(string evidenceId)
+        {
+            if (string.IsNullOrWhiteSpace(evidenceId)) return false;
+            string trimmed = evidenceId.Trim();
+            return trimmed == ClueRemanenciaHotelPlan01 ||
+                   trimmed == ClueRemanenciaHotelRegister02 ||
+                   trimmed == ClueRemanenciaHotelMaintenance03 ||
+                   trimmed == ClueRemanenciaHotelCobaltRumor04;
+        }
+
         // Existing artifact & portal identifiers (matching BackroomsLevel1Builder)
         public const string ArtifactEvidenceBoardPdn00 = "artifact:muro-evidencias-pdn";
         public const string ArtifactOjoDelUmbral = "artifact:ojo-del-umbral";
