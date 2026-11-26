@@ -99,6 +99,12 @@ namespace MyVirtualCommunity.Editor
 
         public const string HotelArchitectureRootName = "Hotel_GroundFloor_Architecture";
         public const string HotelEnvironmentalIdentityRootName = "Hotel_Environmental_Identity";
+        public const string NorthWingM1RootName = "Hotel_NorthWing_M1";
+        public const float NorthWingMinX = -16.0f;
+        public const float NorthWingMaxX = 16.0f;
+        public const float NorthWingMinZ = 12.0f;
+        public const float NorthWingMaxZ = 34.0f;
+        public const string LightwellDiffuserMatPath = "Assets/Settings/Remanencia_Level0_LightwellDiffuser.mat";
 
         public const string PipeCopperRustMatPath = "Assets/Settings/Remanencia_Level0_PipeCopperRust.mat";
         public const string UnfinishedWoodDoorMatPath = "Assets/Settings/Remanencia_Level0_UnfinishedWoodDoor.mat";
@@ -148,7 +154,8 @@ namespace MyVirtualCommunity.Editor
             public Material IndustrialMetal;
             public Material CeilingVoid;
             public Material ElevatorDoorMetal;
-            public Material[] RoomPlaqueMats; // Index 0..5 -> Rooms 101..106
+            public Material LightwellDiffuser;
+            public Material[] RoomPlaqueMats; // Index 0..9 -> Rooms 101..110
             public Material PipeCopperRust;
             public Material UnfinishedWoodDoor;
             public Material AgedCeramicPatch;
@@ -208,8 +215,8 @@ namespace MyVirtualCommunity.Editor
             string ceilingTexPath = EnsureBackroomsCeilingGridTexture(CeilingSoffitTexPath);
             string columnTexPath = EnsureRemanenciaConcreteColumnTexture(ColumnConcreteTexPath);
             string plasterTexPath = EnsureRemanenciaPlasterWallTexture(PlasterWallTexPath);
-            string[] plaqueTexPaths = new string[6];
-            for (int r = 0; r < 6; r++)
+            string[] plaqueTexPaths = new string[10];
+            for (int r = 0; r < 10; r++)
             {
                 int roomNum = 101 + r;
                 plaqueTexPaths[r] = EnsureRoomNumberPlaqueTexture(
@@ -246,7 +253,7 @@ namespace MyVirtualCommunity.Editor
             ConfigureArchitecturalTextureImporter(ceilingTexPath);
             ConfigureArchitecturalTextureImporter(columnTexPath);
             ConfigureArchitecturalTextureImporter(plasterTexPath);
-            for (int r = 0; r < 6; r++)
+            for (int r = 0; r < 10; r++)
             {
                 ConfigurePlaqueTextureImporter(plaqueTexPaths[r]);
             }
@@ -258,8 +265,8 @@ namespace MyVirtualCommunity.Editor
             ConfigureSignTextureImporter(signServiceTex);
             ConfigureSignTextureImporter(signMaintTex);
 
-            Material[] plaqueMats = new Material[6];
-            for (int r = 0; r < 6; r++)
+            Material[] plaqueMats = new Material[10];
+            for (int r = 0; r < 10; r++)
             {
                 int roomNum = 101 + r;
                 plaqueMats[r] = CreateTexturedMat(
@@ -284,6 +291,7 @@ namespace MyVirtualCommunity.Editor
                 IndustrialMetal = CreateColorMat(IndustrialMetalMatPath, new Color(0.26f, 0.27f, 0.28f), 0.36f, 0.68f),
                 CeilingVoid = CreateColorMat(CeilingVoidMatPath, new Color(0.05f, 0.055f, 0.06f), 0.08f, 0.0f),
                 ElevatorDoorMetal = CreateColorMat(ElevatorDoorMetalMatPath, new Color(0.46f, 0.48f, 0.50f), 0.48f, 0.72f),
+                LightwellDiffuser = CreateEmissiveMat(LightwellDiffuserMatPath, new Color(0.58f, 0.63f, 0.68f), new Color(0.32f, 0.36f, 0.41f) * 1.15f),
                 RoomPlaqueMats = plaqueMats,
                 PipeCopperRust = CreateColorMat(PipeCopperRustMatPath, new Color(0.38f, 0.25f, 0.19f), 0.34f, 0.58f),
                 UnfinishedWoodDoor = CreateColorMat(UnfinishedWoodDoorMatPath, new Color(0.56f, 0.48f, 0.39f), 0.18f, 0.0f),
@@ -703,6 +711,9 @@ namespace MyVirtualCommunity.Editor
                 astrolabeCoreMat, rackSteelMat, redThreadMat);
 
             vaultCtrl.RefreshVisualState();
+
+            // Canonical North Hotel Wing & Courtyard Loop (Module M1)
+            BuildOrUpdateNorthWingM1(shellRoot.transform, visualMats);
 
             // Save BackroomsLevel1Scene cleanly and ensure it is registered in EditorBuildSettings
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -1589,6 +1600,602 @@ namespace MyVirtualCommunity.Editor
         }
 
         /// <summary>
+        /// Targeted, idempotent Implementation 07.5 horizontal expansion migration utility.
+        /// Opens the existing BackroomsLevel1Scene.unity without rebuilding the scene or modifying
+        /// Hotel_GroundFloor_Architecture, Hotel_Elevator_Core, Hotel_Environmental_Identity,
+        /// lighting budget (18 lights, 0 shadows), gameplay anchors, or save schemas.
+        /// Opens Connection A (Main Lobby North Archway) and Connection B (NW Service Hall) cleanly
+        /// along Z = +12.0 and constructs/updates Hotel_NorthWing_M1 (32m x 22m = 704 m²).
+        /// </summary>
+        [MenuItem("MyVirtualCommunity/Migrate Remanencia North Wing M1 (In-Place)")]
+        public static void MigrateRemanenciaNorthWingM1AndSave()
+        {
+            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            if (!scene.IsValid())
+            {
+                throw new InvalidOperationException($"Failed to open existing scene at {ScenePath}.");
+            }
+
+            MigrateRemanenciaNorthWingM1InOpenScene(scene);
+            AssetDatabase.SaveAssets();
+            EditorSceneManager.MarkSceneDirty(scene);
+            if (!EditorSceneManager.SaveScene(scene, ScenePath))
+            {
+                throw new InvalidOperationException($"Failed to save migrated scene at {ScenePath}.");
+            }
+            Debug.Log($"[BackroomsLevel1Builder] Remanencia North Wing M1 (32m x 22m) horizontal expansion migration completed and saved to {ScenePath}.");
+        }
+
+        public static void MigrateRemanenciaNorthWingM1InOpenScene(UnityEngine.SceneManagement.Scene scene)
+        {
+            if (!scene.IsValid() || !string.Equals(scene.path, ScenePath, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    $"Remanencia North Wing M1 migration requires open scene '{ScenePath}', but found '{scene.path}'.");
+            }
+
+            GameObject root = null;
+            foreach (GameObject go in scene.GetRootGameObjects())
+            {
+                if (go.name == "BackroomsLevel1_Root")
+                {
+                    root = go;
+                    break;
+                }
+            }
+            if (root == null)
+            {
+                throw new InvalidOperationException("BackroomsLevel1_Root not found in open scene.");
+            }
+
+            Transform shellRoot = root.transform.Find("Backrooms_Architecture");
+            if (shellRoot == null)
+            {
+                throw new InvalidOperationException("Backrooms_Architecture not found under BackroomsLevel1_Root.");
+            }
+
+            Transform hotelRoot = shellRoot.Find(HotelArchitectureRootName);
+            if (hotelRoot == null)
+            {
+                throw new InvalidOperationException($"Expected '{HotelArchitectureRootName}' under Backrooms_Architecture before running 07.5 North Wing M1 migration.");
+            }
+
+            RemanenciaVisualMaterials mats = EnsureRemanenciaVisualAssets();
+            BuildOrUpdateNorthWingM1(shellRoot, mats);
+        }
+
+        private static void BuildOrUpdateNorthWingM1(Transform shellRoot, RemanenciaVisualMaterials mats)
+        {
+            const float wallT = 0.22f;
+            const float outerT = 0.26f;
+
+            // 1. Shorten retained Wall_Outer_North (and its baseboard) in place to X = -20.065..-12.000
+            //    so NW Vault Safe (-16.4, 11.42) and 07.3 plumbing risers (-12.24..-12.04, 11.74) remain solidly backed
+            //    while preserving the exact 15 retained Wall_* count under Backrooms_Architecture.
+            UpdateRetainedWallSegmentInPlace(
+                shellRoot, "Wall_Outer_North",
+                new Vector2(-20.0f, 12.0f), new Vector2(-12.065f, 12.0f),
+                outerT, mats.WallConcrete, mats.BaseboardConcrete);
+
+            Transform m1Root = EnsureHotelSubgroup(shellRoot, NorthWingM1RootName);
+
+            // =========================================================================
+            // 1. CONNECTION A — MAIN LOBBY NORTH ARCHWAY + M1 SHELL SLABS & OUTER PERIMETER
+            //    Clear opening: X = +3.80..+7.00 (3.20 m clear width x 2.42 m height)
+            // =========================================================================
+            Transform connLobby = EnsureHotelSubgroup(m1Root, "NorthWing_Connection_Lobby");
+
+            // Seamless East North-Perimeter Closure behind Reception Alcove & Entrance Vestibule (X = +7.20..+20.065)
+            EnsureHotelWallSegment(connLobby, "NorthWing_PerimeterSeal_East",
+                new Vector2(7.265f, 12.0f), new Vector2(20.0f, 12.0f), outerT, mats.WallConcrete, mats.BaseboardConcrete);
+
+            // Framed Main Lobby North Archway piers, overhead transom, metal reveal trim & flush threshold
+            EnsureHotelBox(connLobby, "NorthWing_ConnA_ArchPierW",
+                new Vector3(3.70f, BaseY + ClearHeight * 0.5f, 12.0f), Quaternion.identity,
+                new Vector3(0.20f, ClearHeight, 0.34f), mats.ColumnConcrete, keepCollider: true);
+            EnsureHotelBox(connLobby, "NorthWing_ConnA_ArchPierE",
+                new Vector3(7.10f, BaseY + ClearHeight * 0.5f, 12.0f), Quaternion.identity,
+                new Vector3(0.20f, ClearHeight, 0.34f), mats.ColumnConcrete, keepCollider: true);
+            EnsureHotelBox(connLobby, "NorthWing_ConnA_ArchTransom",
+                new Vector3(5.40f, CeilingY - 0.215f, 12.0f), Quaternion.identity,
+                new Vector3(3.60f, 0.43f, 0.32f), mats.ColumnConcrete, keepCollider: false);
+            EnsureHotelBox(connLobby, "NorthWing_ConnA_TrimW",
+                new Vector3(3.82f, BaseY + 1.21f, 12.0f), Quaternion.identity,
+                new Vector3(0.045f, 2.42f, 0.36f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(connLobby, "NorthWing_ConnA_TrimE",
+                new Vector3(6.98f, BaseY + 1.21f, 12.0f), Quaternion.identity,
+                new Vector3(0.045f, 2.42f, 0.36f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(connLobby, "NorthWing_ConnA_TrimTop",
+                new Vector3(5.40f, BaseY + 2.41f, 12.0f), Quaternion.identity,
+                new Vector3(3.24f, 0.055f, 0.36f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(connLobby, "NorthWing_ConnA_FloorThreshold",
+                new Vector3(5.40f, BaseY + 0.004f, 12.0f), Quaternion.identity,
+                new Vector3(3.20f, 0.008f, 0.28f), mats.IndustrialMetal, keepCollider: false);
+
+            // Continuous ground-floor slab (X=-16.3..+16.3, Z=+12.2..+34.3; 10cm overlap with Backrooms_Floor Zmax=+12.3, zero gap, zero fall hazard)
+            EnsureHotelBox(connLobby, "NorthWing_FloorSlab",
+                new Vector3(0.0f, BaseY - 0.151f, 23.25f), Quaternion.identity,
+                new Vector3(32.60f, 0.30f, 22.10f), mats.FloorConcrete, keepCollider: true);
+
+            // 4 Perimeter ceiling slabs framing the 10m x 8m central Courtyard Lightwell opening (X=-5..+5, Z=+18..+26)
+            EnsureHotelBox(connLobby, "NorthWing_CeilingSlab_South",
+                new Vector3(0.0f, CeilingY + 0.102f, 15.10f), Quaternion.identity,
+                new Vector3(32.60f, 0.20f, 5.80f), mats.CeilingSoffit, keepCollider: true);
+            EnsureHotelBox(connLobby, "NorthWing_CeilingSlab_North",
+                new Vector3(0.0f, CeilingY + 0.102f, 30.15f), Quaternion.identity,
+                new Vector3(32.60f, 0.20f, 8.30f), mats.CeilingSoffit, keepCollider: true);
+            EnsureHotelBox(connLobby, "NorthWing_CeilingSlab_West",
+                new Vector3(-10.65f, CeilingY + 0.102f, 22.0f), Quaternion.identity,
+                new Vector3(11.30f, 0.20f, 8.00f), mats.CeilingSoffit, keepCollider: true);
+            EnsureHotelBox(connLobby, "NorthWing_CeilingSlab_East",
+                new Vector3(10.65f, CeilingY + 0.102f, 22.0f), Quaternion.identity,
+                new Vector3(11.30f, 0.20f, 8.00f), mats.CeilingSoffit, keepCollider: true);
+
+            // Outer M1 Perimeter Enclosure (X=-16..+16, Z=+12..+34 -> exact 32m x 22m = 704 m² envelope)
+            EnsureHotelWallSegment(connLobby, "NorthWing_OuterWall_North",
+                new Vector2(-16.0f, 34.0f), new Vector2(16.0f, 34.0f), outerT, mats.WallConcrete, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(connLobby, "NorthWing_OuterWall_East",
+                new Vector2(16.0f, 12.0f), new Vector2(16.0f, 34.0f), outerT, mats.WallConcrete, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(connLobby, "NorthWing_OuterWall_West",
+                new Vector2(-16.0f, 12.0f), new Vector2(-16.0f, 34.0f), outerT, mats.WallConcrete, mats.BaseboardConcrete);
+
+            // =========================================================================
+            // 2. CONNECTION B — NORTHWEST SERVICE HALL + MID NORTH-PERIMETER SEAL
+            //    Clear opening: X = -12.00..-9.58 (2.42 m masonry / 2.34 m trim clear width)
+            // =========================================================================
+            Transform connService = EnsureHotelSubgroup(m1Root, "NorthWing_Connection_Service");
+
+            // Seamless Mid North-Perimeter Closure behind Rooms 102, 101 & Luggage Alcove (X = -9.58..+3.60)
+            EnsureHotelWallSegment(connService, "NorthWing_PerimeterSeal_Mid",
+                new Vector2(-9.515f, 12.0f), new Vector2(3.535f, 12.0f), outerT, mats.WallConcrete, mats.BaseboardConcrete);
+
+            EnsureHotelBox(connService, "NorthWing_ConnB_Transom",
+                new Vector3(-10.79f, BaseY + 2.28f + 0.285f, 12.0f), Quaternion.identity,
+                new Vector3(2.46f, 0.57f, 0.30f), mats.ColumnConcrete, keepCollider: false);
+            EnsureHotelBox(connService, "NorthWing_ConnB_TrimW",
+                new Vector3(-11.98f, BaseY + 1.14f, 12.0f), Quaternion.identity,
+                new Vector3(0.04f, 2.28f, 0.34f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(connService, "NorthWing_ConnB_TrimE",
+                new Vector3(-9.60f, BaseY + 1.14f, 12.0f), Quaternion.identity,
+                new Vector3(0.04f, 2.28f, 0.34f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(connService, "NorthWing_ConnB_TrimTop",
+                new Vector3(-10.79f, BaseY + 2.28f, 12.0f), Quaternion.identity,
+                new Vector3(2.44f, 0.055f, 0.34f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(connService, "NorthWing_ConnB_FloorThreshold",
+                new Vector3(-10.79f, BaseY + 0.004f, 12.0f), Quaternion.identity,
+                new Vector3(2.40f, 0.008f, 0.28f), mats.IndustrialMetal, keepCollider: false);
+
+            // =========================================================================
+            // 3. CENTRAL COURTYARD / UNFINISHED ATRIUM (10m x 8m: X=-5..+5, Z=+18..+26)
+            //    Safe ground-floor courtyard framed by colonnade piers, waist parapets,
+            //    4 wide cardinal portals (2.8m-3.2m), central plinth & sealed skylight shaft.
+            // =========================================================================
+            Transform courtyard = EnsureHotelSubgroup(m1Root, "NorthWing_Courtyard");
+
+            // 4 corner structural colonnade piers (full floor-to-ceiling concrete)
+            Vector2[] courtCorners =
+            {
+                new Vector2(-4.85f, 18.15f),
+                new Vector2( 4.85f, 18.15f),
+                new Vector2(-4.85f, 25.85f),
+                new Vector2( 4.85f, 25.85f)
+            };
+            for (int c = 0; c < courtCorners.Length; c++)
+            {
+                EnsureHotelBox(courtyard, $"NorthWing_Courtyard_CornerPier_{c}",
+                    new Vector3(courtCorners[c].x, BaseY + ClearHeight * 0.5f, courtCorners[c].y), Quaternion.identity,
+                    new Vector3(0.54f, ClearHeight, 0.54f), mats.ColumnConcrete, keepCollider: true);
+            }
+
+            // Low unfinished concrete parapet curbs (1.02m tall) framing 4 wide cardinal portals
+            // South & North portals: X = -1.60..+1.60 (3.20m clear)
+            EnsureHotelBox(courtyard, "NorthWing_Courtyard_ParapetSW", new Vector3(-3.12f, BaseY + 0.51f, 18.15f), Quaternion.identity, new Vector3(2.92f, 1.02f, 0.24f), mats.WallConcrete, keepCollider: true);
+            EnsureHotelBox(courtyard, "NorthWing_Courtyard_ParapetSE", new Vector3( 3.12f, BaseY + 0.51f, 18.15f), Quaternion.identity, new Vector3(2.92f, 1.02f, 0.24f), mats.WallConcrete, keepCollider: true);
+            EnsureHotelBox(courtyard, "NorthWing_Courtyard_ParapetNW", new Vector3(-3.12f, BaseY + 0.51f, 25.85f), Quaternion.identity, new Vector3(2.92f, 1.02f, 0.24f), mats.WallConcrete, keepCollider: true);
+            EnsureHotelBox(courtyard, "NorthWing_Courtyard_ParapetNE", new Vector3( 3.12f, BaseY + 0.51f, 25.85f), Quaternion.identity, new Vector3(2.92f, 1.02f, 0.24f), mats.WallConcrete, keepCollider: true);
+            // West & East portals: Z = +20.60..+23.40 (2.80m clear)
+            EnsureHotelBox(courtyard, "NorthWing_Courtyard_ParapetWS", new Vector3(-4.85f, BaseY + 0.51f, 19.48f), Quaternion.identity, new Vector3(0.24f, 1.02f, 2.16f), mats.WallConcrete, keepCollider: true);
+            EnsureHotelBox(courtyard, "NorthWing_Courtyard_ParapetWN", new Vector3(-4.85f, BaseY + 0.51f, 24.52f), Quaternion.identity, new Vector3(0.24f, 1.02f, 2.16f), mats.WallConcrete, keepCollider: true);
+            EnsureHotelBox(courtyard, "NorthWing_Courtyard_ParapetES", new Vector3( 4.85f, BaseY + 0.51f, 19.48f), Quaternion.identity, new Vector3(0.24f, 1.02f, 2.16f), mats.WallConcrete, keepCollider: true);
+            EnsureHotelBox(courtyard, "NorthWing_Courtyard_ParapetEN", new Vector3( 4.85f, BaseY + 0.51f, 24.52f), Quaternion.identity, new Vector3(0.24f, 1.02f, 2.16f), mats.WallConcrete, keepCollider: true);
+
+            // Courtyard interior architectural centerpiece: stepped concrete planter plinth + drain + 2 offset sightline columns
+            EnsureHotelBox(courtyard, "NorthWing_Courtyard_CenterPlinthBase",
+                new Vector3(0.0f, BaseY + 0.21f, 22.0f), Quaternion.identity,
+                new Vector3(2.20f, 0.42f, 1.40f), mats.ColumnConcrete, keepCollider: true);
+            EnsureHotelBox(courtyard, "NorthWing_Courtyard_CenterPlinthTrim",
+                new Vector3(0.0f, BaseY + 0.43f, 22.0f), Quaternion.identity,
+                new Vector3(2.30f, 0.05f, 1.50f), mats.AgedCeramicPatch, keepCollider: false);
+            EnsureHotelBox(courtyard, "NorthWing_Courtyard_CenterDrainGrate",
+                new Vector3(0.0f, BaseY + 0.46f, 22.0f), Quaternion.identity,
+                new Vector3(0.36f, 0.015f, 0.36f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(courtyard, "NorthWing_Courtyard_SightlinePierSW",
+                new Vector3(-2.70f, BaseY + ClearHeight * 0.5f, 20.30f), Quaternion.identity,
+                new Vector3(0.42f, ClearHeight, 0.42f), mats.ColumnConcrete, keepCollider: true);
+            EnsureHotelBox(courtyard, "NorthWing_Courtyard_SightlinePierNE",
+                new Vector3( 2.70f, BaseY + ClearHeight * 0.5f, 23.70f), Quaternion.identity,
+                new Vector3(0.42f, ClearHeight, 0.42f), mats.ColumnConcrete, keepCollider: true);
+
+            // Raised coffered concrete skylight lightwell shaft (Y = CeilingY..-44.80m, solidly sealed on top)
+            const float wellHeight = 2.35f;
+            float wellMidY = CeilingY + wellHeight * 0.5f;
+            float wellTopY = CeilingY + wellHeight; // -44.80m
+            EnsureHotelBox(courtyard, "NorthWing_Lightwell_WallS", new Vector3( 0.0f, wellMidY, 17.92f), Quaternion.identity, new Vector3(10.32f, wellHeight, 0.20f), mats.WallConcrete, keepCollider: true);
+            EnsureHotelBox(courtyard, "NorthWing_Lightwell_WallN", new Vector3( 0.0f, wellMidY, 26.08f), Quaternion.identity, new Vector3(10.32f, wellHeight, 0.20f), mats.WallConcrete, keepCollider: true);
+            EnsureHotelBox(courtyard, "NorthWing_Lightwell_WallW", new Vector3(-5.08f, wellMidY, 22.00f), Quaternion.identity, new Vector3(0.20f, wellHeight, 8.32f), mats.WallConcrete, keepCollider: true);
+            EnsureHotelBox(courtyard, "NorthWing_Lightwell_WallE", new Vector3( 5.08f, wellMidY, 22.00f), Quaternion.identity, new Vector3(0.20f, wellHeight, 8.32f), mats.WallConcrete, keepCollider: true);
+
+            // Structural skylight cross-beams & galvanized purlins
+            float[] wellBeamXs = { -2.4f, 0.0f, 2.4f };
+            for (int b = 0; b < wellBeamXs.Length; b++)
+            {
+                EnsureHotelBox(courtyard, $"NorthWing_Lightwell_ConcreteBeam_{b}",
+                    new Vector3(wellBeamXs[b], wellTopY - 0.36f, 22.0f), Quaternion.identity,
+                    new Vector3(0.30f, 0.48f, 8.10f), mats.ColumnConcrete, keepCollider: false);
+            }
+            EnsureHotelBox(courtyard, "NorthWing_Lightwell_SteelPurlinS",
+                new Vector3(0.0f, wellTopY - 0.14f, 20.6f), Quaternion.identity,
+                new Vector3(10.10f, 0.14f, 0.14f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(courtyard, "NorthWing_Lightwell_SteelPurlinN",
+                new Vector3(0.0f, wellTopY - 0.14f, 23.4f), Quaternion.identity,
+                new Vector3(10.10f, 0.14f, 0.14f), mats.IndustrialMetal, keepCollider: false);
+
+            // Luminous overcast translucent diffuser skylight cap (solid collider seals top cleanly)
+            EnsureHotelBox(courtyard, "NorthWing_Lightwell_SkylightCap",
+                new Vector3(0.0f, wellTopY + 0.08f, 22.0f), Quaternion.identity,
+                new Vector3(10.60f, 0.16f, 8.60f), mats.LightwellDiffuser, keepCollider: true);
+
+            // =========================================================================
+            // 4. EAST ARCADE, SOUTH COURTYARD PROMENADE & NORTH CORRIDOR STRUCTURE
+            //    South Promenade: Z = +15.0..+18.0 (3.0m wide) + recessed South alcoves (Z = +12..+15)
+            //    East Arcade: X = +5.0..+8.2 (3.2m wide), North Corridor: Z = +26.0..+28.8 (2.8m wide)
+            // =========================================================================
+            Transform eastArcade = EnsureHotelSubgroup(m1Root, "NorthWing_EastArcade");
+
+            // South Promenade sightline-break architectural alcoves (Z = +12.0..+15.0, open North into Z = 15..18)
+            EnsureHotelWallSegment(eastArcade, "NorthWing_SouthPromenade_AlcovePierW",
+                new Vector2(-4.2f, 12.0f), new Vector2(-4.2f, 15.0f), wallT, mats.WallConcrete, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(eastArcade, "NorthWing_SouthPromenade_AlcovePierMid",
+                new Vector2(-1.0f, 12.0f), new Vector2(-1.0f, 15.0f), wallT, mats.WallPlaster, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(eastArcade, "NorthWing_SouthPromenade_LobbyNibPier",
+                new Vector2(3.6f, 12.0f), new Vector2(3.6f, 14.6f), 0.28f, mats.ColumnConcrete, mats.BaseboardConcrete);
+
+            // Overhead soffit beams along South Promenade, East Arcade & North Guest Corridor
+            float[] southBeamXs = { -4.2f, -1.0f, 3.6f };
+            for (int b = 0; b < southBeamXs.Length; b++)
+            {
+                EnsureHotelBox(eastArcade, $"NorthWing_SouthPromenade_Beam_{b}",
+                    new Vector3(southBeamXs[b], CeilingY - 0.16f, 16.5f), Quaternion.identity,
+                    new Vector3(0.28f, 0.32f, 3.20f), mats.ColumnConcrete, keepCollider: false);
+            }
+            float[] eastBeamZs = { 15.0f, 18.0f, 22.0f, 26.0f };
+            for (int b = 0; b < eastBeamZs.Length; b++)
+            {
+                EnsureHotelBox(eastArcade, $"NorthWing_EastArcade_Beam_{b}",
+                    new Vector3(6.60f, CeilingY - 0.16f, eastBeamZs[b]), Quaternion.identity,
+                    new Vector3(3.20f, 0.32f, 0.28f), mats.ColumnConcrete, keepCollider: false);
+            }
+            float[] northCorrBeamXs = { 8.2f, 3.2f, -3.6f, -8.6f };
+            for (int b = 0; b < northCorrBeamXs.Length; b++)
+            {
+                EnsureHotelBox(eastArcade, $"NorthWing_NorthCorridor_Beam_{b}",
+                    new Vector3(northCorrBeamXs[b], CeilingY - 0.16f, 27.4f), Quaternion.identity,
+                    new Vector3(0.28f, 0.32f, 2.80f), mats.ColumnConcrete, keepCollider: false);
+            }
+            // Deliberate architectural overlook return at NE corridor end (X = +13.6..+16.0, Z = +26.0..+28.8)
+            EnsureHotelWallSegment(eastArcade, "NorthWing_NorthCorridor_EastOverlookNib",
+                new Vector2(13.6f, 26.0f), new Vector2(13.6f, 27.0f), 0.24f, mats.ColumnConcrete, mats.BaseboardConcrete);
+
+            // =========================================================================
+            // 5. WEST ARCADE & SERVICE-TO-PUBLIC BULKHEAD SEPARATION (X = -8.6..-5.0)
+            //    Dual 2.6m framed bulkheads at X = -8.6 (Z = 15.2..17.8 & Z = 26.1..28.7)
+            // =========================================================================
+            Transform westArcade = EnsureHotelSubgroup(m1Root, "NorthWing_WestArcade");
+
+            EnsureHotelWallSegment(westArcade, "NorthWing_WestArcade_ServiceDivider_SouthStub",
+                new Vector2(-8.6f, 12.0f), new Vector2(-8.6f, 15.2f), wallT, mats.WallConcrete, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(westArcade, "NorthWing_WestArcade_ServiceDivider_Mid",
+                new Vector2(-8.6f, 17.8f), new Vector2(-8.6f, 26.1f), wallT, mats.WallConcrete, mats.BaseboardConcrete);
+            // Recessed architectural pilaster pair breaking flatness along the West Arcade wall
+            EnsureHotelBox(westArcade, "NorthWing_WestArcade_PilasterS",
+                new Vector3(-8.40f, BaseY + ClearHeight * 0.5f, 20.2f), Quaternion.identity,
+                new Vector3(0.24f, ClearHeight, 0.34f), mats.ColumnConcrete, keepCollider: true);
+            EnsureHotelBox(westArcade, "NorthWing_WestArcade_PilasterN",
+                new Vector3(-8.40f, BaseY + ClearHeight * 0.5f, 23.8f), Quaternion.identity,
+                new Vector3(0.24f, ClearHeight, 0.34f), mats.ColumnConcrete, keepCollider: true);
+
+            // South Service Bulkhead Frame (X = -8.6, Z = +15.2..+17.8 -> 2.60m clear width)
+            EnsureHotelBox(westArcade, "NorthWing_ServiceBulkheadS_Transom",
+                new Vector3(-8.6f, CeilingY - 0.28f, 16.5f), Quaternion.identity,
+                new Vector3(0.28f, 0.56f, 2.64f), mats.ColumnConcrete, keepCollider: false);
+            EnsureHotelBox(westArcade, "NorthWing_ServiceBulkheadS_JambS",
+                new Vector3(-8.6f, BaseY + 1.15f, 15.24f), Quaternion.identity,
+                new Vector3(0.30f, 2.30f, 0.055f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(westArcade, "NorthWing_ServiceBulkheadS_JambN",
+                new Vector3(-8.6f, BaseY + 1.15f, 17.76f), Quaternion.identity,
+                new Vector3(0.30f, 2.30f, 0.055f), mats.IndustrialMetal, keepCollider: false);
+
+            // North Service Bulkhead Frame (X = -8.6, Z = +26.1..+28.7 -> 2.60m clear width)
+            EnsureHotelBox(westArcade, "NorthWing_ServiceBulkheadN_Transom",
+                new Vector3(-8.6f, CeilingY - 0.28f, 27.4f), Quaternion.identity,
+                new Vector3(0.28f, 0.56f, 2.64f), mats.ColumnConcrete, keepCollider: false);
+            EnsureHotelBox(westArcade, "NorthWing_ServiceBulkheadN_JambS",
+                new Vector3(-8.6f, BaseY + 1.15f, 26.14f), Quaternion.identity,
+                new Vector3(0.30f, 2.30f, 0.055f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(westArcade, "NorthWing_ServiceBulkheadN_JambN",
+                new Vector3(-8.6f, BaseY + 1.15f, 28.66f), Quaternion.identity,
+                new Vector3(0.30f, 2.30f, 0.055f), mats.IndustrialMetal, keepCollider: false);
+
+            float[] westBeamZs = { 18.0f, 22.0f, 26.0f };
+            for (int b = 0; b < westBeamZs.Length; b++)
+            {
+                EnsureHotelBox(westArcade, $"NorthWing_WestArcade_Beam_{b}",
+                    new Vector3(-6.80f, CeilingY - 0.16f, westBeamZs[b]), Quaternion.identity,
+                    new Vector3(3.60f, 0.32f, 0.28f), mats.ColumnConcrete, keepCollider: false);
+            }
+
+            // =========================================================================
+            // 6. FOUR ADDITIONAL EMPTY GUEST-ROOM SHELLS (ROOMS 107-110, ZERO FURNITURE!)
+            //    Row Z = +28.8..+34.0 (5.2m deep) along North Guest Corridor (Z = +26.0..+28.8)
+            //    Modest per-room variations + interconnecting suite opening (Room 109 <-> 110)
+            // =========================================================================
+            Transform guestRooms = EnsureHotelSubgroup(m1Root, "NorthWing_GuestRooms_107_110");
+
+            // --- GUEST ROOM 107 (NE Corner Suite: X = +9.6..+16.0, Z = +28.8..+34.0) ---
+            Transform r107 = EnsureHotelSubgroup(guestRooms, "Hotel_GuestRoom_107");
+            EnsureHotelDoorwayWallX(r107, "Hotel_Room107_CorridorWall", z: 28.8f, minX: 9.6f, maxX: 16.0f, doorMinX: 10.6f, doorMaxX: 12.0f,
+                thickness: wallT, wallMat: mats.WallPlaster, baseMat: mats.BaseboardConcrete, trimMat: mats.IndustrialMetal,
+                plaqueMat: mats.RoomPlaqueMats[6], plaqueX: 12.35f, corridorOnSouthSide: true);
+            EnsureHotelWallSegment(r107, "Hotel_Room107_WestPartyWall", new Vector2(9.6f, 28.8f), new Vector2(9.6f, 34.0f), wallT, mats.WallPlaster, mats.BaseboardConcrete);
+            // Unfinished East bathroom shell (opening facing West at Z = 29.6..30.7)
+            EnsureHotelWallSegment(r107, "Hotel_Room107_BathWallN", new Vector2(13.6f, 31.6f), new Vector2(16.0f, 31.6f), 0.16f, mats.WallConcrete, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(r107, "Hotel_Room107_BathWallW", new Vector2(13.6f, 30.7f), new Vector2(13.6f, 31.6f), 0.16f, mats.WallConcrete, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(r107, "Hotel_Room107_BathWallWS", new Vector2(13.6f, 28.8f), new Vector2(13.6f, 29.6f), 0.16f, mats.WallConcrete, mats.BaseboardConcrete);
+
+            // --- GUEST ROOM 108 (North-East-Center Room: X = +3.2..+9.6, Z = +28.8..+34.0) ---
+            Transform r108 = EnsureHotelSubgroup(guestRooms, "Hotel_GuestRoom_108");
+            EnsureHotelDoorwayWallX(r108, "Hotel_Room108_CorridorWall", z: 28.8f, minX: 3.2f, maxX: 9.6f, doorMinX: 6.8f, doorMaxX: 8.2f,
+                thickness: wallT, wallMat: mats.WallPlaster, baseMat: mats.BaseboardConcrete, trimMat: mats.IndustrialMetal,
+                plaqueMat: mats.RoomPlaqueMats[7], plaqueX: 6.45f, corridorOnSouthSide: true);
+            EnsureHotelWallSegment(r108, "Hotel_Room108_WestPartyWall", new Vector2(3.2f, 28.8f), new Vector2(3.2f, 34.0f), wallT, mats.WallPlaster, mats.BaseboardConcrete);
+            // West bathroom bay + entry foyer sightline nib
+            EnsureHotelWallSegment(r108, "Hotel_Room108_BathWallN", new Vector2(3.2f, 31.6f), new Vector2(5.4f, 31.6f), 0.16f, mats.WallConcrete, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(r108, "Hotel_Room108_BathWallE", new Vector2(5.4f, 28.8f), new Vector2(5.4f, 29.8f), 0.16f, mats.WallConcrete, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(r108, "Hotel_Room108_BathWallEN", new Vector2(5.4f, 30.9f), new Vector2(5.4f, 31.6f), 0.16f, mats.WallConcrete, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(r108, "Hotel_Room108_FoyerNib", new Vector2(6.15f, 28.8f), new Vector2(6.15f, 30.4f), 0.16f, mats.WallPlaster, mats.BaseboardConcrete);
+
+            // --- GUEST ROOM 109 (North-West-Center Interconnecting Suite: X = -3.6..+3.2, Z = +28.8..+34.0) ---
+            Transform r109 = EnsureHotelSubgroup(guestRooms, "Hotel_GuestRoom_109");
+            EnsureHotelDoorwayWallX(r109, "Hotel_Room109_CorridorWall", z: 28.8f, minX: -3.6f, maxX: 3.2f, doorMinX: -2.6f, doorMaxX: -1.2f,
+                thickness: wallT, wallMat: mats.WallPlaster, baseMat: mats.BaseboardConcrete, trimMat: mats.IndustrialMetal,
+                plaqueMat: mats.RoomPlaqueMats[8], plaqueX: -0.85f, corridorOnSouthSide: true);
+            // Interconnecting framed doorway to Room 110 (X = -3.6, Z = 30.0..31.3 -> 1.30m wide escape connector)
+            EnsureHotelDoorwayWallZ(r109, "Hotel_Room109_InterconnectWallW", x: -3.6f, minZ: 28.8f, maxZ: 34.0f, doorMinZ: 30.0f, doorMaxZ: 31.3f,
+                thickness: wallT, wallMat: mats.WallConcrete, baseMat: mats.BaseboardConcrete, trimMat: mats.IndustrialMetal);
+            // NE wet-wall partition inside Room 109 (opening facing West at Z = 31.8..33.0)
+            EnsureHotelWallSegment(r109, "Hotel_Room109_BathWallS", new Vector2(0.8f, 31.6f), new Vector2(3.2f, 31.6f), 0.16f, mats.WallConcrete, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(r109, "Hotel_Room109_BathWallWN", new Vector2(0.8f, 33.0f), new Vector2(0.8f, 34.0f), 0.16f, mats.WallConcrete, mats.BaseboardConcrete);
+
+            // --- GUEST ROOM 110 (North-West Raw Construction Suite: X = -9.6..-3.6, Z = +28.8..+34.0) ---
+            Transform r110 = EnsureHotelSubgroup(guestRooms, "Hotel_GuestRoom_110");
+            EnsureHotelDoorwayWallX(r110, "Hotel_Room110_CorridorWall", z: 28.8f, minX: -9.6f, maxX: -3.6f, doorMinX: -6.8f, doorMaxX: -5.4f,
+                thickness: wallT, wallMat: mats.WallConcrete, baseMat: mats.BaseboardConcrete, trimMat: mats.IndustrialMetal,
+                plaqueMat: mats.RoomPlaqueMats[9], plaqueX: -5.05f, corridorOnSouthSide: true);
+            EnsureHotelWallSegment(r110, "Hotel_Room110_WestServiceWall", new Vector2(-9.6f, 28.8f), new Vector2(-9.6f, 34.0f), wallT, mats.WallConcrete, mats.BaseboardConcrete);
+            // NW corner plumbing chase partition (opening facing South at X = -9.1..-8.0)
+            EnsureHotelWallSegment(r110, "Hotel_Room110_ChaseWallE", new Vector2(-7.8f, 31.6f), new Vector2(-7.8f, 34.0f), 0.16f, mats.WallConcrete, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(r110, "Hotel_Room110_ChaseWallSW", new Vector2(-9.6f, 31.6f), new Vector2(-9.1f, 31.6f), 0.16f, mats.WallConcrete, mats.BaseboardConcrete);
+
+            // =========================================================================
+            // 7. UNFINISHED BANQUET / DINING HALL SHELL (X = +8.2..+16.0, Z = +12.0..+26.0)
+            //    7.8m x 14.0m (109.2 m²) open public hall with wide concrete transfer beams,
+            //    dual arcade portals (Z=15.4..18.2 & 22.4..25.0), North corridor door, SE nib,
+            //    and Sealed Future East Expansion Anchor — ZERO furniture!
+            // =========================================================================
+            Transform banquet = EnsureHotelSubgroup(m1Root, "NorthWing_BanquetHall");
+
+            // West dividing wall separating Banquet Hall from East Arcade (2 wide framed portals)
+            EnsureHotelWallSegment(banquet, "NorthWing_Banquet_WestWallS", new Vector2(8.2f, 12.0f), new Vector2(8.2f, 15.4f), wallT, mats.WallPlaster, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(banquet, "NorthWing_Banquet_WestWallMid", new Vector2(8.2f, 18.2f), new Vector2(8.2f, 22.4f), wallT, mats.WallPlaster, mats.BaseboardConcrete);
+            EnsureHotelWallSegment(banquet, "NorthWing_Banquet_WestWallN", new Vector2(8.2f, 25.0f), new Vector2(8.2f, 26.0f), wallT, mats.WallPlaster, mats.BaseboardConcrete);
+
+            // South Banquet Portal Frame (X = +8.2, Z = 15.4..18.2 -> 2.80m wide)
+            EnsureHotelBox(banquet, "NorthWing_Banquet_PortalS_Transom", new Vector3(8.2f, CeilingY - 0.225f, 16.8f), Quaternion.identity, new Vector3(0.26f, 0.45f, 2.86f), mats.ColumnConcrete, keepCollider: false);
+            EnsureHotelBox(banquet, "NorthWing_Banquet_PortalS_JambS", new Vector3(8.2f, BaseY + 1.20f, 15.44f), Quaternion.identity, new Vector3(0.28f, 2.40f, 0.055f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(banquet, "NorthWing_Banquet_PortalS_JambN", new Vector3(8.2f, BaseY + 1.20f, 18.16f), Quaternion.identity, new Vector3(0.28f, 2.40f, 0.055f), mats.IndustrialMetal, keepCollider: false);
+
+            // North Banquet Portal Frame (X = +8.2, Z = 22.4..25.0 -> 2.60m wide)
+            EnsureHotelBox(banquet, "NorthWing_Banquet_PortalN_Transom", new Vector3(8.2f, CeilingY - 0.225f, 23.7f), Quaternion.identity, new Vector3(0.26f, 0.45f, 2.66f), mats.ColumnConcrete, keepCollider: false);
+            EnsureHotelBox(banquet, "NorthWing_Banquet_PortalN_JambS", new Vector3(8.2f, BaseY + 1.20f, 22.44f), Quaternion.identity, new Vector3(0.28f, 2.40f, 0.055f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(banquet, "NorthWing_Banquet_PortalN_JambN", new Vector3(8.2f, BaseY + 1.20f, 24.96f), Quaternion.identity, new Vector3(0.28f, 2.40f, 0.055f), mats.IndustrialMetal, keepCollider: false);
+
+            // North dividing wall separating Banquet Hall from North Guest Corridor (with 2.4m connector door X = +10.4..+12.8)
+            EnsureHotelDoorwayWallX(banquet, "NorthWing_Banquet_NorthWall", z: 26.0f, minX: 8.2f, maxX: 16.0f, doorMinX: 10.4f, doorMaxX: 12.8f,
+                thickness: wallT, wallMat: mats.WallPlaster, baseMat: mats.BaseboardConcrete, trimMat: mats.IndustrialMetal,
+                plaqueMat: null, plaqueX: 0f, corridorOnSouthSide: false);
+
+            // Wider structural spans: 3 deep concrete ceiling transfer beams & engaged East wall pilasters
+            float[] banquetBeamZs = { 15.6f, 19.0f, 22.4f };
+            for (int b = 0; b < banquetBeamZs.Length; b++)
+            {
+                EnsureHotelBox(banquet, $"NorthWing_Banquet_TransferBeam_{b}",
+                    new Vector3(12.10f, CeilingY - 0.22f, banquetBeamZs[b]), Quaternion.identity,
+                    new Vector3(7.60f, 0.44f, 0.34f), mats.ColumnConcrete, keepCollider: false);
+                EnsureHotelBox(banquet, $"NorthWing_Banquet_EastPilaster_{b}",
+                    new Vector3(15.74f, BaseY + ClearHeight * 0.5f, banquetBeamZs[b]), Quaternion.identity,
+                    new Vector3(0.28f, ClearHeight, 0.38f), mats.ColumnConcrete, keepCollider: true);
+            }
+
+            // SE Service-Pass Architectural Nib Wall (pure unfinished partition, zero furniture)
+            EnsureHotelWallSegment(banquet, "NorthWing_Banquet_ServicePassNib",
+                new Vector2(12.4f, 12.0f), new Vector2(12.4f, 14.4f), 0.18f, mats.WallConcrete, mats.BaseboardConcrete);
+
+            // Sealed Future East Expansion Anchor Frame (pure recessed concrete relief on solid East perimeter, zero fake door)
+            EnsureHotelBox(banquet, "NorthWing_FutureAnchor_EastFrameL", new Vector3(15.84f, BaseY + 1.25f, 17.5f), Quaternion.identity, new Vector3(0.08f, 2.50f, 0.18f), mats.ColumnConcrete, keepCollider: false);
+            EnsureHotelBox(banquet, "NorthWing_FutureAnchor_EastFrameR", new Vector3(15.84f, BaseY + 1.25f, 20.5f), Quaternion.identity, new Vector3(0.08f, 2.50f, 0.18f), mats.ColumnConcrete, keepCollider: false);
+            EnsureHotelBox(banquet, "NorthWing_FutureAnchor_EastFrameTop", new Vector3(15.84f, BaseY + 2.46f, 19.0f), Quaternion.identity, new Vector3(0.08f, 0.18f, 3.18f), mats.ColumnConcrete, keepCollider: false);
+
+            // =========================================================================
+            // 8. HOUSEKEEPING / SERVICE CORE (X = -16.0..-8.6, Z = +12.0..+34.0)
+            //    Maintenance Access Corridor (X = -12.0..-8.6) fed by Connection B,
+            //    3 back-of-house room shells (Storage, Utility, Linen — Utility <-> Linen dual-door!),
+            //    NW Future Stairwell Reserve Landing (X = -16.0..-9.6, Z = +28.8..+34.0),
+            //    and Sealed Future North & West Expansion Anchors.
+            // =========================================================================
+            Transform housekeeping = EnsureHotelSubgroup(m1Root, "NorthWing_HousekeepingCore");
+
+            // West corridor wall along X = -12.0 dividing Maintenance Corridor from the 3 back-of-house shells
+            EnsureHotelDoorwayWallZ(housekeeping, "NorthWing_Housekeeping_StorageWallE", x: -12.0f, minZ: 12.0f, maxZ: 18.0f, doorMinZ: 14.2f, doorMaxZ: 15.6f,
+                thickness: wallT, wallMat: mats.WallConcrete, baseMat: mats.BaseboardConcrete, trimMat: mats.IndustrialMetal);
+            EnsureHotelDoorwayWallZ(housekeeping, "NorthWing_Housekeeping_UtilityWallE", x: -12.0f, minZ: 18.0f, maxZ: 23.4f, doorMinZ: 19.8f, doorMaxZ: 21.2f,
+                thickness: wallT, wallMat: mats.WallConcrete, baseMat: mats.BaseboardConcrete, trimMat: mats.IndustrialMetal);
+            EnsureHotelDoorwayWallZ(housekeeping, "NorthWing_Housekeeping_LinenWallE", x: -12.0f, minZ: 23.4f, maxZ: 28.8f, doorMinZ: 25.4f, doorMaxZ: 26.8f,
+                thickness: wallT, wallMat: mats.WallConcrete, baseMat: mats.BaseboardConcrete, trimMat: mats.IndustrialMetal);
+
+            // Transverse partitions separating Storage (12..18), Utility (18..23.4), Linen (23.4..28.8) & NW Landing (28.8..34)
+            EnsureHotelWallSegment(housekeeping, "NorthWing_Housekeeping_DividerSouth",
+                new Vector2(-16.0f, 18.0f), new Vector2(-12.0f, 18.0f), wallT, mats.WallConcrete, mats.BaseboardConcrete);
+            // Internal dual-door bypass between Utility & Linen rooms (Z = 23.4, X = -14.8..-13.4)
+            EnsureHotelDoorwayWallX(housekeeping, "NorthWing_Housekeeping_UtilityLinenPass", z: 23.4f, minX: -16.0f, maxX: -12.0f, doorMinX: -14.8f, doorMaxX: -13.4f,
+                thickness: wallT, wallMat: mats.WallConcrete, baseMat: mats.BaseboardConcrete, trimMat: mats.IndustrialMetal,
+                plaqueMat: null, plaqueX: 0f, corridorOnSouthSide: false);
+            EnsureHotelWallSegment(housekeeping, "NorthWing_Housekeeping_LinenNorthWall",
+                new Vector2(-16.0f, 28.8f), new Vector2(-12.0f, 28.8f), wallT, mats.WallConcrete, mats.BaseboardConcrete);
+
+            // Framed 2.4m portal opening straight North from Maintenance Corridor into NW Future Stairwell Landing (X = -12.0..-9.6, Z = 28.8)
+            EnsureHotelBox(housekeeping, "NorthWing_NWLanding_PortalTransom",
+                new Vector3(-10.8f, CeilingY - 0.28f, 28.8f), Quaternion.identity,
+                new Vector3(2.44f, 0.56f, 0.28f), mats.ColumnConcrete, keepCollider: false);
+            EnsureHotelBox(housekeeping, "NorthWing_NWLanding_PortalTrimW",
+                new Vector3(-11.96f, BaseY + 1.15f, 28.8f), Quaternion.identity,
+                new Vector3(0.055f, 2.30f, 0.30f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(housekeeping, "NorthWing_NWLanding_PortalTrimE",
+                new Vector3(-9.64f, BaseY + 1.15f, 28.8f), Quaternion.identity,
+                new Vector3(0.055f, 2.30f, 0.30f), mats.IndustrialMetal, keepCollider: false);
+
+            // Sealed Future North Expansion Anchor (Z = +34.0 inside NW Landing, X = -14.2..-11.4)
+            EnsureHotelBox(housekeeping, "NorthWing_FutureAnchor_NorthFrameW", new Vector3(-14.2f, BaseY + 1.25f, 33.84f), Quaternion.identity, new Vector3(0.18f, 2.50f, 0.08f), mats.ColumnConcrete, keepCollider: false);
+            EnsureHotelBox(housekeeping, "NorthWing_FutureAnchor_NorthFrameE", new Vector3(-11.4f, BaseY + 1.25f, 33.84f), Quaternion.identity, new Vector3(0.18f, 2.50f, 0.08f), mats.ColumnConcrete, keepCollider: false);
+            EnsureHotelBox(housekeeping, "NorthWing_FutureAnchor_NorthFrameTop", new Vector3(-12.8f, BaseY + 2.46f, 33.84f), Quaternion.identity, new Vector3(2.98f, 0.18f, 0.08f), mats.ColumnConcrete, keepCollider: false);
+
+            // Sealed Future West Expansion Anchor (X = -16.0 inside Utility Room, Z = +19.4..+22.0)
+            EnsureHotelBox(housekeeping, "NorthWing_FutureAnchor_WestFrameS", new Vector3(-15.84f, BaseY + 1.25f, 19.4f), Quaternion.identity, new Vector3(0.08f, 2.50f, 0.18f), mats.ColumnConcrete, keepCollider: false);
+            EnsureHotelBox(housekeeping, "NorthWing_FutureAnchor_WestFrameN", new Vector3(-15.84f, BaseY + 1.25f, 22.0f), Quaternion.identity, new Vector3(0.08f, 2.50f, 0.18f), mats.ColumnConcrete, keepCollider: false);
+            EnsureHotelBox(housekeeping, "NorthWing_FutureAnchor_WestFrameTop", new Vector3(-15.84f, BaseY + 2.46f, 20.7f), Quaternion.identity, new Vector3(0.08f, 0.18f, 2.78f), mats.ColumnConcrete, keepCollider: false);
+
+            // =========================================================================
+            // 9. SELECTIVE CONSTRUCTION DETAILS (NON-COLLIDING, ZERO NEW POINT LIGHTS!)
+            //    Emissive-only industrial ceiling fixtures matching hotel style, exposed
+            //    conduit trays, plumbing rough-ins, room finishes & expansion joints.
+            // =========================================================================
+            Transform details = EnsureHotelSubgroup(m1Root, "NorthWing_ConstructionDetails");
+
+            // 10 emissive-only industrial ceiling fixtures (ZERO Light components -> preserves exact 18-light VRAM budget!)
+            EnsureNorthWingEmissiveFixture(details, "NorthWing_FixtureStrip_SouthPromE",   new Vector3(  2.0f, CeilingY - 0.07f, 16.5f), Quaternion.identity,                lit: true,  warm: false, mats);
+            EnsureNorthWingEmissiveFixture(details, "NorthWing_FixtureStrip_SouthPromW",   new Vector3( -5.4f, CeilingY - 0.07f, 16.5f), Quaternion.identity,                lit: true,  warm: false, mats);
+            EnsureNorthWingEmissiveFixture(details, "NorthWing_FixtureStrip_EastArcadeS",  new Vector3(  6.6f, CeilingY - 0.07f, 19.8f), Quaternion.Euler(0f, 90f, 0f),      lit: true,  warm: false, mats);
+            EnsureNorthWingEmissiveFixture(details, "NorthWing_FixtureStrip_EastArcadeN",  new Vector3(  6.6f, CeilingY - 0.07f, 24.2f), Quaternion.Euler(0f, 90f, 0f),      lit: false, warm: false, mats);
+            EnsureNorthWingEmissiveFixture(details, "NorthWing_FixtureStrip_WestArcadeS",  new Vector3( -6.8f, CeilingY - 0.07f, 19.8f), Quaternion.Euler(0f, 90f, 0f),      lit: true,  warm: false, mats);
+            EnsureNorthWingEmissiveFixture(details, "NorthWing_FixtureStrip_WestArcadeN",  new Vector3( -6.8f, CeilingY - 0.07f, 24.2f), Quaternion.Euler(0f, 90f, 0f),      lit: true,  warm: true,  mats);
+            EnsureNorthWingEmissiveFixture(details, "NorthWing_FixtureStrip_NorthCorrE",   new Vector3(  6.4f, CeilingY - 0.07f, 27.4f), Quaternion.identity,                lit: true,  warm: false, mats);
+            EnsureNorthWingEmissiveFixture(details, "NorthWing_FixtureStrip_NorthCorrW",   new Vector3( -2.4f, CeilingY - 0.07f, 27.4f), Quaternion.identity,                lit: true,  warm: false, mats);
+            EnsureNorthWingEmissiveFixture(details, "NorthWing_FixtureStrip_BanquetCenter",new Vector3( 12.1f, CeilingY - 0.07f, 20.6f), Quaternion.Euler(0f, 90f, 0f),      lit: true,  warm: true,  mats);
+            EnsureNorthWingEmissiveFixture(details, "NorthWing_FixtureStrip_ServiceCorr",  new Vector3(-10.3f, CeilingY - 0.07f, 21.0f), Quaternion.Euler(0f, 90f, 0f),      lit: true,  warm: true,  mats);
+
+            // Overhead galvanized cable tray running along Maintenance Access Corridor & North Guest Corridor
+            EnsureHotelBox(details, "NorthWing_Infra_ServiceCableTray",
+                new Vector3(-9.15f, CeilingY - 0.14f, 20.4f), Quaternion.identity,
+                new Vector3(0.24f, 0.04f, 16.4f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(details, "NorthWing_Infra_NorthCorrConduit",
+                new Vector3(2.8f, CeilingY - 0.12f, 28.56f), Quaternion.identity,
+                new Vector3(22.0f, 0.04f, 0.04f), mats.IndustrialMetal, keepCollider: false);
+
+            // Selective plumbing rough-ins & electrical panels (Housekeeping, Banquet SE service pass, Rooms 107/108/110)
+            EnsureHotelBox(details, "NorthWing_Infra_ServicePanelBox",
+                new Vector3(-8.74f, BaseY + 1.48f, 21.6f), Quaternion.identity,
+                new Vector3(0.08f, 0.62f, 0.44f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(details, "NorthWing_Infra_UtilityPipeRiserA",
+                new Vector3(-15.72f, BaseY + ClearHeight * 0.5f, 18.45f), Quaternion.identity,
+                new Vector3(0.08f, ClearHeight, 0.08f), mats.PipeCopperRust, keepCollider: false);
+            EnsureHotelBox(details, "NorthWing_Infra_UtilityPipeRiserB",
+                new Vector3(-15.72f, BaseY + ClearHeight * 0.5f, 18.70f), Quaternion.identity,
+                new Vector3(0.06f, ClearHeight, 0.06f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(details, "NorthWing_Infra_BanquetServiceRiser",
+                new Vector3(15.72f, BaseY + ClearHeight * 0.5f, 12.60f), Quaternion.identity,
+                new Vector3(0.07f, ClearHeight, 0.07f), mats.PipeCopperRust, keepCollider: false);
+            EnsureHotelBox(details, "NorthWing_Infra_BanquetCeramicSplash",
+                new Vector3(15.84f, BaseY + 0.92f, 13.50f), Quaternion.identity,
+                new Vector3(0.025f, 1.10f, 2.20f), mats.AgedCeramicPatch, keepCollider: false);
+
+            // Selective per-room construction variations (107-110, zero furniture)
+            EnsureHotelBox(details, "NorthWing_Room107_BathPipeStub",
+                new Vector3(15.72f, BaseY + 0.68f, 30.80f), Quaternion.identity,
+                new Vector3(0.055f, 1.36f, 0.055f), mats.PipeCopperRust, keepCollider: false);
+            EnsureHotelBox(details, "NorthWing_Room107_BathDrain",
+                new Vector3(14.80f, BaseY + 0.004f, 30.20f), Quaternion.identity,
+                new Vector3(0.18f, 0.008f, 0.18f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(details, "NorthWing_Room108_BathCeramicStrip",
+                new Vector3(3.34f, BaseY + 0.62f, 30.20f), Quaternion.identity,
+                new Vector3(0.025f, 0.92f, 2.30f), mats.AgedCeramicPatch, keepCollider: false);
+            EnsureHotelBox(details, "NorthWing_Room108_LeaningWoodDoorLeaf",
+                new Vector3(6.34f, BaseY + 1.02f, 29.65f), Quaternion.Euler(0f, 0f, -7f),
+                new Vector3(0.045f, 2.04f, 0.88f), mats.UnfinishedWoodDoor, keepCollider: false);
+            EnsureExposedDoorHinges(details, "NorthWing_Room110_EmptyHinge",
+                new Vector3(-6.76f, BaseY, 28.88f), mats.IndustrialMetal);
+            EnsureHotelBox(details, "NorthWing_Room110_ChaseRiser",
+                new Vector3(-9.36f, BaseY + 0.82f, 33.62f), Quaternion.identity,
+                new Vector3(0.06f, 1.64f, 0.06f), mats.PipeCopperRust, keepCollider: false);
+
+            // Flush architectural floor expansion-joint strips
+            EnsureHotelBox(details, "NorthWing_FloorJoint_SouthProm",
+                new Vector3(0.0f, BaseY + 0.003f, 15.0f), Quaternion.identity,
+                new Vector3(16.2f, 0.006f, 0.05f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(details, "NorthWing_FloorJoint_NorthCorr",
+                new Vector3(2.0f, BaseY + 0.003f, 26.0f), Quaternion.identity,
+                new Vector3(16.0f, 0.006f, 0.05f), mats.IndustrialMetal, keepCollider: false);
+        }
+
+        private static void EnsureHotelDoorwayWallZ(
+            Transform parent, string prefix, float x, float minZ, float maxZ, float doorMinZ, float doorMaxZ,
+            float thickness, Material wallMat, Material baseMat, Material trimMat)
+        {
+            if (doorMinZ - minZ > 0.05f)
+            {
+                EnsureHotelWallSegment(parent, $"{prefix}_South", new Vector2(x, minZ), new Vector2(x, doorMinZ), thickness, wallMat, baseMat);
+            }
+            if (maxZ - doorMaxZ > 0.05f)
+            {
+                EnsureHotelWallSegment(parent, $"{prefix}_North", new Vector2(x, doorMaxZ), new Vector2(x, maxZ), thickness, wallMat, baseMat);
+            }
+
+            float doorWidth = doorMaxZ - doorMinZ;
+            float doorCenterZ = 0.5f * (doorMinZ + doorMaxZ);
+            const float doorHeight = 2.20f;
+            float transomH = ClearHeight - doorHeight;
+
+            EnsureHotelBox(parent, $"{prefix}_Transom",
+                new Vector3(x, BaseY + doorHeight + transomH * 0.5f, doorCenterZ), Quaternion.identity,
+                new Vector3(thickness, transomH, doorWidth + 0.04f), wallMat, keepCollider: false);
+            EnsureHotelBox(parent, $"{prefix}_JambS",
+                new Vector3(x, BaseY + doorHeight * 0.5f, doorMinZ + 0.02f), Quaternion.identity,
+                new Vector3(thickness + 0.05f, doorHeight, 0.055f), trimMat, keepCollider: false);
+            EnsureHotelBox(parent, $"{prefix}_JambN",
+                new Vector3(x, BaseY + doorHeight * 0.5f, doorMaxZ - 0.02f), Quaternion.identity,
+                new Vector3(thickness + 0.05f, doorHeight, 0.055f), trimMat, keepCollider: false);
+            EnsureHotelBox(parent, $"{prefix}_HeaderTrim",
+                new Vector3(x, BaseY + doorHeight, doorCenterZ), Quaternion.identity,
+                new Vector3(thickness + 0.05f, 0.055f, doorWidth + 0.08f), trimMat, keepCollider: false);
+        }
+
+        private static void EnsureNorthWingEmissiveFixture(
+            Transform parent, string name, Vector3 pos, Quaternion rot, bool lit, bool warm, RemanenciaVisualMaterials mats)
+        {
+            Material tubeMat = !lit ? mats.FluorOff : (warm ? mats.UtilityWarmOn : mats.FluorOn);
+            EnsureHotelBox(parent, name, pos, rot, new Vector3(1.36f, 0.046f, 0.068f), tubeMat, keepCollider: false);
+            EnsureHotelBox(parent, name + "_Housing", pos + new Vector3(0f, 0.042f, 0f), rot, new Vector3(1.44f, 0.040f, 0.115f), mats.IndustrialMetal, keepCollider: false);
+        }
+
+        /// <summary>
         /// Unity's built-in PrimitiveType.Cube renders upright UVs on its local +Z face (while its -Z face
         /// has inverted UVs). Ensures all 6 room-number plaques orient their +Z face outward toward the corridor.
         /// </summary>
@@ -2076,6 +2683,9 @@ namespace MyVirtualCommunity.Editor
                 new[] { "00010", "00110", "01010", "10010", "11111", "00010", "00010" }, // 4
                 new[] { "11111", "10000", "11110", "00001", "00001", "10001", "01110" }, // 5
                 new[] { "01110", "10000", "11110", "10001", "10001", "10001", "01110" }, // 6
+                new[] { "11111", "00001", "00010", "00100", "01000", "01000", "01000" }, // 7
+                new[] { "01110", "10001", "10001", "01110", "10001", "10001", "01110" }, // 8
+                new[] { "01110", "10001", "10001", "01111", "00001", "10001", "01110" }, // 9
             };
 
             const int scale = 5;
@@ -2322,6 +2932,17 @@ namespace MyVirtualCommunity.Editor
 
             Transform hotelRoot = shell.Find(HotelArchitectureRootName);
             Transform envRoot = hotelRoot != null ? hotelRoot.Find(HotelEnvironmentalIdentityRootName) : null;
+            Transform northWingRoot = shell.Find(NorthWingM1RootName);
+            bool hasNorthWing = northWingRoot != null &&
+                                northWingRoot.Find("NorthWing_Connection_Lobby") != null &&
+                                northWingRoot.Find("NorthWing_Connection_Service") != null &&
+                                northWingRoot.Find("NorthWing_Courtyard") != null &&
+                                northWingRoot.Find("NorthWing_EastArcade") != null &&
+                                northWingRoot.Find("NorthWing_WestArcade") != null &&
+                                northWingRoot.Find("NorthWing_GuestRooms_107_110") != null &&
+                                northWingRoot.Find("NorthWing_BanquetHall") != null &&
+                                northWingRoot.Find("NorthWing_HousekeepingCore") != null &&
+                                northWingRoot.Find("NorthWing_ConstructionDetails") != null;
             bool hasHotelStructure = hotelRoot != null &&
                                      hotelRoot.Find("Hotel_Entrance_Vestibule") != null &&
                                      hotelRoot.Find("Hotel_Lobby_Reception") != null &&
@@ -2339,7 +2960,8 @@ namespace MyVirtualCommunity.Editor
                                      envRoot.Find("Hotel_Infra_Electrical") != null &&
                                      envRoot.Find("Hotel_Infra_Plumbing") != null &&
                                      envRoot.Find("Hotel_Infra_Structural") != null &&
-                                     envRoot.Find("Hotel_Room_Variations") != null;
+                                     envRoot.Find("Hotel_Room_Variations") != null &&
+                                     hasNorthWing;
 
             int retainedWallCount = 0, pillarCount = 0, missingVoidCount = 0, crookedHatchCount = 0;
             for (int i = 0; i < shell.childCount; i++)
