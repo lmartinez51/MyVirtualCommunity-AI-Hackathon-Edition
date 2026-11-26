@@ -98,6 +98,34 @@ namespace MyVirtualCommunity.Editor
         };
 
         public const string HotelArchitectureRootName = "Hotel_GroundFloor_Architecture";
+        public const string HotelEnvironmentalIdentityRootName = "Hotel_Environmental_Identity";
+
+        public const string PipeCopperRustMatPath = "Assets/Settings/Remanencia_Level0_PipeCopperRust.mat";
+        public const string UnfinishedWoodDoorMatPath = "Assets/Settings/Remanencia_Level0_UnfinishedWoodDoor.mat";
+        public const string AgedCeramicPatchMatPath = "Assets/Settings/Remanencia_Level0_AgedCeramicPatch.mat";
+        public const string SignHotelNameMatPath = "Assets/Settings/Remanencia_Sign_HotelName.mat";
+        public const string SignReceptionMatPath = "Assets/Settings/Remanencia_Sign_Reception.mat";
+        public const string SignElevatorsMatPath = "Assets/Settings/Remanencia_Sign_Elevators.mat";
+        public const string SignElevatorNoticeMatPath = "Assets/Settings/Remanencia_Sign_ElevatorNotice.mat";
+        public const string SignGuestRoomsMatPath = "Assets/Settings/Remanencia_Sign_GuestRooms.mat";
+        public const string SignServiceMatPath = "Assets/Settings/Remanencia_Sign_Service.mat";
+        public const string SignMaintenanceMatPath = "Assets/Settings/Remanencia_Sign_Maintenance.mat";
+
+        // Canonical approved bilingual signage wording (UTF-8)
+        public const string SignHotelNameEs = "HOTEL DE LAS PALOMAS";
+        public const string SignHotelNameSub = "NIVEL DE ACCESO";
+        public const string SignReceptionEs = "RECEPCIÓN";
+        public const string SignReceptionEn = "RECEPTION";
+        public const string SignElevatorsEs = "ELEVADORES";
+        public const string SignElevatorsEn = "ELEVATORS";
+        public const string SignElevatorNoticeEs = "FUERA DE SERVICIO";
+        public const string SignElevatorNoticeEn = "OUT OF SERVICE";
+        public const string SignGuestRoomsEs = "HABITACIONES 101-106";
+        public const string SignGuestRoomsEn = "GUEST ROOMS";
+        public const string SignServiceEs = "SOLO PERSONAL";
+        public const string SignServiceEn = "STAFF ONLY";
+        public const string SignMaintenanceEs = "ÁREA DE MANTENIMIENTO";
+        public const string SignMaintenanceEn = "MAINTENANCE AREA";
 
         private enum IndustrialFixtureStyle
         {
@@ -121,6 +149,16 @@ namespace MyVirtualCommunity.Editor
             public Material CeilingVoid;
             public Material ElevatorDoorMetal;
             public Material[] RoomPlaqueMats; // Index 0..5 -> Rooms 101..106
+            public Material PipeCopperRust;
+            public Material UnfinishedWoodDoor;
+            public Material AgedCeramicPatch;
+            public Material SignHotelName;
+            public Material SignReception;
+            public Material SignElevators;
+            public Material SignElevatorNotice;
+            public Material SignGuestRooms;
+            public Material SignService;
+            public Material SignMaintenance;
         }
 
         private static readonly (float x, float z, bool lit, bool spawnLight, bool flicker, float intensity, IndustrialFixtureStyle style)[] CanonicalFixtures = new[]
@@ -178,6 +216,29 @@ namespace MyVirtualCommunity.Editor
                     $"Assets/Textures/Environment/T_Remanencia_RoomPlaque_{roomNum}.png",
                     roomNum.ToString());
             }
+
+            // Implementation 07.3 / 07.4 restrained bilingual hotel identity & wayfinding signage textures
+            string signHotelTex = EnsureArchitecturalSignTexture(
+                "Assets/Textures/Environment/T_Remanencia_Sign_HotelName.png", 512, 96,
+                SignHotelNameEs, SignHotelNameSub, darkBronzeStyle: true, weatheredIncomplete: true, fadeLastChar: true);
+            string signReceptionTex = EnsureArchitecturalSignTexture(
+                "Assets/Textures/Environment/T_Remanencia_Sign_Reception.png", 512, 112,
+                SignReceptionEs, SignReceptionEn, darkBronzeStyle: true, weatheredIncomplete: false, fadeLastChar: false);
+            string signElevatorsTex = EnsureArchitecturalSignTexture(
+                "Assets/Textures/Environment/T_Remanencia_Sign_Elevators.png", 384, 96,
+                SignElevatorsEs, SignElevatorsEn, darkBronzeStyle: false, weatheredIncomplete: false, fadeLastChar: false);
+            string signElevNoticeTex = EnsureArchitecturalSignTexture(
+                "Assets/Textures/Environment/T_Remanencia_Sign_ElevatorNotice.png", 384, 128,
+                SignElevatorNoticeEs, SignElevatorNoticeEn, darkBronzeStyle: false, weatheredIncomplete: true, fadeLastChar: false);
+            string signGuestRoomsTex = EnsureArchitecturalSignTexture(
+                "Assets/Textures/Environment/T_Remanencia_Sign_GuestRooms.png", 384, 96,
+                SignGuestRoomsEs, SignGuestRoomsEn, darkBronzeStyle: false, weatheredIncomplete: false, fadeLastChar: false);
+            string signServiceTex = EnsureArchitecturalSignTexture(
+                "Assets/Textures/Environment/T_Remanencia_Sign_Service.png", 384, 96,
+                SignServiceEs, SignServiceEn, darkBronzeStyle: false, weatheredIncomplete: true, fadeLastChar: false);
+            string signMaintTex = EnsureArchitecturalSignTexture(
+                "Assets/Textures/Environment/T_Remanencia_Sign_Maintenance.png", 512, 112,
+                SignMaintenanceEs, SignMaintenanceEn, darkBronzeStyle: false, weatheredIncomplete: true, fadeLastChar: false);
             AssetDatabase.Refresh();
 
             ConfigureArchitecturalTextureImporter(wallTexPath);
@@ -189,6 +250,13 @@ namespace MyVirtualCommunity.Editor
             {
                 ConfigurePlaqueTextureImporter(plaqueTexPaths[r]);
             }
+            ConfigureSignTextureImporter(signHotelTex);
+            ConfigureSignTextureImporter(signReceptionTex);
+            ConfigureSignTextureImporter(signElevatorsTex);
+            ConfigureSignTextureImporter(signElevNoticeTex);
+            ConfigureSignTextureImporter(signGuestRoomsTex);
+            ConfigureSignTextureImporter(signServiceTex);
+            ConfigureSignTextureImporter(signMaintTex);
 
             Material[] plaqueMats = new Material[6];
             for (int r = 0; r < 6; r++)
@@ -216,9 +284,35 @@ namespace MyVirtualCommunity.Editor
                 IndustrialMetal = CreateColorMat(IndustrialMetalMatPath, new Color(0.26f, 0.27f, 0.28f), 0.36f, 0.68f),
                 CeilingVoid = CreateColorMat(CeilingVoidMatPath, new Color(0.05f, 0.055f, 0.06f), 0.08f, 0.0f),
                 ElevatorDoorMetal = CreateColorMat(ElevatorDoorMetalMatPath, new Color(0.46f, 0.48f, 0.50f), 0.48f, 0.72f),
-                RoomPlaqueMats = plaqueMats
+                RoomPlaqueMats = plaqueMats,
+                PipeCopperRust = CreateColorMat(PipeCopperRustMatPath, new Color(0.38f, 0.25f, 0.19f), 0.34f, 0.58f),
+                UnfinishedWoodDoor = CreateColorMat(UnfinishedWoodDoorMatPath, new Color(0.56f, 0.48f, 0.39f), 0.18f, 0.0f),
+                AgedCeramicPatch = CreateColorMat(AgedCeramicPatchMatPath, new Color(0.64f, 0.60f, 0.55f), 0.32f, 0.0f),
+                SignHotelName = CreateTexturedMat(SignHotelNameMatPath, signHotelTex, Color.white, 0.26f, Vector2.one),
+                SignReception = CreateTexturedMat(SignReceptionMatPath, signReceptionTex, Color.white, 0.26f, Vector2.one),
+                SignElevators = CreateTexturedMat(SignElevatorsMatPath, signElevatorsTex, Color.white, 0.30f, Vector2.one),
+                SignElevatorNotice = CreateTexturedMat(SignElevatorNoticeMatPath, signElevNoticeTex, Color.white, 0.24f, Vector2.one),
+                SignGuestRooms = CreateTexturedMat(SignGuestRoomsMatPath, signGuestRoomsTex, Color.white, 0.30f, Vector2.one),
+                SignService = CreateTexturedMat(SignServiceMatPath, signServiceTex, Color.white, 0.24f, Vector2.one),
+                SignMaintenance = CreateTexturedMat(SignMaintenanceMatPath, signMaintTex, Color.white, 0.24f, Vector2.one)
             };
             return mats;
+        }
+
+        private static void ConfigureSignTextureImporter(string assetPath)
+        {
+            if (AssetImporter.GetAtPath(assetPath) is TextureImporter importer)
+            {
+                bool changed = false;
+                if (importer.wrapMode != TextureWrapMode.Clamp) { importer.wrapMode = TextureWrapMode.Clamp; changed = true; }
+                if (!importer.mipmapEnabled) { importer.mipmapEnabled = true; changed = true; }
+                if (importer.filterMode != FilterMode.Bilinear) { importer.filterMode = FilterMode.Bilinear; changed = true; }
+                if (importer.maxTextureSize != 512) { importer.maxTextureSize = 512; changed = true; }
+                if (changed)
+                {
+                    importer.SaveAndReimport();
+                }
+            }
         }
 
         private static void ConfigurePlaqueTextureImporter(string assetPath)
@@ -1429,6 +1523,375 @@ namespace MyVirtualCommunity.Editor
             // Built-in unfinished bathroom partition inside Room 106 (NE flank, open South at X = -1.4..-0.3)
             EnsureHotelWallSegment(r106, "Hotel_Room106_BathWallW", new Vector2(-1.4f, -5.2f), new Vector2(-1.4f, -1.8f), 0.16f, mats.WallConcrete, mats.BaseboardConcrete);
             EnsureHotelWallSegment(r106, "Hotel_Room106_BathWallS", new Vector2(-0.3f, -5.2f), new Vector2(1.4f, -5.2f), 0.16f, mats.WallConcrete, mats.BaseboardConcrete);
+
+            // Implementation 07.3: Construction-era environmental storytelling, bilingual wayfinding signage,
+            // exposed MEP infrastructure, and subtle per-room architectural variations (zero furniture).
+            BuildOrUpdateHotelEnvironmentalIdentity(hotelRootTf, mats);
+        }
+
+        /// <summary>
+        /// Targeted, idempotent Implementation 07.3 environmental identity migration utility.
+        /// Opens the existing BackroomsLevel1Scene.unity without altering the 40m x 24m floor plan,
+        /// elevator doors/shafts, lighting budget, IP-05 devices, or any existing gameplay/prop anchors,
+        /// and builds/updates ONLY the Hotel_Environmental_Identity subgroup under Hotel_GroundFloor_Architecture.
+        /// </summary>
+        [MenuItem("MyVirtualCommunity/Migrate Remanencia Environmental Identity (In-Place)")]
+        public static void MigrateRemanenciaEnvironmentalIdentityAndSave()
+        {
+            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            if (!scene.IsValid())
+            {
+                throw new InvalidOperationException($"Failed to open existing scene at {ScenePath}.");
+            }
+
+            MigrateRemanenciaEnvironmentalIdentityInOpenScene(scene);
+            AssetDatabase.SaveAssets();
+            EditorSceneManager.MarkSceneDirty(scene);
+            if (!EditorSceneManager.SaveScene(scene, ScenePath))
+            {
+                throw new InvalidOperationException($"Failed to save migrated scene at {ScenePath}.");
+            }
+            Debug.Log($"[BackroomsLevel1Builder] Remanencia Hotel environmental identity migration completed and saved to {ScenePath}.");
+        }
+
+        public static void MigrateRemanenciaEnvironmentalIdentityInOpenScene(UnityEngine.SceneManagement.Scene scene)
+        {
+            if (!scene.IsValid() || !string.Equals(scene.path, ScenePath, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    $"Remanencia environmental identity migration requires open scene '{ScenePath}', but found '{scene.path}'.");
+            }
+
+            GameObject root = null;
+            foreach (GameObject go in scene.GetRootGameObjects())
+            {
+                if (go.name == "BackroomsLevel1_Root")
+                {
+                    root = go;
+                    break;
+                }
+            }
+            if (root == null)
+            {
+                throw new InvalidOperationException("BackroomsLevel1_Root not found in open scene.");
+            }
+
+            Transform shellRoot = root.transform.Find("Backrooms_Architecture");
+            Transform hotelRoot = shellRoot != null ? shellRoot.Find(HotelArchitectureRootName) : null;
+            if (hotelRoot == null)
+            {
+                throw new InvalidOperationException($"Expected '{HotelArchitectureRootName}' under Backrooms_Architecture before running 07.3 environmental migration.");
+            }
+
+            RemanenciaVisualMaterials mats = EnsureRemanenciaVisualAssets();
+            BuildOrUpdateHotelEnvironmentalIdentity(hotelRoot, mats);
+            EnsureRoomPlaqueOrientationsUpright(hotelRoot);
+        }
+
+        /// <summary>
+        /// Unity's built-in PrimitiveType.Cube renders upright UVs on its local +Z face (while its -Z face
+        /// has inverted UVs). Ensures all 6 room-number plaques orient their +Z face outward toward the corridor.
+        /// </summary>
+        private static void EnsureRoomPlaqueOrientationsUpright(Transform hotelRoot)
+        {
+            for (int r = 0; r < 6; r++)
+            {
+                int roomNum = 101 + r;
+                Transform plaque = hotelRoot.Find($"Hotel_GuestRoom_{roomNum}/Hotel_Room{roomNum}_CorridorWall_RoomPlaque");
+                if (plaque == null) continue;
+                bool corridorOnSouthSide = roomNum == 101 || roomNum == 102;
+                plaque.rotation = corridorOnSouthSide ? Quaternion.Euler(0f, 180f, 0f) : Quaternion.identity;
+            }
+        }
+
+        private static void BuildOrUpdateHotelEnvironmentalIdentity(Transform hotelRootTf, RemanenciaVisualMaterials mats)
+        {
+            Transform envRoot = EnsureHotelSubgroup(hotelRootTf, HotelEnvironmentalIdentityRootName);
+
+            // =========================================================================
+            // 1. RESTRAINED BILINGUAL HOTEL IDENTITY & WAYFINDING SIGNAGE
+            //    Unity's built-in Cube primitive has upright UVs on its local +Z face:
+            //      - Facing East  (+X): Quaternion.Euler(0f,  90f, 0f)
+            //      - Facing South (-Z): Quaternion.Euler(0f, 180f, 0f)
+            //      - Facing North (+Z): Quaternion.identity
+            //    Pure static environmental panels (zero interactive controllers, zero Cobalt-60 signage).
+            // =========================================================================
+            Transform signGroup = EnsureHotelSubgroup(envRoot, "Hotel_Identity_Signage");
+
+            // Entrance Marquee facing East (+X) toward arriving player at (17.8, 8.8)
+            EnsureHotelBox(signGroup, "Hotel_Sign_EntranceMarquee",
+                new Vector3(16.375f, BaseY + 2.63f, 8.80f), Quaternion.Euler(0f, 90f, 0f),
+                new Vector3(2.60f, 0.34f, 0.025f), mats.SignHotelName, keepCollider: false);
+            EnsureHotelBox(signGroup, "Hotel_Sign_EntranceBracketL",
+                new Vector3(16.36f, BaseY + 2.63f, 7.46f), Quaternion.identity,
+                new Vector3(0.05f, 0.38f, 0.05f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(signGroup, "Hotel_Sign_EntranceBracketR",
+                new Vector3(16.36f, BaseY + 2.63f, 10.14f), Quaternion.identity,
+                new Vector3(0.05f, 0.38f, 0.05f), mats.IndustrialMetal, keepCollider: false);
+
+            // Reception Alcove North Backdrop Sign facing South (-Z) + unmounted ghost outline below
+            EnsureHotelBox(signGroup, "Hotel_Sign_ReceptionBackdrop",
+                new Vector3(10.80f, BaseY + 1.86f, 11.82f), Quaternion.Euler(0f, 180f, 0f),
+                new Vector3(2.40f, 0.38f, 0.024f), mats.SignReception, keepCollider: false);
+            EnsureHotelBox(signGroup, "Hotel_Sign_ReceptionGhostOutline",
+                new Vector3(10.80f, BaseY + 1.36f, 11.84f), Quaternion.identity,
+                new Vector3(1.10f, 0.24f, 0.008f), mats.ColumnConcrete, keepCollider: false);
+
+            // Elevator Area Identification facing East (+X) — does NOT modify any elevator door or shaft GameObject
+            EnsureHotelBox(signGroup, "Hotel_Sign_ElevatorsHeader",
+                new Vector3(3.435f, BaseY + 2.68f, 6.80f), Quaternion.Euler(0f, 90f, 0f),
+                new Vector3(1.56f, 0.22f, 0.020f), mats.SignElevators, keepCollider: false);
+            EnsureHotelBox(signGroup, "Hotel_Sign_ElevatorNotice",
+                new Vector3(3.435f, BaseY + 0.88f, 6.80f), Quaternion.Euler(0f, 90f, 0f),
+                new Vector3(0.36f, 0.16f, 0.016f), mats.SignElevatorNotice, keepCollider: false);
+
+            // Guest-Room Corridor Wayfinding mounted on Lobby-to-Corridor transition beam facing East (+X)
+            EnsureHotelBox(signGroup, "Hotel_Sign_GuestRoomsWayfinding",
+                new Vector3(10.365f, BaseY + 2.58f, -0.20f), Quaternion.Euler(0f, 90f, 0f),
+                new Vector3(1.52f, 0.24f, 0.020f), mats.SignGuestRooms, keepCollider: false);
+
+            // Back-of-House Service Bulkhead Signage facing East (+X) down the Guest Corridor & North (+Z) into Corridor
+            EnsureHotelBox(signGroup, "Hotel_Sign_ServiceWing",
+                new Vector3(-9.33f, BaseY + 2.50f, -0.20f), Quaternion.Euler(0f, 90f, 0f),
+                new Vector3(1.36f, 0.24f, 0.020f), mats.SignService, keepCollider: false);
+            EnsureHotelBox(signGroup, "Hotel_Sign_SWMaintenance",
+                new Vector3(-7.40f, BaseY + 2.50f, -1.67f), Quaternion.identity,
+                new Vector3(1.54f, 0.24f, 0.020f), mats.SignMaintenance, keepCollider: false);
+
+            // =========================================================================
+            // 2. EXPOSED ELECTRICAL INFRASTRUCTURE (Conduits, Cable Trays, Junction/Outlet Boxes)
+            // =========================================================================
+            Transform elecGroup = EnsureHotelSubgroup(envRoot, "Hotel_Infra_Electrical");
+
+            // Overhead galvanized cable tray along North ceiling edge of Main Guest Corridor
+            EnsureHotelBox(elecGroup, "Hotel_Elec_CorridorCableTray",
+                new Vector3(-3.20f, CeilingY - 0.10f, 1.16f), Quaternion.identity,
+                new Vector3(12.20f, 0.04f, 0.18f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(elecGroup, "Hotel_Elec_CorridorTrayHangerA",
+                new Vector3(1.40f, CeilingY - 0.05f, 1.16f), Quaternion.identity,
+                new Vector3(0.04f, 0.10f, 0.22f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(elecGroup, "Hotel_Elec_CorridorTrayHangerB",
+                new Vector3(-3.50f, CeilingY - 0.05f, 1.16f), Quaternion.identity,
+                new Vector3(0.04f, 0.10f, 0.22f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(elecGroup, "Hotel_Elec_CorridorTrayHangerC",
+                new Vector3(-8.40f, CeilingY - 0.05f, 1.16f), Quaternion.identity,
+                new Vector3(0.04f, 0.10f, 0.22f), mats.IndustrialMetal, keepCollider: false);
+
+            // Incomplete electrical outlet housings & conduit drops on Reception North wall (pure architecture)
+            EnsureHotelBox(elecGroup, "Hotel_Elec_ReceptionOutletL",
+                new Vector3(8.80f, BaseY + 0.42f, 11.85f), Quaternion.identity,
+                new Vector3(0.11f, 0.14f, 0.035f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(elecGroup, "Hotel_Elec_ReceptionOutletR",
+                new Vector3(12.80f, BaseY + 0.42f, 11.85f), Quaternion.identity,
+                new Vector3(0.11f, 0.14f, 0.035f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(elecGroup, "Hotel_Elec_ReceptionConduitDrop",
+                new Vector3(12.80f, BaseY + 1.48f, 11.85f), Quaternion.identity,
+                new Vector3(0.028f, 2.04f, 0.028f), mats.IndustrialMetal, keepCollider: false);
+
+            // Unfinished Elevator Lobby overhead junction box & conduit stub beside core north corner
+            EnsureHotelBox(elecGroup, "Hotel_Elec_ElevatorJunctionBox",
+                new Vector3(3.43f, BaseY + 2.48f, 9.05f), Quaternion.identity,
+                new Vector3(0.06f, 0.18f, 0.18f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(elecGroup, "Hotel_Elec_ElevatorConduitRun",
+                new Vector3(3.43f, BaseY + 2.66f, 9.05f), Quaternion.identity,
+                new Vector3(0.03f, 0.34f, 0.03f), mats.IndustrialMetal, keepCollider: false);
+
+            // Service Wing heavy exposed electrical conduit run & recessed service breaker panel
+            EnsureHotelBox(elecGroup, "Hotel_Elec_ServiceMainConduitA",
+                new Vector3(-12.36f, CeilingY - 0.28f, 2.60f), Quaternion.identity,
+                new Vector3(0.04f, 0.04f, 12.60f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(elecGroup, "Hotel_Elec_ServiceMainConduitB",
+                new Vector3(-12.36f, CeilingY - 0.38f, 2.60f), Quaternion.identity,
+                new Vector3(0.04f, 0.04f, 12.60f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(elecGroup, "Hotel_Elec_ServiceJunctionBox",
+                new Vector3(-12.35f, CeilingY - 0.33f, 4.60f), Quaternion.identity,
+                new Vector3(0.07f, 0.22f, 0.22f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(elecGroup, "Hotel_Elec_ServicePanelBox",
+                new Vector3(-9.64f, BaseY + 1.46f, 3.20f), Quaternion.identity,
+                new Vector3(0.09f, 0.72f, 0.48f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(elecGroup, "Hotel_Elec_ServicePanelConduit",
+                new Vector3(-9.64f, BaseY + 2.34f, 3.20f), Quaternion.identity,
+                new Vector3(0.04f, 1.04f, 0.04f), mats.IndustrialMetal, keepCollider: false);
+
+            // =========================================================================
+            // 3. EXPOSED PLUMBING & BUILDING SERVICES (Risers, Branches, Floor Drains, Access Panels)
+            // =========================================================================
+            Transform plumbGroup = EnsureHotelSubgroup(envRoot, "Hotel_Infra_Plumbing");
+
+            // N-S Service Corridor North corner vertical risers + wall penetration collar
+            EnsureHotelBox(plumbGroup, "Hotel_Plumb_NorthServiceRiserA",
+                new Vector3(-12.24f, BaseY + ClearHeight * 0.5f, 11.74f), Quaternion.identity,
+                new Vector3(0.09f, ClearHeight, 0.09f), mats.PipeCopperRust, keepCollider: false);
+            EnsureHotelBox(plumbGroup, "Hotel_Plumb_NorthServiceRiserB",
+                new Vector3(-12.04f, BaseY + ClearHeight * 0.5f, 11.74f), Quaternion.identity,
+                new Vector3(0.06f, ClearHeight, 0.06f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(plumbGroup, "Hotel_Plumb_NorthServiceCollar",
+                new Vector3(-12.14f, BaseY + 2.40f, 11.74f), Quaternion.identity,
+                new Vector3(0.34f, 0.06f, 0.14f), mats.IndustrialMetal, keepCollider: false);
+
+            // SW Maintenance Hall SE corner plumbing risers & high horizontal branch
+            EnsureHotelBox(plumbGroup, "Hotel_Plumb_SWServiceRiserA",
+                new Vector3(-5.78f, BaseY + ClearHeight * 0.5f, -11.74f), Quaternion.identity,
+                new Vector3(0.09f, ClearHeight, 0.09f), mats.PipeCopperRust, keepCollider: false);
+            EnsureHotelBox(plumbGroup, "Hotel_Plumb_SWServiceRiserB",
+                new Vector3(-5.78f, BaseY + ClearHeight * 0.5f, -11.52f), Quaternion.identity,
+                new Vector3(0.06f, ClearHeight, 0.06f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(plumbGroup, "Hotel_Plumb_SWServiceOverheadBranch",
+                new Vector3(-8.40f, CeilingY - 0.22f, -11.76f), Quaternion.identity,
+                new Vector3(5.20f, 0.07f, 0.07f), mats.PipeCopperRust, keepCollider: false);
+
+            // West Mechanical / Utility Room vertical riser + recessed maintenance access hatch
+            EnsureHotelBox(plumbGroup, "Hotel_Plumb_WestUtilityRiser",
+                new Vector3(-19.76f, BaseY + ClearHeight * 0.5f, 4.46f), Quaternion.identity,
+                new Vector3(0.09f, ClearHeight, 0.09f), mats.PipeCopperRust, keepCollider: false);
+            EnsureHotelBox(plumbGroup, "Hotel_Plumb_ServiceAccessPanel",
+                new Vector3(-12.36f, BaseY + 1.12f, -2.50f), Quaternion.identity,
+                new Vector3(0.03f, 0.44f, 0.44f), mats.IndustrialMetal, keepCollider: false);
+
+            // Flush service floor drains (non-colliding floor grates)
+            EnsureHotelBox(plumbGroup, "Hotel_Plumb_FloorDrain_ServiceN",
+                new Vector3(-11.00f, BaseY + 0.004f, 5.60f), Quaternion.identity,
+                new Vector3(0.24f, 0.008f, 0.24f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(plumbGroup, "Hotel_Plumb_FloorDrain_ServiceSW",
+                new Vector3(-8.20f, BaseY + 0.004f, -5.80f), Quaternion.identity,
+                new Vector3(0.24f, 0.008f, 0.24f), mats.IndustrialMetal, keepCollider: false);
+
+            // =========================================================================
+            // 4. STRUCTURAL & CONSTRUCTION-STAGE VARIATION DETAILS (Lobby Transitions & Safe Capped Rebar)
+            // =========================================================================
+            Transform structGroup = EnsureHotelSubgroup(envRoot, "Hotel_Infra_Structural");
+
+            // Flush lobby architectural threshold & Reception zone floor border strips (visual zone distinction)
+            EnsureHotelBox(structGroup, "Hotel_Struct_EntranceFloorThreshold",
+                new Vector3(16.20f, BaseY + 0.004f, 8.80f), Quaternion.identity,
+                new Vector3(0.24f, 0.008f, 3.96f), mats.AgedCeramicPatch, keepCollider: false);
+            EnsureHotelBox(structGroup, "Hotel_Struct_ReceptionFloorBorder",
+                new Vector3(10.80f, BaseY + 0.004f, 9.24f), Quaternion.identity,
+                new Vector3(6.80f, 0.008f, 0.16f), mats.AgedCeramicPatch, keepCollider: false);
+            // Partial unfinished decorative wainscot panel inside Reception Alcove
+            EnsureHotelBox(structGroup, "Hotel_Struct_ReceptionWainscotPanel",
+                new Vector3(9.45f, BaseY + 0.56f, 11.84f), Quaternion.identity,
+                new Vector3(2.50f, 0.88f, 0.025f), mats.AgedCeramicPatch, keepCollider: false);
+
+            // Safely capped upper exposed reinforcement steel (rebar) stubs high at unfinished soffit/beam seams
+            EnsureCappedRebarStub(structGroup, "Hotel_Struct_RebarStub_LobbyA", new Vector3(7.42f, CeilingY - 0.46f, 10.46f), mats);
+            EnsureCappedRebarStub(structGroup, "Hotel_Struct_RebarStub_LobbyB", new Vector3(7.52f, CeilingY - 0.48f, 10.46f), mats);
+            EnsureCappedRebarStub(structGroup, "Hotel_Struct_RebarStub_ServiceA", new Vector3(-9.66f, CeilingY - 0.24f, 8.80f), mats);
+            EnsureCappedRebarStub(structGroup, "Hotel_Struct_RebarStub_ServiceB", new Vector3(-9.66f, CeilingY - 0.26f, 8.92f), mats);
+
+            // =========================================================================
+            // 5. INDIVIDUAL GUEST-ROOM VARIATIONS (ROOMS 101-106 — ZERO FURNITURE!)
+            //    Unfinished static open door leaves / exposed hinges, partial tile bands,
+            //    unfinished bathroom rough-in pipes, floor drains, and incomplete electrical boxes.
+            // =========================================================================
+            Transform roomsGroup = EnsureHotelSubgroup(envRoot, "Hotel_Room_Variations");
+
+            // Room 101: Static unfinished door leaf swung open inside against East foyer wall + partial ceramic bath band + plumbing & drain
+            EnsureHotelBox(roomsGroup, "Hotel_Room101_StaticDoorLeaf",
+                new Vector3(0.46f, BaseY + 1.09f, 2.02f), Quaternion.Euler(0f, 104f, 0f),
+                new Vector3(0.96f, 2.18f, 0.045f), mats.UnfinishedWoodDoor, keepCollider: false);
+            EnsureExposedDoorHinges(roomsGroup, "Hotel_Room101_Hinge", new Vector3(0.24f, BaseY, 1.48f), mats.IndustrialMetal);
+            EnsureHotelBox(roomsGroup, "Hotel_Room101_BathTileStrip",
+                new Vector3(0.87f, BaseY + 0.56f, 5.70f), Quaternion.identity,
+                new Vector3(0.025f, 0.88f, 2.30f), mats.AgedCeramicPatch, keepCollider: false);
+            EnsureHotelBox(roomsGroup, "Hotel_Room101_BathPipeRiser",
+                new Vector3(0.84f, BaseY + 0.65f, 6.72f), Quaternion.identity,
+                new Vector3(0.055f, 1.30f, 0.055f), mats.PipeCopperRust, keepCollider: false);
+            EnsureHotelBox(roomsGroup, "Hotel_Room101_BathFloorDrain",
+                new Vector3(0.15f, BaseY + 0.004f, 5.70f), Quaternion.identity,
+                new Vector3(0.18f, 0.008f, 0.18f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(roomsGroup, "Hotel_Room101_OutletBox",
+                new Vector3(-3.46f, BaseY + 0.42f, 9.20f), Quaternion.identity,
+                new Vector3(0.035f, 0.14f, 0.11f), mats.IndustrialMetal, keepCollider: false);
+
+            // Room 102: Missing door leaf (exposed empty hinges) + exposed bath conduit, plumbing stub & drain
+            EnsureExposedDoorHinges(roomsGroup, "Hotel_Room102_EmptyHinge", new Vector3(-6.42f, BaseY, 1.48f), mats.IndustrialMetal);
+            EnsureHotelBox(roomsGroup, "Hotel_Room102_BathConduit",
+                new Vector3(-7.30f, BaseY + 1.42f, 6.50f), Quaternion.identity,
+                new Vector3(0.028f, 2.80f, 0.028f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(roomsGroup, "Hotel_Room102_BathJunctionBox",
+                new Vector3(-7.30f, BaseY + 1.55f, 6.50f), Quaternion.identity,
+                new Vector3(0.05f, 0.14f, 0.14f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(roomsGroup, "Hotel_Room102_BathPipeStub",
+                new Vector3(-9.34f, BaseY + 0.55f, 6.10f), Quaternion.identity,
+                new Vector3(0.055f, 1.10f, 0.055f), mats.PipeCopperRust, keepCollider: false);
+            EnsureHotelBox(roomsGroup, "Hotel_Room102_BathFloorDrain",
+                new Vector3(-8.45f, BaseY + 0.004f, 6.00f), Quaternion.identity,
+                new Vector3(0.18f, 0.008f, 0.18f), mats.IndustrialMetal, keepCollider: false);
+
+            // Room 103: Static unfinished door leaf swung open inside + partial ceramic floor tile strip & bath drain
+            EnsureHotelBox(roomsGroup, "Hotel_Room103_StaticDoorLeaf",
+                new Vector3(16.82f, BaseY + 1.09f, -5.02f), Quaternion.Euler(0f, -104f, 0f),
+                new Vector3(0.96f, 2.18f, 0.045f), mats.UnfinishedWoodDoor, keepCollider: false);
+            EnsureExposedDoorHinges(roomsGroup, "Hotel_Room103_Hinge", new Vector3(16.58f, BaseY, -4.48f), mats.IndustrialMetal);
+            EnsureHotelBox(roomsGroup, "Hotel_Room103_BathTileFloorPatch",
+                new Vector3(13.60f, BaseY + 0.004f, -5.80f), Quaternion.identity,
+                new Vector3(1.65f, 0.008f, 2.20f), mats.AgedCeramicPatch, keepCollider: false);
+            EnsureHotelBox(roomsGroup, "Hotel_Room103_BathPipeStub",
+                new Vector3(12.76f, BaseY + 0.60f, -5.50f), Quaternion.identity,
+                new Vector3(0.055f, 1.20f, 0.055f), mats.PipeCopperRust, keepCollider: false);
+            EnsureHotelBox(roomsGroup, "Hotel_Room103_BathFloorDrain",
+                new Vector3(13.60f, BaseY + 0.009f, -5.80f), Quaternion.identity,
+                new Vector3(0.18f, 0.008f, 0.18f), mats.IndustrialMetal, keepCollider: false);
+
+            // Room 104: Missing door leaf (exposed jamb hinges) + foyer electrical rough-in conduit & dual outlet boxes
+            EnsureExposedDoorHinges(roomsGroup, "Hotel_Room104_EmptyHinge", new Vector3(10.47f, BaseY, -4.48f), mats.IndustrialMetal);
+            EnsureHotelBox(roomsGroup, "Hotel_Room104_FoyerConduit",
+                new Vector3(9.50f, BaseY + 1.56f, -5.80f), Quaternion.identity,
+                new Vector3(0.028f, 2.40f, 0.028f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(roomsGroup, "Hotel_Room104_OutletBoxA",
+                new Vector3(9.50f, BaseY + 0.42f, -5.80f), Quaternion.identity,
+                new Vector3(0.035f, 0.14f, 0.11f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(roomsGroup, "Hotel_Room104_OutletBoxB",
+                new Vector3(7.94f, BaseY + 0.42f, -8.80f), Quaternion.identity,
+                new Vector3(0.035f, 0.14f, 0.11f), mats.IndustrialMetal, keepCollider: false);
+
+            // Room 105: Static unfinished door leaf swung open inside against East foyer wall + ceiling foyer soffit beam & junction box
+            EnsureHotelBox(roomsGroup, "Hotel_Room105_StaticDoorLeaf",
+                new Vector3(4.92f, BaseY + 1.09f, -2.42f), Quaternion.Euler(0f, -106f, 0f),
+                new Vector3(0.96f, 2.18f, 0.045f), mats.UnfinishedWoodDoor, keepCollider: false);
+            EnsureExposedDoorHinges(roomsGroup, "Hotel_Room105_Hinge", new Vector3(4.68f, BaseY, -1.88f), mats.IndustrialMetal);
+            EnsureHotelBox(roomsGroup, "Hotel_Room105_FoyerSoffitHeader",
+                new Vector3(4.25f, CeilingY - 0.14f, -4.40f), Quaternion.identity,
+                new Vector3(2.26f, 0.28f, 0.22f), mats.ColumnConcrete, keepCollider: false);
+            EnsureHotelBox(roomsGroup, "Hotel_Room105_FoyerJunctionBox",
+                new Vector3(2.35f, BaseY + 1.60f, -4.50f), Quaternion.identity,
+                new Vector3(0.14f, 0.14f, 0.045f), mats.IndustrialMetal, keepCollider: false);
+
+            // Room 106: Missing door leaf (exposed hinges) + exposed bath risers, partial ceramic band, drain & threshold strip
+            EnsureExposedDoorHinges(roomsGroup, "Hotel_Room106_EmptyHinge", new Vector3(-2.82f, BaseY, -1.88f), mats.IndustrialMetal);
+            EnsureHotelBox(roomsGroup, "Hotel_Room106_DoorThresholdPlate",
+                new Vector3(-3.525f, BaseY + 0.004f, -1.80f), Quaternion.identity,
+                new Vector3(1.42f, 0.008f, 0.22f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(roomsGroup, "Hotel_Room106_BathTileStrip",
+                new Vector3(1.27f, BaseY + 0.56f, -3.50f), Quaternion.identity,
+                new Vector3(0.025f, 0.88f, 3.00f), mats.AgedCeramicPatch, keepCollider: false);
+            EnsureHotelBox(roomsGroup, "Hotel_Room106_BathPipeRiserA",
+                new Vector3(1.24f, BaseY + 0.72f, -4.85f), Quaternion.identity,
+                new Vector3(0.055f, 1.44f, 0.055f), mats.PipeCopperRust, keepCollider: false);
+            EnsureHotelBox(roomsGroup, "Hotel_Room106_BathPipeRiserB",
+                new Vector3(1.24f, BaseY + 0.62f, -4.65f), Quaternion.identity,
+                new Vector3(0.045f, 1.24f, 0.045f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(roomsGroup, "Hotel_Room106_BathFloorDrain",
+                new Vector3(0.00f, BaseY + 0.004f, -3.50f), Quaternion.identity,
+                new Vector3(0.18f, 0.008f, 0.18f), mats.IndustrialMetal, keepCollider: false);
+        }
+
+        private static void EnsureExposedDoorHinges(Transform parent, string prefix, Vector3 basePos, Material metalMat)
+        {
+            float[] ys = { 0.34f, 1.10f, 1.86f };
+            for (int i = 0; i < ys.Length; i++)
+            {
+                EnsureHotelBox(parent, $"{prefix}_{i}",
+                    new Vector3(basePos.x, basePos.y + ys[i], basePos.z), Quaternion.identity,
+                    new Vector3(0.032f, 0.11f, 0.032f), metalMat, keepCollider: false);
+            }
+        }
+
+        private static void EnsureCappedRebarStub(Transform parent, string name, Vector3 pos, RemanenciaVisualMaterials mats)
+        {
+            EnsureHotelBox(parent, name, pos, Quaternion.identity, new Vector3(0.022f, 0.16f, 0.022f), mats.PipeCopperRust, keepCollider: false);
+            EnsureHotelBox(parent, name + "_Cap", pos + new Vector3(0f, -0.09f, 0f), Quaternion.identity, new Vector3(0.042f, 0.036f, 0.042f), mats.IndustrialMetal, keepCollider: false);
         }
 
         private static void BuildOrUpdateElevatorBay(Transform elevGroup, string bayPrefix, float centerZ, RemanenciaVisualMaterials mats)
@@ -1532,7 +1995,8 @@ namespace MyVirtualCommunity.Editor
             if (plaqueMat != null)
             {
                 float zOffset = corridorOnSouthSide ? -(thickness * 0.5f + 0.012f) : (thickness * 0.5f + 0.012f);
-                Quaternion plaqueRot = corridorOnSouthSide ? Quaternion.identity : Quaternion.Euler(0f, 180f, 0f);
+                // Orient Unity Cube's upright +Z face outward toward the corridor
+                Quaternion plaqueRot = corridorOnSouthSide ? Quaternion.Euler(0f, 180f, 0f) : Quaternion.identity;
                 EnsureHotelBox(parent, $"{prefix}_RoomPlaque",
                     new Vector3(plaqueX, BaseY + 1.58f, z + zOffset), plaqueRot,
                     new Vector3(0.22f, 0.11f, 0.016f), plaqueMat, keepCollider: false);
@@ -1651,9 +2115,174 @@ namespace MyVirtualCommunity.Editor
             return assetPath;
         }
 
+        private static string EnsureArchitecturalSignTexture(
+            string assetPath, int w, int h, string line1, string line2, bool darkBronzeStyle, bool weatheredIncomplete, bool fadeLastChar = false)
+        {
+            string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", assetPath));
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+            Texture2D tex = new Texture2D(w, h, TextureFormat.RGB24, false);
+
+            Color bg = darkBronzeStyle ? new Color(0.20f, 0.19f, 0.18f) : new Color(0.64f, 0.65f, 0.64f);
+            Color rim = darkBronzeStyle ? new Color(0.42f, 0.37f, 0.31f) : new Color(0.22f, 0.23f, 0.24f);
+            Color inkMain = darkBronzeStyle ? new Color(0.84f, 0.80f, 0.72f) : new Color(0.14f, 0.15f, 0.16f);
+            Color inkSub = darkBronzeStyle ? new Color(0.66f, 0.62f, 0.56f) : new Color(0.26f, 0.28f, 0.30f);
+
+            int seed = line1.GetHashCode() ^ (w * 31);
+            for (int y = 0; y < h; y++)
+            {
+                for (int x = 0; x < w; x++)
+                {
+                    bool border = x < 4 || x >= w - 4 || y < 4 || y >= h - 4;
+                    float grain = (PeriodicHash(x, y, w, h, seed) - 0.5f) * 0.055f;
+                    float wear = weatheredIncomplete ? PeriodicFbm((float)x / w, (float)y / h, 5, 3, 3, seed + 17) : 0.5f;
+                    float dustDelta = weatheredIncomplete && wear > 0.65f ? (wear - 0.65f) * 0.16f : 0f;
+                    Color baseC = border ? rim : bg;
+                    // Mounting screw dots in corners
+                    bool screw = ((x - 10) * (x - 10) + (y - 10) * (y - 10) < 9) ||
+                                 ((x - (w - 11)) * (x - (w - 11)) + (y - 10) * (y - 10) < 9) ||
+                                 ((x - 10) * (x - 10) + (y - (h - 11)) * (y - (h - 11)) < 9) ||
+                                 ((x - (w - 11)) * (x - (w - 11)) + (y - (h - 11)) * (y - (h - 11)) < 9);
+                    if (screw) baseC = rim * 0.75f;
+                    tex.SetPixel(x, y, new Color(
+                        Mathf.Clamp01(baseC.r + grain + dustDelta),
+                        Mathf.Clamp01(baseC.g + grain + dustDelta),
+                        Mathf.Clamp01(baseC.b + grain + dustDelta)));
+                }
+            }
+
+            bool hasLine2 = !string.IsNullOrEmpty(line2);
+            bool line1HasAccent = ContainsSpanishAccent(line1);
+            int maxRows1 = line1HasAccent ? 10 : 7;
+            int scale1 = Mathf.Max(2, Mathf.Min((w - 28) / Mathf.Max(1, line1.Length * 6), hasLine2 ? ((h / 2 - 10) / maxRows1) : ((h - 18) / maxRows1)));
+            int line1Y = hasLine2 ? (h / 2 + 3) : ((h - maxRows1 * scale1) / 2);
+            DrawBitmapTextCentered(tex, w, h, line1, line1Y, scale1, inkMain, fadeLastChar: fadeLastChar && line1.Length > 10);
+
+            if (hasLine2)
+            {
+                // Subtle horizontal divider rule
+                int ruleY = h / 2 - 3;
+                for (int x = 18; x < w - 18; x++)
+                {
+                    tex.SetPixel(x, ruleY, rim);
+                }
+                int scale2 = Mathf.Max(2, Mathf.Min((w - 36) / Mathf.Max(1, line2.Length * 6), Mathf.Max(2, scale1 - 1)));
+                int line2Y = Mathf.Max(8, (h / 2 - 6 - 7 * scale2) / 2 + 3);
+                DrawBitmapTextCentered(tex, w, h, line2, line2Y, scale2, inkSub, fadeLastChar: false);
+            }
+
+            tex.Apply();
+            File.WriteAllBytes(fullPath, tex.EncodeToPNG());
+            UnityEngine.Object.DestroyImmediate(tex);
+            return assetPath;
+        }
+
+        private static bool ContainsSpanishAccent(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return false;
+            for (int i = 0; i < text.Length; i++)
+            {
+                char ch = char.ToUpperInvariant(text[i]);
+                if (ch == 'Á' || ch == 'É' || ch == 'Í' || ch == 'Ó' || ch == 'Ú' || ch == 'Ñ') return true;
+            }
+            return false;
+        }
+
+        private static void DrawBitmapTextCentered(Texture2D tex, int w, int h, string text, int startY, int scale, Color ink, bool fadeLastChar)
+        {
+            string upper = text.ToUpperInvariant();
+            int charW = 5 * scale;
+            int gap = Mathf.Max(2, scale);
+            int totalW = upper.Length * charW + Mathf.Max(0, upper.Length - 1) * gap;
+            int startX = (w - totalW) / 2;
+
+            for (int i = 0; i < upper.Length; i++)
+            {
+                char ch = upper[i];
+                bool hasAcute = ch == 'Á' || ch == 'É' || ch == 'Í' || ch == 'Ó' || ch == 'Ú';
+                char baseCh = ch == 'Á' ? 'A' : ch == 'É' ? 'E' : ch == 'Í' ? 'I' : ch == 'Ó' ? 'O' : ch == 'Ú' ? 'U' : ch;
+                string[] glyph = Get5x7Glyph(baseCh);
+                if (glyph == null) continue;
+                Color c = (fadeLastChar && i == upper.Length - 1) ? Color.Lerp(ink, new Color(0.35f, 0.34f, 0.32f), 0.62f) : ink;
+                int cx = startX + i * (charW + gap);
+                for (int row = 0; row < 7; row++)
+                {
+                    for (int col = 0; col < 5; col++)
+                    {
+                        if (glyph[row][col] != '1') continue;
+                        int pyBase = startY + (6 - row) * scale;
+                        int pxBase = cx + col * scale;
+                        for (int dy = 0; dy < scale; dy++)
+                        {
+                            int py = pyBase + dy;
+                            if (py < 0 || py >= h) continue;
+                            for (int dx = 0; dx < scale; dx++)
+                            {
+                                int px = pxBase + dx;
+                                if (px >= 0 && px < w) tex.SetPixel(px, py, c);
+                            }
+                        }
+                    }
+                }
+
+                // Crisp diagonal acute accent (´) above accented Spanish vowels Á, É, Í, Ó, Ú
+                if (hasAcute)
+                {
+                    int[] accentCols = { 2, 3 };
+                    int[] accentRowsAbove = { 1, 2 }; // 1..2 grid rows above top of 7-row glyph
+                    for (int a = 0; a < 2; a++)
+                    {
+                        int pyBase = startY + (6 + accentRowsAbove[a]) * scale;
+                        int pxBase = cx + accentCols[a] * scale;
+                        for (int dy = 0; dy < scale; dy++)
+                        {
+                            int py = pyBase + dy;
+                            if (py < 0 || py >= h) continue;
+                            for (int dx = 0; dx < scale; dx++)
+                            {
+                                int px = pxBase + dx;
+                                if (px >= 0 && px < w) tex.SetPixel(px, py, c);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        private static string[] Get5x7Glyph(char ch)
+        {
+            switch (ch)
+            {
+                case 'A': return new[] { "01110", "10001", "10001", "11111", "10001", "10001", "10001" };
+                case 'B': return new[] { "11110", "10001", "10001", "11110", "10001", "10001", "11110" };
+                case 'C': return new[] { "01110", "10001", "10000", "10000", "10000", "10001", "01110" };
+                case 'D': return new[] { "11110", "10001", "10001", "10001", "10001", "10001", "11110" };
+                case 'E': return new[] { "11111", "10000", "10000", "11110", "10000", "10000", "11111" };
+                case 'F': return new[] { "11111", "10000", "10000", "11110", "10000", "10000", "10000" };
+                case 'G': return new[] { "01110", "10001", "10000", "10111", "10001", "10001", "01110" };
+                case 'H': return new[] { "10001", "10001", "10001", "11111", "10001", "10001", "10001" };
+                case 'I': return new[] { "01110", "00100", "00100", "00100", "00100", "00100", "01110" };
+                case 'L': return new[] { "10000", "10000", "10000", "10000", "10000", "10000", "11111" };
+                case 'M': return new[] { "10001", "11011", "10101", "10101", "10001", "10001", "10001" };
+                case 'N': return new[] { "10001", "11001", "10101", "10011", "10001", "10001", "10001" };
+                case 'O': return new[] { "01110", "10001", "10001", "10001", "10001", "10001", "01110" };
+                case 'P': return new[] { "11110", "10001", "10001", "11110", "10000", "10000", "10000" };
+                case 'R': return new[] { "11110", "10001", "10001", "11110", "10100", "10010", "10001" };
+                case 'S': return new[] { "01111", "10000", "10000", "01110", "00001", "00001", "11110" };
+                case 'T': return new[] { "11111", "00100", "00100", "00100", "00100", "00100", "00100" };
+                case 'U': return new[] { "10001", "10001", "10001", "10001", "10001", "10001", "01110" };
+                case 'V': return new[] { "10001", "10001", "10001", "10001", "10001", "01010", "00100" };
+                case 'Y': return new[] { "10001", "10001", "01010", "00100", "00100", "00100", "00100" };
+                case '0': return new[] { "01110", "10001", "10011", "10101", "11001", "10001", "01110" };
+                case '1': return new[] { "00100", "01100", "00100", "00100", "00100", "00100", "01110" };
+                case '6': return new[] { "01110", "10000", "11110", "10001", "10001", "10001", "01110" };
+                case '-': return new[] { "00000", "00000", "00000", "11111", "00000", "00000", "00000" };
+                default: return null;
+            }
+        }
+
         /// <summary>
         /// Read-only verification gate for the currently loaded BackroomsLevel1Scene.unity
-        /// (Remanencia Nivel 0 — Hotel de las Palomas architecture, visual & structural invariants).
+        /// (Remanencia Nivel 0 — Hotel de las Palomas architecture, environmental identity & visual invariants).
         /// </summary>
         public static bool RunVerificationChecks()
         {
@@ -1692,6 +2321,7 @@ namespace MyVirtualCommunity.Editor
             }
 
             Transform hotelRoot = shell.Find(HotelArchitectureRootName);
+            Transform envRoot = hotelRoot != null ? hotelRoot.Find(HotelEnvironmentalIdentityRootName) : null;
             bool hasHotelStructure = hotelRoot != null &&
                                      hotelRoot.Find("Hotel_Entrance_Vestibule") != null &&
                                      hotelRoot.Find("Hotel_Lobby_Reception") != null &&
@@ -1703,7 +2333,13 @@ namespace MyVirtualCommunity.Editor
                                      hotelRoot.Find("Hotel_GuestRoom_103") != null &&
                                      hotelRoot.Find("Hotel_GuestRoom_104") != null &&
                                      hotelRoot.Find("Hotel_GuestRoom_105") != null &&
-                                     hotelRoot.Find("Hotel_GuestRoom_106") != null;
+                                     hotelRoot.Find("Hotel_GuestRoom_106") != null &&
+                                     envRoot != null &&
+                                     envRoot.Find("Hotel_Identity_Signage") != null &&
+                                     envRoot.Find("Hotel_Infra_Electrical") != null &&
+                                     envRoot.Find("Hotel_Infra_Plumbing") != null &&
+                                     envRoot.Find("Hotel_Infra_Structural") != null &&
+                                     envRoot.Find("Hotel_Room_Variations") != null;
 
             int retainedWallCount = 0, pillarCount = 0, missingVoidCount = 0, crookedHatchCount = 0;
             for (int i = 0; i < shell.childCount; i++)
