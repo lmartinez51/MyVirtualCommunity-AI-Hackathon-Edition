@@ -59885,6 +59885,129 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1166525667}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &1167304189
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1167304190}
+  - component: {fileID: 1167304193}
+  - component: {fileID: 1167304192}
+  - component: {fileID: 1167304191}
+  m_Layer: 0
+  m_Name: Microfauna_Maintenance_Encounter
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1167304190
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1167304189}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0.54762113, z: -0, w: 0.8367264}
+  m_LocalPosition: {x: -8.712, y: -49.999, z: 21.845}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1965511061}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1167304191
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1167304189}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 189f5a9d85db7f5478aea9206b426e15, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::MyVirtualCommunity.Client.World.RemanenciaAmbientMicrofaunaController
+  waypoints:
+  - {x: -8.712, y: -49.999, z: 21.845}
+  - {x: -8.815, y: -49.999, z: 21.89}
+  - {x: -8.855, y: -49.999, z: 21.955}
+  surfaceNormal: {x: 0, y: 1, z: 0}
+  activationRadius: 3.6
+  deactivationRadius: 5
+  startleRetreatRadius: 0.85
+  crawlSpeed: 0.076
+  retreatSpeedMultiplier: 1.5
+  idleMinSeconds: 1.35
+  idleMaxSeconds: 2.55
+  pauseSeconds: 0.75
+  cooldownMinSeconds: 12.5
+  cooldownMaxSeconds: 17
+  phaseSeed: 7902
+  undulationFrequency: 11.5
+  lateralYawAmplitudeDeg: 4.5
+  axialPulseAmplitude: 0.055
+  pauseProbeYawDeg: 14
+--- !u!23 &1167304192
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1167304189}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 35cc16258774e2648a55693cf5bea990, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &1167304193
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1167304189}
+  m_Mesh: {fileID: 4300000, guid: 01356ee0109d2e24abce4055845ded08, type: 2}
 --- !u!1 &1168243808
 GameObject:
   m_ObjectHideFlags: 0
@@ -82609,6 +82732,129 @@ MonoBehaviour:
   isUnlocked: 0
   isOpen: 0
   openProgress: 0
+--- !u!1 &1676067653
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1676067654}
+  - component: {fileID: 1676067657}
+  - component: {fileID: 1676067656}
+  - component: {fileID: 1676067655}
+  m_Layer: 0
+  m_Name: Microfauna_Utility_Encounter
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1676067654
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1676067653}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: 0.8598607, z: -0, w: 0.5105288}
+  m_LocalPosition: {x: -15.765, y: -49.999, z: 18.445}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1965511061}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1676067655
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1676067653}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 189f5a9d85db7f5478aea9206b426e15, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::MyVirtualCommunity.Client.World.RemanenciaAmbientMicrofaunaController
+  waypoints:
+  - {x: -15.765, y: -49.999, z: 18.445}
+  - {x: -15.655, y: -49.999, z: 18.385}
+  - {x: -15.595, y: -49.999, z: 18.435}
+  surfaceNormal: {x: 0, y: 1, z: 0}
+  activationRadius: 4.2
+  deactivationRadius: 5.6
+  startleRetreatRadius: 0.85
+  crawlSpeed: 0.082
+  retreatSpeedMultiplier: 1.45
+  idleMinSeconds: 1.15
+  idleMaxSeconds: 2.3
+  pauseSeconds: 0.85
+  cooldownMinSeconds: 11.5
+  cooldownMaxSeconds: 15.5
+  phaseSeed: 7901
+  undulationFrequency: 11.5
+  lateralYawAmplitudeDeg: 4.5
+  axialPulseAmplitude: 0.055
+  pauseProbeYawDeg: 14
+--- !u!23 &1676067656
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1676067653}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 35cc16258774e2648a55693cf5bea990, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &1676067657
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1676067653}
+  m_Mesh: {fileID: 4300000, guid: 01356ee0109d2e24abce4055845ded08, type: 2}
 --- !u!1 &1676299827
 GameObject:
   m_ObjectHideFlags: 0
@@ -96276,6 +96522,39 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1962382553}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &1965511060
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1965511061}
+  m_Layer: 0
+  m_Name: Hotel_FirstLivingMicrofauna
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1965511061
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1965511060}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1676067654}
+  - {fileID: 1167304190}
+  m_Father: {fileID: 2030692485}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1968150993
 GameObject:
   m_ObjectHideFlags: 0
@@ -99155,6 +99434,7 @@ Transform:
   - {fileID: 280626350}
   - {fileID: 884805822}
   - {fileID: 2008057649}
+  - {fileID: 1965511061}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2032145790

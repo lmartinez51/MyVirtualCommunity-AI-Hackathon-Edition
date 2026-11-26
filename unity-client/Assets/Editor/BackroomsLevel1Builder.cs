@@ -103,6 +103,7 @@ namespace MyVirtualCommunity.Editor
         public const string HotelNarrativeEvidenceRootName = "Hotel_Narrative_Evidence";
         public const string HotelEarlyEcologyRootName = "Hotel_Early_Ecology";
         public const string HotelFaunalTracesRootName = "Hotel_Faunal_Traces";
+        public const string HotelFirstLivingMicrofaunaRootName = "Hotel_FirstLivingMicrofauna";
         public const float NorthWingMinX = -16.0f;
         public const float NorthWingMaxX = 16.0f;
         public const float NorthWingMinZ = 12.0f;
@@ -131,6 +132,8 @@ namespace MyVirtualCommunity.Editor
         public const string FaunalFilamentMeshPath = "Assets/Meshes/Remanencia/FaunalTraces/M_Remanencia_FaunalFilament.asset";
         public const string FaunalCuticleMeshPath = "Assets/Meshes/Remanencia/FaunalTraces/M_Remanencia_FaunalCuticleFragment.asset";
         public const string FaunalResidueMeshPath = "Assets/Meshes/Remanencia/FaunalTraces/M_Remanencia_FaunalMicroResidue.asset";
+        public const string MicrofaunaBodyMatPath = "Assets/Settings/Remanencia_Microfauna_Body.mat";
+        public const string MicrofaunaBodyMeshPath = "Assets/Meshes/Remanencia/Microfauna/M_Remanencia_MicrofaunaBody.asset";
 
         public const string PipeCopperRustMatPath = "Assets/Settings/Remanencia_Level0_PipeCopperRust.mat";
         public const string UnfinishedWoodDoorMatPath = "Assets/Settings/Remanencia_Level0_UnfinishedWoodDoor.mat";
@@ -2584,6 +2587,7 @@ namespace MyVirtualCommunity.Editor
             return m;
         }
 
+
         private static Mesh BuildProceduralDecalQuadMesh()
         {
             // Unit 1x1 quad in XY with front face & normal pointing strictly along +Z (clockwise when viewed from +Z)
@@ -3108,6 +3112,7 @@ namespace MyVirtualCommunity.Editor
             return m;
         }
 
+
         private static Mesh BuildProceduralFaunalCuticleFragmentMesh()
         {
             var verts = new List<Vector3>();
@@ -3182,6 +3187,7 @@ namespace MyVirtualCommunity.Editor
             m.RecalculateBounds();
             return m;
         }
+
 
         private static Mesh BuildProceduralFaunalMicroResidueMesh()
         {
@@ -3262,6 +3268,250 @@ namespace MyVirtualCommunity.Editor
                     int kNext = (k + 1) % 6;
                     tris.Add(topV); tris.Add(midV + kNext); tris.Add(midV + k);
                     tris.Add(botV); tris.Add(midV + k); tris.Add(midV + kNext);
+                }
+            }
+
+            Mesh m = new Mesh();
+            m.SetVertices(verts);
+            m.SetUVs(0, uvs);
+            m.SetTriangles(tris, 0);
+            m.RecalculateNormals();
+            m.RecalculateBounds();
+            return m;
+        }
+
+        // =========================================================================
+        // IMPLEMENTATION 07.9 — REMANENCIA FIRST LIVING MICROFAUNA
+        //   Independent sibling root Hotel_FirstLivingMicrofauna under BackroomsLevel1_Root.
+        //   Strictly 2 tiny (3.6 cm) unidentified segmented organisms (Primary: Zone C Utility,
+        //   Secondary: Zone B Maintenance) using 1 shared mesh, 1 shared non-emissive opaque
+        //   material (reusing existing T_Remanencia_Ecology_FungalCap.png), and lightweight
+        //   deterministic ambient motion (RemanenciaAmbientMicrofaunaController).
+        // =========================================================================
+        [MenuItem("MyVirtualCommunity/Migrate Remanencia First Living Microfauna (In-Place)")]
+        public static void MigrateRemanenciaFirstLivingMicrofaunaAndSave()
+        {
+            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            if (!scene.IsValid())
+            {
+                throw new InvalidOperationException($"Failed to open existing scene at {ScenePath}.");
+            }
+
+            MigrateRemanenciaFirstLivingMicrofaunaInOpenScene(scene);
+            AssetDatabase.SaveAssets();
+            EditorSceneManager.MarkSceneDirty(scene);
+            if (!EditorSceneManager.SaveScene(scene, ScenePath))
+            {
+                throw new InvalidOperationException($"Failed to save migrated scene at {ScenePath}.");
+            }
+            Debug.Log($"[BackroomsLevel1Builder] Remanencia first living microfauna migrated and saved to {ScenePath}.");
+        }
+
+        public static void MigrateRemanenciaFirstLivingMicrofaunaInOpenScene(UnityEngine.SceneManagement.Scene scene)
+        {
+            if (!scene.IsValid() || !string.Equals(scene.path, ScenePath, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    $"Remanencia first living microfauna migration requires open scene '{ScenePath}', but found '{scene.path}'.");
+            }
+
+            GameObject root = null;
+            foreach (GameObject go in scene.GetRootGameObjects())
+            {
+                if (go.name == "BackroomsLevel1_Root")
+                {
+                    root = go;
+                    break;
+                }
+            }
+            if (root == null)
+            {
+                throw new InvalidOperationException("BackroomsLevel1_Root not found in open scene.");
+            }
+
+            if (root.transform.Find(HotelFaunalTracesRootName) == null)
+            {
+                throw new InvalidOperationException(
+                    $"Expected '{HotelFaunalTracesRootName}' under BackroomsLevel1_Root before running 07.9 microfauna migration.");
+            }
+
+            BuildOrUpdateHotelFirstLivingMicrofauna(root.transform);
+        }
+
+        private static void BuildOrUpdateHotelFirstLivingMicrofauna(Transform backroomsRoot)
+        {
+            // Reuse existing 07.7 512x512 procedural texture (ZERO new textures, ZERO emission)
+            const string existingFungalAtlasTex = "Assets/Textures/Environment/T_Remanencia_Ecology_FungalCap.png";
+            Material bodyMat = CreateOpaqueTexturedMat(MicrofaunaBodyMatPath, existingFungalAtlasTex, new Color(0.72f, 0.67f, 0.59f), 0.28f);
+            Mesh bodyMesh = EnsureEcologyMeshAsset(MicrofaunaBodyMeshPath, BuildProceduralMicrofaunaBodyMesh);
+
+            Transform microRoot = EnsureHotelSubgroup(backroomsRoot, HotelFirstLivingMicrofaunaRootName);
+
+            // =========================================================================
+            // PRIMARY ENCOUNTER — ZONE C: HOUSEKEEPING UTILITY ROOM (SW Pipe Risers)
+            //   Concealed at (-15.765, BaseY+0.001, 18.445) behind Copper Pipe Riser A
+            //   (-15.72, 18.45, Ø 0.082m) & its floor flange (Ø 0.160m). Emerges ~17.5 cm
+            //   beside Faunal_Utility_RiserBase_ResidueA toward the mycelium edge, pauses
+            //   briefly with a subtle heading shift, and retreats back behind the copper riser.
+            //   > 5.2 m from Hotel_Evidence_Cobalt60RumorNote (-12.75, BaseY+1.38, 23.27).
+            // =========================================================================
+            Vector3[] utilWaypoints =
+            {
+                new Vector3(-15.765f, BaseY + 0.001f, 18.445f), // [0] Occluded behind Copper Riser A & floor flange
+                new Vector3(-15.655f, BaseY + 0.001f, 18.385f), // [1] Emerges past SE rim of riser flange
+                new Vector3(-15.595f, BaseY + 0.001f, 18.435f)  // [2] Brief pause near mycelium/cuticle edge (~17.5 cm excursion)
+            };
+            EnsureMicrofaunaEncounter(
+                microRoot, "Microfauna_Utility_Encounter", bodyMesh, bodyMat,
+                utilWaypoints, Vector3.up,
+                activationRadius: 4.2f, deactivationRadius: 5.6f, startleRetreatRadius: 0.85f,
+                crawlSpeed: 0.082f, retreatSpeedMult: 1.45f,
+                idleMin: 1.15f, idleMax: 2.30f, pauseSec: 0.85f,
+                cooldownMin: 11.5f, cooldownMax: 15.5f, phaseSeed: 7901);
+
+            // =========================================================================
+            // SECONDARY ENCOUNTER — ZONE B: MAINTENANCE CORRIDOR (Baseboard / Residue Crevice)
+            //   Concealed at (-8.738, BaseY+0.001, 21.845) inside the concrete baseboard seam
+            //   & dark embedded residue crust (Faunal_Maint_WallFloorJoint_ResidueA at -8.775, 21.84).
+            //   Emerges ~14.8 cm along the damp floor seam toward the mycelium edge, pauses briefly,
+            //   and retreats cleanly back beneath the baseboard/residue recess.
+            //   > 1.45 m below Hotel_Evidence_MaintenanceRecord (-8.73, BaseY+1.46, 22.45).
+            // =========================================================================
+            Vector3[] maintWaypoints =
+            {
+                new Vector3(-8.712f, BaseY + 0.001f, 21.845f), // [0] Fully occluded inside concrete baseboard wall-floor seam
+                new Vector3(-8.815f, BaseY + 0.001f, 21.890f), // [1] Slips out past dark residue edge
+                new Vector3(-8.855f, BaseY + 0.001f, 21.955f)  // [2] Brief pause near mycelium margin (~18.8 cm path)
+            };
+            EnsureMicrofaunaEncounter(
+                microRoot, "Microfauna_Maintenance_Encounter", bodyMesh, bodyMat,
+                maintWaypoints, Vector3.up,
+                activationRadius: 3.6f, deactivationRadius: 5.0f, startleRetreatRadius: 0.85f,
+                crawlSpeed: 0.076f, retreatSpeedMult: 1.50f,
+                idleMin: 1.35f, idleMax: 2.55f, pauseSec: 0.75f,
+                cooldownMin: 12.5f, cooldownMax: 17.0f, phaseSeed: 7902);
+        }
+
+        private static GameObject EnsureMicrofaunaEncounter(
+            Transform parent, string name, Mesh bodyMesh, Material bodyMat,
+            Vector3[] waypoints, Vector3 surfaceNormal,
+            float activationRadius, float deactivationRadius, float startleRetreatRadius,
+            float crawlSpeed, float retreatSpeedMult,
+            float idleMin, float idleMax, float pauseSec,
+            float cooldownMin, float cooldownMax, int phaseSeed)
+        {
+            Vector3 initialForward = Vector3.ProjectOnPlane(waypoints[1] - waypoints[0], surfaceNormal);
+            if (initialForward.sqrMagnitude < 1e-6f) initialForward = Vector3.forward;
+            Quaternion initialRot = Quaternion.LookRotation(initialForward.normalized, surfaceNormal.normalized);
+
+            GameObject go = EnsureOrganicMeshObject(parent, name, bodyMesh, bodyMat, waypoints[0], initialRot, Vector3.one);
+
+            RemanenciaAmbientMicrofaunaController ctrl = go.GetComponent<RemanenciaAmbientMicrofaunaController>();
+            if (ctrl == null) ctrl = go.AddComponent<RemanenciaAmbientMicrofaunaController>();
+
+            ctrl.waypoints = waypoints;
+            ctrl.surfaceNormal = surfaceNormal.normalized;
+            ctrl.activationRadius = activationRadius;
+            ctrl.deactivationRadius = deactivationRadius;
+            ctrl.startleRetreatRadius = startleRetreatRadius;
+            ctrl.crawlSpeed = crawlSpeed;
+            ctrl.retreatSpeedMultiplier = retreatSpeedMult;
+            ctrl.idleMinSeconds = idleMin;
+            ctrl.idleMaxSeconds = idleMax;
+            ctrl.pauseSeconds = pauseSec;
+            ctrl.cooldownMinSeconds = cooldownMin;
+            ctrl.cooldownMaxSeconds = cooldownMax;
+            ctrl.phaseSeed = phaseSeed;
+            ctrl.undulationFrequency = 11.5f;
+            ctrl.lateralYawAmplitudeDeg = 4.5f;
+            ctrl.axialPulseAmplitude = 0.055f;
+            ctrl.pauseProbeYawDeg = 14.0f;
+            ctrl.ResetToConcealedState();
+
+            // Guarantee zero unwanted physics/gameplay components
+            Collider col = go.GetComponent<Collider>();
+            if (col != null) UnityEngine.Object.DestroyImmediate(col);
+            return go;
+        }
+
+        private static Mesh BuildProceduralMicrofaunaBodyMesh()
+        {
+            // Compact, elongated, subtly 7-segmented unidentified micro-organism (~3.6 cm long, 1.1 cm wide, 0.85 cm tall).
+            // Local origin (0,0,0) rests flush on crawling surface (+Y up, +Z forward).
+            // Strictly ambiguous anatomy: NO eyes, NO face, NO distinct head capsule, NO wings, NO antennae,
+            // NO mandibles, NO spikes, NO insect/spider/larval silhouette.
+            var verts = new List<Vector3>();
+            var uvs = new List<Vector2>();
+            var tris = new List<int>();
+
+            const float bodyLength = 0.036f; // 3.6 cm (within 2.5 - 4.0 cm requirement)
+            const int lengthSteps = 28;
+            const int radialSteps = 12;
+
+            int gridStart = verts.Count;
+            for (int i = 0; i <= lengthSteps; i++)
+            {
+                float tl = (float)i / lengthSteps; // 0 = posterior tip, 1 = blunt anterior pole
+                float z = (tl - 0.5f) * bodyLength;
+
+                // Smooth asymmetric fusiform envelope (slightly fuller mid-anterior, smoothly tapered posterior)
+                float baseEnv = Mathf.Sin(Mathf.Pow(tl, 0.82f) * Mathf.PI);
+                // 7 subtle organic segmentation constrictions along the dorsal carapace
+                float segRipple = (tl > 0.08f && tl < 0.92f)
+                    ? (0.91f + 0.09f * Mathf.Abs(Mathf.Sin(tl * Mathf.PI * 7f)))
+                    : 1f;
+
+                float halfW = 0.0055f * baseEnv * segRipple;
+                float height = 0.0082f * baseEnv * (0.94f + 0.06f * segRipple);
+                float ventralLift = 0.0008f + 0.0006f * (1f - baseEnv);
+
+                for (int j = 0; j <= radialSteps; j++)
+                {
+                    float ta = (float)j / radialSteps;
+                    float ang = ta * Mathf.PI * 2f; // 0 = right, PI/2 = dorsal crest, PI = left, 3PI/2 = ventral belly
+                    float cx = Mathf.Cos(ang);
+                    float sy = Mathf.Sin(ang);
+
+                    // Gently flattened ventral belly hugging surface, smoothly arched dorsal back
+                    float y = sy >= 0f
+                        ? ventralLift + sy * height
+                        : ventralLift + sy * (height * 0.14f);
+                    float x = cx * halfW;
+
+                    verts.Add(new Vector3(x, Mathf.Max(0.0003f, y), z));
+                    // UV v mapped to T_Remanencia_Ecology_FungalCap.png: dorsal crest warm pale taupe (0.64..0.86),
+                    // dark natural contact shadow under belly (0.30..0.44)
+                    float dorsalFactor = 0.5f + 0.5f * sy;
+                    float vCoord = Mathf.Lerp(0.32f, 0.86f, dorsalFactor);
+                    uvs.Add(new Vector2(tl, vCoord));
+                }
+            }
+
+            int stride = radialSteps + 1;
+            for (int i = 0; i < lengthSteps; i++)
+            {
+                int r0 = gridStart + i * stride;
+                int r1 = gridStart + (i + 1) * stride;
+                for (int j = 0; j < radialSteps; j++)
+                {
+                    tris.Add(r0 + j); tris.Add(r1 + j); tris.Add(r0 + j + 1);
+                    tris.Add(r0 + j + 1); tris.Add(r1 + j); tris.Add(r1 + j + 1);
+                }
+            }
+
+            // 4 pairs of tiny, subtle recessed ventral locomotion nubs/pads (2.6 mm, tucked low beneath mid segments)
+            float[] padZs = { -0.0085f, -0.0025f, 0.0035f, 0.0090f };
+            for (int p = 0; p < padZs.Length; p++)
+            {
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    Vector3 pRoot = new Vector3(side * 0.0032f, 0.0022f, padZs[p]);
+                    Vector3 pMid = new Vector3(side * 0.0056f, 0.0014f, padZs[p] + 0.0004f);
+                    Vector3 pTip = new Vector3(side * 0.0066f, 0.0002f, padZs[p] + 0.0006f);
+                    AddCurvedTubeWithVRange(verts, uvs, tris,
+                        new[] { pRoot, pMid, pTip },
+                        new[] { 0.00095f, 0.00075f, 0.00045f },
+                        sides: 4, vStart: 0.34f, vEnd: 0.48f);
                 }
             }
 
@@ -3382,6 +3632,7 @@ namespace MyVirtualCommunity.Editor
             m.RecalculateBounds();
             return m;
         }
+
 
         private static void AddCurvedTubeCustomUV(
             List<Vector3> verts, List<Vector2> uvs, List<int> tris, Vector3[] pts, float[] radii, int sides, Vector2 uvCenter)
@@ -3538,6 +3789,7 @@ namespace MyVirtualCommunity.Editor
             return m;
         }
 
+
         private static Mesh BuildProceduralFungalBracketMesh()
         {
             var verts = new List<Vector3>();
@@ -3627,6 +3879,7 @@ namespace MyVirtualCommunity.Editor
             return m;
         }
 
+
         private static Mesh BuildProceduralVegetalRootMesh()
         {
             var verts = new List<Vector3>();
@@ -3678,6 +3931,7 @@ namespace MyVirtualCommunity.Editor
             m.RecalculateBounds();
             return m;
         }
+
 
         private static Mesh BuildProceduralVegetalLeafTuftMesh()
         {
@@ -3754,6 +4008,7 @@ namespace MyVirtualCommunity.Editor
             m.RecalculateBounds();
             return m;
         }
+
 
         private static void AddCurvedTube(
             List<Vector3> verts, List<Vector2> uvs, List<int> tris, Vector3[] pts, float[] radii, int sides)
@@ -4893,6 +5148,10 @@ namespace MyVirtualCommunity.Editor
             Transform narrativeRoot = root.transform.Find(HotelNarrativeEvidenceRootName);
             Transform ecologyRoot = root.transform.Find(HotelEarlyEcologyRootName);
             Transform faunalRoot = root.transform.Find(HotelFaunalTracesRootName);
+            Transform microfaunaRoot = root.transform.Find(HotelFirstLivingMicrofaunaRootName);
+            bool hasFirstLivingMicrofauna = microfaunaRoot != null &&
+                                            microfaunaRoot.Find("Microfauna_Utility_Encounter") != null &&
+                                            microfaunaRoot.Find("Microfauna_Maintenance_Encounter") != null;
             bool hasFaunalTraces = faunalRoot != null &&
                                    faunalRoot.Find("Faunal_Courtyard_Traces") != null &&
                                    faunalRoot.Find("Faunal_Maintenance_Traces") != null &&
@@ -4939,7 +5198,8 @@ namespace MyVirtualCommunity.Editor
                                      hasNorthWing &&
                                      hasNarrativeLayer &&
                                      hasEarlyEcology &&
-                                     hasFaunalTraces;
+                                     hasFaunalTraces &&
+                                     hasFirstLivingMicrofauna;
 
             int retainedWallCount = 0, pillarCount = 0, missingVoidCount = 0, crookedHatchCount = 0;
             for (int i = 0; i < shell.childCount; i++)
@@ -6920,6 +7180,167 @@ namespace MyVirtualCommunity.Editor
                     string fullFile = Path.Combine(outDir, shot.fileName);
                     File.WriteAllBytes(fullFile, readTex.EncodeToPNG());
                     Debug.Log($"[BackroomsLevel1Builder] Rendered 07.8 faunal verification view: {fullFile}");
+                }
+            }
+            finally
+            {
+                RenderTexture.active = null;
+                UnityEngine.Object.DestroyImmediate(camGo);
+                rt.Release();
+                UnityEngine.Object.DestroyImmediate(rt);
+                UnityEngine.Object.DestroyImmediate(readTex);
+
+                RenderSettings.skybox = prevSkybox;
+                RenderSettings.ambientMode = prevAmbMode;
+                RenderSettings.ambientLight = prevAmbLight;
+                RenderSettings.fog = prevFog;
+                RenderSettings.fogMode = prevFogMode;
+                RenderSettings.fogColor = prevFogColor;
+                RenderSettings.fogDensity = prevFogDensity;
+            }
+        }
+
+        /// <summary>
+        /// Focused runtime movement verification procedure for Implementation 07.9 (First Living Microfauna).
+        /// Opens BackroomsLevel1Scene.unity read-only, steps BOTH live RemanenciaAmbientMicrofaunaController
+        /// instances frame-by-frame (dt = 1/60s) with an approaching observer camera through the complete
+        /// Concealed -> IdleWait -> Emerging -> Paused -> Retreating -> Cooldown cycle, verifies zero
+        /// teleportation and exact concealment return, and renders keyframe URP evidence images without
+        /// modifying or saving the scene.
+        /// </summary>
+        public static void VerifyAndCaptureMicrofaunaRuntimeCycle()
+        {
+            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            if (!scene.IsValid())
+            {
+                throw new InvalidOperationException($"Could not open {ScenePath} for 07.9 runtime verification.");
+            }
+
+            string outDir = Environment.GetEnvironmentVariable("MVC_MICROFAUNA_RENDER_DIR");
+            if (string.IsNullOrWhiteSpace(outDir))
+            {
+                outDir = Path.Combine(Path.GetTempPath(), "MVC_MicrofaunaVerify");
+            }
+            Directory.CreateDirectory(outDir);
+
+            Transform microRoot = GameObject.Find(HotelFirstLivingMicrofaunaRootName)?.transform;
+            if (microRoot == null)
+            {
+                throw new InvalidOperationException($"Missing {HotelFirstLivingMicrofaunaRootName} in scene.");
+            }
+
+            var encounters = new (string name, Vector3 camPos, Vector3 camLookAt, Vector3 approachPos)[]
+            {
+                ("Microfauna_Utility_Encounter",
+                    new Vector3(-15.32f, BaseY + 0.24f, 18.66f),
+                    new Vector3(-15.64f, BaseY + 0.01f, 18.42f),
+                    new Vector3(-14.20f, BaseY + 1.50f, 19.60f)),
+                ("Microfauna_Maintenance_Encounter",
+                    new Vector3(-9.18f, BaseY + 0.22f, 21.74f),
+                    new Vector3(-8.82f, BaseY + 0.01f, 21.91f),
+                    new Vector3(-10.10f, BaseY + 1.50f, 21.85f))
+            };
+
+            AmbientMode prevAmbMode = RenderSettings.ambientMode;
+            Color prevAmbLight = RenderSettings.ambientLight;
+            bool prevFog = RenderSettings.fog;
+            FogMode prevFogMode = RenderSettings.fogMode;
+            Color prevFogColor = RenderSettings.fogColor;
+            float prevFogDensity = RenderSettings.fogDensity;
+            Material prevSkybox = RenderSettings.skybox;
+
+            GameObject camGo = new GameObject("__TempMicrofaunaVerifyCam__");
+            RenderTexture rt = new RenderTexture(1280, 720, 24, RenderTextureFormat.ARGB32);
+            Texture2D readTex = new Texture2D(1280, 720, TextureFormat.RGB24, false);
+
+            try
+            {
+                RenderSettings.skybox = null;
+                RenderSettings.ambientMode = AmbientMode.Flat;
+                RenderSettings.ambientLight = SecretBackroomsTransitionController.RemanenciaLevel0AmbientLight;
+                RenderSettings.fog = true;
+                RenderSettings.fogMode = FogMode.ExponentialSquared;
+                RenderSettings.fogColor = SecretBackroomsTransitionController.RemanenciaLevel0FogColor;
+                RenderSettings.fogDensity = SecretBackroomsTransitionController.RemanenciaLevel0FogDensity;
+
+                Camera cam = camGo.AddComponent<Camera>();
+                cam.clearFlags = CameraClearFlags.SolidColor;
+                cam.backgroundColor = SecretBackroomsTransitionController.RemanenciaLevel0FogColor;
+                cam.fieldOfView = 50f;
+                cam.nearClipPlane = 0.02f;
+                cam.farClipPlane = 60f;
+                cam.targetTexture = rt;
+
+                void CaptureShot(string fileName, Vector3 pos, Vector3 lookAt)
+                {
+                    cam.transform.position = pos;
+                    cam.transform.LookAt(lookAt, Vector3.up);
+                    cam.Render();
+                    RenderTexture.active = rt;
+                    readTex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+                    readTex.Apply();
+                    RenderTexture.active = null;
+                    File.WriteAllBytes(Path.Combine(outDir, fileName), readTex.EncodeToPNG());
+                }
+
+                const float dt = 1f / 60f;
+                foreach (var enc in encounters)
+                {
+                    Transform tf = microRoot.Find(enc.name);
+                    var ctrl = tf != null ? tf.GetComponent<RemanenciaAmbientMicrofaunaController>() : null;
+                    if (ctrl == null) throw new InvalidOperationException($"Missing controller on {enc.name}.");
+
+                    ctrl.ResetToConcealedState();
+                    Vector3 startPos = tf.position;
+                    CaptureShot($"verify_079_{enc.name}_01_concealed.png", enc.camPos, enc.camLookAt);
+
+                    bool sawIdle = false, sawEmerging = false, sawPaused = false, sawRetreating = false, sawCooldown = false;
+                    bool capturedPaused = false;
+                    float maxFrameStep = 0f;
+                    float maxExcursion = 0f;
+                    Vector3 prevPos = tf.position;
+                    float elapsed = 0f;
+
+                    // Step 600 frames (10.0 s) with observer within activationRadius
+                    for (int frame = 0; frame < 600; frame++)
+                    {
+                        ctrl.StepSimulation(dt, enc.approachPos, hasObserver: true);
+                        elapsed += dt;
+
+                        float stepDist = Vector3.Distance(prevPos, tf.position);
+                        if (stepDist > maxFrameStep) maxFrameStep = stepDist;
+                        prevPos = tf.position;
+
+                        float exc = Vector3.Distance(startPos, tf.position);
+                        if (exc > maxExcursion) maxExcursion = exc;
+
+                        switch (ctrl.CurrentState)
+                        {
+                            case RemanenciaAmbientMicrofaunaController.MicrofaunaState.IdleWait: sawIdle = true; break;
+                            case RemanenciaAmbientMicrofaunaController.MicrofaunaState.Emerging: sawEmerging = true; break;
+                            case RemanenciaAmbientMicrofaunaController.MicrofaunaState.Paused:
+                                sawPaused = true;
+                                if (!capturedPaused)
+                                {
+                                    CaptureShot($"verify_079_{enc.name}_02_emerged_paused.png", enc.camPos, enc.camLookAt);
+                                    capturedPaused = true;
+                                }
+                                break;
+                            case RemanenciaAmbientMicrofaunaController.MicrofaunaState.Retreating: sawRetreating = true; break;
+                            case RemanenciaAmbientMicrofaunaController.MicrofaunaState.Cooldown: sawCooldown = true; break;
+                        }
+                        if (sawCooldown) break;
+                    }
+
+                    CaptureShot($"verify_079_{enc.name}_03_retreated.png", enc.camPos, enc.camLookAt);
+                    float endOffset = Vector3.Distance(startPos, tf.position);
+                    Debug.Log($"[MicrofaunaRuntimeVerify] {enc.name}: elapsed={elapsed:F2}s states=(Idle:{sawIdle},Emerge:{sawEmerging},Pause:{sawPaused},Retreat:{sawRetreating},Cooldown:{sawCooldown}) pathLen={ctrl.TotalPathLength:F3}m maxExcursion={maxExcursion:F3}m maxFrameStep={maxFrameStep:F4}m endReturnErr={endOffset:F5}m");
+
+                    if (!sawIdle || !sawEmerging || !sawPaused || !sawRetreating || !sawCooldown || endOffset > 0.002f || maxFrameStep > 0.005f)
+                    {
+                        throw new InvalidOperationException($"Runtime cycle verification failed for {enc.name}.");
+                    }
+                    ctrl.ResetToConcealedState();
                 }
             }
             finally
