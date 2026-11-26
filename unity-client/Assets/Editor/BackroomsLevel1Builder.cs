@@ -102,6 +102,7 @@ namespace MyVirtualCommunity.Editor
         public const string NorthWingM1RootName = "Hotel_NorthWing_M1";
         public const string HotelNarrativeEvidenceRootName = "Hotel_Narrative_Evidence";
         public const string HotelEarlyEcologyRootName = "Hotel_Early_Ecology";
+        public const string HotelFaunalTracesRootName = "Hotel_Faunal_Traces";
         public const float NorthWingMinX = -16.0f;
         public const float NorthWingMaxX = 16.0f;
         public const float NorthWingMinZ = 12.0f;
@@ -124,6 +125,12 @@ namespace MyVirtualCommunity.Editor
         public const string EcologyVegetalLeafMeshPath = "Assets/Meshes/Remanencia/Ecology/M_Remanencia_VegetalLeafTuft.asset";
         public const string PipeCylinderMeshPath = "Assets/Meshes/Remanencia/Ecology/M_Remanencia_PipeCylinder.asset";
         public const string DecalQuadMeshPath = "Assets/Meshes/Remanencia/Ecology/M_Remanencia_DecalQuad.asset";
+        public const string FaunalFilamentMatPath = "Assets/Settings/Remanencia_Faunal_Filament.mat";
+        public const string FaunalCuticleMatPath = "Assets/Settings/Remanencia_Faunal_Cuticle.mat";
+        public const string FaunalResidueMatPath = "Assets/Settings/Remanencia_Faunal_Residue.mat";
+        public const string FaunalFilamentMeshPath = "Assets/Meshes/Remanencia/FaunalTraces/M_Remanencia_FaunalFilament.asset";
+        public const string FaunalCuticleMeshPath = "Assets/Meshes/Remanencia/FaunalTraces/M_Remanencia_FaunalCuticleFragment.asset";
+        public const string FaunalResidueMeshPath = "Assets/Meshes/Remanencia/FaunalTraces/M_Remanencia_FaunalMicroResidue.asset";
 
         public const string PipeCopperRustMatPath = "Assets/Settings/Remanencia_Level0_PipeCopperRust.mat";
         public const string UnfinishedWoodDoorMatPath = "Assets/Settings/Remanencia_Level0_UnfinishedWoodDoor.mat";
@@ -2899,6 +2906,374 @@ namespace MyVirtualCommunity.Editor
                 new Vector3(-9.30f, BaseY + 0.003f, 33.46f), Quaternion.Euler(0f, 142f, 0f), new Vector3(0.92f, 0.88f, 0.92f));
         }
 
+        // =========================================================================
+        // IMPLEMENTATION 07.8 — REMANENCIA FIRST FAUNAL TRACES (STATIC, RESTRAINED)
+        //   Independent sibling root Hotel_Faunal_Traces under BackroomsLevel1_Root.
+        //   Reuses strictly 3 procedural meshes, 3 opaque non-emissive matte/parchment
+        //   materials, and existing 07.7 textures (ZERO new textures, ZERO colliders,
+        //   ZERO lights, ZERO scripts, ZERO living fauna or identifiable creatures).
+        // =========================================================================
+        [MenuItem("MyVirtualCommunity/Migrate Remanencia First Faunal Traces (In-Place)")]
+        public static void MigrateRemanenciaFirstFaunalTracesAndSave()
+        {
+            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            if (!scene.IsValid())
+            {
+                throw new InvalidOperationException($"Failed to open existing scene at {ScenePath}.");
+            }
+
+            MigrateRemanenciaFirstFaunalTracesInOpenScene(scene);
+            AssetDatabase.SaveAssets();
+            EditorSceneManager.MarkSceneDirty(scene);
+            if (!EditorSceneManager.SaveScene(scene, ScenePath))
+            {
+                throw new InvalidOperationException($"Failed to save migrated scene at {ScenePath}.");
+            }
+            Debug.Log($"[BackroomsLevel1Builder] Remanencia first faunal traces migrated and saved to {ScenePath}.");
+        }
+
+        public static void MigrateRemanenciaFirstFaunalTracesInOpenScene(UnityEngine.SceneManagement.Scene scene)
+        {
+            if (!scene.IsValid() || !string.Equals(scene.path, ScenePath, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    $"Remanencia first faunal traces migration requires open scene '{ScenePath}', but found '{scene.path}'.");
+            }
+
+            GameObject root = null;
+            foreach (GameObject go in scene.GetRootGameObjects())
+            {
+                if (go.name == "BackroomsLevel1_Root")
+                {
+                    root = go;
+                    break;
+                }
+            }
+            if (root == null)
+            {
+                throw new InvalidOperationException("BackroomsLevel1_Root not found in open scene.");
+            }
+
+            if (root.transform.Find(HotelEarlyEcologyRootName) == null)
+            {
+                throw new InvalidOperationException(
+                    $"Expected '{HotelEarlyEcologyRootName}' under BackroomsLevel1_Root before running 07.8 faunal traces migration.");
+            }
+
+            BuildOrUpdateHotelFaunalTraces(root.transform);
+        }
+
+        private static void BuildOrUpdateHotelFaunalTraces(Transform backroomsRoot)
+        {
+            // Reuse existing 07.7 512x512 procedural textures (ZERO unnecessary new texture assets!)
+            const string existingFungalAtlasTex = "Assets/Textures/Environment/T_Remanencia_Ecology_FungalCap.png";
+            const string existingRootBarkTex = "Assets/Textures/Environment/T_Remanencia_Ecology_VegetalRoot.png";
+
+            Material filamentMat = CreateOpaqueTexturedMat(FaunalFilamentMatPath, existingFungalAtlasTex, new Color(0.74f, 0.72f, 0.66f), 0.22f);
+            Material cuticleMat = CreateOpaqueTexturedMat(FaunalCuticleMatPath, existingFungalAtlasTex, new Color(0.88f, 0.80f, 0.67f), 0.34f);
+            Material residueMat = CreateOpaqueTexturedMat(FaunalResidueMatPath, existingRootBarkTex, new Color(0.76f, 0.71f, 0.63f), 0.08f);
+
+            Mesh filamentMesh = EnsureEcologyMeshAsset(FaunalFilamentMeshPath, BuildProceduralFaunalFilamentMesh);
+            Mesh cuticleMesh = EnsureEcologyMeshAsset(FaunalCuticleMeshPath, BuildProceduralFaunalCuticleFragmentMesh);
+            Mesh residueMesh = EnsureEcologyMeshAsset(FaunalResidueMeshPath, BuildProceduralFaunalMicroResidueMesh);
+
+            Transform faunalRoot = EnsureHotelSubgroup(backroomsRoot, HotelFaunalTracesRootName);
+
+            // =========================================================================
+            // ZONE A — COURTYARD (Faunal_Courtyard_Traces) — 4 restrained traces
+            //   Sheltered concrete plinth & pier seams beside existing 07.7 roots;
+            //   strictly off circulation walkways and off prominent foliage leaves.
+            // =========================================================================
+            Transform courtyardTraces = EnsureHotelSubgroup(faunalRoot, "Faunal_Courtyard_Traces");
+
+            EnsureOrganicMeshObject(courtyardTraces, "Faunal_Courtyard_PlinthSeam_Filaments", filamentMesh, filamentMat,
+                new Vector3(-1.104f, BaseY + 0.09f, 21.62f), Quaternion.Euler(0f, -90f, 6f), new Vector3(0.95f, 0.90f, 0.95f));
+            EnsureOrganicMeshObject(courtyardTraces, "Faunal_Courtyard_PierSW_Filaments", filamentMesh, filamentMat,
+                new Vector3(-2.478f, BaseY + 0.11f, 20.48f), Quaternion.Euler(0f, 90f, -4f), new Vector3(0.85f, 0.85f, 0.85f));
+            EnsureOrganicMeshObject(courtyardTraces, "Faunal_Courtyard_PlinthBase_Cuticle", cuticleMesh, cuticleMat,
+                new Vector3(-1.17f, BaseY + 0.004f, 22.06f), Quaternion.Euler(0f, 32f, 0f), new Vector3(1.05f, 1.00f, 1.05f));
+            EnsureOrganicMeshObject(courtyardTraces, "Faunal_Courtyard_PierNE_Cuticle", cuticleMesh, cuticleMat,
+                new Vector3(4.56f, BaseY + 0.004f, 25.64f), Quaternion.Euler(0f, -125f, 0f), new Vector3(0.95f, 0.95f, 0.95f));
+
+            // =========================================================================
+            // ZONE B — MAINTENANCE CORRIDOR (Faunal_Maintenance_Traces) — 5 traces
+            //   Near existing mycelium, wall-floor joints, and sheared conduit stub;
+            //   well clear of Hotel_Evidence_MaintenanceRecord (Y = BaseY + 1.46, Z = 22.45).
+            // =========================================================================
+            Transform maintTraces = EnsureHotelSubgroup(faunalRoot, "Faunal_Maintenance_Traces");
+
+            EnsureOrganicMeshObject(maintTraces, "Faunal_Maint_ConduitStub_Filaments", filamentMesh, filamentMat,
+                new Vector3(-8.712f, BaseY + 0.72f, 21.62f), Quaternion.Euler(0f, -90f, -8f), new Vector3(0.88f, 0.92f, 1.15f));
+            EnsureOrganicMeshObject(maintTraces, "Faunal_Maint_JointMycelium_Filaments", filamentMesh, filamentMat,
+                new Vector3(-8.712f, BaseY + 0.24f, 22.04f), Quaternion.Euler(0f, -90f, 10f), new Vector3(0.92f, 0.88f, 0.90f));
+            EnsureOrganicMeshObject(maintTraces, "Faunal_Maint_BracketCrack_Filaments", filamentMesh, filamentMat,
+                new Vector3(-8.712f, BaseY + 0.44f, 22.88f), Quaternion.Euler(0f, -90f, -6f), new Vector3(0.76f, 0.78f, 0.85f));
+            EnsureOrganicMeshObject(maintTraces, "Faunal_Maint_WallFloorJoint_ResidueA", residueMesh, residueMat,
+                new Vector3(-8.775f, BaseY + 0.003f, 21.84f), Quaternion.Euler(0f, -90f, 0f), new Vector3(0.95f, 0.90f, 0.92f));
+            EnsureOrganicMeshObject(maintTraces, "Faunal_Maint_WallFloorJoint_ResidueB", residueMesh, residueMat,
+                new Vector3(-8.775f, BaseY + 0.003f, 22.86f), Quaternion.Euler(0f, -82f, 0f), new Vector3(0.86f, 0.85f, 0.85f));
+
+            // =========================================================================
+            // ZONE C — HOUSEKEEPING UTILITY ROOM (Faunal_Utility_Traces) — 7 traces
+            //   Densest but still restrained concentration around SW plumbing risers &
+            //   protected fungal corner (> 5.2 m away from Hotel_Evidence_Cobalt60RumorNote).
+            // =========================================================================
+            Transform utilityTraces = EnsureHotelSubgroup(faunalRoot, "Faunal_Utility_Traces");
+
+            EnsureOrganicMeshObject(utilityTraces, "Faunal_Utility_RiserBridge_FilamentsA", filamentMesh, filamentMat,
+                new Vector3(-15.72f, BaseY + 0.52f, 18.585f), Quaternion.Euler(0f, 90f, 4f), new Vector3(0.98f, 0.96f, 0.95f));
+            EnsureOrganicMeshObject(utilityTraces, "Faunal_Utility_ValveBracket_FilamentsB", filamentMesh, filamentMat,
+                new Vector3(-15.74f, BaseY + 0.86f, 18.48f), Quaternion.Euler(0f, 90f, -6f), new Vector3(0.84f, 0.86f, 0.95f));
+            EnsureOrganicMeshObject(utilityTraces, "Faunal_Utility_LowerPipe_FilamentsC", filamentMesh, filamentMat,
+                new Vector3(-15.864f, BaseY + 0.16f, 18.78f), Quaternion.Euler(0f, 90f, 10f), new Vector3(0.86f, 0.82f, 1.05f));
+            EnsureOrganicMeshObject(utilityTraces, "Faunal_Utility_RiserBase_ResidueA", residueMesh, residueMat,
+                new Vector3(-15.76f, BaseY + 0.003f, 18.30f), Quaternion.Euler(0f, 44f, 0f), new Vector3(1.10f, 1.02f, 1.08f));
+            EnsureOrganicMeshObject(utilityTraces, "Faunal_Utility_ColonyEdge_ResidueB", residueMesh, residueMat,
+                new Vector3(-15.77f, BaseY + 0.003f, 18.80f), Quaternion.Euler(0f, 88f, 0f), new Vector3(0.96f, 0.92f, 0.94f));
+            EnsureOrganicMeshObject(utilityTraces, "Faunal_Utility_CornerBehindPipe_CuticleA", cuticleMesh, cuticleMat,
+                new Vector3(-15.62f, BaseY + 0.004f, 18.24f), Quaternion.Euler(0f, 18f, 0f), new Vector3(1.15f, 1.10f, 1.15f));
+            EnsureOrganicMeshObject(utilityTraces, "Faunal_Utility_PipeFlange_CuticleB", cuticleMesh, cuticleMat,
+                new Vector3(-15.74f, BaseY + 0.004f, 19.14f), Quaternion.Euler(0f, 114f, 0f), new Vector3(1.02f, 1.00f, 1.02f));
+        }
+
+        private static Mesh BuildProceduralFaunalFilamentMesh()
+        {
+            var verts = new List<Vector3>();
+            var uvs = new List<Vector2>();
+            var tris = new List<int>();
+
+            // 5 short, discontinuous, asymmetric catenary-sagging biological filaments (NOT spider-web rings or cobweb sheets!).
+            // EVERY endpoint seats cleanly into the host surface (z = -0.005m) while arching delicately outward (+Z) across
+            // the crevice or pipe gap so ZERO blunt floating tips ever appear in mid-air!
+            (Vector3 a, Vector3 b, float sagY, float bowZ, float midRad)[] strands =
+            {
+                (new Vector3(-0.145f,  0.072f, -0.005f), new Vector3( 0.142f,  0.036f, -0.005f), 0.032f, 0.044f, 0.0014f),
+                (new Vector3(-0.138f, -0.015f, -0.005f), new Vector3( 0.145f, -0.048f, -0.005f), 0.028f, 0.052f, 0.0013f),
+                (new Vector3(-0.132f,  0.022f, -0.005f), new Vector3( 0.095f,  0.092f, -0.005f), 0.024f, 0.036f, 0.0012f),
+                (new Vector3(-0.085f, -0.082f, -0.005f), new Vector3( 0.138f, -0.008f, -0.005f), 0.022f, 0.048f, 0.0012f),
+                (new Vector3(-0.142f, -0.056f, -0.005f), new Vector3( 0.062f,  0.042f, -0.005f), 0.020f, 0.030f, 0.0011f)
+            };
+
+            var savedCurves = new List<Vector3[]>();
+            for (int s = 0; s < strands.Length; s++)
+            {
+                var st = strands[s];
+                var pts = new Vector3[9];
+                var rads = new float[9];
+                for (int k = 0; k < 9; k++)
+                {
+                    float t = k / 8f;
+                    float arch = Mathf.Sin(t * Mathf.PI);
+                    Vector3 p = Vector3.Lerp(st.a, st.b, t);
+                    p.y -= arch * st.sagY;
+                    p.z += arch * st.bowZ + Mathf.Sin(t * Mathf.PI * 2f + s) * 0.004f;
+                    pts[k] = p;
+                    // Subtle anchor flare embedded at wall contact, ultra-fine delicate silk profile along span
+                    float endFlare = 1f + Mathf.Pow(Mathf.Abs(t - 0.5f) * 2f, 4f) * 0.55f;
+                    rads[k] = st.midRad * endFlare;
+                }
+                savedCurves.Add(pts);
+                AddCurvedTubeWithVRange(verts, uvs, tris, pts, rads, sides: 5, vStart: 0.44f, vEnd: 0.56f);
+            }
+
+            // 2 delicate irregular cross-draped connecting threads anchored cleanly between existing primary strands (zero loose tips!)
+            (int sA, int idxA, int sB, int idxB, float drop)[] bridges =
+            {
+                (0, 3, 1, 5, 0.016f),
+                (2, 4, 4, 6, 0.014f)
+            };
+            foreach (var br in bridges)
+            {
+                Vector3 pA = savedCurves[br.sA][br.idxA];
+                Vector3 pB = savedCurves[br.sB][br.idxB];
+                var bPts = new Vector3[5];
+                var bRads = new float[5];
+                for (int k = 0; k < 5; k++)
+                {
+                    float t = k / 4f;
+                    Vector3 p = Vector3.Lerp(pA, pB, t);
+                    p.y -= Mathf.Sin(t * Mathf.PI) * br.drop;
+                    bPts[k] = p;
+                    bRads[k] = 0.0010f;
+                }
+                AddCurvedTubeWithVRange(verts, uvs, tris, bPts, bRads, sides: 4, vStart: 0.46f, vEnd: 0.56f);
+            }
+
+            Mesh m = new Mesh();
+            m.SetVertices(verts);
+            m.SetUVs(0, uvs);
+            m.SetTriangles(tris, 0);
+            m.RecalculateNormals();
+            m.RecalculateBounds();
+            return m;
+        }
+
+        private static Mesh BuildProceduralFaunalCuticleFragmentMesh()
+        {
+            var verts = new List<Vector3>();
+            var uvs = new List<Vector2>();
+            var tris = new List<int>();
+
+            // 4 tiny, empty, dry, C-curled semi-chitinous shell/husk fragments caught in a protected corner.
+            // Strictly non-specific open shards: ZERO legs, ZERO wings, ZERO antennae, ZERO heads, ZERO animal silhouettes!
+            (Vector3 pos, float yaw, float roll, float length, float width, float curlH)[] shards =
+            {
+                (new Vector3(-0.025f, 0.002f,  0.012f),  24f,  14f, 0.046f, 0.020f, 0.014f),
+                (new Vector3( 0.042f, 0.002f, -0.018f), 118f, -22f, 0.036f, 0.016f, 0.011f),
+                (new Vector3(-0.056f, 0.002f, -0.036f), -68f,  30f, 0.028f, 0.013f, 0.009f),
+                (new Vector3( 0.016f, 0.002f,  0.052f), 162f, -12f, 0.024f, 0.011f, 0.008f)
+            };
+
+            const int lenSegs = 7;
+            const int arcSegs = 6;
+            for (int f = 0; f < shards.Length; f++)
+            {
+                var sh = shards[f];
+                Quaternion rot = Quaternion.Euler(0f, sh.yaw, sh.roll);
+                int gridStart = verts.Count;
+
+                for (int i = 0; i <= lenSegs; i++)
+                {
+                    float tl = (float)i / lenSegs; // 0..1 along broken husk length
+                    // Irregular broken-edge width profile + subtle transverse dry cuticle annulation ripples
+                    float brokenTaper = Mathf.Sin(Mathf.Lerp(0.18f, 0.90f, tl) * Mathf.PI);
+                    float ripple = 1f + 0.08f * Mathf.Sin(tl * Mathf.PI * 5f + f);
+                    float curW = sh.width * brokenTaper * ripple;
+                    float curH = sh.curlH * brokenTaper * ripple;
+                    float zAlong = (tl - 0.5f) * sh.length;
+                    // Slight banana/C longitudinal curl so the empty husk lifts organically off the concrete
+                    float longArchY = (1f - Mathf.Sin(tl * Mathf.PI)) * (sh.curlH * 0.45f);
+                    float curveX = Mathf.Sin(tl * Mathf.PI) * (sh.length * 0.14f) * (f % 2 == 0 ? 1f : -1f);
+
+                    for (int j = 0; j <= arcSegs; j++)
+                    {
+                        float ta = (float)j / arcSegs; // 0..1 across open C-channel shell
+                        float theta = Mathf.Lerp(-Mathf.PI * 0.46f, Mathf.PI * 0.46f, ta);
+                        Vector3 local = new Vector3(
+                            curveX + Mathf.Sin(theta) * curW * 0.5f,
+                            longArchY + (1f - Mathf.Cos(theta)) * curH + 0.002f,
+                            zAlong);
+                        verts.Add(sh.pos + rot * local);
+                        // UV v: 0.58 bright translucent-looking parchment margin -> 0.90 dry chestnut inner hollow
+                        float edgeDist = Mathf.Abs(ta - 0.5f) * 2f;
+                        float vCoord = Mathf.Lerp(0.90f, 0.58f, edgeDist);
+                        uvs.Add(new Vector2(tl, vCoord));
+                    }
+                }
+
+                int stride = arcSegs + 1;
+                for (int i = 0; i < lenSegs; i++)
+                {
+                    int r0 = gridStart + i * stride;
+                    int r1 = gridStart + (i + 1) * stride;
+                    for (int j = 0; j < arcSegs; j++)
+                    {
+                        tris.Add(r0 + j); tris.Add(r1 + j); tris.Add(r0 + j + 1);
+                        tris.Add(r0 + j + 1); tris.Add(r1 + j); tris.Add(r1 + j + 1);
+                    }
+                }
+            }
+
+            Mesh m = new Mesh();
+            m.SetVertices(verts);
+            m.SetUVs(0, uvs);
+            m.SetTriangles(tris, 0);
+            m.RecalculateNormals();
+            m.RecalculateBounds();
+            return m;
+        }
+
+        private static Mesh BuildProceduralFaunalMicroResidueMesh()
+        {
+            var verts = new List<Vector3>();
+            var uvs = new List<Vector2>();
+            var tris = new List<int>();
+            var rng = new System.Random(7803);
+
+            // 1. Low-profile organic mineral-debris seam crust hugging concrete joint (tapers cleanly below Y=0 at rim)
+            const int rings = 4;
+            const int segs = 16;
+            int centerIdx = verts.Count;
+            verts.Add(new Vector3(0f, 0.015f, 0.010f));
+            uvs.Add(new Vector2(0.5f, 0.5f));
+
+            int ringStart = verts.Count;
+            for (int r = 1; r <= rings; r++)
+            {
+                float tr = (float)r / rings;
+                for (int s = 0; s <= segs; s++)
+                {
+                    float a = (s / (float)segs) * Mathf.PI * 2f;
+                    float irreg = 0.78f + 0.28f * Mathf.Sin(a * 3f + 0.6f) + 0.14f * Mathf.Cos(a * 5f - 0.9f);
+                    float rx = 0.115f * tr * irreg;
+                    float rz = 0.068f * tr * irreg;
+                    float y = Mathf.Lerp(0.015f, -0.002f, Mathf.Pow(tr, 1.35f)) +
+                              (r < rings ? (float)(rng.NextDouble() - 0.5) * 0.004f : 0f);
+                    verts.Add(new Vector3(Mathf.Cos(a) * rx, y, 0.015f + Mathf.Sin(a) * rz));
+                    uvs.Add(new Vector2((float)s / segs, tr));
+                }
+            }
+
+            int stride = segs + 1;
+            for (int s = 0; s < segs; s++)
+            {
+                tris.Add(centerIdx); tris.Add(ringStart + s + 1); tris.Add(ringStart + s);
+            }
+            for (int r = 0; r < rings - 1; r++)
+            {
+                int r0 = ringStart + r * stride;
+                int r1 = ringStart + (r + 1) * stride;
+                for (int s = 0; s < segs; s++)
+                {
+                    tris.Add(r0 + s); tris.Add(r0 + s + 1); tris.Add(r1 + s);
+                    tris.Add(r1 + s); tris.Add(r0 + s + 1); tris.Add(r1 + s + 1);
+                }
+            }
+
+            // 2. 24 compact dry organic granules & micro-debris particles embedded around the seam crust
+            for (int g = 0; g < 24; g++)
+            {
+                float ang = (float)rng.NextDouble() * Mathf.PI * 2f;
+                float dist = Mathf.Sqrt((float)rng.NextDouble()) * 0.095f;
+                float gx = Mathf.Cos(ang) * dist;
+                float gz = 0.014f + Mathf.Sin(ang) * dist * 0.62f;
+                float radX = 0.0045f + (float)rng.NextDouble() * 0.0065f;
+                float radY = 0.0038f + (float)rng.NextDouble() * 0.0055f;
+                float radZ = 0.0042f + (float)rng.NextDouble() * 0.0060f;
+                float baseH = Mathf.Lerp(0.011f, 0.002f, Mathf.Clamp01(dist / 0.095f));
+                Vector3 c = new Vector3(gx, baseH, gz);
+
+                // Compact 6-sided organic faceted granule (top apex, mid-ring, base)
+                int topV = verts.Count;
+                verts.Add(c + new Vector3(0f, radY, 0f)); uvs.Add(new Vector2(0.5f, 0.85f));
+                int midV = verts.Count;
+                for (int k = 0; k < 6; k++)
+                {
+                    float ka = (k / 6f) * Mathf.PI * 2f + g * 0.4f;
+                    float j = 0.82f + (float)rng.NextDouble() * 0.36f;
+                    verts.Add(c + new Vector3(Mathf.Cos(ka) * radX * j, 0f, Mathf.Sin(ka) * radZ * j));
+                    uvs.Add(new Vector2(k / 6f, 0.45f));
+                }
+                int botV = verts.Count;
+                verts.Add(c + new Vector3(0f, -radY * 0.65f, 0f)); uvs.Add(new Vector2(0.5f, 0.10f));
+
+                for (int k = 0; k < 6; k++)
+                {
+                    int kNext = (k + 1) % 6;
+                    tris.Add(topV); tris.Add(midV + kNext); tris.Add(midV + k);
+                    tris.Add(botV); tris.Add(midV + k); tris.Add(midV + kNext);
+                }
+            }
+
+            Mesh m = new Mesh();
+            m.SetVertices(verts);
+            m.SetUVs(0, uvs);
+            m.SetTriangles(tris, 0);
+            m.RecalculateNormals();
+            m.RecalculateBounds();
+            return m;
+        }
+
         private static GameObject EnsureOrganicMeshObject(
             Transform parent, string name, Mesh mesh, Material mat, Vector3 worldPos, Quaternion worldRot, Vector3 scale)
         {
@@ -4517,6 +4892,11 @@ namespace MyVirtualCommunity.Editor
             Transform northWingRoot = shell.Find(NorthWingM1RootName);
             Transform narrativeRoot = root.transform.Find(HotelNarrativeEvidenceRootName);
             Transform ecologyRoot = root.transform.Find(HotelEarlyEcologyRootName);
+            Transform faunalRoot = root.transform.Find(HotelFaunalTracesRootName);
+            bool hasFaunalTraces = faunalRoot != null &&
+                                   faunalRoot.Find("Faunal_Courtyard_Traces") != null &&
+                                   faunalRoot.Find("Faunal_Maintenance_Traces") != null &&
+                                   faunalRoot.Find("Faunal_Utility_Traces") != null;
             bool hasEarlyEcology = ecologyRoot != null &&
                                    ecologyRoot.Find("Ecology_Courtyard_Vegetation") != null &&
                                    ecologyRoot.Find("Ecology_Maintenance_Mycelium") != null &&
@@ -4558,7 +4938,8 @@ namespace MyVirtualCommunity.Editor
                                      envRoot.Find("Hotel_Room_Variations") != null &&
                                      hasNorthWing &&
                                      hasNarrativeLayer &&
-                                     hasEarlyEcology;
+                                     hasEarlyEcology &&
+                                     hasFaunalTraces;
 
             int retainedWallCount = 0, pillarCount = 0, missingVoidCount = 0, crookedHatchCount = 0;
             for (int i = 0; i < shell.childCount; i++)
@@ -6447,6 +6828,98 @@ namespace MyVirtualCommunity.Editor
                     string fullFile = Path.Combine(outDir, shot.fileName);
                     File.WriteAllBytes(fullFile, readTex.EncodeToPNG());
                     Debug.Log($"[BackroomsLevel1Builder] Rendered camera verification view: {fullFile}");
+                }
+            }
+            finally
+            {
+                RenderTexture.active = null;
+                UnityEngine.Object.DestroyImmediate(camGo);
+                rt.Release();
+                UnityEngine.Object.DestroyImmediate(rt);
+                UnityEngine.Object.DestroyImmediate(readTex);
+
+                RenderSettings.skybox = prevSkybox;
+                RenderSettings.ambientMode = prevAmbMode;
+                RenderSettings.ambientLight = prevAmbLight;
+                RenderSettings.fog = prevFog;
+                RenderSettings.fogMode = prevFogMode;
+                RenderSettings.fogColor = prevFogColor;
+                RenderSettings.fogDensity = prevFogDensity;
+            }
+        }
+
+        /// <summary>
+        /// Read-only Editor camera verification utility for Implementation 07.8 (First Faunal Traces):
+        /// renders medium-range and close-inspection URP views of Zones A, B, and C without modifying the scene.
+        /// </summary>
+        public static void RenderFaunalTracesVerificationViews()
+        {
+            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            if (!scene.IsValid())
+            {
+                throw new InvalidOperationException($"Could not open {ScenePath} for 07.8 camera verification.");
+            }
+
+            string outDir = Environment.GetEnvironmentVariable("MVC_FAUNAL_RENDER_DIR");
+            if (string.IsNullOrWhiteSpace(outDir))
+            {
+                outDir = Path.Combine(Path.GetTempPath(), "MVC_FaunalRenders");
+            }
+            Directory.CreateDirectory(outDir);
+
+            AmbientMode prevAmbMode = RenderSettings.ambientMode;
+            Color prevAmbLight = RenderSettings.ambientLight;
+            bool prevFog = RenderSettings.fog;
+            FogMode prevFogMode = RenderSettings.fogMode;
+            Color prevFogColor = RenderSettings.fogColor;
+            float prevFogDensity = RenderSettings.fogDensity;
+            Material prevSkybox = RenderSettings.skybox;
+
+            GameObject camGo = new GameObject("__TempFaunalVerifyCam__");
+            RenderTexture rt = new RenderTexture(1280, 720, 24, RenderTextureFormat.ARGB32);
+            Texture2D readTex = new Texture2D(1280, 720, TextureFormat.RGB24, false);
+
+            try
+            {
+                RenderSettings.skybox = null;
+                RenderSettings.ambientMode = AmbientMode.Flat;
+                RenderSettings.ambientLight = SecretBackroomsTransitionController.RemanenciaLevel0AmbientLight;
+                RenderSettings.fog = true;
+                RenderSettings.fogMode = FogMode.ExponentialSquared;
+                RenderSettings.fogColor = SecretBackroomsTransitionController.RemanenciaLevel0FogColor;
+                RenderSettings.fogDensity = SecretBackroomsTransitionController.RemanenciaLevel0FogDensity;
+
+                Camera cam = camGo.AddComponent<Camera>();
+                cam.clearFlags = CameraClearFlags.SolidColor;
+                cam.backgroundColor = SecretBackroomsTransitionController.RemanenciaLevel0FogColor;
+                cam.fieldOfView = 55f;
+                cam.nearClipPlane = 0.03f;
+                cam.farClipPlane = 60f;
+                cam.targetTexture = rt;
+
+                (string fileName, Vector3 pos, Vector3 lookAt)[] shots =
+                {
+                    ("verify_078_zoneA_courtyard_close.png", new Vector3(-1.82f, BaseY + 0.42f, 21.65f), new Vector3(-1.14f, BaseY + 0.06f, 21.84f)),
+                    ("verify_078_zoneB_maint_wide.png",      new Vector3(-10.55f, BaseY + 1.38f, 22.15f), new Vector3(-8.72f, BaseY + 0.72f, 22.10f)),
+                    ("verify_078_zoneB_maint_close.png",     new Vector3(-9.42f, BaseY + 0.56f, 21.88f), new Vector3(-8.74f, BaseY + 0.30f, 21.86f)),
+                    ("verify_078_zoneC_utility_wide.png",    new Vector3(-14.00f, BaseY + 1.32f, 20.15f), new Vector3(-15.70f, BaseY + 0.58f, 18.65f)),
+                    ("verify_078_zoneC_utility_close.png",   new Vector3(-15.05f, BaseY + 0.58f, 18.92f), new Vector3(-15.72f, BaseY + 0.28f, 18.54f))
+                };
+
+                foreach (var shot in shots)
+                {
+                    cam.transform.position = shot.pos;
+                    cam.transform.LookAt(shot.lookAt, Vector3.up);
+                    cam.Render();
+
+                    RenderTexture.active = rt;
+                    readTex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+                    readTex.Apply();
+                    RenderTexture.active = null;
+
+                    string fullFile = Path.Combine(outDir, shot.fileName);
+                    File.WriteAllBytes(fullFile, readTex.EncodeToPNG());
+                    Debug.Log($"[BackroomsLevel1Builder] Rendered 07.8 faunal verification view: {fullFile}");
                 }
             }
             finally
