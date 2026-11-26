@@ -101,6 +101,7 @@ namespace MyVirtualCommunity.Editor
         public const string HotelEnvironmentalIdentityRootName = "Hotel_Environmental_Identity";
         public const string NorthWingM1RootName = "Hotel_NorthWing_M1";
         public const string HotelNarrativeEvidenceRootName = "Hotel_Narrative_Evidence";
+        public const string HotelEarlyEcologyRootName = "Hotel_Early_Ecology";
         public const float NorthWingMinX = -16.0f;
         public const float NorthWingMaxX = 16.0f;
         public const float NorthWingMinZ = 12.0f;
@@ -112,6 +113,17 @@ namespace MyVirtualCommunity.Editor
         public const string EvidenceCobaltNoteMatPath = "Assets/Settings/Remanencia_Evidence_CobaltRumorNote.mat";
         public const string AnomalyMineralJointMatPath = "Assets/Settings/Remanencia_Anomaly_MineralJoint.mat";
         public const string AnomalySurfaceStainMatPath = "Assets/Settings/Remanencia_Anomaly_SurfaceStain.mat";
+        public const string EcologyMyceliumMatPath = "Assets/Settings/Remanencia_Ecology_Mycelium.mat";
+        public const string EcologyFungalCapMatPath = "Assets/Settings/Remanencia_Ecology_FungalCap.mat";
+        public const string EcologyVegetalLeafMatPath = "Assets/Settings/Remanencia_Ecology_VegetalLeaf.mat";
+        public const string EcologyVegetalRootMatPath = "Assets/Settings/Remanencia_Ecology_VegetalRoot.mat";
+        public const string EcologyMyceliumMeshPath = "Assets/Meshes/Remanencia/Ecology/M_Remanencia_MyceliumWeb.asset";
+        public const string EcologyFungalClusterMeshPath = "Assets/Meshes/Remanencia/Ecology/M_Remanencia_FungalCluster_Low.asset";
+        public const string EcologyFungalBracketMeshPath = "Assets/Meshes/Remanencia/Ecology/M_Remanencia_FungalBracket.asset";
+        public const string EcologyVegetalRootMeshPath = "Assets/Meshes/Remanencia/Ecology/M_Remanencia_VegetalRootRunner.asset";
+        public const string EcologyVegetalLeafMeshPath = "Assets/Meshes/Remanencia/Ecology/M_Remanencia_VegetalLeafTuft.asset";
+        public const string PipeCylinderMeshPath = "Assets/Meshes/Remanencia/Ecology/M_Remanencia_PipeCylinder.asset";
+        public const string DecalQuadMeshPath = "Assets/Meshes/Remanencia/Ecology/M_Remanencia_DecalQuad.asset";
 
         public const string PipeCopperRustMatPath = "Assets/Settings/Remanencia_Level0_PipeCopperRust.mat";
         public const string UnfinishedWoodDoorMatPath = "Assets/Settings/Remanencia_Level0_UnfinishedWoodDoor.mat";
@@ -724,6 +736,9 @@ namespace MyVirtualCommunity.Editor
 
             // First Environmental Narrative Layer: 4 inspectable hotel history discoveries + subtle anomalies (Implementation 07.6)
             BuildOrUpdateHotelNarrativeLayer(root.transform, visualMats);
+
+            // First Anomalous Ecology: localized static fungal colonies & anomalous vegetation (Implementation 07.7)
+            BuildOrUpdateHotelEarlyEcology(root.transform);
 
             // Save BackroomsLevel1Scene cleanly and ensure it is registered in EditorBuildSettings
             EditorSceneManager.SaveScene(scene, ScenePath);
@@ -2120,30 +2135,52 @@ namespace MyVirtualCommunity.Editor
                 new Vector3(2.8f, CeilingY - 0.12f, 28.56f), Quaternion.identity,
                 new Vector3(22.0f, 0.04f, 0.04f), mats.IndustrialMetal, keepCollider: false);
 
-            // Selective plumbing rough-ins & electrical panels (Housekeeping, Banquet SE service pass, Rooms 107/108/110)
+            // Selective plumbing rough-ins & electrical panels (true cylindrical pipes, clamps, flanges & detailed breaker box)
+            Mesh pipeCylMesh = EnsureEcologyMeshAsset(PipeCylinderMeshPath, BuildProceduralPipeCylinderMesh);
+
+            // Detailed Industrial Breaker Panel Box on West face (-8.71) of Maintenance Corridor divider wall
             EnsureHotelBox(details, "NorthWing_Infra_ServicePanelBox",
-                new Vector3(-8.74f, BaseY + 1.48f, 21.6f), Quaternion.identity,
-                new Vector3(0.08f, 0.62f, 0.44f), mats.IndustrialMetal, keepCollider: false);
-            EnsureHotelBox(details, "NorthWing_Infra_UtilityPipeRiserA",
-                new Vector3(-15.72f, BaseY + ClearHeight * 0.5f, 18.45f), Quaternion.identity,
-                new Vector3(0.08f, ClearHeight, 0.08f), mats.PipeCopperRust, keepCollider: false);
-            EnsureHotelBox(details, "NorthWing_Infra_UtilityPipeRiserB",
-                new Vector3(-15.72f, BaseY + ClearHeight * 0.5f, 18.70f), Quaternion.identity,
-                new Vector3(0.06f, ClearHeight, 0.06f), mats.IndustrialMetal, keepCollider: false);
-            EnsureHotelBox(details, "NorthWing_Infra_BanquetServiceRiser",
-                new Vector3(15.72f, BaseY + ClearHeight * 0.5f, 12.60f), Quaternion.identity,
-                new Vector3(0.07f, ClearHeight, 0.07f), mats.PipeCopperRust, keepCollider: false);
+                new Vector3(-8.745f, BaseY + 1.48f, 21.60f), Quaternion.identity,
+                new Vector3(0.07f, 0.64f, 0.46f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(details, "NorthWing_Infra_ServicePanelDoor",
+                new Vector3(-8.784f, BaseY + 1.48f, 21.60f), Quaternion.identity,
+                new Vector3(0.014f, 0.56f, 0.38f), mats.ElevatorDoorMetal, keepCollider: false);
+            EnsureHotelBox(details, "NorthWing_Infra_ServicePanelLatch",
+                new Vector3(-8.796f, BaseY + 1.48f, 21.44f), Quaternion.identity,
+                new Vector3(0.016f, 0.09f, 0.024f), mats.IndustrialMetal, keepCollider: false);
+            EnsureHotelBox(details, "NorthWing_Infra_ServicePanelDirectoryCard",
+                new Vector3(-8.793f, BaseY + 1.64f, 21.64f), Quaternion.identity,
+                new Vector3(0.005f, 0.14f, 0.18f), mats.AgedCeramicPatch, keepCollider: false);
+            // Cylindrical galvanized conduits entering top of panel from cable tray + sheared lower conduit stub
+            EnsureOrganicMeshObject(details, "NorthWing_Infra_ServicePanelConduitTopA", pipeCylMesh, mats.ElevatorDoorMetal,
+                new Vector3(-8.75f, BaseY + 2.30f, 21.48f), Quaternion.identity, new Vector3(0.036f, 1.02f, 0.036f));
+            EnsureOrganicMeshObject(details, "NorthWing_Infra_ServicePanelConduitTopB", pipeCylMesh, mats.IndustrialMetal,
+                new Vector3(-8.75f, BaseY + 2.30f, 21.70f), Quaternion.identity, new Vector3(0.030f, 1.02f, 0.030f));
+            EnsureOrganicMeshObject(details, "NorthWing_Infra_ServicePanelConduitDrop", pipeCylMesh, mats.IndustrialMetal,
+                new Vector3(-8.75f, BaseY + 0.92f, 21.62f), Quaternion.identity, new Vector3(0.032f, 0.48f, 0.032f));
+
+            // Cylindrical Utility Room Pipe Risers A (oxidized copper) & B (galvanized steel) + flanges, wall clamps & valve
+            EnsureDetailedPipeRiser(details, "NorthWing_Infra_UtilityPipeRiserA", pipeCylMesh,
+                new Vector3(-15.72f, BaseY, 18.45f), ClearHeight, 0.082f, mats.PipeCopperRust, mats.IndustrialMetal, wallNormalDirX: -1f);
+            EnsureDetailedPipeRiser(details, "NorthWing_Infra_UtilityPipeRiserB", pipeCylMesh,
+                new Vector3(-15.72f, BaseY, 18.72f), ClearHeight, 0.064f, mats.ElevatorDoorMetal, mats.IndustrialMetal, wallNormalDirX: -1f);
+            // Valve wheel & T-junction on Copper Riser A
+            EnsureOrganicMeshObject(details, "NorthWing_Infra_UtilityValveStem", pipeCylMesh, mats.IndustrialMetal,
+                new Vector3(-15.65f, BaseY + 1.12f, 18.45f), Quaternion.Euler(0f, 0f, 90f), new Vector3(0.028f, 0.12f, 0.028f));
+            EnsureOrganicMeshObject(details, "NorthWing_Infra_UtilityValveWheel", pipeCylMesh, mats.PipeCopperRust,
+                new Vector3(-15.58f, BaseY + 1.12f, 18.45f), Quaternion.Euler(0f, 0f, 90f), new Vector3(0.15f, 0.018f, 0.15f));
+
+            EnsureDetailedPipeRiser(details, "NorthWing_Infra_BanquetServiceRiser", pipeCylMesh,
+                new Vector3(15.72f, BaseY, 12.60f), ClearHeight, 0.070f, mats.PipeCopperRust, mats.IndustrialMetal, wallNormalDirX: 1f);
             EnsureHotelBox(details, "NorthWing_Infra_BanquetCeramicSplash",
                 new Vector3(15.84f, BaseY + 0.92f, 13.50f), Quaternion.identity,
                 new Vector3(0.025f, 1.10f, 2.20f), mats.AgedCeramicPatch, keepCollider: false);
 
             // Selective per-room construction variations (107-110, zero furniture)
-            EnsureHotelBox(details, "NorthWing_Room107_BathPipeStub",
-                new Vector3(15.72f, BaseY + 0.68f, 30.80f), Quaternion.identity,
-                new Vector3(0.055f, 1.36f, 0.055f), mats.PipeCopperRust, keepCollider: false);
-            EnsureHotelBox(details, "NorthWing_Room107_BathDrain",
-                new Vector3(14.80f, BaseY + 0.004f, 30.20f), Quaternion.identity,
-                new Vector3(0.18f, 0.008f, 0.18f), mats.IndustrialMetal, keepCollider: false);
+            EnsureOrganicMeshObject(details, "NorthWing_Room107_BathPipeStub", pipeCylMesh, mats.PipeCopperRust,
+                new Vector3(15.72f, BaseY + 0.68f, 30.80f), Quaternion.identity, new Vector3(0.055f, 1.36f, 0.055f));
+            EnsureOrganicMeshObject(details, "NorthWing_Room107_BathDrain", pipeCylMesh, mats.IndustrialMetal,
+                new Vector3(14.80f, BaseY + 0.004f, 30.20f), Quaternion.identity, new Vector3(0.18f, 0.008f, 0.18f));
             EnsureHotelBox(details, "NorthWing_Room108_BathCeramicStrip",
                 new Vector3(3.34f, BaseY + 0.62f, 30.20f), Quaternion.identity,
                 new Vector3(0.025f, 0.92f, 2.30f), mats.AgedCeramicPatch, keepCollider: false);
@@ -2152,9 +2189,8 @@ namespace MyVirtualCommunity.Editor
                 new Vector3(0.045f, 2.04f, 0.88f), mats.UnfinishedWoodDoor, keepCollider: false);
             EnsureExposedDoorHinges(details, "NorthWing_Room110_EmptyHinge",
                 new Vector3(-6.76f, BaseY, 28.88f), mats.IndustrialMetal);
-            EnsureHotelBox(details, "NorthWing_Room110_ChaseRiser",
-                new Vector3(-9.36f, BaseY + 0.82f, 33.62f), Quaternion.identity,
-                new Vector3(0.06f, 1.64f, 0.06f), mats.PipeCopperRust, keepCollider: false);
+            EnsureDetailedPipeRiser(details, "NorthWing_Room110_ChaseRiser", pipeCylMesh,
+                new Vector3(-9.36f, BaseY, 33.62f), 1.85f, 0.062f, mats.PipeCopperRust, mats.IndustrialMetal, wallNormalDirX: -1f);
 
             // Flush architectural floor expansion-joint strips
             EnsureHotelBox(details, "NorthWing_FloorJoint_SouthProm",
@@ -2270,21 +2306,26 @@ namespace MyVirtualCommunity.Editor
             string regTex = EnsureEvidenceRoomRegisterTexture("Assets/Textures/Environment/T_Remanencia_Evidence_RoomRegister.png");
             string maintTex = EnsureEvidenceMaintenanceLogTexture("Assets/Textures/Environment/T_Remanencia_Evidence_MaintenanceLog.png");
             string rumorTex = EnsureEvidenceCobaltRumorNoteTexture("Assets/Textures/Environment/T_Remanencia_Evidence_CobaltRumorNote.png");
+            string mineralDecalTex = EnsureFeatheredMineralCrackDecalTexture("Assets/Textures/Environment/T_Remanencia_Anomaly_MineralJoint.png");
+            string stainDecalTex = EnsureFeatheredDampSeepDecalTexture("Assets/Textures/Environment/T_Remanencia_Anomaly_SurfaceStain.png");
             AssetDatabase.Refresh();
 
             ConfigureSignTextureImporter(planTex);
             ConfigureSignTextureImporter(regTex);
             ConfigureSignTextureImporter(maintTex);
             ConfigureSignTextureImporter(rumorTex);
+            ConfigureAlphaDecalTextureImporter(mineralDecalTex);
+            ConfigureAlphaDecalTextureImporter(stainDecalTex);
 
             Material planMat = CreateTexturedMat(EvidencePlanMatPath, planTex, Color.white, 0.14f, Vector2.one);
             Material regMat = CreateTexturedMat(EvidenceRegisterMatPath, regTex, Color.white, 0.12f, Vector2.one);
             Material maintMat = CreateTexturedMat(EvidenceMaintenanceMatPath, maintTex, Color.white, 0.12f, Vector2.one);
             Material rumorMat = CreateTexturedMat(EvidenceCobaltNoteMatPath, rumorTex, Color.white, 0.10f, Vector2.one);
 
-            // Restrained, matte, non-emissive anomaly materials (NO neon green, NO glow, NO radiation icons)
-            Material mineralJointMat = CreateColorMat(AnomalyMineralJointMatPath, new Color(0.56f, 0.55f, 0.50f), 0.08f, 0.0f);
-            Material surfaceStainMat = CreateColorMat(AnomalySurfaceStainMatPath, new Color(0.24f, 0.25f, 0.26f), 0.06f, 0.0f);
+            // Conformal feathered alpha-blended concrete crack/efflorescence & damp seepage decals (ZERO rectangular edges, ZERO glow)
+            Material mineralJointMat = CreateAlphaBlendedDecalMat(AnomalyMineralJointMatPath, mineralDecalTex, Color.white, 0.08f, renderQueue: 3002);
+            Material surfaceStainMat = CreateAlphaBlendedDecalMat(AnomalySurfaceStainMatPath, stainDecalTex, Color.white, 0.18f, renderQueue: 3001);
+            Mesh decalQuad = EnsureEcologyMeshAsset(DecalQuadMeshPath, BuildProceduralDecalQuadMesh);
 
             Transform narrativeRoot = EnsureHotelSubgroup(backroomsRoot, HotelNarrativeEvidenceRootName);
 
@@ -2366,48 +2407,39 @@ namespace MyVirtualCommunity.Editor
             EnsureHotelBox(evRumor.transform, "PinTab_Top", new Vector3(-12.74f, BaseY + 1.475f, 23.264f), Quaternion.identity, new Vector3(0.032f, 0.018f, 0.005f), mats.IndustrialMetal, keepCollider: false);
 
             // =========================================================================
-            // 5. SUBTLE ANOMALOUS ENVIRONMENTAL TRACES (NON-COLLIDING, NON-GLOWING)
-            //    Dry mineral joint encrustations, non-water surface discoloration, and a
-            //    subtle stain continuing beneath solid masonry — zero sci-fi / neon effects.
+            // 5. SUBTLE ANOMALOUS ENVIRONMENTAL TRACES (FEATHERED CONFORMAL DECALS)
+            //    Alpha-blended hairline fractures, chalky salt efflorescence & organic damp
+            //    seepage stains flush on concrete — zero sharp rectangular boxes, zero glow.
             // =========================================================================
             Transform anomalies = EnsureHotelSubgroup(narrativeRoot, "Hotel_Subtle_Anomalies");
 
-            // Irregular dry mineral deposits emerging along vertical concrete joints beside Maintenance Record
-            EnsureHotelBox(anomalies, "Anomaly_ServiceJointDeposit_A",
-                new Vector3(-8.722f, BaseY + 1.18f, 22.08f), Quaternion.Euler(0f, 0f, 0f),
-                new Vector3(0.018f, 0.78f, 0.055f), mineralJointMat, keepCollider: false);
-            EnsureHotelBox(anomalies, "Anomaly_ServiceJointDeposit_B",
-                new Vector3(-8.722f, BaseY + 0.66f, 22.86f), Quaternion.identity,
-                new Vector3(0.016f, 0.54f, 0.048f), mineralJointMat, keepCollider: false);
-            EnsureHotelBox(anomalies, "Anomaly_ServiceJointStainHalo",
-                new Vector3(-8.718f, BaseY + 0.92f, 22.08f), Quaternion.identity,
-                new Vector3(0.008f, 0.96f, 0.34f), surfaceStainMat, keepCollider: false);
+            // Maintenance Corridor West-facing wall (surface X = -8.710, outward normal = -X -> Euler(0, -90, 0))
+            EnsureOrganicMeshObject(anomalies, "Anomaly_ServiceJointStainHalo", decalQuad, surfaceStainMat,
+                new Vector3(-8.714f, BaseY + 0.72f, 22.08f), Quaternion.Euler(0f, -90f, 0f), new Vector3(1.10f, 1.55f, 1f));
+            EnsureOrganicMeshObject(anomalies, "Anomaly_ServiceJointDeposit_A", decalQuad, mineralJointMat,
+                new Vector3(-8.715f, BaseY + 0.78f, 22.06f), Quaternion.Euler(0f, -90f, 0f), new Vector3(0.62f, 1.52f, 1f));
+            EnsureOrganicMeshObject(anomalies, "Anomaly_ServiceJointDeposit_B", decalQuad, mineralJointMat,
+                new Vector3(-8.715f, BaseY + 0.62f, 22.88f), Quaternion.Euler(0f, -90f, 4f), new Vector3(0.56f, 1.24f, 1f));
 
-            // Floor discoloration appearing to continue beneath the solid concrete service divider wall (X=-8.6)
-            EnsureHotelBox(anomalies, "Anomaly_ServiceFloorUnderwallSeep_W",
-                new Vector3(-8.96f, BaseY + 0.003f, 22.35f), Quaternion.Euler(0f, 14f, 0f),
-                new Vector3(0.68f, 0.005f, 0.52f), surfaceStainMat, keepCollider: false);
-            EnsureHotelBox(anomalies, "Anomaly_ServiceFloorUnderwallSeep_E",
-                new Vector3(-8.22f, BaseY + 0.003f, 22.35f), Quaternion.Euler(0f, -9f, 0f),
-                new Vector3(0.56f, 0.005f, 0.44f), surfaceStainMat, keepCollider: false);
+            // Floor seepage continuing beneath solid concrete service divider wall (X = -8.6, floor Y = -50.000, normal +Y -> Euler(-90, yaw, 0))
+            EnsureOrganicMeshObject(anomalies, "Anomaly_ServiceFloorUnderwallSeep_W", decalQuad, surfaceStainMat,
+                new Vector3(-9.02f, BaseY + 0.003f, 22.24f), Quaternion.Euler(-90f, 18f, 0f), new Vector3(1.24f, 1.02f, 1f));
+            EnsureOrganicMeshObject(anomalies, "Anomaly_ServiceFloorUnderwallSeep_E", decalQuad, surfaceStainMat,
+                new Vector3(-8.18f, BaseY + 0.003f, 22.24f), Quaternion.Euler(-90f, -24f, 0f), new Vector3(0.96f, 0.82f, 1f));
 
-            // Subtly inconsistent concrete discoloration near the Utility Room risers & Cobalt-60 rumor note
-            EnsureHotelBox(anomalies, "Anomaly_UtilityWallDiscoloration_A",
-                new Vector3(-12.75f, BaseY + 0.86f, 23.282f), Quaternion.identity,
-                new Vector3(0.64f, 0.42f, 0.008f), surfaceStainMat, keepCollider: false);
-            EnsureHotelBox(anomalies, "Anomaly_UtilityWallMineralEdge",
-                new Vector3(-15.855f, BaseY + 1.05f, 18.88f), Quaternion.identity,
-                new Vector3(0.014f, 0.62f, 0.14f), mineralJointMat, keepCollider: false);
+            // Utility Room: damp stain below Rumor Note (South-facing Z = +23.290 -> Euler(0, 180, 0)) & mineral crack behind risers (East-facing X = -15.870 -> Euler(0, 90, 0))
+            EnsureOrganicMeshObject(anomalies, "Anomaly_UtilityWallDiscoloration_A", decalQuad, surfaceStainMat,
+                new Vector3(-12.75f, BaseY + 0.72f, 23.285f), Quaternion.Euler(0f, 180f, 0f), new Vector3(1.08f, 0.94f, 1f));
+            EnsureOrganicMeshObject(anomalies, "Anomaly_UtilityWallMineralEdge", decalQuad, mineralJointMat,
+                new Vector3(-15.865f, BaseY + 0.88f, 18.64f), Quaternion.Euler(0f, 90f, -4f), new Vector3(0.96f, 1.72f, 1f));
 
-            // Subtle mismatched concrete patch along North Guest Corridor wall near Room 109-110 register
-            EnsureHotelBox(anomalies, "Anomaly_NorthCorrConcreteMismatch",
-                new Vector3(-3.85f, BaseY + 0.72f, 28.682f), Quaternion.identity,
-                new Vector3(0.84f, 0.68f, 0.008f), mineralJointMat, keepCollider: false);
+            // North Guest Corridor subtle mineral fracture patch below Room Register (South-facing Z = +28.690 -> Euler(0, 180, 0))
+            EnsureOrganicMeshObject(anomalies, "Anomaly_NorthCorrConcreteMismatch", decalQuad, mineralJointMat,
+                new Vector3(-3.85f, BaseY + 0.68f, 28.686f), Quaternion.Euler(0f, 180f, 5f), new Vector3(0.82f, 1.12f, 1f));
 
-            // Subtle dry mineral streak along the West flank of the central Courtyard plinth
-            EnsureHotelBox(anomalies, "Anomaly_CourtyardPlinthResidue",
-                new Vector3(-1.106f, BaseY + 0.21f, 21.85f), Quaternion.identity,
-                new Vector3(0.012f, 0.34f, 0.46f), mineralJointMat, keepCollider: false);
+            // Central Courtyard plinth West flank (surface X = -1.100, normal -X -> Euler(0, -90, 0))
+            EnsureOrganicMeshObject(anomalies, "Anomaly_CourtyardPlinthResidue", decalQuad, mineralJointMat,
+                new Vector3(-1.104f, BaseY + 0.21f, 21.82f), Quaternion.Euler(0f, -90f, 78f), new Vector3(0.40f, 0.86f, 1f));
         }
 
         private static GameObject EnsureInspectableEvidenceSheet(
@@ -2475,6 +2507,1141 @@ namespace MyVirtualCommunity.Editor
             return assetPath;
         }
 
+        private static void EnsureDetailedPipeRiser(
+            Transform parent, string name, Mesh cylMesh, Vector3 baseFloorPos, float height, float diameter,
+            Material pipeMat, Material hardwareMat, float wallNormalDirX)
+        {
+            EnsureOrganicMeshObject(parent, name, cylMesh, pipeMat,
+                new Vector3(baseFloorPos.x, baseFloorPos.y + height * 0.5f, baseFloorPos.z),
+                Quaternion.identity, new Vector3(diameter, height, diameter));
+
+            // Floor & ceiling penetration escutcheon flanges
+            EnsureOrganicMeshObject(parent, name + "_FloorFlange", cylMesh, hardwareMat,
+                new Vector3(baseFloorPos.x, baseFloorPos.y + 0.018f, baseFloorPos.z),
+                Quaternion.identity, new Vector3(diameter * 1.95f, 0.036f, diameter * 1.95f));
+            if (height >= ClearHeight - 0.1f)
+            {
+                EnsureOrganicMeshObject(parent, name + "_CeilFlange", cylMesh, hardwareMat,
+                    new Vector3(baseFloorPos.x, baseFloorPos.y + height - 0.018f, baseFloorPos.z),
+                    Quaternion.identity, new Vector3(diameter * 1.85f, 0.036f, diameter * 1.85f));
+            }
+
+            // Wall-mounting collar rings & standoffs firmly anchored into concrete wall
+            float[] collarYs = height > 2.2f ? new[] { 0.68f, 1.52f, 2.34f } : new[] { 0.58f, 1.38f };
+            for (int i = 0; i < collarYs.Length; i++)
+            {
+                Transform oldRing = parent.Find($"{name}_ClampRing_{i}");
+                if (oldRing != null) UnityEngine.Object.DestroyImmediate(oldRing.gameObject);
+                Transform oldStrut = parent.Find($"{name}_ClampStrut_{i}");
+                if (oldStrut != null) UnityEngine.Object.DestroyImmediate(oldStrut.gameObject);
+
+                float cy = baseFloorPos.y + collarYs[i];
+                EnsureOrganicMeshObject(parent, $"{name}_CollarRing_{i}", cylMesh, hardwareMat,
+                    new Vector3(baseFloorPos.x, cy, baseFloorPos.z),
+                    Quaternion.identity, new Vector3(diameter * 1.38f, 0.032f, diameter * 1.38f));
+                EnsureHotelBox(parent, $"{name}_CollarStrut_{i}",
+                    new Vector3(baseFloorPos.x + wallNormalDirX * 0.085f, cy, baseFloorPos.z),
+                    Quaternion.identity, new Vector3(0.17f, 0.026f, 0.030f), hardwareMat, keepCollider: false);
+            }
+        }
+
+        private static Mesh BuildProceduralPipeCylinderMesh()
+        {
+            var verts = new List<Vector3>();
+            var uvs = new List<Vector2>();
+            var tris = new List<int>();
+            const int sides = 16;
+            Vector3[] pts = { new Vector3(0f, -0.5f, 0f), new Vector3(0f, 0.0f, 0f), new Vector3(0f, 0.5f, 0f) };
+            float[] rads = { 0.5f, 0.5f, 0.5f };
+            AddCurvedTube(verts, uvs, tris, pts, rads, sides);
+
+            // Top & bottom end caps for sheared stubs / valve wheels
+            int topCenter = verts.Count;
+            verts.Add(new Vector3(0f, 0.5f, 0f)); uvs.Add(new Vector2(0.5f, 0.5f));
+            int botCenter = verts.Count;
+            verts.Add(new Vector3(0f, -0.5f, 0f)); uvs.Add(new Vector2(0.5f, 0.5f));
+            int topRing = 2 * (sides + 1);
+            int botRing = 0;
+            for (int s = 0; s < sides; s++)
+            {
+                tris.Add(topCenter); tris.Add(topRing + s + 1); tris.Add(topRing + s);
+                tris.Add(botCenter); tris.Add(botRing + s); tris.Add(botRing + s + 1);
+            }
+
+            Mesh m = new Mesh();
+            m.SetVertices(verts);
+            m.SetUVs(0, uvs);
+            m.SetTriangles(tris, 0);
+            m.RecalculateNormals();
+            m.RecalculateBounds();
+            return m;
+        }
+
+        private static Mesh BuildProceduralDecalQuadMesh()
+        {
+            // Unit 1x1 quad in XY with front face & normal pointing strictly along +Z (clockwise when viewed from +Z)
+            Mesh m = new Mesh();
+            m.vertices = new[]
+            {
+                new Vector3(-0.5f, -0.5f, 0f),
+                new Vector3( 0.5f, -0.5f, 0f),
+                new Vector3(-0.5f,  0.5f, 0f),
+                new Vector3( 0.5f,  0.5f, 0f)
+            };
+            m.uv = new[]
+            {
+                new Vector2(0f, 0f),
+                new Vector2(1f, 0f),
+                new Vector2(0f, 1f),
+                new Vector2(1f, 1f)
+            };
+            m.normals = new[] { Vector3.forward, Vector3.forward, Vector3.forward, Vector3.forward };
+            m.triangles = new[] { 0, 1, 2, 2, 1, 3 };
+            m.RecalculateBounds();
+            return m;
+        }
+
+        private static string EnsureFeatheredMineralCrackDecalTexture(string assetPath)
+        {
+            string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", assetPath));
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+            const int size = 512;
+            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+
+            for (int y = 0; y < size; y++)
+            {
+                float v = (float)y / (size - 1);
+                float endFade = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(Mathf.Min(v, 1f - v) / 0.16f));
+                float meander = (PeriodicFbm(0.35f, v, 2, 5, 4, 8801) - 0.5f) * 0.24f +
+                                (PeriodicFbm(0.72f, v * 2f, 2, 9, 3, 8802) - 0.5f) * 0.08f;
+                float centerU = 0.5f + meander;
+
+                for (int x = 0; x < size; x++)
+                {
+                    float u = (float)x / (size - 1);
+                    float sideFade = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(Mathf.Min(u, 1f - u) / 0.14f));
+                    float dist = Mathf.Abs(u - centerU);
+                    float n1 = PeriodicFbm(u * 2f, v * 2f, 6, 6, 4, 8803);
+                    float n2 = PeriodicFbm(u * 4f, v * 4f, 10, 10, 3, 8804);
+
+                    // Dark hairline crack core + irregular chalky salt/mineral efflorescence halo
+                    float crackMask = Mathf.Clamp01(1f - dist / (0.011f + n2 * 0.010f)) * endFade * sideFade;
+                    float saltRadius = (0.045f + n1 * 0.18f) * endFade;
+                    float saltMask = Mathf.Clamp01((saltRadius - dist) / Mathf.Max(0.02f, saltRadius * 0.65f));
+                    saltMask = Mathf.Pow(saltMask, 1.35f) * Mathf.Clamp01(n2 * 1.45f - 0.18f) * endFade * sideFade;
+
+                    // Secondary branching micro-fissure
+                    float branchDist = Mathf.Abs(u - (centerU + (v - 0.45f) * 0.36f));
+                    float branchMask = (v > 0.35f && v < 0.78f)
+                        ? Mathf.Clamp01(1f - branchDist / 0.009f) * Mathf.SmoothStep(0f, 1f, 1f - Mathf.Abs(v - 0.56f) / 0.22f) * 0.75f
+                        : 0f;
+
+                    Color saltCol = Color.Lerp(new Color(0.64f, 0.61f, 0.54f), new Color(0.86f, 0.84f, 0.78f), n2);
+                    Color crackCol = new Color(0.11f, 0.11f, 0.10f);
+                    float totalCrack = Mathf.Max(crackMask, branchMask);
+                    Color rgb = Color.Lerp(saltCol, crackCol, Mathf.Clamp01(totalCrack * 1.15f));
+                    float alpha = Mathf.Clamp01(Mathf.Max(saltMask * 0.88f, totalCrack * 0.92f));
+                    tex.SetPixel(x, y, new Color(rgb.r, rgb.g, rgb.b, alpha));
+                }
+            }
+            tex.Apply();
+            File.WriteAllBytes(fullPath, tex.EncodeToPNG());
+            UnityEngine.Object.DestroyImmediate(tex);
+            return assetPath;
+        }
+
+        private static string EnsureFeatheredDampSeepDecalTexture(string assetPath)
+        {
+            string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", assetPath));
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+            const int size = 512;
+            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+
+            for (int y = 0; y < size; y++)
+            {
+                float v = (float)y / (size - 1);
+                for (int x = 0; x < size; x++)
+                {
+                    float u = (float)x / (size - 1);
+                    float dx = (u - 0.5f) * 2.0f;
+                    float dy = (v - 0.5f) * 2.0f;
+                    float r = Mathf.Sqrt(dx * dx + dy * dy);
+
+                    float warp = PeriodicFbm(u, v, 4, 4, 4, 8811) * 0.52f + PeriodicFbm(u * 2f, v * 2f, 9, 9, 3, 8812) * 0.24f;
+                    float organicDist = r + (warp - 0.38f) * 0.68f;
+                    // Strict zero-alpha border guard so NO rectangular edge can ever appear
+                    float borderGuard = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((0.92f - r) / 0.22f));
+
+                    float body = Mathf.Clamp01((0.76f - organicDist) / 0.48f) * borderGuard;
+                    // Evaporative mineral tide-ring near outer perimeter of stain
+                    float tideRing = Mathf.Exp(-Mathf.Pow((organicDist - 0.58f) / 0.085f, 2f)) * 0.38f * borderGuard;
+                    float alpha = Mathf.Clamp01((body * 0.68f + tideRing) * (0.75f + 0.25f * warp));
+
+                    Color innerDark = new Color(0.11f, 0.12f, 0.11f);
+                    Color mineralRust = new Color(0.24f, 0.21f, 0.17f);
+                    Color rgb = Color.Lerp(innerDark, mineralRust, Mathf.Clamp01(tideRing * 1.8f + (1f - body) * 0.45f));
+                    tex.SetPixel(x, y, new Color(rgb.r, rgb.g, rgb.b, alpha));
+                }
+            }
+            tex.Apply();
+            File.WriteAllBytes(fullPath, tex.EncodeToPNG());
+            UnityEngine.Object.DestroyImmediate(tex);
+            return assetPath;
+        }
+
+        /// <summary>
+        /// Refreshes North Wing M1 detailed infrastructure, 07.6 feathered anomaly decals, and 07.7
+        /// high-detail 3D ecology in place without rebuilding the scene.
+        /// </summary>
+        [MenuItem("MyVirtualCommunity/Refresh Remanencia Visual Polish & Ecology (In-Place)")]
+        public static void RefreshRemanenciaVisualPolishAndEcologyAndSave()
+        {
+            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            if (!scene.IsValid())
+            {
+                throw new InvalidOperationException($"Failed to open existing scene at {ScenePath}.");
+            }
+
+            MigrateRemanenciaNorthWingM1InOpenScene(scene);
+            MigrateRemanenciaHotelNarrativeInOpenScene(scene);
+            MigrateRemanenciaEarlyEcologyInOpenScene(scene);
+
+            AssetDatabase.SaveAssets();
+            EditorSceneManager.MarkSceneDirty(scene);
+            if (!EditorSceneManager.SaveScene(scene, ScenePath))
+            {
+                throw new InvalidOperationException($"Failed to save refreshed scene at {ScenePath}.");
+            }
+            Debug.Log($"[BackroomsLevel1Builder] Refreshed North Wing infrastructure, feathered anomaly decals & 3D organic ecology in {ScenePath}.");
+        }
+
+        /// <summary>
+        /// Targeted, idempotent Implementation 07.7 early anomalous ecology migration utility.
+        /// Opens the existing BackroomsLevel1Scene.unity without rebuilding the scene or modifying any
+        /// architecture, elevator, narrative discovery, lighting budget, or progression schema.
+        /// Creates/updates strictly Hotel_Early_Ecology (static non-colliding fungal colonies &
+        /// anomalous vegetation with custom procedural meshes and matte materials) under BackroomsLevel1_Root.
+        /// </summary>
+        [MenuItem("MyVirtualCommunity/Migrate Remanencia Early Ecology (In-Place)")]
+        public static void MigrateRemanenciaEarlyEcologyAndSave()
+        {
+            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            if (!scene.IsValid())
+            {
+                throw new InvalidOperationException($"Failed to open existing scene at {ScenePath}.");
+            }
+
+            MigrateRemanenciaEarlyEcologyInOpenScene(scene);
+            AssetDatabase.SaveAssets();
+            EditorSceneManager.MarkSceneDirty(scene);
+            if (!EditorSceneManager.SaveScene(scene, ScenePath))
+            {
+                throw new InvalidOperationException($"Failed to save migrated scene at {ScenePath}.");
+            }
+            Debug.Log($"[BackroomsLevel1Builder] Remanencia early anomalous ecology (fungi & vegetation) migrated and saved to {ScenePath}.");
+        }
+
+        public static void MigrateRemanenciaEarlyEcologyInOpenScene(UnityEngine.SceneManagement.Scene scene)
+        {
+            if (!scene.IsValid() || !string.Equals(scene.path, ScenePath, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    $"Remanencia early ecology migration requires open scene '{ScenePath}', but found '{scene.path}'.");
+            }
+
+            GameObject root = null;
+            foreach (GameObject go in scene.GetRootGameObjects())
+            {
+                if (go.name == "BackroomsLevel1_Root")
+                {
+                    root = go;
+                    break;
+                }
+            }
+            if (root == null)
+            {
+                throw new InvalidOperationException("BackroomsLevel1_Root not found in open scene.");
+            }
+
+            if (root.transform.Find(HotelNarrativeEvidenceRootName) == null)
+            {
+                throw new InvalidOperationException($"Expected '{HotelNarrativeEvidenceRootName}' under BackroomsLevel1_Root before running 07.7 ecology migration.");
+            }
+
+            BuildOrUpdateHotelEarlyEcology(root.transform);
+        }
+
+        private static void BuildOrUpdateHotelEarlyEcology(Transform backroomsRoot)
+        {
+            // 1. High-resolution 512x512 anatomically shaded procedural textures (ZERO emission, ZERO neon)
+            string mycTex = EnsureDendriticMyceliumTexture("Assets/Textures/Environment/T_Remanencia_Ecology_Mycelium.png");
+            string capTex = EnsureMycologicalShadedAtlasTexture("Assets/Textures/Environment/T_Remanencia_Ecology_FungalCap.png");
+            string leafTex = EnsureVegetalBladeShadedTexture("Assets/Textures/Environment/T_Remanencia_Ecology_VegetalLeaf.png");
+            string rootTex = EnsureVegetalRootBarkTexture("Assets/Textures/Environment/T_Remanencia_Ecology_VegetalRoot.png");
+            AssetDatabase.Refresh();
+
+            ConfigureAlphaDecalTextureImporter(mycTex);
+            ConfigureHighDetailOrganicImporter(capTex);
+            ConfigureHighDetailOrganicImporter(leafTex);
+            ConfigureHighDetailOrganicImporter(rootTex);
+
+            // Dendritic mycelium uses smooth alpha-blending (renderQueue 3005 above damp decals) + 3D raised cords;
+            // fruiting bodies, brackets, roots & foliage use crisp opaque anatomically shaded matte materials (ZERO emission).
+            Material mycMat = CreateAlphaBlendedDecalMat(EcologyMyceliumMatPath, mycTex, Color.white, 0.08f, renderQueue: 3005);
+            Material capMat = CreateOpaqueTexturedMat(EcologyFungalCapMatPath, capTex, Color.white, 0.14f);
+            Material leafMat = CreateOpaqueTexturedMat(EcologyVegetalLeafMatPath, leafTex, Color.white, 0.18f);
+            Material rootMat = CreateOpaqueTexturedMat(EcologyVegetalRootMatPath, rootTex, Color.white, 0.10f);
+
+            // 2. Sculpted reusable organic mesh assets (mycelium +Z normal; clusters/roots/leaves +Y up; brackets +Z outward)
+            Mesh mycMesh = EnsureEcologyMeshAsset(EcologyMyceliumMeshPath, BuildProceduralMyceliumWebMesh);
+            Mesh clusterMesh = EnsureEcologyMeshAsset(EcologyFungalClusterMeshPath, BuildProceduralFungalClusterMesh);
+            Mesh bracketMesh = EnsureEcologyMeshAsset(EcologyFungalBracketMeshPath, BuildProceduralFungalBracketMesh);
+            Mesh rootMesh = EnsureEcologyMeshAsset(EcologyVegetalRootMeshPath, BuildProceduralVegetalRootMesh);
+            Mesh leafMesh = EnsureEcologyMeshAsset(EcologyVegetalLeafMeshPath, BuildProceduralVegetalLeafTuftMesh);
+
+            Transform ecoRoot = EnsureHotelSubgroup(backroomsRoot, HotelEarlyEcologyRootName);
+
+            // =========================================================================
+            // ZONE A — CENTRAL COURTYARD: FIRST VEGETAL EMERGENCE (NorthWing_Courtyard)
+            //   Sculpted gnarled root systems & 22-blade 3D V-channeled sage-agave rosettes
+            //   emerging from concrete joints around the central plinth & colonnade piers.
+            // =========================================================================
+            Transform courtyardEco = EnsureHotelSubgroup(ecoRoot, "Ecology_Courtyard_Vegetation");
+
+            // Plinth West seam beneath Anomaly_CourtyardPlinthResidue (-1.104, BaseY+0.21, 21.82)
+            EnsureOrganicMeshObject(courtyardEco, "Eco_Courtyard_PlinthRootCluster_W", rootMesh, rootMat,
+                new Vector3(-1.32f, BaseY + 0.004f, 21.82f), Quaternion.Euler(0f, 18f, 0f), new Vector3(1.12f, 1.05f, 1.12f));
+            EnsureOrganicMeshObject(courtyardEco, "Eco_Courtyard_PlinthLeafTuft_W", leafMesh, leafMat,
+                new Vector3(-1.26f, BaseY + 0.004f, 21.82f), Quaternion.Euler(0f, 34f, 0f), new Vector3(1.14f, 1.12f, 1.14f));
+
+            // Plinth upper concrete/ceramic rim seam near central drain grate (strictly inside [-1.10, +1.10] plinth top!)
+            EnsureOrganicMeshObject(courtyardEco, "Eco_Courtyard_PlinthTopRoots_NW", rootMesh, rootMat,
+                new Vector3(-0.38f, BaseY + 0.456f, 22.18f), Quaternion.Euler(0f, -48f, 0f), new Vector3(0.54f, 0.56f, 0.54f));
+            EnsureOrganicMeshObject(courtyardEco, "Eco_Courtyard_PlinthTopLeaves_NW", leafMesh, leafMat,
+                new Vector3(-0.38f, BaseY + 0.456f, 22.18f), Quaternion.Euler(0f, 118f, 0f), new Vector3(0.76f, 0.78f, 0.76f));
+
+            // SW Courtyard sightline pier floor joint (pier at (-2.70, 20.30), East face at -2.48)
+            EnsureOrganicMeshObject(courtyardEco, "Eco_Courtyard_PierSW_SeamRoots", rootMesh, rootMat,
+                new Vector3(-2.45f, BaseY + 0.004f, 20.34f), Quaternion.Euler(0f, 28f, 0f), new Vector3(0.92f, 0.90f, 0.92f));
+            EnsureOrganicMeshObject(courtyardEco, "Eco_Courtyard_PierSW_LeafCluster", leafMesh, leafMat,
+                new Vector3(-2.44f, BaseY + 0.004f, 20.34f), Quaternion.Euler(0f, -64f, 0f), new Vector3(0.96f, 0.98f, 0.96f));
+
+            // NE Courtyard corner pier concrete joint (4.85, 25.85)
+            EnsureOrganicMeshObject(courtyardEco, "Eco_Courtyard_CornerNE_SeamRoots", rootMesh, rootMat,
+                new Vector3(4.54f, BaseY + 0.004f, 25.52f), Quaternion.Euler(0f, -138f, 0f), new Vector3(0.88f, 0.88f, 0.88f));
+            EnsureOrganicMeshObject(courtyardEco, "Eco_Courtyard_CornerNE_LeafTuft", leafMesh, leafMat,
+                new Vector3(4.54f, BaseY + 0.004f, 25.52f), Quaternion.Euler(0f, 74f, 0f), new Vector3(0.88f, 0.90f, 0.88f));
+
+            // =========================================================================
+            // ZONE B — MAINTENANCE CORRIDOR: FIRST MYCELIAL COLONIES
+            //   Wall surface X = -8.710 (normal -X -> Euler(0, -90, roll)); floor Y = -50.000
+            //   (normal +Y -> Euler(-90, yaw, 0)). Maintenance Record (Z=22.45, Y=BaseY+1.46) stays 100% clear!
+            // =========================================================================
+            Transform maintEco = EnsureHotelSubgroup(ecoRoot, "Ecology_Maintenance_Mycelium");
+
+            // Dendritic wall mycelium radiating UP along weeping concrete crack (safely below Maintenance Record)
+            EnsureOrganicMeshObject(maintEco, "Eco_Maint_JointMycelium_WallA", mycMesh, mycMat,
+                new Vector3(-8.716f, BaseY + 0.48f, 22.06f), Quaternion.Euler(0f, -90f, 12f), new Vector3(1.12f, 1.02f, 1.0f));
+
+            // Floor dendritic mycelium fan spreading out from the damp under-wall seepage on the West (Maintenance) side
+            EnsureOrganicMeshObject(maintEco, "Eco_Maint_FloorSeepMycelium_W", mycMesh, mycMat,
+                new Vector3(-9.02f, BaseY + 0.005f, 22.22f), Quaternion.Euler(-90f, -22f, 0f), new Vector3(1.26f, 1.14f, 1.0f));
+
+            // Matching dendritic mycelium emerging on the East (West Arcade) side of solid wall X = -8.6
+            EnsureOrganicMeshObject(maintEco, "Eco_Maint_FloorSeepMycelium_E", mycMesh, mycMat,
+                new Vector3(-8.20f, BaseY + 0.005f, 22.22f), Quaternion.Euler(-90f, 158f, 0f), new Vector3(1.04f, 0.96f, 1.0f));
+
+            // Sculpted 15-stem gilled fruiting colony nestled at the damp wall-floor junction + shelf brackets rooted INSIDE crack B
+            EnsureOrganicMeshObject(maintEco, "Eco_Maint_JointBase_FungalCluster", clusterMesh, capMat,
+                new Vector3(-8.86f, BaseY + 0.003f, 22.10f), Quaternion.Euler(0f, -74f, 0f), new Vector3(1.14f, 1.12f, 1.14f));
+            EnsureOrganicMeshObject(maintEco, "Eco_Maint_JointBase_Mycelium", bracketMesh, capMat,
+                new Vector3(-8.711f, BaseY + 0.54f, 22.88f), Quaternion.Euler(0f, -90f, 3f), new Vector3(0.86f, 0.84f, 0.88f));
+
+            // Dendritic mycelium reaching up toward the sheared conduit stub below the Service Breaker Panel (Z = 21.60)
+            EnsureOrganicMeshObject(maintEco, "Eco_Maint_PanelLower_Mycelium", mycMesh, mycMat,
+                new Vector3(-8.716f, BaseY + 0.76f, 21.62f), Quaternion.Euler(0f, -90f, -28f), new Vector3(0.88f, 0.88f, 1.0f));
+
+            // =========================================================================
+            // ZONE C — HOUSEKEEPING / UTILITY AREA: PROTECTED FUNGAL GROWTH
+            //   East-facing wall X = -15.870 (normal +X -> Euler(0, 90, roll)) behind cylindrical
+            //   copper & galvanized risers. Rumor Note (-12.75, BaseY+1.38, 23.27) stays 100% clear!
+            // =========================================================================
+            Transform utilityEco = EnsureHotelSubgroup(ecoRoot, "Ecology_Utility_FungalGrowth");
+
+            EnsureOrganicMeshObject(utilityEco, "Eco_Utility_RiserCorner_ColonyMain", clusterMesh, capMat,
+                new Vector3(-15.52f, BaseY + 0.003f, 18.56f), Quaternion.Euler(0f, 48f, 0f), new Vector3(1.34f, 1.32f, 1.34f));
+            EnsureOrganicMeshObject(utilityEco, "Eco_Utility_RiserCorner_ColonySat", clusterMesh, capMat,
+                new Vector3(-15.60f, BaseY + 0.003f, 18.96f), Quaternion.Euler(0f, 118f, 0f), new Vector3(1.04f, 1.00f, 1.04f));
+            EnsureOrganicMeshObject(utilityEco, "Eco_Utility_RiserFloor_Mycelium", mycMesh, mycMat,
+                new Vector3(-15.46f, BaseY + 0.005f, 18.68f), Quaternion.Euler(-90f, 42f, 0f), new Vector3(1.42f, 1.34f, 1.0f));
+            EnsureOrganicMeshObject(utilityEco, "Eco_Utility_RiserWall_Mycelium", mycMesh, mycMat,
+                new Vector3(-15.862f, BaseY + 0.72f, 18.64f), Quaternion.Euler(0f, 90f, -8f), new Vector3(1.34f, 1.40f, 1.0f));
+
+            // Concentric polypore shelf brackets emerging out (+X) from the concrete wall fissure & wrapping copper riser A!
+            EnsureOrganicMeshObject(utilityEco, "Eco_Utility_WallBracket_Lower", bracketMesh, capMat,
+                new Vector3(-15.868f, BaseY + 0.56f, 18.66f), Quaternion.Euler(0f, 90f, 0f), new Vector3(1.16f, 1.12f, 1.18f));
+            EnsureOrganicMeshObject(utilityEco, "Eco_Utility_WallBracket_Upper", bracketMesh, capMat,
+                new Vector3(-15.735f, BaseY + 0.94f, 18.45f), Quaternion.Euler(0f, 76f, -3f), new Vector3(0.92f, 0.90f, 0.96f));
+
+            // Creeping floor mycelium strictly at floor level (1.38m below Cobalt-60 Rumor Note!)
+            EnsureOrganicMeshObject(utilityEco, "Eco_Utility_NorthBase_Mycelium", mycMesh, mycMat,
+                new Vector3(-12.76f, BaseY + 0.005f, 23.02f), Quaternion.Euler(-90f, 172f, 0f), new Vector3(1.08f, 0.94f, 1.0f));
+
+            // =========================================================================
+            // ZONE D (OPTIONAL SECONDARY TRACE) — ROOM 110 UNFINISHED PLUMBING CHASE
+            //   Crisp dendritic mycelium & small gilled cluster around cylindrical copper riser
+            // =========================================================================
+            Transform guestTrace = EnsureHotelSubgroup(ecoRoot, "Ecology_Optional_GuestRoomTrace");
+
+            EnsureOrganicMeshObject(guestTrace, "Eco_Room110_ChaseRiser_Mycelium", mycMesh, mycMat,
+                new Vector3(-9.28f, BaseY + 0.005f, 33.52f), Quaternion.Euler(-90f, 135f, 0f), new Vector3(1.04f, 0.98f, 1.0f));
+            EnsureOrganicMeshObject(guestTrace, "Eco_Room110_ChaseRiser_FungalSprout", clusterMesh, capMat,
+                new Vector3(-9.30f, BaseY + 0.003f, 33.46f), Quaternion.Euler(0f, 142f, 0f), new Vector3(0.92f, 0.88f, 0.92f));
+        }
+
+        private static GameObject EnsureOrganicMeshObject(
+            Transform parent, string name, Mesh mesh, Material mat, Vector3 worldPos, Quaternion worldRot, Vector3 scale)
+        {
+            Transform existing = parent.Find(name);
+            GameObject go;
+            if (existing != null)
+            {
+                go = existing.gameObject;
+            }
+            else
+            {
+                go = new GameObject(name);
+                go.transform.SetParent(parent, false);
+            }
+            go.transform.position = worldPos;
+            go.transform.rotation = worldRot;
+            go.transform.localScale = scale;
+
+            MeshFilter mf = go.GetComponent<MeshFilter>();
+            if (mf == null) mf = go.AddComponent<MeshFilter>();
+            mf.sharedMesh = mesh;
+
+            MeshRenderer mr = go.GetComponent<MeshRenderer>();
+            if (mr == null) mr = go.AddComponent<MeshRenderer>();
+            mr.sharedMaterial = mat;
+            mr.shadowCastingMode = ShadowCastingMode.Off;
+            mr.receiveShadows = true;
+
+            Collider col = go.GetComponent<Collider>();
+            if (col != null) UnityEngine.Object.DestroyImmediate(col);
+            return go;
+        }
+
+        private static Mesh EnsureEcologyMeshAsset(string assetPath, Func<Mesh> generator)
+        {
+            string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", assetPath));
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+
+            Mesh existing = AssetDatabase.LoadAssetAtPath<Mesh>(assetPath);
+            Mesh built = generator();
+            built.name = Path.GetFileNameWithoutExtension(assetPath);
+            if (existing != null)
+            {
+                existing.Clear();
+                existing.vertices = built.vertices;
+                existing.normals = built.normals;
+                existing.uv = built.uv;
+                existing.triangles = built.triangles;
+                existing.RecalculateBounds();
+                EditorUtility.SetDirty(existing);
+                UnityEngine.Object.DestroyImmediate(built);
+                return existing;
+            }
+
+            AssetDatabase.CreateAsset(built, assetPath);
+            return AssetDatabase.LoadAssetAtPath<Mesh>(assetPath);
+        }
+
+        private static Mesh BuildProceduralMyceliumWebMesh()
+        {
+            // Oriented in local XY with +Z pointing strictly outward from the host surface (clockwise from +Z):
+            //   1) Conformal 1x1 decal quad sampling the 512x512 RGBA asymmetric dendritic hyphal fan texture
+            //   2) 6 sinuous, meandering, ultra-fine 3D rhizomorph cord veins hugging the surface (zero radial spikes!)
+            var verts = new List<Vector3>
+            {
+                new Vector3(-0.5f, -0.5f, 0.001f),
+                new Vector3( 0.5f, -0.5f, 0.001f),
+                new Vector3(-0.5f,  0.5f, 0.001f),
+                new Vector3( 0.5f,  0.5f, 0.001f)
+            };
+            var uvs = new List<Vector2>
+            {
+                new Vector2(0f, 0f),
+                new Vector2(1f, 0f),
+                new Vector2(0f, 1f),
+                new Vector2(1f, 1f)
+            };
+            var tris = new List<int> { 0, 1, 2, 2, 1, 3 };
+
+            var rng = new System.Random(7711);
+            int mainVeins = 6;
+            for (int v = 0; v < mainVeins; v++)
+            {
+                float ang = (v / (float)mainVeins) * Mathf.PI * 2f + (float)(rng.NextDouble() - 0.5) * 0.55f;
+                float len = 0.16f + (float)rng.NextDouble() * 0.14f;
+                var pts = new Vector3[9];
+                var rads = new float[9];
+                Vector2 cur = Vector2.zero;
+                for (int k = 0; k < 9; k++)
+                {
+                    float t = k / 8f;
+                    float reliefZ = Mathf.Lerp(0.005f, 0.001f, t);
+                    pts[k] = new Vector3(cur.x, cur.y, reliefZ);
+                    rads[k] = Mathf.Lerp(0.0042f, 0.0008f, t);
+                    ang += Mathf.Sin(k * 1.4f + v) * 0.36f + (float)(rng.NextDouble() - 0.5) * 0.35f;
+                    cur += new Vector2(Mathf.Cos(ang), Mathf.Sin(ang)) * (len / 8f);
+                }
+                AddCurvedTubeCustomUV(verts, uvs, tris, pts, rads, 5, uvCenter: new Vector2(0.5f, 0.5f));
+            }
+
+            Mesh m = new Mesh();
+            m.SetVertices(verts);
+            m.SetUVs(0, uvs);
+            m.SetTriangles(tris, 0);
+            m.RecalculateNormals();
+            m.RecalculateBounds();
+            return m;
+        }
+
+        private static void AddCurvedTubeCustomUV(
+            List<Vector3> verts, List<Vector2> uvs, List<int> tris, Vector3[] pts, float[] radii, int sides, Vector2 uvCenter)
+        {
+            int ringStart = verts.Count;
+            for (int p = 0; p < pts.Length; p++)
+            {
+                Vector3 tangent = p == 0 ? (pts[1] - pts[0]) : (p == pts.Length - 1 ? (pts[p] - pts[p - 1]) : (pts[p + 1] - pts[p - 1]));
+                tangent = tangent.sqrMagnitude > 1e-6f ? tangent.normalized : Vector3.up;
+                Vector3 upRef = Mathf.Abs(Vector3.Dot(tangent, Vector3.forward)) > 0.92f ? Vector3.up : Vector3.forward;
+                Vector3 right = Vector3.Cross(upRef, tangent).normalized;
+                Vector3 binorm = Vector3.Cross(tangent, right).normalized;
+
+                for (int s = 0; s <= sides; s++)
+                {
+                    float a = (s / (float)sides) * Mathf.PI * 2f;
+                    Vector3 radial = right * Mathf.Cos(a) + binorm * Mathf.Sin(a);
+                    verts.Add(pts[p] + radial * radii[p]);
+                    uvs.Add(uvCenter); // Sample opaque ivory core of dendritic texture
+                }
+            }
+
+            int stride = sides + 1;
+            for (int p = 0; p < pts.Length - 1; p++)
+            {
+                int r0 = ringStart + p * stride;
+                int r1 = ringStart + (p + 1) * stride;
+                for (int s = 0; s < sides; s++)
+                {
+                    tris.Add(r0 + s); tris.Add(r1 + s); tris.Add(r0 + s + 1);
+                    tris.Add(r0 + s + 1); tris.Add(r1 + s); tris.Add(r1 + s + 1);
+                }
+            }
+        }
+
+        private static Mesh BuildProceduralFungalClusterMesh()
+        {
+            var verts = new List<Vector3>();
+            var uvs = new List<Vector2>();
+            var tris = new List<int>();
+
+            // 15 natural multi-tiered fruiting bodies (0.044m emerging primordia up to 0.255m smooth dome/bell caps)
+            (Vector2 off, float height, float capR, Vector2 lean)[] bodies =
+            {
+                (new Vector2( 0.00f,  0.00f), 0.250f, 0.084f, new Vector2( 0.032f,  0.022f)),
+                (new Vector2( 0.11f, -0.05f), 0.202f, 0.070f, new Vector2( 0.048f, -0.028f)),
+                (new Vector2(-0.10f,  0.06f), 0.182f, 0.065f, new Vector2(-0.042f,  0.034f)),
+                (new Vector2(-0.03f, -0.12f), 0.152f, 0.056f, new Vector2(-0.018f, -0.044f)),
+                (new Vector2( 0.07f,  0.11f), 0.140f, 0.052f, new Vector2( 0.030f,  0.042f)),
+                (new Vector2(-0.15f, -0.05f), 0.120f, 0.046f, new Vector2(-0.045f, -0.018f)),
+                (new Vector2( 0.17f,  0.04f), 0.108f, 0.042f, new Vector2( 0.042f,  0.016f)),
+                (new Vector2(-0.08f,  0.16f), 0.094f, 0.038f, new Vector2(-0.024f,  0.038f)),
+                (new Vector2( 0.05f, -0.18f), 0.086f, 0.035f, new Vector2( 0.018f, -0.034f)),
+                (new Vector2( 0.15f, -0.13f), 0.072f, 0.031f, new Vector2( 0.026f, -0.022f)),
+                (new Vector2(-0.18f,  0.09f), 0.066f, 0.029f, new Vector2(-0.030f,  0.020f)),
+                (new Vector2( 0.00f,  0.19f), 0.058f, 0.025f, new Vector2( 0.008f,  0.024f)),
+                (new Vector2(-0.11f, -0.16f), 0.052f, 0.023f, new Vector2(-0.016f, -0.018f)),
+                (new Vector2( 0.21f, -0.02f), 0.046f, 0.021f, new Vector2( 0.020f, -0.006f)),
+                (new Vector2(-0.21f, -0.01f), 0.042f, 0.019f, new Vector2(-0.018f,  0.006f))
+            };
+
+            for (int b = 0; b < bodies.Length; b++)
+            {
+                var item = bodies[b];
+                Vector3 p0 = new Vector3(item.off.x, 0f, item.off.y);
+                Vector3 p1 = p0 + new Vector3(item.lean.x * 0.25f, item.height * 0.32f, item.lean.y * 0.25f);
+                Vector3 p2 = p0 + new Vector3(item.lean.x * 0.72f, item.height * 0.68f, item.lean.y * 0.72f);
+                Vector3 pTop = p0 + new Vector3(item.lean.x, item.height, item.lean.y);
+
+                // Sinuous 10-sided tapered stem mapped to UV v=[0.26..0.54]
+                AddCurvedTubeWithVRange(verts, uvs, tris,
+                    new[] { p0, p1, p2, pTop },
+                    new[] { item.capR * 0.34f, item.capR * 0.21f, item.capR * 0.16f, item.capR * 0.19f },
+                    sides: 10, vStart: 0.26f, vEnd: 0.54f);
+
+                // Smooth 22-sided campanulate/convex dome cap (zero polygonal star spikes!)
+                const int sides = 22;
+                Vector3 capAxis = (pTop - p2).normalized;
+                Quaternion capRot = Quaternion.FromToRotation(Vector3.up, capAxis);
+
+                int centerTop = verts.Count;
+                verts.Add(pTop + capRot * new Vector3(0f, item.capR * 0.48f, 0f));
+                uvs.Add(new Vector2(0.5f, 0.98f));
+
+                int upperDome = verts.Count;
+                for (int i = 0; i <= sides; i++)
+                {
+                    float a = (i / (float)sides) * Mathf.PI * 2f;
+                    float asym = 0.96f + 0.05f * Mathf.Sin(a * 2f + b);
+                    Vector3 local = new Vector3(Mathf.Cos(a) * item.capR * 0.44f * asym, item.capR * 0.40f, Mathf.Sin(a) * item.capR * 0.44f * asym);
+                    verts.Add(pTop + capRot * local);
+                    uvs.Add(new Vector2((float)i / sides, 0.86f));
+                }
+
+                int midDome = verts.Count;
+                for (int i = 0; i <= sides; i++)
+                {
+                    float a = (i / (float)sides) * Mathf.PI * 2f;
+                    float asym = 0.94f + 0.06f * Mathf.Sin(a * 2f + b * 1.3f) + 0.03f * Mathf.Cos(a * 3f - b);
+                    Vector3 local = new Vector3(Mathf.Cos(a) * item.capR * 0.80f * asym, item.capR * 0.22f, Mathf.Sin(a) * item.capR * 0.80f * asym);
+                    verts.Add(pTop + capRot * local);
+                    uvs.Add(new Vector2((float)i / sides, 0.73f));
+                }
+
+                int outerRim = verts.Count;
+                for (int i = 0; i <= sides; i++)
+                {
+                    float a = (i / (float)sides) * Mathf.PI * 2f;
+                    float wave = 0.93f + 0.07f * Mathf.Sin(a * 2f + b * 1.3f) + 0.035f * Mathf.Sin(a * 5f + b);
+                    float rOut = item.capR * wave;
+                    float yOut = item.capR * (-0.02f + 0.035f * Mathf.Cos(a * 3f + b));
+                    verts.Add(pTop + capRot * new Vector3(Mathf.Cos(a) * rOut, yOut, Mathf.Sin(a) * rOut));
+                    uvs.Add(new Vector2((float)i / sides, 0.60f));
+                }
+
+                // Underside gill rim & recessed dark gill hub (v = 0.22 -> 0.04)
+                int gillRim = verts.Count;
+                for (int i = 0; i <= sides; i++)
+                {
+                    float a = (i / (float)sides) * Mathf.PI * 2f;
+                    float wave = 0.92f + 0.07f * Mathf.Sin(a * 2f + b * 1.3f);
+                    float rOut = item.capR * wave * 0.94f;
+                    float pleatY = ((i % 2 == 0) ? -0.02f : -0.045f) * item.capR;
+                    verts.Add(pTop + capRot * new Vector3(Mathf.Cos(a) * rOut, pleatY, Mathf.Sin(a) * rOut));
+                    uvs.Add(new Vector2((float)i / sides, 0.22f));
+                }
+                int gillCenter = verts.Count;
+                verts.Add(pTop + capRot * new Vector3(0f, item.capR * 0.08f, 0f));
+                uvs.Add(new Vector2(0.5f, 0.05f));
+
+                for (int i = 0; i < sides; i++)
+                {
+                    tris.Add(centerTop); tris.Add(upperDome + i + 1); tris.Add(upperDome + i);
+
+                    tris.Add(upperDome + i); tris.Add(upperDome + i + 1); tris.Add(midDome + i);
+                    tris.Add(midDome + i);   tris.Add(upperDome + i + 1); tris.Add(midDome + i + 1);
+
+                    tris.Add(midDome + i);   tris.Add(midDome + i + 1);   tris.Add(outerRim + i);
+                    tris.Add(outerRim + i);  tris.Add(midDome + i + 1);   tris.Add(outerRim + i + 1);
+
+                    tris.Add(outerRim + i);  tris.Add(outerRim + i + 1);  tris.Add(gillRim + i);
+                    tris.Add(gillRim + i);   tris.Add(outerRim + i + 1);  tris.Add(gillRim + i + 1);
+
+                    tris.Add(gillCenter);    tris.Add(gillRim + i);       tris.Add(gillRim + i + 1);
+                }
+            }
+
+            Mesh m = new Mesh();
+            m.SetVertices(verts);
+            m.SetUVs(0, uvs);
+            m.SetTriangles(tris, 0);
+            m.RecalculateNormals();
+            m.RecalculateBounds();
+            return m;
+        }
+
+        private static Mesh BuildProceduralFungalBracketMesh()
+        {
+            var verts = new List<Vector3>();
+            var uvs = new List<Vector2>();
+            var tris = new List<int>();
+
+            // 7 fleshy, smooth kidney/oyster polypore shelf brackets embedded -0.015m into wall seam & projecting along +Z
+            (Vector3 off, float radiusX, float depthZ, float thickY, float tiltZ)[] shelves =
+            {
+                (new Vector3( 0.00f,  0.00f, -0.015f), 0.160f, 0.145f, 0.032f,  0f),
+                (new Vector3(-0.07f,  0.055f, -0.015f), 0.125f, 0.112f, 0.025f,  5f),
+                (new Vector3( 0.08f, -0.050f, -0.015f), 0.132f, 0.118f, 0.026f, -4f),
+                (new Vector3(-0.03f, -0.105f, -0.015f), 0.105f, 0.094f, 0.021f,  3f),
+                (new Vector3( 0.04f,  0.108f, -0.015f), 0.096f, 0.086f, 0.020f, -6f),
+                (new Vector3(-0.11f, -0.025f, -0.015f), 0.082f, 0.074f, 0.018f,  7f),
+                (new Vector3( 0.11f,  0.045f, -0.015f), 0.076f, 0.068f, 0.017f, -7f)
+            };
+
+            const int rings = 4;
+            const int segs = 20;
+            for (int s = 0; s < shelves.Length; s++)
+            {
+                var sh = shelves[s];
+                Quaternion tilt = Quaternion.Euler(0f, 0f, sh.tiltZ);
+
+                int topGridStart = verts.Count;
+                for (int r = 0; r <= rings; r++)
+                {
+                    float tr = (float)r / rings;
+                    float vCoord = Mathf.Lerp(0.97f, 0.60f, tr);
+                    float archY = sh.thickY * Mathf.Cos(tr * Mathf.PI * 0.45f);
+                    for (int i = 0; i <= segs; i++)
+                    {
+                        float ti = (float)i / segs;
+                        float a = Mathf.Lerp(-Mathf.PI * 0.48f, Mathf.PI * 0.48f, ti);
+                        // Smooth organic oyster/polypore kidney margin (zero jagged sawtooth!)
+                        float smoothLobe = 1f + tr * (0.09f * Mathf.Sin(ti * Mathf.PI * 3f + s * 1.4f) + 0.04f * Mathf.Cos(ti * Mathf.PI * 5f - s));
+                        Vector3 local = new Vector3(
+                            Mathf.Sin(a) * sh.radiusX * tr * smoothLobe,
+                            archY + tr * Mathf.Sin(ti * Mathf.PI * 2f + s) * 0.006f,
+                            Mathf.Cos(a) * sh.depthZ * tr * smoothLobe);
+                        verts.Add(sh.off + tilt * local);
+                        uvs.Add(new Vector2(ti, vCoord));
+                    }
+                }
+
+                int stride = segs + 1;
+                for (int r = 0; r < rings; r++)
+                {
+                    int r0 = topGridStart + r * stride;
+                    int r1 = topGridStart + (r + 1) * stride;
+                    for (int i = 0; i < segs; i++)
+                    {
+                        tris.Add(r0 + i); tris.Add(r0 + i + 1); tris.Add(r1 + i);
+                        tris.Add(r1 + i); tris.Add(r0 + i + 1); tris.Add(r1 + i + 1);
+                    }
+                }
+
+                // Dark pored/gilled underside fan (v: 0.05..0.22)
+                int botRoot = verts.Count;
+                verts.Add(sh.off + tilt * new Vector3(0f, -sh.thickY * 1.15f, 0.004f));
+                uvs.Add(new Vector2(0.5f, 0.05f));
+                int botRim = verts.Count;
+                int outerTopRow = topGridStart + rings * stride;
+                for (int i = 0; i <= segs; i++)
+                {
+                    Vector3 topPt = verts[outerTopRow + i];
+                    verts.Add(topPt - new Vector3(0f, sh.thickY * 0.35f, 0f));
+                    uvs.Add(new Vector2((float)i / segs, 0.22f));
+                }
+                for (int i = 0; i < segs; i++)
+                {
+                    // Lip connect
+                    tris.Add(outerTopRow + i); tris.Add(outerTopRow + i + 1); tris.Add(botRim + i);
+                    tris.Add(botRim + i); tris.Add(outerTopRow + i + 1); tris.Add(botRim + i + 1);
+                    // Underside fan
+                    tris.Add(botRoot); tris.Add(botRim + i + 1); tris.Add(botRim + i);
+                }
+            }
+
+            Mesh m = new Mesh();
+            m.SetVertices(verts);
+            m.SetUVs(0, uvs);
+            m.SetTriangles(tris, 0);
+            m.RecalculateNormals();
+            m.RecalculateBounds();
+            return m;
+        }
+
+        private static Mesh BuildProceduralVegetalRootMesh()
+        {
+            var verts = new List<Vector3>();
+            var uvs = new List<Vector2>();
+            var tris = new List<int>();
+            var rng = new System.Random(7744);
+
+            // 8 gnarled woody-mineral primary roots hugging the slab and dipping cleanly INTO concrete joints (-0.004m at tip)
+            for (int r = 0; r < 8; r++)
+            {
+                float ang = (r / 8f) * Mathf.PI * 2f + (float)(rng.NextDouble() - 0.5) * 0.32f;
+                float len = 0.38f + (float)rng.NextDouble() * 0.30f;
+                var pts = new Vector3[7];
+                var rads = new float[7];
+                Vector3 p = new Vector3(0f, 0.016f, 0f);
+                for (int k = 0; k < 7; k++)
+                {
+                    float t = k / 6f;
+                    float gnarlH = Mathf.Sin(t * Mathf.PI * 2f + r) * 0.007f * (1f - t) + Mathf.Lerp(0.016f, -0.004f, t);
+                    pts[k] = new Vector3(p.x, gnarlH, p.z);
+                    rads[k] = Mathf.Lerp(0.020f, 0.0028f, t);
+                    if (k == 3)
+                    {
+                        float fAng = ang + (r % 2 == 0 ? 0.62f : -0.62f);
+                        Vector3 fp = pts[k];
+                        var fPts = new Vector3[4];
+                        var fRads = new float[4];
+                        for (int fk = 0; fk < 4; fk++)
+                        {
+                            float ft = fk / 3f;
+                            fPts[fk] = new Vector3(fp.x, Mathf.Lerp(pts[k].y, -0.004f, ft), fp.z);
+                            fRads[fk] = Mathf.Lerp(rads[k] * 0.78f, 0.0018f, ft);
+                            fAng += (float)(rng.NextDouble() - 0.5) * 0.4f;
+                            fp += new Vector3(Mathf.Cos(fAng), 0f, Mathf.Sin(fAng)) * (len * 0.15f);
+                        }
+                        AddCurvedTubeWithVRange(verts, uvs, tris, fPts, fRads, 6, 0.35f, 0.95f);
+                    }
+                    ang += (float)(rng.NextDouble() - 0.5) * 0.46f;
+                    p += new Vector3(Mathf.Cos(ang), 0f, Mathf.Sin(ang)) * (len / 6f);
+                }
+                AddCurvedTubeWithVRange(verts, uvs, tris, pts, rads, 7, 0.05f, 0.95f);
+            }
+
+            Mesh m = new Mesh();
+            m.SetVertices(verts);
+            m.SetUVs(0, uvs);
+            m.SetTriangles(tris, 0);
+            m.RecalculateNormals();
+            m.RecalculateBounds();
+            return m;
+        }
+
+        private static Mesh BuildProceduralVegetalLeafTuftMesh()
+        {
+            var verts = new List<Vector3>();
+            var uvs = new List<Vector2>();
+            var tris = new List<int>();
+            var rng = new System.Random(7755);
+
+            // 26 sculpted 3D V-folded lanceolate desert-sage / concrete-crevice rosette blades in 4 natural tiers (zero blunt sticks!)
+            (int count, float minH, float maxH, float minReach, float maxReach, float bladeW)[] tiers =
+            {
+                (5,  0.38f, 0.52f, 0.04f, 0.10f, 0.020f), // Tall central finely-pointed spear blades
+                (6,  0.30f, 0.44f, 0.10f, 0.18f, 0.027f), // Inner upright spear blades
+                (7,  0.22f, 0.35f, 0.18f, 0.28f, 0.032f), // Mid arching rosette blades
+                (8,  0.12f, 0.23f, 0.26f, 0.38f, 0.028f)  // Outer spreading weathered blades
+            };
+
+            int globalIdx = 0;
+            foreach (var tier in tiers)
+            {
+                for (int s = 0; s < tier.count; s++)
+                {
+                    float ang = (s / (float)tier.count) * Mathf.PI * 2f + globalIdx * 0.37f + (float)(rng.NextDouble() - 0.5) * 0.24f;
+                    float height = Mathf.Lerp(tier.minH, tier.maxH, (float)rng.NextDouble());
+                    float reach = Mathf.Lerp(tier.minReach, tier.maxReach, (float)rng.NextDouble());
+
+                    Vector3 dir = new Vector3(Mathf.Cos(ang), 0f, Mathf.Sin(ang));
+                    Vector3 side = new Vector3(-dir.z, 0f, dir.x);
+                    Vector3 baseOff = dir * 0.015f + Vector3.up * 0.012f;
+
+                    int baseVert = verts.Count;
+                    const int segs = 6;
+                    for (int k = 0; k <= segs; k++)
+                    {
+                        float t = (float)k / segs;
+                        float wProfile = Mathf.Sin(Mathf.Pow(t, 0.78f) * Mathf.PI) * tier.bladeW + (1f - t) * 0.005f;
+                        float rDist = t * reach + t * t * reach * 0.32f;
+                        float yPos = t * height - t * t * t * height * 0.28f;
+                        Vector3 center = baseOff + dir * rDist + Vector3.up * yPos;
+                        Vector3 foldLift = Vector3.up * (wProfile * 0.38f);
+
+                        verts.Add(center - side * wProfile + foldLift);
+                        verts.Add(center);
+                        verts.Add(center + side * wProfile + foldLift);
+
+                        uvs.Add(new Vector2(0f, t));
+                        uvs.Add(new Vector2(0.5f, t));
+                        uvs.Add(new Vector2(1f, t));
+
+                        if (k > 0)
+                        {
+                            int r0 = baseVert + (k - 1) * 3;
+                            int r1 = baseVert + k * 3;
+                            tris.Add(r0);     tris.Add(r1);     tris.Add(r0 + 1);
+                            tris.Add(r0 + 1); tris.Add(r1);     tris.Add(r1 + 1);
+                            tris.Add(r0 + 1); tris.Add(r1 + 1); tris.Add(r0 + 2);
+                            tris.Add(r0 + 2); tris.Add(r1 + 1); tris.Add(r1 + 2);
+
+                            tris.Add(r0);     tris.Add(r0 + 1); tris.Add(r1);
+                            tris.Add(r0 + 1); tris.Add(r1 + 1); tris.Add(r1);
+                            tris.Add(r0 + 1); tris.Add(r0 + 2); tris.Add(r1 + 1);
+                            tris.Add(r0 + 2); tris.Add(r1 + 2); tris.Add(r1 + 1);
+                        }
+                    }
+                    globalIdx++;
+                }
+            }
+
+            Mesh m = new Mesh();
+            m.SetVertices(verts);
+            m.SetUVs(0, uvs);
+            m.SetTriangles(tris, 0);
+            m.RecalculateNormals();
+            m.RecalculateBounds();
+            return m;
+        }
+
+        private static void AddCurvedTube(
+            List<Vector3> verts, List<Vector2> uvs, List<int> tris, Vector3[] pts, float[] radii, int sides)
+        {
+            AddCurvedTubeWithVRange(verts, uvs, tris, pts, radii, sides, 0f, 1f);
+        }
+
+        private static void AddCurvedTubeWithVRange(
+            List<Vector3> verts, List<Vector2> uvs, List<int> tris, Vector3[] pts, float[] radii, int sides, float vStart, float vEnd)
+        {
+            int ringStart = verts.Count;
+            for (int p = 0; p < pts.Length; p++)
+            {
+                Vector3 tangent = p == 0 ? (pts[1] - pts[0]) : (p == pts.Length - 1 ? (pts[p] - pts[p - 1]) : (pts[p + 1] - pts[p - 1]));
+                tangent = tangent.sqrMagnitude > 1e-6f ? tangent.normalized : Vector3.up;
+                Vector3 upRef = Mathf.Abs(Vector3.Dot(tangent, Vector3.up)) > 0.92f ? Vector3.forward : Vector3.up;
+                Vector3 right = Vector3.Cross(upRef, tangent).normalized;
+                Vector3 binorm = Vector3.Cross(tangent, right).normalized;
+
+                float vCoord = Mathf.Lerp(vStart, vEnd, (float)p / Mathf.Max(1, pts.Length - 1));
+                for (int s = 0; s <= sides; s++)
+                {
+                    float a = (s / (float)sides) * Mathf.PI * 2f;
+                    Vector3 radial = right * Mathf.Cos(a) + binorm * Mathf.Sin(a);
+                    verts.Add(pts[p] + radial * radii[p]);
+                    uvs.Add(new Vector2((float)s / sides, vCoord));
+                }
+            }
+
+            int stride = sides + 1;
+            for (int p = 0; p < pts.Length - 1; p++)
+            {
+                int r0 = ringStart + p * stride;
+                int r1 = ringStart + (p + 1) * stride;
+                for (int s = 0; s < sides; s++)
+                {
+                    tris.Add(r0 + s); tris.Add(r1 + s); tris.Add(r0 + s + 1);
+                    tris.Add(r0 + s + 1); tris.Add(r1 + s); tris.Add(r1 + s + 1);
+                }
+            }
+        }
+
+        private static string EnsureDendriticMyceliumTexture(string assetPath)
+        {
+            string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", assetPath));
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+            const int size = 512;
+            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            float[,] density = new float[size, size];
+            var rng = new System.Random(8831);
+
+            // Recursive dendritic hyphal tree painter (organic curved forks & lacy fan tips, zero border)
+            void DrawBranch(Vector2 p, float angle, float len, float startRadius, int depth)
+            {
+                int steps = Mathf.Max(8, Mathf.CeilToInt(len * 1.4f));
+                Vector2 cur = p;
+                float curAng = angle;
+                for (int i = 0; i <= steps; i++)
+                {
+                    float t = (float)i / steps;
+                    float rad = Mathf.Lerp(startRadius, Mathf.Max(0.85f, startRadius * 0.28f), t);
+                    int ir = Mathf.CeilToInt(rad + 1.5f);
+                    int cx = Mathf.RoundToInt(cur.x);
+                    int cy = Mathf.RoundToInt(cur.y);
+                    for (int dy = -ir; dy <= ir; dy++)
+                    {
+                        int py = cy + dy;
+                        if (py < 8 || py >= size - 8) continue;
+                        for (int dx = -ir; dx <= ir; dx++)
+                        {
+                            int px = cx + dx;
+                            if (px < 8 || px >= size - 8) continue;
+                            float d = Mathf.Sqrt((px - cur.x) * (px - cur.x) + (py - cur.y) * (py - cur.y));
+                            float val = Mathf.Clamp01(1.15f - d / rad);
+                            if (val > density[px, py]) density[px, py] = val;
+                        }
+                    }
+
+                    curAng += (float)(rng.NextDouble() - 0.5) * 0.16f;
+                    cur += new Vector2(Mathf.Cos(curAng), Mathf.Sin(curAng)) * (len / steps);
+
+                    if (depth > 0 && (i == steps / 3 || i == (steps * 2) / 3 || i == steps - 1))
+                    {
+                        float spread = 0.34f + (float)rng.NextDouble() * 0.38f;
+                        DrawBranch(cur, curAng + spread, len * 0.62f, rad * 0.76f, depth - 1);
+                        if (rng.NextDouble() > 0.22)
+                        {
+                            DrawBranch(cur, curAng - spread * 0.92f, len * 0.58f, rad * 0.72f, depth - 1);
+                        }
+                    }
+                }
+            }
+
+            Vector2 center = new Vector2(size * 0.5f, size * 0.5f);
+            int primaryBranches = 15;
+            for (int b = 0; b < primaryBranches; b++)
+            {
+                float a = (b / (float)primaryBranches) * Mathf.PI * 2f + (float)(rng.NextDouble() - 0.5) * 0.34f;
+                // Asymmetric lobate reach so mycelium fans irregularly instead of forming a circular pancake!
+                float lobeMod = 0.55f + 0.45f * Mathf.Sin(a * 3f + 0.8f) * Mathf.Cos(a * 2f - 0.5f);
+                float len = size * (0.14f + lobeMod * 0.24f);
+                DrawBranch(center, a, len, 4.2f, depth: 3);
+            }
+
+            for (int y = 0; y < size; y++)
+            {
+                float v = (float)y / (size - 1);
+                for (int x = 0; x < size; x++)
+                {
+                    float u = (float)x / (size - 1);
+                    float dx = (u - 0.5f) * 2f;
+                    float dy = (v - 0.5f) * 2f;
+                    float r = Mathf.Sqrt(dx * dx + dy * dy);
+                    float ang = Mathf.Atan2(dy, dx);
+                    float lobeGuard = 0.68f + 0.24f * Mathf.Sin(ang * 3f + 0.8f) * Mathf.Cos(ang * 2f - 0.5f);
+                    float borderGuard = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((Mathf.Min(0.93f, lobeGuard) - r) / 0.18f));
+                    float fbm = PeriodicFbm(u * 2f, v * 2f, 8, 8, 3, 8832);
+                    float coreWeb = Mathf.Clamp01((0.15f - r) / 0.14f) * (0.50f + 0.50f * fbm);
+
+                    float d = Mathf.Max(density[x, y], coreWeb) * borderGuard;
+                    Color darkEdge = new Color(0.36f, 0.34f, 0.29f);
+                    Color ivoryCore = new Color(0.92f, 0.90f, 0.84f);
+                    Color rgb = Color.Lerp(darkEdge, ivoryCore, Mathf.SmoothStep(0.12f, 0.82f, d));
+                    float alpha = Mathf.Clamp01(d * 1.02f);
+                    tex.SetPixel(x, y, new Color(rgb.r, rgb.g, rgb.b, alpha));
+                }
+            }
+            tex.Apply();
+            File.WriteAllBytes(fullPath, tex.EncodeToPNG());
+            UnityEngine.Object.DestroyImmediate(tex);
+            return assetPath;
+        }
+
+        private static string EnsureMycologicalShadedAtlasTexture(string assetPath)
+        {
+            string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", assetPath));
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+            const int size = 512;
+            Texture2D tex = new Texture2D(size, size, TextureFormat.RGB24, false);
+
+            for (int y = 0; y < size; y++)
+            {
+                float v = (float)y / (size - 1);
+                for (int x = 0; x < size; x++)
+                {
+                    float u = (float)x / (size - 1);
+                    float fbm = PeriodicFbm(u, v, 8, 8, 4, 8841);
+                    float fine = (PeriodicHash(x, y, size, size, 8842) - 0.5f) * 0.045f;
+                    Color c;
+
+                    if (v < 0.25f)
+                    {
+                        // Zone 1: Radially pleated dark sepia-umber gill/pore underside
+                        float t = v / 0.25f;
+                        float gillPleat = 0.5f + 0.5f * Mathf.Cos(u * Mathf.PI * 2f * 44f);
+                        Color deepShadow = new Color(0.11f, 0.09f, 0.08f);
+                        Color gillEdge = new Color(0.48f, 0.43f, 0.36f);
+                        c = Color.Lerp(deepShadow, gillEdge, gillPleat * (0.35f + 0.65f * t));
+                    }
+                    else if (v < 0.56f)
+                    {
+                        // Zone 2: Curved fibrous stalk (dark earthy attachment -> striated bone-ivory neck)
+                        float t = (v - 0.25f) / 0.31f;
+                        float fiber = 0.5f + 0.5f * Mathf.Sin((u * 28f + fbm * 1.5f) * Mathf.PI * 2f);
+                        Color stalkBase = new Color(0.24f, 0.20f, 0.16f);
+                        Color stalkTop = new Color(0.86f, 0.83f, 0.76f);
+                        c = Color.Lerp(stalkBase, stalkTop, Mathf.SmoothStep(0f, 1f, t));
+                        c *= (0.90f + 0.14f * fiber);
+                    }
+                    else
+                    {
+                        // Zone 3: Smooth organic cap & polypore shelf (creamy ivory rim -> warm ochre-umber central umbo, subtle radial silkiness)
+                        float t = (v - 0.56f) / 0.44f; // 0 at outer rim, 1 at center crown
+                        float radialSilk = 0.5f + 0.5f * Mathf.Sin((u * 38f + fbm * 1.2f) * Mathf.PI * 2f);
+                        float softGrowth = 0.5f + 0.5f * Mathf.Sin((t * 2.5f + fbm * 0.9f) * Mathf.PI * 2f);
+                        Color brightRim = new Color(0.92f, 0.89f, 0.82f);
+                        Color midParchment = new Color(0.76f, 0.70f, 0.60f);
+                        Color centerUmbo = new Color(0.45f, 0.37f, 0.28f);
+                        Color baseGrad = t < 0.58f
+                            ? Color.Lerp(brightRim, midParchment, Mathf.SmoothStep(0f, 1f, t / 0.58f))
+                            : Color.Lerp(midParchment, centerUmbo, Mathf.SmoothStep(0f, 1f, (t - 0.58f) / 0.42f));
+                        c = baseGrad * (0.94f + 0.08f * radialSilk) * (0.94f + 0.08f * softGrowth) * (0.93f + 0.12f * fbm);
+                    }
+
+                    tex.SetPixel(x, y, new Color(
+                        Mathf.Clamp01(c.r + fine),
+                        Mathf.Clamp01(c.g + fine),
+                        Mathf.Clamp01(c.b + fine)));
+                }
+            }
+            tex.Apply();
+            File.WriteAllBytes(fullPath, tex.EncodeToPNG());
+            UnityEngine.Object.DestroyImmediate(tex);
+            return assetPath;
+        }
+
+        private static string EnsureVegetalBladeShadedTexture(string assetPath)
+        {
+            string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", assetPath));
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+            const int size = 512;
+            Texture2D tex = new Texture2D(size, size, TextureFormat.RGB24, false);
+
+            for (int y = 0; y < size; y++)
+            {
+                float v = (float)y / (size - 1);
+                for (int x = 0; x < size; x++)
+                {
+                    float u = (float)x / (size - 1);
+                    float fbm = PeriodicFbm(u * 2f, v * 2f, 6, 6, 3, 8851);
+                    float vein = 0.5f + 0.5f * Mathf.Sin(u * Mathf.PI * 24f);
+
+                    // Dark olive-umber base (AO) -> dusty desert sage mid -> pale silvery mineral-sage tip
+                    Color baseAO = new Color(0.18f, 0.21f, 0.17f);
+                    Color midSage = new Color(0.48f, 0.56f, 0.46f);
+                    Color tipSilver = new Color(0.76f, 0.81f, 0.73f);
+                    Color grad = v < 0.45f
+                        ? Color.Lerp(baseAO, midSage, v / 0.45f)
+                        : Color.Lerp(midSage, tipSilver, (v - 0.45f) / 0.55f);
+
+                    // Crisp pale margin & subtle central V-fold shadow for unmistakable 3D blade definition
+                    float centerDist = Mathf.Abs(u - 0.5f) * 2f; // 0 at midrib, 1 at edge
+                    float foldShade = Mathf.Lerp(0.76f, 1.12f, Mathf.Pow(centerDist, 0.7f));
+                    Color c = grad * foldShade * (0.92f + 0.10f * vein) * (0.93f + 0.12f * fbm);
+                    tex.SetPixel(x, y, new Color(Mathf.Clamp01(c.r), Mathf.Clamp01(c.g), Mathf.Clamp01(c.b)));
+                }
+            }
+            tex.Apply();
+            File.WriteAllBytes(fullPath, tex.EncodeToPNG());
+            UnityEngine.Object.DestroyImmediate(tex);
+            return assetPath;
+        }
+
+        private static string EnsureVegetalRootBarkTexture(string assetPath)
+        {
+            string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", assetPath));
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+            const int size = 512;
+            Texture2D tex = new Texture2D(size, size, TextureFormat.RGB24, false);
+
+            for (int y = 0; y < size; y++)
+            {
+                float v = (float)y / (size - 1);
+                for (int x = 0; x < size; x++)
+                {
+                    float u = (float)x / (size - 1);
+                    float fbm = PeriodicFbm(u * 3f, v * 2f, 8, 6, 4, 8861);
+                    float barkGroove = 0.5f + 0.5f * Mathf.Sin((u * 18f + fbm * 2.4f) * Mathf.PI * 2f);
+                    // Circumferential top-lit highlight vs underside contact shadow so cylindrical roots pop in 3D
+                    float circumLight = 0.55f + 0.45f * Mathf.Sin(u * Mathf.PI);
+                    Color darkBark = new Color(0.20f, 0.17f, 0.14f);
+                    Color dryMineralWood = new Color(0.60f, 0.55f, 0.47f);
+                    Color c = Color.Lerp(darkBark, dryMineralWood, circumLight * (0.45f + 0.55f * barkGroove)) * (0.90f + 0.16f * fbm);
+                    tex.SetPixel(x, y, new Color(Mathf.Clamp01(c.r), Mathf.Clamp01(c.g), Mathf.Clamp01(c.b)));
+                }
+            }
+            tex.Apply();
+            File.WriteAllBytes(fullPath, tex.EncodeToPNG());
+            UnityEngine.Object.DestroyImmediate(tex);
+            return assetPath;
+        }
+
+
         private static string EnsureEvidenceRoomRegisterTexture(string assetPath)
         {
             string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", assetPath));
@@ -2521,6 +3688,7 @@ namespace MyVirtualCommunity.Editor
             return assetPath;
         }
 
+
         private static string EnsureEvidenceMaintenanceLogTexture(string assetPath)
         {
             string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", assetPath));
@@ -2559,6 +3727,7 @@ namespace MyVirtualCommunity.Editor
             UnityEngine.Object.DestroyImmediate(tex);
             return assetPath;
         }
+
 
         private static string EnsureEvidenceCobaltRumorNoteTexture(string assetPath)
         {
@@ -2601,6 +3770,7 @@ namespace MyVirtualCommunity.Editor
             UnityEngine.Object.DestroyImmediate(tex);
             return assetPath;
         }
+
 
         /// <summary>
         /// Unity's built-in PrimitiveType.Cube renders upright UVs on its local +Z face (while its -Z face
@@ -3132,6 +4302,7 @@ namespace MyVirtualCommunity.Editor
             return assetPath;
         }
 
+
         private static string EnsureArchitecturalSignTexture(
             string assetPath, int w, int h, string line1, string line2, bool darkBronzeStyle, bool weatheredIncomplete, bool fadeLastChar = false)
         {
@@ -3192,6 +4363,7 @@ namespace MyVirtualCommunity.Editor
             UnityEngine.Object.DestroyImmediate(tex);
             return assetPath;
         }
+
 
         private static bool ContainsSpanishAccent(string text)
         {
@@ -3344,6 +4516,12 @@ namespace MyVirtualCommunity.Editor
             Transform envRoot = hotelRoot != null ? hotelRoot.Find(HotelEnvironmentalIdentityRootName) : null;
             Transform northWingRoot = shell.Find(NorthWingM1RootName);
             Transform narrativeRoot = root.transform.Find(HotelNarrativeEvidenceRootName);
+            Transform ecologyRoot = root.transform.Find(HotelEarlyEcologyRootName);
+            bool hasEarlyEcology = ecologyRoot != null &&
+                                   ecologyRoot.Find("Ecology_Courtyard_Vegetation") != null &&
+                                   ecologyRoot.Find("Ecology_Maintenance_Mycelium") != null &&
+                                   ecologyRoot.Find("Ecology_Utility_FungalGrowth") != null &&
+                                   ecologyRoot.Find("Ecology_Optional_GuestRoomTrace") != null;
             bool hasNarrativeLayer = narrativeRoot != null &&
                                      narrativeRoot.Find("Hotel_Evidence_UnfinishedProjectPlan") != null &&
                                      narrativeRoot.Find("Hotel_Evidence_RoomRegistrationRecord") != null &&
@@ -3379,7 +4557,8 @@ namespace MyVirtualCommunity.Editor
                                      envRoot.Find("Hotel_Infra_Structural") != null &&
                                      envRoot.Find("Hotel_Room_Variations") != null &&
                                      hasNorthWing &&
-                                     hasNarrativeLayer;
+                                     hasNarrativeLayer &&
+                                     hasEarlyEcology;
 
             int retainedWallCount = 0, pillarCount = 0, missingVoidCount = 0, crookedHatchCount = 0;
             for (int i = 0; i < shell.childCount; i++)
@@ -4511,6 +5690,7 @@ namespace MyVirtualCommunity.Editor
             return assetPath;
         }
 
+
         private static string EnsureLaptopMysteryScreenTexture(string assetPath)
         {
             string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", assetPath));
@@ -4556,6 +5736,7 @@ namespace MyVirtualCommunity.Editor
             return assetPath;
         }
 
+
         private static string EnsureBorderTerminalScreenTexture(string assetPath)
         {
             string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", assetPath));
@@ -4584,6 +5765,7 @@ namespace MyVirtualCommunity.Editor
             UnityEngine.Object.DestroyImmediate(tex);
             return assetPath;
         }
+
 
         // =====================================================================
         // SEAMLESS PERIODIC NOISE & REMANENCIA NIVEL 0 ARCHITECTURAL TEXTURES
@@ -4722,6 +5904,7 @@ namespace MyVirtualCommunity.Editor
             return assetPath;
         }
 
+
         /// <summary>
         /// Generates T_Remanencia_Level0_PlasterWall.png: weathered off-white and muted faded terracotta
         /// northern Mexican stucco plaster interrupted mid-finish, exposing patches of raw cement blockwork.
@@ -4777,6 +5960,7 @@ namespace MyVirtualCommunity.Editor
             UnityEngine.Object.DestroyImmediate(tex);
             return assetPath;
         }
+
 
         /// <summary>
         /// Generates T_Remanencia_Level0_ConcreteColumn.png: reinforced cast-concrete structural column
@@ -4840,6 +6024,7 @@ namespace MyVirtualCommunity.Editor
             UnityEngine.Object.DestroyImmediate(tex);
             return assetPath;
         }
+
 
         /// <summary>
         /// Re-authors T_Backrooms_DampCarpet.png (preserving filename & GUID) as an unfinished
@@ -4935,6 +6120,7 @@ namespace MyVirtualCommunity.Editor
             return assetPath;
         }
 
+
         /// <summary>
         /// Re-authors T_Backrooms_CeilingGrid.png (preserving filename & GUID) as an exposed
         /// cast-concrete structural soffit with coffered beam transitions, plywood formwork seams,
@@ -5019,6 +6205,7 @@ namespace MyVirtualCommunity.Editor
             UnityEngine.Object.DestroyImmediate(tex);
             return assetPath;
         }
+
 
         private static GameObject CreateBox(string name, Transform parent, Vector3 localPos, Vector3 localScale, Material mat, bool keepCollider)
         {
@@ -5109,6 +6296,175 @@ namespace MyVirtualCommunity.Editor
             if (mat.HasProperty("_EmissionColor")) { mat.EnableKeyword("_EMISSION"); mat.SetColor("_EmissionColor", emissionColor); }
             EditorUtility.SetDirty(mat);
             return mat;
+        }
+
+        private static void ConfigureAlphaDecalTextureImporter(string assetPath)
+        {
+            TextureImporter imp = AssetImporter.GetAtPath(assetPath) as TextureImporter;
+            if (imp == null) return;
+            imp.textureType = TextureImporterType.Default;
+            imp.sRGBTexture = true;
+            imp.alphaSource = TextureImporterAlphaSource.FromInput;
+            imp.alphaIsTransparency = true;
+            imp.mipmapEnabled = true;
+            imp.wrapMode = TextureWrapMode.Clamp;
+            imp.filterMode = FilterMode.Bilinear;
+            imp.maxTextureSize = 512;
+            imp.textureCompression = TextureImporterCompression.Uncompressed;
+            imp.SaveAndReimport();
+        }
+
+        private static void ConfigureHighDetailOrganicImporter(string assetPath)
+        {
+            TextureImporter imp = AssetImporter.GetAtPath(assetPath) as TextureImporter;
+            if (imp == null) return;
+            imp.textureType = TextureImporterType.Default;
+            imp.sRGBTexture = true;
+            imp.mipmapEnabled = true;
+            imp.wrapMode = TextureWrapMode.Clamp;
+            imp.filterMode = FilterMode.Bilinear;
+            imp.maxTextureSize = 512;
+            imp.textureCompression = TextureImporterCompression.Uncompressed;
+            imp.SaveAndReimport();
+        }
+
+        private static Material CreateAlphaBlendedDecalMat(string assetPath, string texPath, Color tint, float smoothness, int renderQueue = 3000)
+        {
+            Material mat = CreateTexturedMat(assetPath, texPath, tint, smoothness, Vector2.one);
+            if (mat.HasProperty("_Surface")) mat.SetFloat("_Surface", 1f);
+            if (mat.HasProperty("_Blend")) mat.SetFloat("_Blend", 0f);
+            if (mat.HasProperty("_AlphaClip")) mat.SetFloat("_AlphaClip", 0f);
+            if (mat.HasProperty("_SrcBlend")) mat.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
+            if (mat.HasProperty("_DstBlend")) mat.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
+            if (mat.HasProperty("_SrcBlendAlpha")) mat.SetFloat("_SrcBlendAlpha", (float)BlendMode.One);
+            if (mat.HasProperty("_DstBlendAlpha")) mat.SetFloat("_DstBlendAlpha", (float)BlendMode.OneMinusSrcAlpha);
+            if (mat.HasProperty("_ZWrite")) mat.SetFloat("_ZWrite", 0f);
+            if (mat.HasProperty("_Cull")) mat.SetFloat("_Cull", (float)CullMode.Off);
+            if (mat.HasProperty("_BlendModePreserveSpecular")) mat.SetFloat("_BlendModePreserveSpecular", 0f);
+            if (mat.HasProperty("_SpecularHighlights")) mat.SetFloat("_SpecularHighlights", 0f);
+            if (mat.HasProperty("_EnvironmentReflections")) mat.SetFloat("_EnvironmentReflections", 0f);
+            mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            mat.EnableKeyword("_SPECULARHIGHLIGHTS_OFF");
+            mat.EnableKeyword("_ENVIRONMENTREFLECTIONS_OFF");
+            mat.DisableKeyword("_ALPHATEST_ON");
+            mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+            mat.DisableKeyword("_EMISSION");
+            mat.SetOverrideTag("RenderType", "Transparent");
+            mat.renderQueue = renderQueue;
+            EditorUtility.SetDirty(mat);
+            return mat;
+        }
+
+        private static Material CreateOpaqueTexturedMat(string assetPath, string texPath, Color tint, float smoothness)
+        {
+            Material mat = CreateTexturedMat(assetPath, texPath, tint, smoothness, Vector2.one);
+            if (mat.HasProperty("_Surface")) mat.SetFloat("_Surface", 0f);
+            if (mat.HasProperty("_AlphaClip")) mat.SetFloat("_AlphaClip", 0f);
+            if (mat.HasProperty("_SrcBlend")) mat.SetFloat("_SrcBlend", (float)BlendMode.One);
+            if (mat.HasProperty("_DstBlend")) mat.SetFloat("_DstBlend", (float)BlendMode.Zero);
+            if (mat.HasProperty("_ZWrite")) mat.SetFloat("_ZWrite", 1f);
+            if (mat.HasProperty("_Cull")) mat.SetFloat("_Cull", (float)CullMode.Off);
+            if (mat.HasProperty("_SpecularHighlights")) mat.SetFloat("_SpecularHighlights", 1f);
+            mat.DisableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            mat.DisableKeyword("_ALPHATEST_ON");
+            mat.DisableKeyword("_SPECULARHIGHLIGHTS_OFF");
+            mat.DisableKeyword("_EMISSION");
+            mat.SetOverrideTag("RenderType", "Opaque");
+            mat.renderQueue = -1;
+            EditorUtility.SetDirty(mat);
+            return mat;
+        }
+
+        /// <summary>
+        /// Editor verification utility: renders 4 actual URP PlayMode-equivalent camera views
+        /// (with exact Remanencia Level 0 ambient light & exponential-squared fog) to PNG files
+        /// without modifying or saving the scene.
+        /// </summary>
+        public static void RenderEcologyVerificationViews()
+        {
+            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            if (!scene.IsValid())
+            {
+                throw new InvalidOperationException($"Could not open {ScenePath} for camera verification.");
+            }
+
+            string outDir = Environment.GetEnvironmentVariable("MVC_ECOLOGY_RENDER_DIR");
+            if (string.IsNullOrWhiteSpace(outDir))
+            {
+                outDir = Path.Combine(Path.GetTempPath(), "MVC_EcologyRenders");
+            }
+            Directory.CreateDirectory(outDir);
+
+            AmbientMode prevAmbMode = RenderSettings.ambientMode;
+            Color prevAmbLight = RenderSettings.ambientLight;
+            bool prevFog = RenderSettings.fog;
+            FogMode prevFogMode = RenderSettings.fogMode;
+            Color prevFogColor = RenderSettings.fogColor;
+            float prevFogDensity = RenderSettings.fogDensity;
+            Material prevSkybox = RenderSettings.skybox;
+
+            GameObject camGo = new GameObject("__TempEcologyVerifyCam__");
+            RenderTexture rt = new RenderTexture(1280, 720, 24, RenderTextureFormat.ARGB32);
+            Texture2D readTex = new Texture2D(1280, 720, TextureFormat.RGB24, false);
+
+            try
+            {
+                RenderSettings.skybox = null;
+                RenderSettings.ambientMode = AmbientMode.Flat;
+                RenderSettings.ambientLight = SecretBackroomsTransitionController.RemanenciaLevel0AmbientLight;
+                RenderSettings.fog = true;
+                RenderSettings.fogMode = FogMode.ExponentialSquared;
+                RenderSettings.fogColor = SecretBackroomsTransitionController.RemanenciaLevel0FogColor;
+                RenderSettings.fogDensity = SecretBackroomsTransitionController.RemanenciaLevel0FogDensity;
+
+                Camera cam = camGo.AddComponent<Camera>();
+                cam.clearFlags = CameraClearFlags.SolidColor;
+                cam.backgroundColor = SecretBackroomsTransitionController.RemanenciaLevel0FogColor;
+                cam.fieldOfView = 60f;
+                cam.nearClipPlane = 0.05f;
+                cam.farClipPlane = 60f;
+                cam.targetTexture = rt;
+
+                (string fileName, Vector3 pos, Vector3 lookAt)[] shots =
+                {
+                    ("verify_zoneB_maint.png",     new Vector3(-10.65f, BaseY + 1.42f, 22.12f), new Vector3( -8.72f, BaseY + 0.78f, 22.05f)),
+                    ("verify_zoneC_utility.png",   new Vector3(-13.85f, BaseY + 1.42f, 20.30f), new Vector3(-15.70f, BaseY + 0.72f, 18.65f)),
+                    ("verify_zoneA_courtyard.png", new Vector3( -2.85f, BaseY + 1.18f, 22.85f), new Vector3( -1.15f, BaseY + 0.32f, 21.75f)),
+                    ("verify_zoneD_room110.png",   new Vector3( -8.35f, BaseY + 1.10f, 32.35f), new Vector3( -9.32f, BaseY + 0.35f, 33.54f))
+                };
+
+                foreach (var shot in shots)
+                {
+                    cam.transform.position = shot.pos;
+                    cam.transform.LookAt(shot.lookAt, Vector3.up);
+                    cam.Render();
+
+                    RenderTexture.active = rt;
+                    readTex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+                    readTex.Apply();
+                    RenderTexture.active = null;
+
+                    string fullFile = Path.Combine(outDir, shot.fileName);
+                    File.WriteAllBytes(fullFile, readTex.EncodeToPNG());
+                    Debug.Log($"[BackroomsLevel1Builder] Rendered camera verification view: {fullFile}");
+                }
+            }
+            finally
+            {
+                RenderTexture.active = null;
+                UnityEngine.Object.DestroyImmediate(camGo);
+                rt.Release();
+                UnityEngine.Object.DestroyImmediate(rt);
+                UnityEngine.Object.DestroyImmediate(readTex);
+
+                RenderSettings.skybox = prevSkybox;
+                RenderSettings.ambientMode = prevAmbMode;
+                RenderSettings.ambientLight = prevAmbLight;
+                RenderSettings.fog = prevFog;
+                RenderSettings.fogMode = prevFogMode;
+                RenderSettings.fogColor = prevFogColor;
+                RenderSettings.fogDensity = prevFogDensity;
+            }
         }
     }
 }
