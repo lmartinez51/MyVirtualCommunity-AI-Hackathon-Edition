@@ -208,3 +208,28 @@ The following remain **100% protected and unmodified** in 07.16 design (and, exc
 - Rooms `101–110` and Room 110 ecological Zone D (`Eco_Room110_ChaseRiser_*`).
 - Room 111-B (`Hotel_Room111B_Anomaly`, `Hotel_Room111B_GuestInterior`), concealed East Wing passage, and **Threshold of Trust** (`Room111B_Threshold_TriggerVolume`, sole authorized in-world exit `"threshold-of-trust"`).
 - All 07.6 narrative clues, 07.7 early ecology, 07.8 faunal traces, 07.9 living microfauna, entry-only hotel door (`Backrooms_ExitDoor_ToStreet`, silent proximity prompt), both surface entry routes, save schema (`schemaVersion == 1`), journal, and `BorderCorridorScene.unity` (`SHA-256: 0CFB32080F4ED9C30FAA513BB21C9BB48ADBA9C60B27FABABFAD5E64318DB42B`).
+
+
+---
+
+## 13. Implementation 07.17 — As-Built North Upper Gallery *(IMPLEMENTED IN 07.17)*
+
+Following creator approval of **Alternative 1**, Implementation 07.17 physically constructed the first controlled fragment — the **North Upper Gallery** (`BackroomsLevel1_Root/Backrooms_Architecture/Hotel_NorthUpperGallery`) — via the dedicated, idempotent Editor builder `NorthUpperGalleryBuilder.MigrateNorthUpperGalleryAndSave()`, while explicitly deferring the Courtyard Lightwell Overlook, East Overhang, room numbering/signage, and Twin Elevator Core.
+
+### A. Final As-Built Coordinates & Measurements *(VERIFIED IN 07.17)*
+
+| Element | As-Built Coordinates / Dimensions (`VERIFIED`) | Status / Notes |
+| :--- | :--- | :--- |
+| **Authorized East Opening** | `X = -9.600`, `Z ∈ [+30.280, +32.320]` (`2.040 m` clear width, centered `Z = +31.300`), `Y ∈ [-46.400, -44.160]` (`2.240 m` clear height) | Preserves `NWStair_UpperShell_WallEast` (`GO=2109824158`) in-place as South pier (`Z ∈ [+28.67, +30.28]`) and retains `SealedEastFrameS/N/Top` (`GO=1635426459 / 1149530410 / 939874756`) verbatim. |
+| **Opening-to-Gallery Widening** | Symmetrical `0.48 m` structural concrete reveal shoulders (`NUGallery_Portal_EastPilasterS/N` + overhead lintel + flush threshold plate) | Smooth, credible hotel corridor widening from `2.04 m` portal to `3.00 m` gallery with zero collision snagging. |
+| **Gallery Walkable Interior** | `X ∈ [-9.490, +15.870]` (`25.360 m` clear length), `Z ∈ [+29.800, +32.800]` (**`3.000 m` clear width**, centered `Z = +31.300`) | Continuous level concrete floor at `Y = -46.400 m` (`0.000 m` lip from 07.15 Upper Landing). |
+| **Floor & Ceiling Slabs** | `NUGallery_FloorSlab` (`Y ∈ [-46.600, -46.400]`, `0.20 m` thick) & `NUGallery_CeilingSlab` (`Y ∈ [-43.550, -43.350]`, `0.20 m` thick) | `2.850 m` clear headroom throughout gallery (`+0.348 m` clean plenum above `NorthWing_CeilingSlab_North` `Y_top = -46.948 m`). |
+| **North & South Walls** | `NUGallery_WallNorth` (`Z = +32.910`, `t = 0.22 m`) & `NUGallery_WallSouth` (`Z = +29.690`, `t = 0.22 m`, outer face `Z = +29.580`) | **`+3.280 m` clear North** of protected `NorthWing_Lightwell_SkylightCap` (`Z_max = +26.300`); zero overlap with Lightwell. |
+| **Sealed Eastern Terminal** | `NUGallery_TerminalWall_East` (`X = +16.000`, `t = 0.26 m`, inner face `X = +15.870`, `BoxCollider=True`) + `NUGallery_Terminal_SealedFrameS/N/Top` + terminated conduit drop | Aligned strictly with `NorthWing_OuterWall_East` (`X = +16.000`); zero passage, zero East Overhang. |
+| **Architectural Details & Lighting** | 5 structural pilaster/beam bays, 2 unnumbered sealed North wall recesses (raw concrete & weathered plaster contrast), 1 sealed South structural relief, off-axis floor expansion seam, overhead conduit, and **4 emissive-only utility strips (`mats.UtilityWarmOn`)** | **Zero** added Unity `Light` components (exact `18` scene lights, `LightShadows.None`); zero room numbers/signage; zero runtime scripts. |
+
+### B. Explicitly Deferred Features & Remaining Dependencies *(DEFERRED TO 07.18+)*
+- **Courtyard Lightwell Overlook (`DEFERRED`):** `NorthWing_Lightwell_WallN/S/E/W` and `NorthWing_Lightwell_SkylightCap` remain 100% untouched behind solid `NUGallery_WallSouth` (`+3.28 m` clearance).
+- **East Overhang (`DEFERRED`):** Gallery stops solidly at `X = +16.000` (`NUGallery_TerminalWall_East`).
+- **Twin Elevator Core (`DEFERRED`):** `Hotel_Elevator_Core` (`35` children) remains 100% untouched.
+- **PlayMode Lighting Check (`PENDING MANUAL REVIEW`):** Emissive-only utility strips maintain the strict `18`-light budget; live PlayMode review should confirm corridor readability with and without flashlight `[F]`.

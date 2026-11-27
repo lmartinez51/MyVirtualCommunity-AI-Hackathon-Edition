@@ -498,12 +498,18 @@ namespace MyVirtualCommunity.Editor
             float wallH = UpperCeilingSoffitY - wallBotY;             // 3.60f
             float wallMidY = wallBotY + wallH * 0.5f;                 // -45.35f
 
+            // When Implementation 07.17 (Hotel_NorthUpperGallery) is installed, preserve the
+            // authorized East opening (Z in [30.28, 32.32]) by retaining WallEast & BaseboardEast as the South pier.
+            bool hasNorthUpperGallery = group.parent != null &&
+                                        group.parent.parent != null &&
+                                        group.parent.parent.Find(BackroomsLevel1Builder.NorthUpperGalleryRootName) != null;
+
             EnsureBox(group, "NWStair_UpperShell_WallWest",
                 new Vector3(EnvelopeMinX, wallMidY, 31.40f), Quaternion.identity,
                 new Vector3(0.26f, wallH, 5.46f), mats.WallConcrete, keepCollider: true);
             EnsureBox(group, "NWStair_UpperShell_WallEast",
-                new Vector3(EnvelopeMaxX, wallMidY, 31.40f), Quaternion.identity,
-                new Vector3(0.22f, wallH, 5.46f), mats.WallConcrete, keepCollider: true);
+                new Vector3(EnvelopeMaxX, wallMidY, hasNorthUpperGallery ? NorthUpperGalleryBuilder.TrimmedEastWallSouthCenterZ : 31.40f), Quaternion.identity,
+                new Vector3(0.22f, wallH, hasNorthUpperGallery ? NorthUpperGalleryBuilder.TrimmedEastWallSouthLengthZ : 5.46f), mats.WallConcrete, keepCollider: true);
             EnsureBox(group, "NWStair_UpperShell_WallNorth",
                 new Vector3(-12.80f, wallMidY, EnvelopeMaxZ), Quaternion.identity,
                 new Vector3(6.66f, wallH, 0.26f), mats.WallConcrete, keepCollider: true);
@@ -513,8 +519,8 @@ namespace MyVirtualCommunity.Editor
 
             // Upper landing concrete baseboards (non-colliding)
             EnsureBox(group, "NWStair_UpperShell_BaseboardEast",
-                new Vector3(ClearMaxX - 0.01f, UpperLandingY + 0.06f, bayCenterZ), Quaternion.identity,
-                new Vector3(0.03f, 0.12f, bayWidthZ), mats.BaseboardConcrete, keepCollider: false);
+                new Vector3(ClearMaxX - 0.01f, UpperLandingY + 0.06f, hasNorthUpperGallery ? NorthUpperGalleryBuilder.TrimmedEastBaseboardSouthCenterZ : bayCenterZ), Quaternion.identity,
+                new Vector3(0.03f, 0.12f, hasNorthUpperGallery ? NorthUpperGalleryBuilder.TrimmedEastBaseboardSouthLengthZ : bayWidthZ), mats.BaseboardConcrete, keepCollider: false);
             EnsureBox(group, "NWStair_UpperShell_BaseboardNorth",
                 new Vector3(upperCenterX, UpperLandingY + 0.06f, ClearMaxZ - 0.01f), Quaternion.identity,
                 new Vector3(UpperLandingDepth, 0.12f, 0.03f), mats.BaseboardConcrete, keepCollider: false);

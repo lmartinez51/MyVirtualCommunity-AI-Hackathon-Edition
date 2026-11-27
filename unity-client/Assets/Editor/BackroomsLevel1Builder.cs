@@ -107,6 +107,7 @@ namespace MyVirtualCommunity.Editor
         public const string HotelRoom111BRootName = "Hotel_Room111B_Anomaly";
         public const string HotelRoom111BGuestInteriorRootName = "Hotel_Room111B_GuestInterior";
         public const string NorthwestServiceStaircaseRootName = "Hotel_NorthwestServiceStaircase";
+        public const string NorthUpperGalleryRootName = "Hotel_NorthUpperGallery";
         public const string RoomPlaque111BTexPath = "Assets/Textures/Environment/T_Remanencia_RoomPlaque_111B.png";
         public const string RoomPlaque111BMatPath = "Assets/Settings/Remanencia_Level0_RoomPlaque_111B.mat";
 
@@ -6070,7 +6071,8 @@ namespace MyVirtualCommunity.Editor
                                      hasFirstLivingMicrofauna &&
                                      hasRoom111B &&
                                      hasRoom111BInterior &&
-                                     NorthwestServiceStaircaseBuilder.VerifyStructurePresent(shell);
+                                     NorthwestServiceStaircaseBuilder.VerifyStructurePresent(shell) &&
+                                     NorthUpperGalleryBuilder.VerifyStructurePresent(shell);
 
             int retainedWallCount = 0, pillarCount = 0, missingVoidCount = 0, crookedHatchCount = 0;
             for (int i = 0; i < shell.childCount; i++)

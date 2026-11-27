@@ -254,10 +254,23 @@ namespace MyVirtualCommunity.Editor
                 Assert.IsTrue(IsPlayerCapsuleClearAt(new Vector3(p.x, fy, p.y)), $"Blocking collision on upper landing at ({p.x:F2}, {p.y:F2}).");
             }
 
-            // Sealed perimeter walls on Upper Landing (East, North, South, West shaft enclosure, plus West well parapets)
+            // Sealed perimeter walls on Upper Landing (North, South, West solid; East wall solid unless 07.17 Gallery opens Z in [30.28, 32.32])
             float uEyeY = -46.40f + 1.20f;
-            Assert.IsTrue(Physics.Linecast(new Vector3(-10.70f, uEyeY, 31.30f), new Vector3(-9.00f, uEyeY, 31.30f), ~0, QueryTriggerInteraction.Ignore),
-                "Upper landing East wall must be solid (sealed).");
+            bool hasNorthUpperGallery = GameObject.Find(BackroomsLevel1Builder.NorthUpperGalleryRootName) != null;
+            if (hasNorthUpperGallery)
+            {
+                Assert.IsFalse(Physics.Linecast(new Vector3(-10.70f, uEyeY, 31.30f), new Vector3(-9.00f, uEyeY, 31.30f), ~0, QueryTriggerInteraction.Ignore),
+                    "Authorized 07.17 East opening at Z=31.30 must be traversable.");
+                Assert.IsTrue(Physics.Linecast(new Vector3(-10.70f, uEyeY, 29.50f), new Vector3(-9.00f, uEyeY, 29.50f), ~0, QueryTriggerInteraction.Ignore),
+                    "Upper landing East wall South pier must remain solid.");
+                Assert.IsTrue(Physics.Linecast(new Vector3(-10.70f, uEyeY, 33.10f), new Vector3(-9.00f, uEyeY, 33.10f), ~0, QueryTriggerInteraction.Ignore),
+                    "Upper landing East wall North pier must remain solid.");
+            }
+            else
+            {
+                Assert.IsTrue(Physics.Linecast(new Vector3(-10.70f, uEyeY, 31.30f), new Vector3(-9.00f, uEyeY, 31.30f), ~0, QueryTriggerInteraction.Ignore),
+                    "Upper landing East wall must be solid (sealed).");
+            }
             Assert.IsTrue(Physics.Linecast(new Vector3(-10.70f, uEyeY, 32.80f), new Vector3(-10.70f, uEyeY, 34.60f), ~0, QueryTriggerInteraction.Ignore),
                 "Upper landing North wall must be solid (sealed).");
             Assert.IsTrue(Physics.Linecast(new Vector3(-10.70f, uEyeY, 29.80f), new Vector3(-10.70f, uEyeY, 28.20f), ~0, QueryTriggerInteraction.Ignore),
