@@ -156,8 +156,24 @@ namespace MyVirtualCommunity.Editor
                 {
                     Assert.IsTrue(Physics.Linecast(new Vector3(x, eyeY, 31.30f), new Vector3(x, eyeY, 33.40f), ~0, QueryTriggerInteraction.Ignore),
                         $"Gallery North wall gap detected at X={x:F2}.");
-                    Assert.IsTrue(Physics.Linecast(new Vector3(x, eyeY, 31.30f), new Vector3(x, eyeY, 29.20f), ~0, QueryTriggerInteraction.Ignore),
-                        $"Gallery South wall gap detected at X={x:F2}.");
+
+                    bool insideAuthorizedOverlookBay =
+                        shell.Find(CourtyardLightwellOverlookBuilder.RootName) != null &&
+                        x > CourtyardLightwellOverlookBuilder.OpeningMinX + 0.10f &&
+                        x < CourtyardLightwellOverlookBuilder.OpeningMaxX - 0.10f;
+
+                    if (insideAuthorizedOverlookBay)
+                    {
+                        Assert.IsFalse(Physics.Linecast(new Vector3(x, eyeY, 31.30f), new Vector3(x, eyeY, 29.20f), ~0, QueryTriggerInteraction.Ignore),
+                            $"Authorized 07.19 single-bay South opening should be open at X={x:F2}.");
+                        Assert.IsTrue(Physics.Linecast(new Vector3(x, eyeY, 31.30f), new Vector3(x, eyeY, 26.80f), ~0, QueryTriggerInteraction.Ignore),
+                            $"Overlook South barrier must seal the authorized opening at X={x:F2}.");
+                    }
+                    else
+                    {
+                        Assert.IsTrue(Physics.Linecast(new Vector3(x, eyeY, 31.30f), new Vector3(x, eyeY, 29.20f), ~0, QueryTriggerInteraction.Ignore),
+                            $"Gallery South wall gap detected at X={x:F2}.");
+                    }
                 }
             }
 

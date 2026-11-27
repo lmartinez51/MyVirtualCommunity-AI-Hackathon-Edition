@@ -108,6 +108,8 @@ namespace MyVirtualCommunity.Editor
         public const string HotelRoom111BGuestInteriorRootName = "Hotel_Room111B_GuestInterior";
         public const string NorthwestServiceStaircaseRootName = "Hotel_NorthwestServiceStaircase";
         public const string NorthUpperGalleryRootName = "Hotel_NorthUpperGallery";
+        public const string CourtyardLightwellOverlookRootName = "Hotel_CourtyardLightwellOverlook";
+        public const string OverlookSafetyGlassMatPath = "Assets/Settings/Remanencia_Level0_OverlookSafetyGlass.mat";
         public const string RoomPlaque111BTexPath = "Assets/Textures/Environment/T_Remanencia_RoomPlaque_111B.png";
         public const string RoomPlaque111BMatPath = "Assets/Settings/Remanencia_Level0_RoomPlaque_111B.mat";
 
@@ -6072,7 +6074,8 @@ namespace MyVirtualCommunity.Editor
                                      hasRoom111B &&
                                      hasRoom111BInterior &&
                                      NorthwestServiceStaircaseBuilder.VerifyStructurePresent(shell) &&
-                                     NorthUpperGalleryBuilder.VerifyStructurePresent(shell);
+                                     NorthUpperGalleryBuilder.VerifyStructurePresent(shell) &&
+                                     CourtyardLightwellOverlookBuilder.VerifyStructurePresent(shell);
 
             int retainedWallCount = 0, pillarCount = 0, missingVoidCount = 0, crookedHatchCount = 0;
             for (int i = 0; i < shell.childCount; i++)

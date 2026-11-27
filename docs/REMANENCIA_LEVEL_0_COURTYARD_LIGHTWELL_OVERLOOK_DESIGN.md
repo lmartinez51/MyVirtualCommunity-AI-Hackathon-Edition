@@ -372,3 +372,51 @@ All of the following remained **100% untouched** during 07.18 and remain **stric
 2. **Symmetric Twin-Bay vs. Single-Bay Framing (`UNRESOLVED`):** Confirm **Single-Bay (`X ∈ [-4.46, +0.06]`, `4.52 m` wide, zero pilasters removed, reveals both NW & NE skylight corners)** vs. expanding symmetrically across both bays (`X ∈ [-4.46, +4.86]`, keeping `PilasterSouth_1` as a central concrete pier). *(Single-Bay is recommended for restraint and minimal footprint.)*
 3. **Lighting Policy (`UNRESOLVED`):** Confirm keeping exact **`18` Unity `Light` components** for 07.19 (default — emissive `LightwellDiffuser` contrast + flat ambient + optional `[F]` flashlight), deferring any `1`-light cool skylight bounce light (`18 → 19`) to 07.20 PlayMode evaluation.
 4. **Chamber Wall Finish Contrast (`UNRESOLVED`):** Confirm using darker raw structural concrete (`Remanencia_Level0_ConcreteColumn.mat`, linear ambient `0.134`) for the passive enclosing upper skylight chamber walls and ceiling soffit so `NorthWing_Lightwell_WallN` (`0.168`) and `SkylightCap` (`0.609`) stand out cleanly against the chamber background even without added Unity lights.
+
+
+---
+
+## 15. Implementation 07.19 — As-Built Courtyard Lightwell Overlook *(IMPLEMENTED IN 07.19)*
+
+Following creator approval of **Alternative C — Single-Bay Framed Architectural Observation with a `+0.540 m` Three-Step Viewing Dais** under the strict **compact construction scope constraint** (explicitly excluding the earlier 07.18 `156 m²` full-lightwell enclosing chamber), Implementation 07.19 constructed `BackroomsLevel1_Root/Backrooms_Architecture/Hotel_CourtyardLightwellOverlook` via the dedicated, idempotent Editor builder `CourtyardLightwellOverlookBuilder.MigrateCourtyardLightwellOverlookAndSave()`.
+
+### A. Final As-Built Geometry & Dimensions *(VERIFIED IN 07.19)*
+
+| Element | As-Built Coordinates / Dimensions (`VERIFIED`) | Differences vs. 07.18 Proposal / Implementation Notes |
+| :--- | :--- | :--- |
+| **Authorized Gallery South Opening** | `X ∈ [-4.460, +0.060]` (**`4.520 m` clear width**, centered `X = -2.200`), `Y ∈ [-46.400, -43.550]` (`2.850 m` clear height) | `NUGallery_WallSouth` (`GO=997392960`) and `NUGallery_BaseboardSouth` (`GO=891342187`) preserved in-place as East segments (`X ∈ [+0.060, +16.130]` / `[+0.060, +15.870]`); West segments built under `Overlook_GalleryTransition`; 07.17 `SealedSouthRelief_L/R/Top` replaced by proud `5 mm` concrete portal reveals (`Overlook_Portal_RevealW/E/Top`, zero Z-fighting) & flush metal threshold plate. **All 5 pilasters (`PilasterSouth_0..4`), all 5 ceiling beams (`CeilingBeam_0..4`), and all 4 emissive strips (`StripTube_0..3`) preserved untouched.** |
+| **Three-Step Concrete Ascent** | `3` visible poured-concrete steps (`Overlook_Dais_Step_01..03` + `StepNosing_01..03`) spanning `Z ∈ [+28.740, +29.580]`, `X ∈ [-4.460, +0.060]` | Exact `0.180 m` risers (`-46.220`, `-46.040`, `-45.860`), exact `0.280 m` treads, `0.840 m` horizontal run (`32.735°` nominal slope), monolithic concrete mass extending to `Y = -46.600 m` (`+0.348 m` clean plenum above `NorthWing_CeilingSlab_North`). Uses 1:1 solid `BoxCollider`s on each step (`0.180 m < 0.300 m stepOffset`) — zero floating, zero penetration, verified end-to-end with `CharacterController.Move()`. |
+| **Raised Viewing Dais** | `Overlook_Dais_PlatformSlab`: `X ∈ [-4.460, +0.060]`, `Z ∈ [+27.400, +28.740]` (`4.520 m × 1.340 m`), top **`Y = -45.860 m`** (`+0.540 m` above gallery floor) | Grounded `CharacterController` pivot `Y = -45.820 m` (`+0.040 m skinWidth`); **actual standing eye height `Y_eye = -44.220 m`** (**`+0.420 m` above `SkylightCap` top `-44.640 m`**). |
+| **Compact Local Enclosure & Baseline Ceiling** | `Overlook_SideWall_West` (`X ∈ [-4.680, -4.460]`), `Overlook_SideWall_East` (`X ∈ [+0.060, +0.280]`), `Overlook_CeilingSlab` (`X ∈ [-4.680, +0.280], Z ∈ [+27.200, +29.580]`, soffit **`Y = -43.550 m`**) | **Compact scope strictly enforced:** Rejected the 07.18 `156 m²` Lightwell chamber and kept baseline gallery ceiling elevation `Y = -43.550 m` (`2.310 m` clear headroom over dais; `+52.2°` upward window sightline clears skylight with `54.6°` margin — zero ceiling raise needed). |
+| **Solid Concrete Parapet** | `Overlook_Parapet_Concrete`: `X ∈ [-4.460, +0.060]`, `Z ∈ [+27.200, +27.400]` (`0.200 m` thick), `Y ∈ [-46.600, -44.810]` (`1.050 m` above dais) + `Overlook_Parapet_SteelSill` (`Y ∈ [-44.810, -44.770]`) | Real colliding barrier (`+0.900 m` clear North of `SkylightCap` `Z = +26.300`, `+1.020 m` clear North of `WallN` `Z = +26.180`). Occludes the inaccessible `1.02 m` gap floor from normal dais standing positions. |
+| **Visible Transparent Glass Safety Barrier** | `Overlook_SafetyGlass_Panel_0/1/2` (`Z ∈ [+27.288, +27.312]`, `Y ∈ [-44.770, -43.610]`, `1.160 m` tall × `4.314 m` total glazed width) framed by `Overlook_GlassFrame_JambW/E`, `Header`, `BottomChannel`, and 2 slim vertical `Mullion_0/1` (`0.048 m` wide) | Uses dedicated localized URP Transparent material `Assets/Settings/Remanencia_Level0_OverlookSafetyGlass.mat` (`_Surface = 1`, `_BaseColor = (0.56, 0.64, 0.69, 0.20)`, `_Smoothness = 0.88`, `_Metallic = 0.06`, `RenderType = Transparent`, `renderQueue = 3000`). **Each visible glass panel & steel frame member carries its own gap-free aligned solid `BoxCollider` — zero unexplained invisible wall.** |
+
+### B. Exact New Walkable vs. Non-Walkable Surface Areas *(VERIFIED IN 07.19)*
+- **Total New Walkable Area:** **`9.854 m²`** (`3.797 m²` 3-step stairs `[4.520 × 0.840 m]` + `6.057 m²` level raised viewing dais `[4.520 × 1.340 m]`).
+- **Total New Compact Enclosure Footprint (Plan Area Outside Gallery, `Z ∈ [+27.200, +29.580]`, `X ∈ [-4.680, +0.280]`):** **`11.805 m²`** (`4.960 m × 2.380 m`, matching `Overlook_CeilingSlab` — **`7.6%`** of the rejected `156 m²` chamber!).
+- **New Non-Walkable Vertical Enclosure Surface Areas:**
+  - `Overlook_SideWall_West` + `Overlook_SideWall_East` elevation faces: **`14.518 m²`** (`2 × 2.380 × 3.050 m`)
+  - `Overlook_Parapet_Concrete` elevation face: **`8.091 m²`** (`4.520 × 1.790 m`)
+  - `Overlook_SafetyGlass_Panel_0/1/2` glazed area: **`5.004 m²`** (`4.314 × 1.160 m`)
+
+### C. Measured As-Built Skylight Sightlines *(VERIFIED ON FINAL SCENE)*
+Measured directly via 3D ray-intersection against the final saved `BackroomsLevel1Scene.unity` (`SHA-256: 565B9CE20A3E9511DF7924D1CB1C98F2EC251FC052EE472DA9DAD8F5CF3E2089`, tracing through transparent `Overlook_SafetyGlass_Panel_*` and accounting for actual opaque mullions, jambs, parapet, and ceiling):
+
+| Standing Position (`Y_eye`) | `SkylightCap` Total | `SkylightCap` `Y+` Glowing Roof | `SkylightCap` `Z+` North Edge | `Lightwell_WallN` | Mullions |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Foot of 3 Steps** (`X=-2.20, Y=-44.760, Z=30.00`, yaw `180°`) | `0.00%` | `0.00%` | `0.00%` | `0.00%` | `0.00%` |
+| **Midway Up Steps** (`X=-2.20, Y=-44.400, Z=29.16`, yaw `180°`) | **`7.95%`** | `3.82%` | `4.14%` | `4.03%` | `2.76%` |
+| **Dais Center — Direct South** (`X=-2.20, Y=-44.220, Z=27.78`, yaw `180°`, pitch `+10°`) | **`29.27%`** | **`20.57%`** | `8.70%` | `30.43%` | **`0.00%`** |
+| **Dais Center — Slight SE** (`X=-2.20, Y=-44.220, Z=27.78`, yaw `170°`, pitch `+10°`) | **`26.51%`** | **`18.35%`** | `8.17%` | `29.90%` | `3.50%` |
+| **Dais West — Looking SE (NE Corner)** (`X=-3.90, Y=-44.220, Z=27.78`, yaw `145°`) | **`22.06%`** | **`15.06%`** | `7.00%` | `23.01%` | `5.41%` |
+| **Dais East — Looking SW (NW Corner)** (`X=-0.35, Y=-44.220, Z=27.78`, yaw `210°`) | **`22.38%`** | **`15.06%`** | `7.32%` | `23.86%` | `4.03%` |
+
+### D. Verification & Protected-Invariant Results *(VERIFIED IN 07.19)*
+- **2× Scene Migration Idempotency:** **`IDEMPOTENT_2X_SHA_MATCH=True`** (`BackroomsLevel1Scene.unity` SHA-256: `565B9CE20A3E9511DF7924D1CB1C98F2EC251FC052EE472DA9DAD8F5CF3E2089`).
+- **Complete Unity EditMode Test Suite:** **`108 / 108` PASSED** (`0` failed, `0` skipped, `74.14 s`), including `RemanenciaCourtyardLightwellOverlookTests` (full `CharacterController.Move()` step ascent, dais turn, barrier/sidewall containment, step return, NW staircase descent back to Nivel 0, real `Physics.RaycastAll` sightlines & opacity check) and `RemanenciaNorthUpperGalleryTests`.
+- **`BackroomsLevel1Builder.RunVerificationChecks()`:** Passed (`ok = True`, exact **`18` Unity `Light` components**, `0` shadow-casting).
+- **`SecretWedgeRoomVerificationSuite.RunVerification()`:** **`11 / 11` checks passed**.
+- **Windows x64 Standalone Build (`scripts/build-standalone.ps1 -Force`):** Exit `0` (`66.9 s`, `MyVirtualCommunity.exe` `667,136` bytes, SHA-256 `3070e580e019576b9afcdeb4fec18d03cebc119f6ae84d597412905c749ad653`); `-CheckOnly` **`FRESH`** (`exit 0`).
+- **Protected Objects & Surface World:** All 10 `NorthWing_Lightwell_*` GameObjects & components verified **`BYTE_IDENTICAL=True`** vs. `f562770`; `BorderCorridorScene.unity` byte-identical (`SHA-256: 0CFB32080F4ED9C30FAA513BB21C9BB48ADBA9C60B27FABABFAD5E64318DB42B`).
+- **Deferred Features:** East Overhang (`X > +16.00`), Twin Elevator Core connections, full upper floor, and optional lighting additions remain strictly deferred.
+- **Pending Manual PlayMode Review:** Final acceptance of glass legibility, step-up traversal feel, natural lighting with and without flashlight `[F]`, and the compact spatial framing against the dark misty upper void awaits the creator's live PlayMode inspection.

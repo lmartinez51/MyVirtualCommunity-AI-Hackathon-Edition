@@ -287,22 +287,35 @@ namespace MyVirtualCommunity.Editor
             float wallH = GalleryCeilingSoffitY - wallBotY;              // 3.050f
             float wallMidY = wallBotY + wallH * 0.5f;                    // -45.075f
 
+            // When Implementation 07.19 (Hotel_CourtyardLightwellOverlook) is installed, preserve the
+            // authorized single-bay South opening (X in [-4.460, +0.060]) by retaining NUGallery_WallSouth
+            // & NUGallery_BaseboardSouth in-place as the East segment.
+            bool hasLightwellOverlook = group.parent != null &&
+                                        group.parent.parent != null &&
+                                        group.parent.parent.Find(BackroomsLevel1Builder.CourtyardLightwellOverlookRootName) != null;
+
+            float wallSouthLenX = hasLightwellOverlook ? CourtyardLightwellOverlookBuilder.TrimmedSouthWallEastLengthX : slabLenX;
+            float wallSouthCenterX = hasLightwellOverlook ? CourtyardLightwellOverlookBuilder.TrimmedSouthWallEastCenterX : slabCenterX;
+
             EnsureBox(group, "NUGallery_WallNorth",
                 new Vector3(slabCenterX, wallMidY, GalleryWallNorthCenterZ), Quaternion.identity,
                 new Vector3(slabLenX, wallH, GalleryWallThickness), mats.WallConcrete, keepCollider: true);
             EnsureBox(group, "NUGallery_WallSouth",
-                new Vector3(slabCenterX, wallMidY, GalleryWallSouthCenterZ), Quaternion.identity,
-                new Vector3(slabLenX, wallH, GalleryWallThickness), mats.WallConcrete, keepCollider: true);
+                new Vector3(wallSouthCenterX, wallMidY, GalleryWallSouthCenterZ), Quaternion.identity,
+                new Vector3(wallSouthLenX, wallH, GalleryWallThickness), mats.WallConcrete, keepCollider: true);
 
             // Baseboards along North & South walls (non-colliding)
             float innerLenX = GalleryClearLengthX;
             float innerCenterX = (GalleryClearMinX + GalleryClearMaxX) * 0.5f; // +3.190f
+            float baseSouthLenX = hasLightwellOverlook ? CourtyardLightwellOverlookBuilder.TrimmedSouthBaseboardEastLengthX : innerLenX;
+            float baseSouthCenterX = hasLightwellOverlook ? CourtyardLightwellOverlookBuilder.TrimmedSouthBaseboardEastCenterX : innerCenterX;
+
             EnsureBox(group, "NUGallery_BaseboardNorth",
                 new Vector3(innerCenterX, GalleryFloorY + 0.06f, GalleryClearMaxZ - 0.012f), Quaternion.identity,
                 new Vector3(innerLenX, 0.12f, 0.025f), mats.BaseboardConcrete, keepCollider: false);
             EnsureBox(group, "NUGallery_BaseboardSouth",
-                new Vector3(innerCenterX, GalleryFloorY + 0.06f, GalleryClearMinZ + 0.012f), Quaternion.identity,
-                new Vector3(innerLenX, 0.12f, 0.025f), mats.BaseboardConcrete, keepCollider: false);
+                new Vector3(baseSouthCenterX, GalleryFloorY + 0.06f, GalleryClearMinZ + 0.012f), Quaternion.identity,
+                new Vector3(baseSouthLenX, 0.12f, 0.025f), mats.BaseboardConcrete, keepCollider: false);
         }
 
         private static void BuildArchitecturalDetails(Transform group, GalleryMaterials mats)
@@ -328,16 +341,31 @@ namespace MyVirtualCommunity.Editor
             BuildSealedRecessFrameNorth(group, "NUGallery_SealedNorthBay_01", centerX: -2.20f, clearWidth: 1.32f, infillMat: mats.WallConcrete, mats);
             BuildSealedRecessFrameNorth(group, "NUGallery_SealedNorthBay_02", centerX: 7.40f, clearWidth: 1.32f, infillMat: mats.PlasterWall, mats);
 
-            //    Restrained sealed South structural wall relief (aligned above Courtyard zone — 100% solid WallSouth behind it!)
-            EnsureBox(group, "NUGallery_SealedSouthRelief_L",
-                new Vector3(-1.35f, GalleryFloorY + 1.18f, GalleryClearMinZ + 0.03f), Quaternion.identity,
-                new Vector3(0.14f, 2.36f, 0.06f), mats.ColumnConcrete, keepCollider: false);
-            EnsureBox(group, "NUGallery_SealedSouthRelief_R",
-                new Vector3(1.75f, GalleryFloorY + 1.18f, GalleryClearMinZ + 0.03f), Quaternion.identity,
-                new Vector3(0.14f, 2.36f, 0.06f), mats.ColumnConcrete, keepCollider: false);
-            EnsureBox(group, "NUGallery_SealedSouthRelief_Top",
-                new Vector3(0.20f, GalleryFloorY + 2.30f, GalleryClearMinZ + 0.03f), Quaternion.identity,
-                new Vector3(3.24f, 0.14f, 0.06f), mats.ColumnConcrete, keepCollider: false);
+            //    Restrained sealed South structural wall relief (omitted/cleaned when 07.19 Courtyard Lightwell Overlook is installed)
+            bool hasLightwellOverlook = group.parent != null &&
+                                        group.parent.parent != null &&
+                                        group.parent.parent.Find(BackroomsLevel1Builder.CourtyardLightwellOverlookRootName) != null;
+            if (hasLightwellOverlook)
+            {
+                string[] replacedReliefs = { "NUGallery_SealedSouthRelief_L", "NUGallery_SealedSouthRelief_R", "NUGallery_SealedSouthRelief_Top" };
+                for (int r = 0; r < replacedReliefs.Length; r++)
+                {
+                    Transform oldRelief = group.Find(replacedReliefs[r]);
+                    if (oldRelief != null) UnityEngine.Object.DestroyImmediate(oldRelief.gameObject);
+                }
+            }
+            else
+            {
+                EnsureBox(group, "NUGallery_SealedSouthRelief_L",
+                    new Vector3(-1.35f, GalleryFloorY + 1.18f, GalleryClearMinZ + 0.03f), Quaternion.identity,
+                    new Vector3(0.14f, 2.36f, 0.06f), mats.ColumnConcrete, keepCollider: false);
+                EnsureBox(group, "NUGallery_SealedSouthRelief_R",
+                    new Vector3(1.75f, GalleryFloorY + 1.18f, GalleryClearMinZ + 0.03f), Quaternion.identity,
+                    new Vector3(0.14f, 2.36f, 0.06f), mats.ColumnConcrete, keepCollider: false);
+                EnsureBox(group, "NUGallery_SealedSouthRelief_Top",
+                    new Vector3(0.20f, GalleryFloorY + 2.30f, GalleryClearMinZ + 0.03f), Quaternion.identity,
+                    new Vector3(3.24f, 0.14f, 0.06f), mats.ColumnConcrete, keepCollider: false);
+            }
 
             // 3. Subtle longitudinal off-axis floor expansion seam & exposed overhead service conduit (non-colliding)
             float innerCenterX = (GalleryClearMinX + GalleryClearMaxX) * 0.5f;
