@@ -71,10 +71,21 @@ namespace MyVirtualCommunity.Client.World
         private bool hasSavedRenderState = false;
         private Texture2D fadeBlackTex;
 
+        // Implementation 07.12: Low-cost single-shot exterior observation snapshot (384x480 matching 1.36x1.72m glass aspect, ~0.70 MB VRAM, 0 per-frame cost)
+        public static readonly Vector3 ExteriorObservationCamPos = new Vector3(-11.78f, 1.55f, -11.99f);
+        public static readonly Vector3 ExteriorObservationCamEuler = new Vector3(0f, 90f, 0f);
+        public const int ExteriorObservationWidth = 384;
+        public const int ExteriorObservationHeight = 480;
+
+        private RenderTexture exteriorObservationSnapshot;
+        private string lastExitSource = string.Empty;
+
         public bool IsPlayerInBackrooms => isPlayerInBackrooms;
         public bool IsTransitioning => isTransitioning;
         public bool IsOccupiedByOtherPlayer => occupiedByOtherPlayer;
         public float TransitionFadeAlpha => fadeAlpha;
+        public string LastExitSource => lastExitSource;
+        public RenderTexture ActiveExteriorObservationSnapshot => exteriorObservationSnapshot;
 
         /// <summary>
         /// Authoritative world-context state for world-scoped player HUD presentation.
@@ -166,6 +177,7 @@ namespace MyVirtualCommunity.Client.World
 
         private void OnDestroy()
         {
+            ReleaseExteriorObservationSnapshot();
             if (isPlayerInBackrooms && cachedApiClient != null)
             {
                 cachedApiClient.LeaveSecretVault("player-1");
@@ -241,8 +253,50 @@ namespace MyVirtualCommunity.Client.World
 
         public void RequestExitBackrooms()
         {
-            if (!isPlayerInBackrooms || isTransitioning) return;
-            StartCoroutine(ExitBackroomsRoutine());
+            RequestExitRemanencia("exit-door-to-street");
+        }
+
+        /// <summary>
+        /// Unified return entry point reused by both the existing Backrooms_ExitDoor_ToStreet
+        /// and the Room 111-B Threshold of Trust. Prevents duplicate/simultaneous transitions
+        /// and preserves the verified Av. Benito Juárez return position, atmosphere restoration,
+        /// scene unload, World Core occupancy release, and progression integrity.
+        /// </summary>
+        public bool RequestExitRemanencia(string exitSource = "default", Vector3? customReturnPosition = null, float? customReturnYaw = null)
+        {
+            if (!isPlayerInBackrooms || isTransitioning) return false;
+            lastExitSource = string.IsNullOrEmpty(exitSource) ? "default" : exitSource;
+            Vector3 returnPos = customReturnPosition ?? streetExitReturnPosition;
+            float returnYaw = customReturnYaw ?? streetExitReturnYaw;
+            StartCoroutine(ExitBackroomsRoutine(returnPos, returnYaw));
+            return true;
+        }
+
+        /// <summary>
+        /// Exposes the actual return transition coroutine for automated verification tests
+        /// without duplicating transition logic.
+        /// </summary>
+        public IEnumerator CreateExitRemanenciaRoutineForTest(string exitSource = "test", Vector3? customReturnPosition = null, float? customReturnYaw = null)
+        {
+            if (!isPlayerInBackrooms || isTransitioning) return EmptyRoutine();
+            lastExitSource = string.IsNullOrEmpty(exitSource) ? "test" : exitSource;
+            Vector3 returnPos = customReturnPosition ?? streetExitReturnPosition;
+            float returnYaw = customReturnYaw ?? streetExitReturnYaw;
+            return ExitBackroomsRoutine(returnPos, returnYaw);
+        }
+
+        private static IEnumerator EmptyRoutine()
+        {
+            yield break;
+        }
+
+        public void CaptureAndApplyBackroomsAtmosphereForTest()
+        {
+            CaptureExteriorStreetSnapshot();
+            isPlayerInBackrooms = true;
+            isTransitioning = false;
+            ApplyBackroomsAtmosphere();
+            BindExteriorSnapshotToInteriorEntranceView();
         }
 
         /// <summary>
@@ -306,10 +360,12 @@ namespace MyVirtualCommunity.Client.World
                 }
             }
 
-            // 4. Activate Backrooms mode & classic Level 0 fluorescent atmosphere
+            // 4. Capture one-shot Av. Benito Juárez street snapshot BEFORE suspending outdoor lighting, then activate Backrooms atmosphere
+            CaptureExteriorStreetSnapshot();
             isPlayerInBackrooms = true;
             RefreshThresholdVeilVisibility();
             ApplyBackroomsAtmosphere();
+            BindExteriorSnapshotToInteriorEntranceView();
             if (Application.isPlaying)
             {
                 PlayerProgressionService.Shared.RecordBackroomsEntered(viaAzucenasManhole: true);
@@ -536,8 +592,10 @@ namespace MyVirtualCommunity.Client.World
                 RestoreLoadedBackroomsProgression(PlayerProgressionService.Shared);
             }
 
-            // 6. Switch lighting & fog to classic Backrooms Level 0 fluorescent liminal atmosphere
+            // 6. Capture one-shot Av. Benito Juárez street snapshot BEFORE suspending outdoor lighting, then switch to Level 0 atmosphere
+            CaptureExteriorStreetSnapshot();
             ApplyBackroomsAtmosphere();
+            BindExteriorSnapshotToInteriorEntranceView();
 
             // 7. Teleport player smoothly to Backrooms Arrival SpawnPoint
             GameObject spawnMarker = GameObject.Find("Backrooms_SpawnPoint");
@@ -550,16 +608,17 @@ namespace MyVirtualCommunity.Client.World
             isTransitioning = false;
         }
 
-        private IEnumerator ExitBackroomsRoutine()
+        private IEnumerator ExitBackroomsRoutine(Vector3 returnPos, float returnYaw)
         {
             isTransitioning = true;
 
             // 1. Fade to black
             yield return FadeTo(1f, 0.26f);
 
-            // 2. Restore corridor sky/sun/fog & teleport player cleanly back onto Av. Benito Juárez sidewalk
+            // 2. Release single-shot observation texture, restore corridor sky/sun/fog & teleport player cleanly back onto Av. Benito Juárez sidewalk
+            ReleaseExteriorObservationSnapshot();
             RestoreOutdoorAtmosphere();
-            TeleportPlayer(streetExitReturnPosition, Quaternion.Euler(0f, streetExitReturnYaw, 0f));
+            TeleportPlayer(returnPos, Quaternion.Euler(0f, returnYaw, 0f));
 
             // Keep exterior door locked behind player
             if (outerStreetDoor != null)
@@ -598,6 +657,111 @@ namespace MyVirtualCommunity.Client.World
             yield return new WaitForSecondsRealtime(0.08f);
             yield return FadeTo(0f, 0.32f);
             isTransitioning = false;
+        }
+
+        /// <summary>
+        /// Captures a single low-resolution snapshot of Av. Benito Juárez from just outside the
+        /// Building A South doorway facing East (+X) strictly BEFORE ApplyBackroomsAtmosphere()
+        /// disables outdoor sunlight or modifies RenderSettings. Zero per-frame rendering cost
+        /// and zero modifications to BorderCorridorScene.unity or the exterior door.
+        /// </summary>
+        private void CaptureExteriorStreetSnapshot()
+        {
+            if (SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null)
+            {
+                return;
+            }
+
+            ReleaseExteriorObservationSnapshot();
+
+            List<Renderer> temporarilyHidden = null;
+            if (cachedPlayerTransform != null)
+            {
+                Renderer[] playerRenderers = cachedPlayerTransform.GetComponentsInChildren<Renderer>(includeInactive: false);
+                if (playerRenderers.Length > 0)
+                {
+                    temporarilyHidden = new List<Renderer>(playerRenderers.Length);
+                    for (int i = 0; i < playerRenderers.Length; i++)
+                    {
+                        if (playerRenderers[i] != null && playerRenderers[i].enabled)
+                        {
+                            playerRenderers[i].enabled = false;
+                            temporarilyHidden.Add(playerRenderers[i]);
+                        }
+                    }
+                }
+            }
+
+            GameObject camGo = new GameObject("__TempExteriorOneWaySnapshotCam__");
+            try
+            {
+                exteriorObservationSnapshot = new RenderTexture(
+                    ExteriorObservationWidth,
+                    ExteriorObservationHeight,
+                    16,
+                    RenderTextureFormat.ARGB32);
+                exteriorObservationSnapshot.name = "Remanencia_OneWayExteriorSnapshot_RT";
+                exteriorObservationSnapshot.wrapMode = TextureWrapMode.Clamp;
+                exteriorObservationSnapshot.filterMode = FilterMode.Bilinear;
+                exteriorObservationSnapshot.Create();
+
+                camGo.transform.position = ExteriorObservationCamPos;
+                camGo.transform.rotation = Quaternion.Euler(ExteriorObservationCamEuler);
+
+                Camera snapCam = camGo.AddComponent<Camera>();
+                snapCam.fieldOfView = 58f;
+                snapCam.nearClipPlane = 0.18f;
+                snapCam.farClipPlane = 65f;
+                snapCam.allowHDR = false;
+                snapCam.allowMSAA = false;
+                snapCam.targetTexture = exteriorObservationSnapshot;
+                snapCam.Render();
+                snapCam.targetTexture = null;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[SecretBackroomsTransitionController] Single-shot exterior observation capture skipped; using static fallback. ({ex.Message})");
+                ReleaseExteriorObservationSnapshot();
+            }
+            finally
+            {
+                if (Application.isPlaying) Destroy(camGo);
+                else DestroyImmediate(camGo);
+
+                if (temporarilyHidden != null)
+                {
+                    for (int i = 0; i < temporarilyHidden.Count; i++)
+                    {
+                        if (temporarilyHidden[i] != null) temporarilyHidden[i].enabled = true;
+                    }
+                }
+            }
+        }
+
+        private void BindExteriorSnapshotToInteriorEntranceView()
+        {
+            if (exteriorObservationSnapshot == null) return;
+            RemanenciaOneWayEntranceView view = FindFirstObjectByType<RemanenciaOneWayEntranceView>();
+            if (view != null)
+            {
+                view.ApplyCapturedExteriorTexture(exteriorObservationSnapshot);
+            }
+        }
+
+        private void ReleaseExteriorObservationSnapshot()
+        {
+            RemanenciaOneWayEntranceView view = FindFirstObjectByType<RemanenciaOneWayEntranceView>();
+            if (view != null)
+            {
+                view.ClearCapturedExteriorTexture();
+            }
+            if (exteriorObservationSnapshot != null)
+            {
+                exteriorObservationSnapshot.Release();
+                if (Application.isPlaying) Destroy(exteriorObservationSnapshot);
+                else DestroyImmediate(exteriorObservationSnapshot);
+                exteriorObservationSnapshot = null;
+            }
         }
 
         /// <summary>

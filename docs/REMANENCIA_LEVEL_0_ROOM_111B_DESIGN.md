@@ -4,14 +4,14 @@
 **Universe:** **Remanencia**  
 **Territory:** **Nivel 0 — Hotel de las Palomas**  
 **Target Scene:** `unity-client/Assets/Scenes/BackroomsLevel1Scene.unity`
-**Baseline Audited (07.10):** `2c7ad5a949232fa64ba004b71a39ca72e5c5f584` → **07.11 Baseline:** Branch `product/unity-fellowship-2027`, HEAD `0d325c21b1d27943694c2e5bf6c98af503078976`
-**Document Status:** **UPDATED FOR IMPLEMENTATION 07.11 — PHYSICAL ROOM 111-B ARCHITECTURE IMPLEMENTED (INTERIOR, ENTRANCE INTERPRETATION, ONE-WAY OBSERVATION & ALTERNATIVE EXIT REMAIN PROPOSED FUTURE DESIGN)**
+**Baseline Audited:** 07.10 (`2c7ad5a`) → 07.11 (`0d325c2` → `4cb412b`) → **07.12 Baseline:** Branch `product/unity-fellowship-2027`, HEAD `4cb412bde332171f8a1c8f49e3164c7d5397905d`
+**Document Status:** **UPDATED FOR IMPLEMENTATION 07.12 — PUBLIC DIRECTORY 107-110, ROOM 111-B GUEST INTERIOR, THRESHOLD OF TRUST & ISOLATED ONE-WAY ENTRANCE OBSERVATION IMPLEMENTED (ENTRY-ONLY SEALING RESERVED FOR 07.13)**
 
 > **Strict Implementation Boundary & Status Labels:**
 > Every section and requirement in this document is explicitly tagged as one of:
-> - **`VERIFIED CURRENT IMPLEMENTATION`** — Existing pre-07.11 architecture, evidence, ecology, transitions, or surface-world assets verified directly in the repository.
-> - **`IMPLEMENTED IN 07.11`** — Physical Room 111-B architecture (`Hotel_Room111B_Anomaly`), concealed East passage, empty Room 111-B shell, `111-B` signage, and automated verification added in Implementation 07.11. Visual acceptance remains pending the creator's personal PlayMode review.
-> - **`PROPOSED FUTURE DESIGN`** — Approved or candidate concepts for future increments (`07.12+`), strictly **not implemented** in 07.11.
+> - **`VERIFIED CURRENT IMPLEMENTATION`** — Existing pre-07.12 architecture, evidence, ecology, transitions, or surface-world assets verified directly in the repository.
+> - **`IMPLEMENTED IN 07.12`** — Public North Corridor room directory (`107–110` only), Room 111-B prepared hotel guest interior, Threshold of Trust unconventional return route, and isolated Remanencia-side one-way exterior observation glass entrance added in Implementation 07.12. Visual acceptance remains pending the creator's personal PlayMode inspection.
+> - **`PROPOSED FUTURE DESIGN`** — Approved or candidate concepts for future increments (`07.13+`), strictly **not implemented** in 07.12.
 > - **`UNRESOLVED CREATOR DECISION`** — Open creative or systems questions awaiting explicit creator selection.
 
 > **Historical, Fictional & Dimensional Separation Notice:**  
@@ -414,3 +414,51 @@ Audited strictly read-only against `SecretBackroomsTransitionController.cs`, `Bo
 - **07.12 *(PROPOSED FUTURE DESIGN)*:** Author Room 111-B interior identity, evaluate interior-only entrance treatment & optional one-way observation (subject to the Mandatory Fallback Rule above), and implement the unconventional alternative exit (recommended: Hybrid Concept A + C Threshold of Trust connected to Room 111-B) reusing `ExitBackroomsRoutine()`.
 - **07.13 *(PROPOSED FUTURE DESIGN)*:** Activate **"Check-in Without Conventional Check-out"** *only after* the 07.12 alternative exit is constructed, capsule-walkability tested from `Backrooms_SpawnPoint` AND all `10` `RandomCeilingDropZonesXZ`, and personally accepted in PlayMode. Keep `Backrooms_ExitDoor_ToStreet` visible with restrained bilingual feedback when tried; preserve World Core `LeaveSecretVault` cleanup and `ProgressionSaveData` (`schemaVersion == 1`) integrity.
 - **07.14+ *(PROPOSED FUTURE DESIGN)*:** Evaluate vertical access (Elevators A/B, NW Stairwell reserve), non-Euclidean spaces, and deeper Remanencia territories in separate increments.
+
+---
+
+## 17. Implementation 07.12 — Room 111-B Guest Interior, Public Directory, Threshold of Trust & One-Way Entrance View *(IMPLEMENTED IN 07.12)*
+
+Implementation 07.12 builds strictly under sibling root `BackroomsLevel1_Root/Hotel_Room111B_GuestInterior` via `BackroomsLevel1Builder.MigrateRemanenciaRoom111BInteriorAndThresholdAndSave()`, preserving `Hotel_Room111B_Anomaly` (07.11), `Hotel_NorthWing_M1` (07.5), `Hotel_Elevator_Core`, `Hotel_Narrative_Evidence` (07.6), `Hotel_Early_Ecology` (07.7), `Hotel_Faunal_Traces` (07.8), and `Hotel_FirstLivingMicrofauna` (07.9) completely untouched.
+
+### A. Public Room Directory Correction & Narrative Separation *(IMPLEMENTED IN 07.12)*
+- **Official Public North Corridor Directory (`Room111B_NorthCorridorDirectory/Hotel_NorthCorridor_PublicDirectory`):** Mounted on the North Guest Corridor wall at `(9.40, -48.38, 28.678)` facing South (`Euler(0, 180, 0)`), matte brushed plate (`Remanencia_Sign_NorthCorridorDirectory.mat`, `T_Remanencia_Sign_NorthCorridorDirectory.png`). Displays strictly **`HABITACIONES 107-110`** / **`107  108  109  110`**, intentionally excluding secret Room `111-B`.
+- **Preserved Narrative Contrast (`VERIFIED CURRENT IMPLEMENTATION`):**
+  - Public hotel directories (`Hotel_Sign_GuestRoomsWayfinding` = `101-106`, `Hotel_NorthCorridor_PublicDirectory` = `107-110`) **never** advertise `111-B`.
+  - The 07.6 fictional ledger sheet (`Hotel_Evidence_RoomRegistrationRecord` at `(-3.85, -48.56, 28.67)`) remains **unchanged** and still lists the anomalous `111-B` entry.
+  - The physical 07.11 plaque (`Room111B_Plaque_111B`) confirms `111-B` only after the player discovers the hidden East passage.
+
+### B. Room 111-B Interior Identity, Furniture Placement & Collision Boundaries *(IMPLEMENTED IN 07.12)*
+Visual direction: **a modest, unexpectedly prepared fictional northern Mexican hotel guest room** contrasting quietly with the unfinished raw concrete hotel outside (zero luxury styling, zero brands, zero personal guest belongings, zero new documents or organisms, zero new `Light` components).
+
+| Interior Element | World Bounds / Position (m) | Collider & Clearance | Subtle Discrepancy / Role |
+| :--- | :--- | :--- | :--- |
+| **`Room111B_Interior_FloorFinish`** | Center `(21.86, -49.9975, 22.40)`, size `4.92 × 4.46 m`, yaw `1.4°` | Non-colliding | **Discrepancy #1:** Aged warm ceramic tile inlay rotated `1.4°` off the concrete doorway threshold axis. |
+| **`Room111B_Furn_DoubleBed`** | `X ∈ [20.56, 21.96]`, `Z ∈ [20.02, 21.80]` (`1.40 × 1.78 m`) | Single `BoxCollider` on `DoubleBed_Base` | Modest dark-wood bed frame, slatted headboard, untouched linen mattress, folded muted blanket, 2 neat pillows. Clear of 07.11 walkway (`≥ 0.36 m`). |
+| **`Room111B_Furn_BedsideW` / `BedsideE`** | `W: X ∈ [20.02, 20.48], Z ∈ [20.02, 20.48]`; `E: X ∈ [22.04, 22.52], Z ∈ [20.02, 20.48]` | Simple `BoxCollider` on each body | Modest matching bedside cabinets with metal pulls flanking the bed (`≥ 0.50 m` clear of SW walkway). |
+| **`Room111B_Furn_Wardrobe`** | `X ∈ [19.14, 19.78]`, `Z ∈ [23.44, 24.76]`, height `2.18 m` | Single `BoxCollider` on `Wardrobe_Carcass` | **Discrepancy #2:** Recessed built-in closet doors imply greater wall depth than the `0.22 m` corridor wall behind it (`0.40 m` clear of West walkway). |
+| **`Room111B_Furn_Desk`** | `X ∈ [20.92, 22.18]`, `Z ∈ [24.22, 24.76]`, height `0.74 m` | Simple `BoxCollider`s on top & side panels | Compact writing desk along North wall (`0.42 m` clear of North walkway `Z = 23.80`). |
+| **`Room111B_Furn_Chair`** | `X ∈ [21.33, 21.77]`, `Z ∈ [24.18, 24.58]` | Simple `BoxCollider` on `Chair_Seat` | Plain wooden chair neatly tucked under desk (`0.38 m` clear of `Z = 23.80`). |
+| **`Room111B_Furn_WallMirror`** | `(21.55, -48.54, 24.775)`, `0.76 × 0.94 m` | Non-colliding | Restrained framed smoked mirror above desk (pure matte/metallic shader — zero reflection camera or RT cost). |
+
+### C. Threshold of Trust — Visual Design, Trigger Coordinates & Return Integration *(IMPLEMENTED IN 07.12)*
+- **Location & Architecture (`Room111B_ThresholdOfTrust`):** Centered on the East wall of Room 111-B between the two engaged pilasters (`X ∈ [+23.96, +24.52]`, `Z ∈ [+21.75, +23.05]`, height `2.34 m`), directly opposite the `111-B` entrance doorway. Features a `0.56 m` deep concrete-and-ceramic architectural recess, a flush brushed sill plate, a continuous floor expansion seam (`Z = 22.40, X = 21.65..24.51`) running straight beneath the threshold, and a restrained pale overcast borderland daylight haze plane at `X = +24.495` (`T_Remanencia_Threshold_OvercastHaze.png`, soft matte self-illumination, zero bloom, zero fantasy portal, zero particles, zero new `Light` components). Solid `Room111B_Shell_WallEast` (`X = +24.65`) remains intact directly behind it so zero exterior void is ever exposed.
+- **Trigger Volume & Orientation (`Room111B_Threshold_TriggerVolume`):** Position `(24.26, -48.85, 22.40)`, rotation `Euler(0, -90, 0)` (local `+Z` facing West `-X` into Room 111-B), trigger `BoxCollider` spanning world `X ∈ [+24.04, +24.48]`, `Z ∈ [+21.85, +22.95]`, height `2.20 m`.
+- **Deterministic Crossing Logic (`RemanenciaThresholdOfTrustTrigger.cs`):** Does **not** fire from walking past (`X ≤ 23.85`) or standing outside the sill. Requires the player to deliberately step across `crossingPlaneX = 23.92f` inside `Z ∈ [21.80, 23.00]`, uses a single-fire visit latch (`hasTriggeredThisVisit`), and invokes `SecretBackroomsTransitionController.RequestExitRemanencia("threshold-of-trust")`.
+- **Unified Transition Reuse (`SecretBackroomsTransitionController.cs`):** Refactored minimally to expose `RequestExitRemanencia(...)` calling the existing `ExitBackroomsRoutine()` verbatim (fade to black → release observation snapshot → `RestoreOutdoorAtmosphere()` → teleport to verified Av. Benito Juárez return position `(-11.20, 0.24, -11.99)`, yaw `90°` → relock street door → unload `BackroomsLevel1Scene` → `LeaveSecretVault("player-1")` → `PlayerWorldContext.SurfaceCorridor` → `RecordReturnedFromBackroomsToCorridor()` → fade in). `RequestExitBackrooms()` remains an intact wrapper, and duplicate/simultaneous exit requests are rejected while `isTransitioning == true`.
+
+### D. Anti-Softlock & Reachability Verification *(IMPLEMENTED IN 07.12)*
+- Verified capsule-walkable (`PlayerRadius = 0.32 m`) and connected ground floor from `Backrooms_SpawnPoint (17.80, 8.80)`, through Main Lobby, Connection A `(5.40, 12.00)` AND Connection B `(-10.80, 12.00)`, East Arcade, North Guest Corridor, concealed opening, East Corridor, Room 111-B doorway, around all furniture, and across the Threshold of Trust crossing plane `(24.08, 22.40)`.
+- Verified ground-floor support for all `10` `RandomCeilingDropZonesXZ` Azucenas Manhole drop spots with zero code/safe/portal/journal prerequisites required to reach Room 111-B.
+
+### E. Interior-Only Hotel Entrance & One-Way Exterior Observation Illusion *(IMPLEMENTED IN 07.12 — ISOLATED SINGLE-SHOT OPTION A + PRE-BAKED FALLBACK)*
+- **Status:** **IMPLEMENTED** using **Option A (Runtime Single-Shot Exterior Capture)** paired with a **Read-Only Pre-Baked Fallback Texture** (`T_Remanencia_Entrance_StreetViewFallback.png`), strictly confined to `BackroomsLevel1Scene.unity`.
+- **Technical Method & VRAM Budget:** During both `EnterBackroomsRoutine()` and `EnterBackroomsCeilingDropRoutine()` — while the screen fade is black and **immediately before `ApplyBackroomsAtmosphere()` suspends outdoor sunlight** — `SecretBackroomsTransitionController.CaptureExteriorStreetSnapshot()` spawns a temporary `Camera` at `(-11.78, 1.55, -11.99)` facing East (`+X`, `Euler(0, 90, 0)`, `FOV = 58°`, `near = 0.18 m`, `far = 65 m`), hides player renderers during the single frame, renders **once** into a true-aspect `384 × 480` `ARGB32` `RenderTexture` (`~0.70 MB` VRAM, **`0` per-frame draw calls**), destroys the camera immediately, and binds it via `RemanenciaOneWayEntranceView` onto `InteriorEntrance_GlassPane_Unified` framed behind the hotel double-door mullions inside `BackroomsLevel1Scene.unity`. On return (`ExitBackroomsRoutine`) or `OnDestroy()`, the `RenderTexture` and runtime material instance are cleanly released.
+- **Complete Surface-World & Acoustic Isolation (`VERIFIED`):**
+  - `BorderCorridorScene.unity` remains **100% byte-for-byte unchanged** (`SHA-256: 0CFB32080F4ED9C30FAA513BB21C9BB48ADBA9C60B27FABABFAD5E64318DB42B`), zero exterior door assets or shared materials are modified, and `BuildingA_SouthBay_StorageDoor` is completely untouched.
+  - Because `BackroomsLevel1Scene` sits at `Y = -50.0 m`, no player, microfauna, or Remanencia geometry can appear in the surface view; acoustic isolation requires zero new audio systems (`BorderCorridorScene` has `0` scene-baked `AudioSource`s and a single player `AudioListener`).
+  - **Fallback Behavior:** If `SystemInfo.graphicsDeviceType == Null` or capture fails, `Remanencia_Entrance_OneWayGlass.mat` falls back cleanly to the read-only pre-baked Av. Benito Juárez texture with zero error or rendering-state leak.
+
+### F. Entrance Operational Status in 07.12 & Future 07.13 Entry-Only Requirements *(VERIFIED + PROPOSED FUTURE DESIGN)*
+- **`Backrooms_ExitDoor_ToStreet` Remains Operational in 07.12 (`VERIFIED CURRENT IMPLEMENTATION`):** `BackroomsExitDoorTrigger` remains enabled with its existing bilingual prompt and `[E]`/click exit functionality (`Room111B_InteriorEntranceIllusion` adds zero colliders), allowing the creator to verify both return routes side-by-side in PlayMode.
+- **07.13 Entry-Only Activation Gate (`PROPOSED FUTURE DESIGN — NOT IMPLEMENTED`):** Only after the creator personally approves Room 111-B, the Threshold of Trust, and the interior hotel entrance glass view in PlayMode may 07.13 switch `Backrooms_ExitDoor_ToStreet` to sealed entry-only mode with restrained bilingual feedback.

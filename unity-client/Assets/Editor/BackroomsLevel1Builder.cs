@@ -105,8 +105,26 @@ namespace MyVirtualCommunity.Editor
         public const string HotelFaunalTracesRootName = "Hotel_Faunal_Traces";
         public const string HotelFirstLivingMicrofaunaRootName = "Hotel_FirstLivingMicrofauna";
         public const string HotelRoom111BRootName = "Hotel_Room111B_Anomaly";
+        public const string HotelRoom111BGuestInteriorRootName = "Hotel_Room111B_GuestInterior";
         public const string RoomPlaque111BTexPath = "Assets/Textures/Environment/T_Remanencia_RoomPlaque_111B.png";
         public const string RoomPlaque111BMatPath = "Assets/Settings/Remanencia_Level0_RoomPlaque_111B.mat";
+
+        // Implementation 07.12: Public North Corridor directory (107-110 ONLY — excludes secret 111-B),
+        // Room 111-B guest-room interior materials, Threshold of Trust & isolated one-way entrance glass
+        public const string NorthCorridorDirectoryEs = "HABITACIONES 107-110";
+        public const string NorthCorridorDirectoryRooms = "107  108  109  110";
+        public const string NorthCorridorDirectoryTexPath = "Assets/Textures/Environment/T_Remanencia_Sign_NorthCorridorDirectory.png";
+        public const string NorthCorridorDirectoryMatPath = "Assets/Settings/Remanencia_Sign_NorthCorridorDirectory.mat";
+        public const string Room111BFloorTileTexPath = "Assets/Textures/Environment/T_Remanencia_Room111B_FloorTile.png";
+        public const string Room111BFloorTileMatPath = "Assets/Settings/Remanencia_Room111B_FloorTile.mat";
+        public const string Room111BWoodMatPath = "Assets/Settings/Remanencia_Room111B_Wood.mat";
+        public const string Room111BLinenMatPath = "Assets/Settings/Remanencia_Room111B_Linen.mat";
+        public const string Room111BBlanketMatPath = "Assets/Settings/Remanencia_Room111B_Blanket.mat";
+        public const string Room111BMirrorMatPath = "Assets/Settings/Remanencia_Room111B_MirrorGlass.mat";
+        public const string ThresholdOvercastTexPath = "Assets/Textures/Environment/T_Remanencia_Threshold_OvercastHaze.png";
+        public const string ThresholdOvercastMatPath = "Assets/Settings/Remanencia_Threshold_OvercastHaze.mat";
+        public const string EntranceStreetFallbackTexPath = "Assets/Textures/Environment/T_Remanencia_Entrance_StreetViewFallback.png";
+        public const string EntranceOneWayGlassMatPath = "Assets/Settings/Remanencia_Entrance_OneWayGlass.mat";
         public const float NorthWingMinX = -16.0f;
         public const float NorthWingMaxX = 16.0f;
         public const float NorthWingMinZ = 12.0f;
@@ -3674,6 +3692,502 @@ namespace MyVirtualCommunity.Editor
             return assetPath;
         }
 
+        // =========================================================================
+        // IMPLEMENTATION 07.12 — ROOM 111-B: THE GUEST ROOM & THRESHOLD OF TRUST
+        // =========================================================================
+        /// <summary>
+        /// Strictly read-only Editor helper that opens BorderCorridorScene.unity WITHOUT modifying
+        /// or saving it, renders a single 512x384 Av. Benito Juárez street view from just East of
+        /// BuildingA_SouthBay_StorageDoor (-11.78, 1.55, -11.99 facing +X), applies a subtle smoked
+        /// hotel-glass tint, and writes the pre-baked fallback PNG strictly inside Assets/Textures/Environment/.
+        /// </summary>
+        public static void BakeEntranceStreetFallbackFromBorderCorridor()
+        {
+            const string borderScenePath = "Assets/Scenes/BorderCorridorScene.unity";
+            var borderScene = EditorSceneManager.OpenScene(borderScenePath, OpenSceneMode.Single);
+            if (!borderScene.IsValid())
+            {
+                throw new InvalidOperationException($"Could not open {borderScenePath} read-only to bake street fallback.");
+            }
+
+            string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", EntranceStreetFallbackTexPath));
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+
+            int w = SecretBackroomsTransitionController.ExteriorObservationWidth;
+            int h = SecretBackroomsTransitionController.ExteriorObservationHeight;
+
+            GameObject camGo = new GameObject("__TempBakeStreetFallbackCam__");
+            RenderTexture rt = new RenderTexture(w, h, 24, RenderTextureFormat.ARGB32);
+            Texture2D tex = new Texture2D(w, h, TextureFormat.RGB24, false);
+            try
+            {
+                camGo.transform.position = SecretBackroomsTransitionController.ExteriorObservationCamPos;
+                camGo.transform.rotation = Quaternion.Euler(SecretBackroomsTransitionController.ExteriorObservationCamEuler);
+
+                Camera cam = camGo.AddComponent<Camera>();
+                cam.fieldOfView = 58f;
+                cam.nearClipPlane = 0.18f;
+                cam.farClipPlane = 65f;
+                cam.targetTexture = rt;
+                cam.Render();
+
+                RenderTexture.active = rt;
+                tex.ReadPixels(new Rect(0, 0, w, h), 0, 0);
+                RenderTexture.active = null;
+
+                for (int y = 0; y < h; y++)
+                {
+                    float vy = (float)y / (h - 1);
+                    for (int x = 0; x < w; x++)
+                    {
+                        float vx = (float)x / (w - 1);
+                        Color p = tex.GetPixel(x, y);
+                        float edgeDist = Mathf.Min(Mathf.Min(vx, 1f - vx), Mathf.Min(vy, 1f - vy));
+                        float vig = Mathf.Lerp(0.76f, 1.0f, Mathf.SmoothStep(0f, 0.14f, edgeDist));
+                        Color glass = new Color(
+                            Mathf.Clamp01(p.r * 0.86f * vig),
+                            Mathf.Clamp01(p.g * 0.89f * vig),
+                            Mathf.Clamp01(p.b * 0.91f * vig));
+                        tex.SetPixel(x, y, glass);
+                    }
+                }
+                tex.Apply();
+                File.WriteAllBytes(fullPath, tex.EncodeToPNG());
+                Debug.Log($"[BackroomsLevel1Builder] Baked read-only Av. Benito Juárez fallback view to {EntranceStreetFallbackTexPath} (BorderCorridorScene untouched).");
+            }
+            finally
+            {
+                RenderTexture.active = null;
+                UnityEngine.Object.DestroyImmediate(camGo);
+                rt.Release();
+                UnityEngine.Object.DestroyImmediate(rt);
+                UnityEngine.Object.DestroyImmediate(tex);
+                EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            }
+        }
+
+        [MenuItem("MyVirtualCommunity/Migrate Remanencia Room 111-B Interior & Threshold (In-Place)")]
+        public static void MigrateRemanenciaRoom111BInteriorAndThresholdAndSave()
+        {
+            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            if (!scene.IsValid())
+            {
+                throw new InvalidOperationException($"Failed to open existing scene at {ScenePath}.");
+            }
+
+            MigrateRemanenciaRoom111BInteriorAndThresholdInOpenScene(scene);
+            AssetDatabase.SaveAssets();
+            EditorSceneManager.MarkSceneDirty(scene);
+            if (!EditorSceneManager.SaveScene(scene, ScenePath))
+            {
+                throw new InvalidOperationException($"Failed to save migrated scene at {ScenePath}.");
+            }
+            Debug.Log($"[BackroomsLevel1Builder] Remanencia Room 111-B interior, directory, Threshold of Trust & one-way entrance view migrated and saved to {ScenePath}.");
+        }
+
+        public static void MigrateRemanenciaRoom111BInteriorAndThresholdInOpenScene(UnityEngine.SceneManagement.Scene scene)
+        {
+            if (!scene.IsValid() || !string.Equals(scene.path, ScenePath, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    $"Remanencia Room 111-B 07.12 migration requires open scene '{ScenePath}', but found '{scene.path}'.");
+            }
+
+            GameObject root = null;
+            foreach (GameObject go in scene.GetRootGameObjects())
+            {
+                if (go.name == "BackroomsLevel1_Root")
+                {
+                    root = go;
+                    break;
+                }
+            }
+            if (root == null)
+            {
+                throw new InvalidOperationException("BackroomsLevel1_Root not found in open scene.");
+            }
+
+            Transform shellRoot = root.transform.Find("Backrooms_Architecture");
+            if (shellRoot == null || shellRoot.Find(HotelRoom111BRootName) == null)
+            {
+                throw new InvalidOperationException(
+                    $"Expected '{HotelRoom111BRootName}' under Backrooms_Architecture before running 07.12 migration.");
+            }
+
+            BuildOrUpdateRoom111BGuestInterior(root.transform);
+        }
+
+        private static void BuildOrUpdateRoom111BGuestInterior(Transform backroomsRoot)
+        {
+            Material columnConcrete = AssetDatabase.LoadAssetAtPath<Material>(ColumnConcreteMatPath);
+            Material industrialMetal = AssetDatabase.LoadAssetAtPath<Material>(IndustrialMetalMatPath);
+            Material elevatorMetal = AssetDatabase.LoadAssetAtPath<Material>(ElevatorDoorMetalMatPath);
+            Material agedCeramic = AssetDatabase.LoadAssetAtPath<Material>(AgedCeramicPatchMatPath);
+            if (columnConcrete == null || industrialMetal == null || elevatorMetal == null || agedCeramic == null)
+            {
+                throw new InvalidOperationException("Missing canonical Remanencia materials required for 07.12.");
+            }
+
+            string dirTexPath = EnsureArchitecturalSignTexture(
+                NorthCorridorDirectoryTexPath, 512, 112,
+                NorthCorridorDirectoryEs, NorthCorridorDirectoryRooms,
+                darkBronzeStyle: false, weatheredIncomplete: false, fadeLastChar: false);
+            string floorTileTexPath = EnsureRoom111BFloorTileTexture(Room111BFloorTileTexPath);
+            string hazeTexPath = EnsureThresholdOvercastHazeTexture(ThresholdOvercastTexPath);
+            string streetFallbackFull = Path.GetFullPath(Path.Combine(Application.dataPath, "..", EntranceStreetFallbackTexPath));
+            if (!File.Exists(streetFallbackFull))
+            {
+                EnsureFallbackSyntheticStreetTexture(EntranceStreetFallbackTexPath);
+            }
+            AssetDatabase.Refresh();
+
+            ConfigureSignTextureImporter(dirTexPath);
+            ConfigureArchitecturalTextureImporter(floorTileTexPath);
+            ConfigureSignTextureImporter(hazeTexPath);
+            ConfigureSignTextureImporter(EntranceStreetFallbackTexPath);
+
+            Material dirMat = CreateTexturedMat(NorthCorridorDirectoryMatPath, dirTexPath, Color.white, 0.28f, Vector2.one);
+            Material floorTileMat = CreateTexturedMat(Room111BFloorTileMatPath, floorTileTexPath, new Color(0.95f, 0.92f, 0.88f), 0.24f, new Vector2(4.2f, 3.8f));
+            Material woodMat = CreateColorMat(Room111BWoodMatPath, new Color(0.30f, 0.22f, 0.16f), 0.22f, 0.0f);
+            Material linenMat = CreateColorMat(Room111BLinenMatPath, new Color(0.76f, 0.74f, 0.69f), 0.08f, 0.0f);
+            Material blanketMat = CreateColorMat(Room111BBlanketMatPath, new Color(0.45f, 0.34f, 0.29f), 0.06f, 0.0f);
+            Material mirrorMat = CreateColorMat(Room111BMirrorMatPath, new Color(0.32f, 0.35f, 0.37f), 0.72f, 0.78f);
+            Material thresholdHazeMat = CreateEmissiveTexturedMat(
+                ThresholdOvercastMatPath, hazeTexPath,
+                new Color(0.90f, 0.92f, 0.94f),
+                new Color(0.74f, 0.78f, 0.82f));
+            Material oneWayGlassMat = CreateEmissiveTexturedMat(
+                EntranceOneWayGlassMatPath, EntranceStreetFallbackTexPath,
+                new Color(0.88f, 0.90f, 0.92f),
+                new Color(0.55f, 0.59f, 0.63f));
+
+            Transform interiorRoot = EnsureHotelSubgroup(backroomsRoot, HotelRoom111BGuestInteriorRootName);
+            interiorRoot.localPosition = Vector3.zero;
+            interiorRoot.localRotation = Quaternion.identity;
+            interiorRoot.localScale = Vector3.one;
+
+            // 1. PUBLIC NORTH GUEST CORRIDOR ROOM DIRECTORY (107-110 ONLY — EXCLUDES SECRET 111-B)
+            Transform dirGroup = EnsureHotelSubgroup(interiorRoot, "Room111B_NorthCorridorDirectory");
+            EnsureHotelBox(dirGroup, "Hotel_NorthCorridor_PublicDirectory",
+                new Vector3(9.40f, BaseY + 1.62f, 28.678f), Quaternion.Euler(0f, 180f, 0f),
+                new Vector3(0.58f, 0.24f, 0.016f), dirMat, keepCollider: false);
+
+            // 2. ROOM 111-B MODEST PREPARED HOTEL GUEST ROOM INTERIOR
+            Transform furnGroup = EnsureHotelSubgroup(interiorRoot, "Room111B_FurnitureAndFinishes");
+
+            // Subtle Discrepancy #1: Aged ceramic floor tile inlay rotated 1.4 deg off corridor doorway axis
+            EnsureHotelBox(furnGroup, "Room111B_Interior_FloorFinish",
+                new Vector3(21.86f, BaseY + 0.0025f, 22.40f), Quaternion.Euler(0f, 1.4f, 0f),
+                new Vector3(4.92f, 0.005f, 4.46f), floorTileMat, keepCollider: false);
+
+            // 2A. Modest Double Bed (South Wall, X in [20.56, 21.96], Z in [20.02, 21.80])
+            Transform bedGroup = EnsureHotelSubgroup(furnGroup, "Room111B_Furn_DoubleBed");
+            EnsureHotelBox(bedGroup, "DoubleBed_Base",
+                new Vector3(21.26f, BaseY + 0.20f, 20.91f), Quaternion.identity,
+                new Vector3(1.40f, 0.40f, 1.78f), woodMat, keepCollider: true);
+            EnsureHotelBox(bedGroup, "DoubleBed_Headboard",
+                new Vector3(21.26f, BaseY + 0.54f, 20.05f), Quaternion.identity,
+                new Vector3(1.46f, 1.08f, 0.06f), woodMat, keepCollider: false);
+            EnsureHotelBox(bedGroup, "DoubleBed_Mattress",
+                new Vector3(21.26f, BaseY + 0.47f, 20.92f), Quaternion.identity,
+                new Vector3(1.34f, 0.16f, 1.70f), linenMat, keepCollider: false);
+            EnsureHotelBox(bedGroup, "DoubleBed_BlanketFold",
+                new Vector3(21.26f, BaseY + 0.505f, 21.38f), Quaternion.identity,
+                new Vector3(1.37f, 0.145f, 0.81f), blanketMat, keepCollider: false);
+            EnsureHotelBox(bedGroup, "DoubleBed_PillowW",
+                new Vector3(20.92f, BaseY + 0.60f, 20.28f), Quaternion.Euler(8f, 0f, 0f),
+                new Vector3(0.54f, 0.11f, 0.34f), linenMat, keepCollider: false);
+            EnsureHotelBox(bedGroup, "DoubleBed_PillowE",
+                new Vector3(21.60f, BaseY + 0.60f, 20.28f), Quaternion.Euler(8f, 0f, 0f),
+                new Vector3(0.54f, 0.11f, 0.34f), linenMat, keepCollider: false);
+
+            // 2B. Two Simple Bedside Tables flanking bed along South wall
+            Transform bedsideW = EnsureHotelSubgroup(furnGroup, "Room111B_Furn_BedsideW");
+            EnsureHotelBox(bedsideW, "BedsideW_Body",
+                new Vector3(20.25f, BaseY + 0.28f, 20.25f), Quaternion.identity,
+                new Vector3(0.46f, 0.56f, 0.46f), woodMat, keepCollider: true);
+            EnsureHotelBox(bedsideW, "BedsideW_Top",
+                new Vector3(20.25f, BaseY + 0.575f, 20.25f), Quaternion.identity,
+                new Vector3(0.50f, 0.03f, 0.50f), woodMat, keepCollider: false);
+            EnsureHotelBox(bedsideW, "BedsideW_Pull",
+                new Vector3(20.25f, BaseY + 0.42f, 20.49f), Quaternion.identity,
+                new Vector3(0.10f, 0.02f, 0.02f), industrialMetal, keepCollider: false);
+
+            Transform bedsideE = EnsureHotelSubgroup(furnGroup, "Room111B_Furn_BedsideE");
+            EnsureHotelBox(bedsideE, "BedsideE_Body",
+                new Vector3(22.28f, BaseY + 0.28f, 20.25f), Quaternion.identity,
+                new Vector3(0.46f, 0.56f, 0.46f), woodMat, keepCollider: true);
+            EnsureHotelBox(bedsideE, "BedsideE_Top",
+                new Vector3(22.28f, BaseY + 0.575f, 20.25f), Quaternion.identity,
+                new Vector3(0.50f, 0.03f, 0.50f), woodMat, keepCollider: false);
+            EnsureHotelBox(bedsideE, "BedsideE_Pull",
+                new Vector3(22.28f, BaseY + 0.42f, 20.49f), Quaternion.identity,
+                new Vector3(0.10f, 0.02f, 0.02f), industrialMetal, keepCollider: false);
+
+            // 2C. Modest Built-In Wardrobe / Closet (NW West Wall, Subtle Discrepancy #2: impossible inset depth)
+            Transform wardrobe = EnsureHotelSubgroup(furnGroup, "Room111B_Furn_Wardrobe");
+            EnsureHotelBox(wardrobe, "Wardrobe_Carcass",
+                new Vector3(19.46f, BaseY + 1.09f, 24.10f), Quaternion.identity,
+                new Vector3(0.64f, 2.18f, 1.32f), woodMat, keepCollider: true);
+            EnsureHotelBox(wardrobe, "Wardrobe_DoorS",
+                new Vector3(19.785f, BaseY + 1.08f, 23.78f), Quaternion.identity,
+                new Vector3(0.024f, 2.04f, 0.60f), woodMat, keepCollider: false);
+            EnsureHotelBox(wardrobe, "Wardrobe_DoorN",
+                new Vector3(19.785f, BaseY + 1.08f, 24.42f), Quaternion.identity,
+                new Vector3(0.024f, 2.04f, 0.60f), woodMat, keepCollider: false);
+            EnsureHotelBox(wardrobe, "Wardrobe_CenterGap",
+                new Vector3(19.796f, BaseY + 1.08f, 24.10f), Quaternion.identity,
+                new Vector3(0.008f, 2.04f, 0.014f), industrialMetal, keepCollider: false);
+            EnsureHotelBox(wardrobe, "Wardrobe_HandleS",
+                new Vector3(19.805f, BaseY + 1.08f, 24.03f), Quaternion.identity,
+                new Vector3(0.02f, 0.14f, 0.02f), industrialMetal, keepCollider: false);
+            EnsureHotelBox(wardrobe, "Wardrobe_HandleN",
+                new Vector3(19.805f, BaseY + 1.08f, 24.17f), Quaternion.identity,
+                new Vector3(0.02f, 0.14f, 0.02f), industrialMetal, keepCollider: false);
+
+            // 2D. Compact Writing Desk (North Wall, X in [20.92, 22.18], Z in [24.22, 24.76])
+            Transform desk = EnsureHotelSubgroup(furnGroup, "Room111B_Furn_Desk");
+            EnsureHotelBox(desk, "Desk_Top",
+                new Vector3(21.55f, BaseY + 0.74f, 24.49f), Quaternion.identity,
+                new Vector3(1.26f, 0.05f, 0.54f), woodMat, keepCollider: true);
+            EnsureHotelBox(desk, "Desk_LegW",
+                new Vector3(20.96f, BaseY + 0.36f, 24.49f), Quaternion.identity,
+                new Vector3(0.06f, 0.72f, 0.50f), woodMat, keepCollider: true);
+            EnsureHotelBox(desk, "Desk_LegE",
+                new Vector3(22.14f, BaseY + 0.36f, 24.49f), Quaternion.identity,
+                new Vector3(0.06f, 0.72f, 0.50f), woodMat, keepCollider: true);
+            EnsureHotelBox(desk, "Desk_DrawerBox",
+                new Vector3(21.92f, BaseY + 0.58f, 24.49f), Quaternion.identity,
+                new Vector3(0.38f, 0.24f, 0.48f), woodMat, keepCollider: false);
+            EnsureHotelBox(desk, "Desk_DrawerPull",
+                new Vector3(21.92f, BaseY + 0.58f, 24.24f), Quaternion.identity,
+                new Vector3(0.09f, 0.02f, 0.02f), industrialMetal, keepCollider: false);
+
+            // 2E. Simple Wooden Chair neatly tucked under desk (X in [21.33, 21.77], Z in [24.18, 24.58])
+            Transform chair = EnsureHotelSubgroup(furnGroup, "Room111B_Furn_Chair");
+            EnsureHotelBox(chair, "Chair_Seat",
+                new Vector3(21.55f, BaseY + 0.45f, 24.38f), Quaternion.identity,
+                new Vector3(0.44f, 0.04f, 0.40f), woodMat, keepCollider: true);
+            EnsureHotelBox(chair, "Chair_Backrest",
+                new Vector3(21.55f, BaseY + 0.69f, 24.20f), Quaternion.identity,
+                new Vector3(0.44f, 0.46f, 0.04f), woodMat, keepCollider: false);
+            EnsureHotelBox(chair, "Chair_LegSW", new Vector3(21.36f, BaseY + 0.225f, 24.21f), Quaternion.identity, new Vector3(0.04f, 0.45f, 0.04f), woodMat, keepCollider: false);
+            EnsureHotelBox(chair, "Chair_LegSE", new Vector3(21.74f, BaseY + 0.225f, 24.21f), Quaternion.identity, new Vector3(0.04f, 0.45f, 0.04f), woodMat, keepCollider: false);
+            EnsureHotelBox(chair, "Chair_LegNW", new Vector3(21.36f, BaseY + 0.225f, 24.55f), Quaternion.identity, new Vector3(0.04f, 0.45f, 0.04f), woodMat, keepCollider: false);
+            EnsureHotelBox(chair, "Chair_LegNE", new Vector3(21.74f, BaseY + 0.225f, 24.55f), Quaternion.identity, new Vector3(0.04f, 0.45f, 0.04f), woodMat, keepCollider: false);
+
+            // 2F. Restrained Wall Mirror above desk (North Wall, zero reflection camera/RT cost)
+            Transform mirror = EnsureHotelSubgroup(furnGroup, "Room111B_Furn_WallMirror");
+            EnsureHotelBox(mirror, "WallMirror_Frame",
+                new Vector3(21.55f, BaseY + 1.46f, 24.775f), Quaternion.identity,
+                new Vector3(0.76f, 0.94f, 0.03f), woodMat, keepCollider: false);
+            EnsureHotelBox(mirror, "WallMirror_Glass",
+                new Vector3(21.55f, BaseY + 1.46f, 24.756f), Quaternion.identity,
+                new Vector3(0.66f, 0.84f, 0.012f), mirrorMat, keepCollider: false);
+
+            // 3. THE THRESHOLD OF TRUST — UNCONVENTIONAL EXIT INSIDE ROOM 111-B
+            Transform thresholdGroup = EnsureHotelSubgroup(interiorRoot, "Room111B_ThresholdOfTrust");
+
+            EnsureHotelBox(thresholdGroup, "Threshold_RecessJambS",
+                new Vector3(24.24f, BaseY + 1.17f, 21.71f), Quaternion.identity,
+                new Vector3(0.56f, 2.34f, 0.08f), columnConcrete, keepCollider: true);
+            EnsureHotelBox(thresholdGroup, "Threshold_RecessJambN",
+                new Vector3(24.24f, BaseY + 1.17f, 23.09f), Quaternion.identity,
+                new Vector3(0.56f, 2.34f, 0.08f), columnConcrete, keepCollider: true);
+            EnsureHotelBox(thresholdGroup, "Threshold_RecessHeader",
+                new Vector3(24.24f, BaseY + 2.39f, 22.40f), Quaternion.identity,
+                new Vector3(0.58f, 0.14f, 1.48f), columnConcrete, keepCollider: false);
+
+            EnsureHotelBox(thresholdGroup, "Threshold_InnerRevealS",
+                new Vector3(24.25f, BaseY + 1.16f, 21.755f), Quaternion.identity,
+                new Vector3(0.50f, 2.30f, 0.015f), agedCeramic, keepCollider: false);
+            EnsureHotelBox(thresholdGroup, "Threshold_InnerRevealN",
+                new Vector3(24.25f, BaseY + 1.16f, 23.045f), Quaternion.identity,
+                new Vector3(0.50f, 2.30f, 0.015f), agedCeramic, keepCollider: false);
+            EnsureHotelBox(thresholdGroup, "Threshold_InnerRevealTop",
+                new Vector3(24.25f, BaseY + 2.315f, 22.40f), Quaternion.identity,
+                new Vector3(0.50f, 0.015f, 1.29f), agedCeramic, keepCollider: false);
+
+            EnsureHotelBox(thresholdGroup, "Threshold_FloorSeam",
+                new Vector3(23.08f, BaseY + 0.006f, 22.40f), Quaternion.identity,
+                new Vector3(2.86f, 0.005f, 0.048f), industrialMetal, keepCollider: false);
+            EnsureHotelBox(thresholdGroup, "Threshold_SillPlate",
+                new Vector3(23.98f, BaseY + 0.0065f, 22.40f), Quaternion.identity,
+                new Vector3(0.12f, 0.007f, 1.32f), elevatorMetal, keepCollider: false);
+
+            EnsureHotelBox(thresholdGroup, "Threshold_OvercastDaylightPlane",
+                new Vector3(24.495f, BaseY + 1.16f, 22.40f), Quaternion.Euler(0f, -90f, 0f),
+                new Vector3(1.28f, 2.30f, 0.015f), thresholdHazeMat, keepCollider: false);
+
+            Transform trigTf = thresholdGroup.Find("Room111B_Threshold_TriggerVolume");
+            GameObject trigGo;
+            if (trigTf != null)
+            {
+                trigGo = trigTf.gameObject;
+            }
+            else
+            {
+                trigGo = new GameObject("Room111B_Threshold_TriggerVolume");
+                trigGo.transform.SetParent(thresholdGroup, false);
+            }
+            trigGo.transform.position = new Vector3(24.26f, BaseY + 1.15f, 22.40f);
+            trigGo.transform.rotation = Quaternion.Euler(0f, -90f, 0f);
+            trigGo.transform.localScale = Vector3.one;
+
+            BoxCollider trigBox = trigGo.GetComponent<BoxCollider>();
+            if (trigBox == null) trigBox = trigGo.AddComponent<BoxCollider>();
+            trigBox.isTrigger = true;
+            trigBox.center = Vector3.zero;
+            trigBox.size = new Vector3(1.10f, 2.20f, 0.44f);
+
+            RemanenciaThresholdOfTrustTrigger trustTrigger = trigGo.GetComponent<RemanenciaThresholdOfTrustTrigger>();
+            if (trustTrigger == null) trustTrigger = trigGo.AddComponent<RemanenciaThresholdOfTrustTrigger>();
+            trustTrigger.crossingPlaneX = 23.92f;
+            trustTrigger.minZ = 21.80f;
+            trustTrigger.maxZ = 23.00f;
+            trustTrigger.floorY = BaseY;
+            trustTrigger.maxVerticalOffset = 1.60f;
+
+            // 4. INTERIOR-ONLY HOTEL ENTRANCE APPEARANCE & ONE-WAY OBSERVATION ILLUSION
+            Transform entGroup = EnsureHotelSubgroup(interiorRoot, "Room111B_InteriorEntranceIllusion");
+            entGroup.position = new Vector3(19.79f, BaseY, 8.80f);
+            entGroup.rotation = Quaternion.Euler(0f, -90f, 0f);
+            entGroup.localScale = Vector3.one;
+
+            EnsureHotelBox(entGroup, "InteriorEntrance_FrameL",
+                entGroup.TransformPoint(new Vector3(-0.74f, 1.08f, 0.02f)), entGroup.rotation,
+                new Vector3(0.09f, 2.16f, 0.09f), industrialMetal, keepCollider: false);
+            EnsureHotelBox(entGroup, "InteriorEntrance_FrameR",
+                entGroup.TransformPoint(new Vector3(0.74f, 1.08f, 0.02f)), entGroup.rotation,
+                new Vector3(0.09f, 2.16f, 0.09f), industrialMetal, keepCollider: false);
+            EnsureHotelBox(entGroup, "InteriorEntrance_FrameTop",
+                entGroup.TransformPoint(new Vector3(0.00f, 2.14f, 0.02f)), entGroup.rotation,
+                new Vector3(1.56f, 0.09f, 0.09f), industrialMetal, keepCollider: false);
+            EnsureHotelBox(entGroup, "InteriorEntrance_CenterMullion",
+                entGroup.TransformPoint(new Vector3(0.00f, 1.06f, 0.035f)), entGroup.rotation,
+                new Vector3(0.06f, 2.08f, 0.06f), industrialMetal, keepCollider: false);
+            EnsureHotelBox(entGroup, "InteriorEntrance_Kickplate",
+                entGroup.TransformPoint(new Vector3(0.00f, 0.19f, 0.035f)), entGroup.rotation,
+                new Vector3(1.40f, 0.38f, 0.055f), industrialMetal, keepCollider: false);
+            EnsureHotelBox(entGroup, "InteriorEntrance_MidRail",
+                entGroup.TransformPoint(new Vector3(0.00f, 1.02f, 0.042f)), entGroup.rotation,
+                new Vector3(1.40f, 0.055f, 0.045f), industrialMetal, keepCollider: false);
+            EnsureHotelBox(entGroup, "InteriorEntrance_HandleL",
+                entGroup.TransformPoint(new Vector3(-0.11f, 1.06f, 0.075f)), entGroup.rotation,
+                new Vector3(0.024f, 0.34f, 0.036f), elevatorMetal, keepCollider: false);
+            EnsureHotelBox(entGroup, "InteriorEntrance_HandleR",
+                entGroup.TransformPoint(new Vector3(0.11f, 1.06f, 0.075f)), entGroup.rotation,
+                new Vector3(0.024f, 0.34f, 0.036f), elevatorMetal, keepCollider: false);
+
+            // Remove legacy split glass panes if migrating from earlier draft
+            Transform oldPaneL = entGroup.Find("InteriorEntrance_GlassPane_L");
+            if (oldPaneL != null) UnityEngine.Object.DestroyImmediate(oldPaneL.gameObject);
+            Transform oldPaneR = entGroup.Find("InteriorEntrance_GlassPane_R");
+            if (oldPaneR != null) UnityEngine.Object.DestroyImmediate(oldPaneR.gameObject);
+
+            // Single continuous true-aspect Av. Benito Juárez observation glass plane framed behind the hotel double-door mullions
+            GameObject unifiedPane = EnsureHotelBox(entGroup, "InteriorEntrance_GlassPane_Unified",
+                entGroup.TransformPoint(new Vector3(0.00f, 1.24f, 0.014f)), entGroup.rotation,
+                new Vector3(1.36f, 1.72f, 0.012f), oneWayGlassMat, keepCollider: false);
+
+            RemanenciaOneWayEntranceView oneWayView = entGroup.GetComponent<RemanenciaOneWayEntranceView>();
+            if (oneWayView == null) oneWayView = entGroup.gameObject.AddComponent<RemanenciaOneWayEntranceView>();
+            oneWayView.unifiedGlassPane = unifiedPane.GetComponent<Renderer>();
+        }
+
+        private static string EnsureRoom111BFloorTileTexture(string assetPath)
+        {
+            string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", assetPath));
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+            const int w = 256, h = 256;
+            Texture2D tex = new Texture2D(w, h, TextureFormat.RGB24, false);
+
+            Color grout = new Color(0.28f, 0.26f, 0.24f);
+            Color tileA = new Color(0.55f, 0.49f, 0.43f);
+            Color tileB = new Color(0.51f, 0.46f, 0.41f);
+
+            for (int y = 0; y < h; y++)
+            {
+                for (int x = 0; x < w; x++)
+                {
+                    int gx = x % 64;
+                    int gy = y % 64;
+                    bool isGrout = gx < 3 || gy < 3;
+                    int cellId = (x / 64) + (y / 64) * 4;
+                    Color baseCol = ((x / 64 + y / 64) % 2 == 0) ? tileA : tileB;
+                    float speckle = (PeriodicHash(x, y, w, h, 7121 + cellId * 17) - 0.5f) * 0.055f;
+                    float wear = (PeriodicFbm((float)x / w, (float)y / h, 4, 4, 2, 7129) - 0.5f) * 0.06f;
+                    Color c = isGrout
+                        ? grout
+                        : new Color(
+                            Mathf.Clamp01(baseCol.r + speckle + wear),
+                            Mathf.Clamp01(baseCol.g + speckle + wear),
+                            Mathf.Clamp01(baseCol.b + speckle + wear));
+                    tex.SetPixel(x, y, c);
+                }
+            }
+            tex.Apply();
+            File.WriteAllBytes(fullPath, tex.EncodeToPNG());
+            UnityEngine.Object.DestroyImmediate(tex);
+            return assetPath;
+        }
+
+        private static string EnsureThresholdOvercastHazeTexture(string assetPath)
+        {
+            string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", assetPath));
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+            const int w = 256, h = 384;
+            Texture2D tex = new Texture2D(w, h, TextureFormat.RGB24, false);
+
+            Color groundCol = new Color(0.62f, 0.62f, 0.60f);
+            Color horizonCol = new Color(0.88f, 0.89f, 0.87f);
+            Color upperSkyCol = new Color(0.75f, 0.80f, 0.85f);
+
+            for (int y = 0; y < h; y++)
+            {
+                float v = (float)y / (h - 1);
+                Color band = v < 0.36f
+                    ? Color.Lerp(groundCol, horizonCol, Mathf.SmoothStep(0.05f, 0.36f, v))
+                    : Color.Lerp(horizonCol, upperSkyCol, Mathf.SmoothStep(0.36f, 0.96f, v));
+
+                for (int x = 0; x < w; x++)
+                {
+                    float u = (float)x / (w - 1);
+                    float mist = (PeriodicFbm(u, v, 3, 3, 2, 7127) - 0.5f) * 0.05f;
+                    float edge = Mathf.Min(Mathf.Min(u, 1f - u), Mathf.Min(v, 1f - v));
+                    float softVignette = Mathf.Lerp(0.84f, 1.0f, Mathf.SmoothStep(0f, 0.12f, edge));
+                    tex.SetPixel(x, y, new Color(
+                        Mathf.Clamp01((band.r + mist) * softVignette),
+                        Mathf.Clamp01((band.g + mist) * softVignette),
+                        Mathf.Clamp01((band.b + mist) * softVignette)));
+                }
+            }
+            tex.Apply();
+            File.WriteAllBytes(fullPath, tex.EncodeToPNG());
+            UnityEngine.Object.DestroyImmediate(tex);
+            return assetPath;
+        }
+
+        private static string EnsureFallbackSyntheticStreetTexture(string assetPath)
+        {
+            string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", assetPath));
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+            const int w = 256, h = 192;
+            Texture2D tex = new Texture2D(w, h, TextureFormat.RGB24, false);
+            for (int y = 0; y < h; y++)
+            {
+                float v = (float)y / (h - 1);
+                Color c = v < 0.42f
+                    ? Color.Lerp(new Color(0.26f, 0.27f, 0.28f), new Color(0.50f, 0.49f, 0.46f), v / 0.42f)
+                    : Color.Lerp(new Color(0.58f, 0.62f, 0.66f), new Color(0.46f, 0.54f, 0.64f), (v - 0.42f) / 0.58f);
+                for (int x = 0; x < w; x++) tex.SetPixel(x, y, c);
+            }
+            tex.Apply();
+            File.WriteAllBytes(fullPath, tex.EncodeToPNG());
+            UnityEngine.Object.DestroyImmediate(tex);
+            return assetPath;
+        }
+
         private static void BuildOrUpdateHotelFirstLivingMicrofauna(Transform backroomsRoot)
         {
             // Reuse existing 07.7 512x512 procedural texture (ZERO new textures, ZERO emission)
@@ -5486,6 +6000,12 @@ namespace MyVirtualCommunity.Editor
             Transform faunalRoot = root.transform.Find(HotelFaunalTracesRootName);
             Transform microfaunaRoot = root.transform.Find(HotelFirstLivingMicrofaunaRootName);
             Transform room111BRoot = shell.Find(HotelRoom111BRootName);
+            Transform room111BInteriorRoot = root.transform.Find(HotelRoom111BGuestInteriorRootName);
+            bool hasRoom111BInterior = room111BInteriorRoot != null &&
+                                       room111BInteriorRoot.Find("Room111B_NorthCorridorDirectory") != null &&
+                                       room111BInteriorRoot.Find("Room111B_FurnitureAndFinishes") != null &&
+                                       room111BInteriorRoot.Find("Room111B_ThresholdOfTrust") != null &&
+                                       room111BInteriorRoot.Find("Room111B_InteriorEntranceIllusion") != null;
             bool hasRoom111B = room111BRoot != null &&
                                room111BRoot.Find("Room111B_ConcealedOpening") != null &&
                                room111BRoot.Find("Room111B_EastCorridor") != null &&
@@ -5542,7 +6062,8 @@ namespace MyVirtualCommunity.Editor
                                      hasEarlyEcology &&
                                      hasFaunalTraces &&
                                      hasFirstLivingMicrofauna &&
-                                     hasRoom111B;
+                                     hasRoom111B &&
+                                     hasRoom111BInterior;
 
             int retainedWallCount = 0, pillarCount = 0, missingVoidCount = 0, crookedHatchCount = 0;
             for (int i = 0; i < shell.childCount; i++)
@@ -7186,618 +7707,4 @@ namespace MyVirtualCommunity.Editor
             }
             tex.Apply();
             File.WriteAllBytes(fullPath, tex.EncodeToPNG());
-            UnityEngine.Object.DestroyImmediate(tex);
-            return assetPath;
-        }
-
-
-        private static GameObject CreateBox(string name, Transform parent, Vector3 localPos, Vector3 localScale, Material mat, bool keepCollider)
-        {
-            GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            go.name = name;
-            go.transform.SetParent(parent, false);
-            go.transform.localPosition = localPos;
-            go.transform.localRotation = Quaternion.identity;
-            go.transform.localScale = localScale;
-            SetMat(go, mat);
-            if (!keepCollider)
-            {
-                Collider col = go.GetComponent<Collider>();
-                if (col != null) UnityEngine.Object.DestroyImmediate(col);
-            }
-            return go;
-        }
-
-        private static void SetMat(GameObject go, Material mat)
-        {
-            Renderer r = go.GetComponent<Renderer>();
-            if (r != null && mat != null)
-            {
-                r.sharedMaterial = mat;
-                r.shadowCastingMode = ShadowCastingMode.On;
-                r.receiveShadows = true;
-            }
-        }
-
-        private static void AttachDesc(GameObject target, string id, string titleEs, string titleEn, string loreEs, string loreEn, Color accent)
-        {
-            var d = target.AddComponent<SecretContainmentArtifactDescriptor>();
-            d.artifactId = id;
-            d.titleEs = titleEs;
-            d.titleEn = titleEn;
-            d.loreEs = loreEs;
-            d.loreEn = loreEn;
-            d.accentColor = accent;
-        }
-
-        private static Shader FindLitShader() => Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-
-        private static Material CreateColorMat(string assetPath, Color color, float smoothness, float metallic)
-        {
-            Material mat = AssetDatabase.LoadAssetAtPath<Material>(assetPath);
-            if (mat == null) { mat = new Material(FindLitShader()); AssetDatabase.CreateAsset(mat, assetPath); }
-            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", color);
-            if (mat.HasProperty("_Color")) mat.SetColor("_Color", color);
-            if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", smoothness);
-            if (mat.HasProperty("_Metallic")) mat.SetFloat("_Metallic", metallic);
-            EditorUtility.SetDirty(mat);
-            return mat;
-        }
-
-        private static Material CreateTexturedMat(string assetPath, string texPath, Color tint, float smoothness, Vector2 tiling)
-        {
-            Texture2D tex = AssetDatabase.LoadAssetAtPath<Texture2D>(texPath);
-            Material mat = CreateColorMat(assetPath, tint, smoothness, 0f);
-            if (tex != null)
-            {
-                if (mat.HasProperty("_BaseMap")) { mat.SetTexture("_BaseMap", tex); mat.SetTextureScale("_BaseMap", tiling); }
-                if (mat.HasProperty("_MainTex")) { mat.SetTexture("_MainTex", tex); mat.SetTextureScale("_MainTex", tiling); }
-            }
-            EditorUtility.SetDirty(mat);
-            return mat;
-        }
-
-        private static Material CreateEmissiveTexturedMat(string assetPath, string texPath, Color baseTint, Color emissionTint)
-        {
-            Texture2D tex = AssetDatabase.LoadAssetAtPath<Texture2D>(texPath);
-            Material mat = CreateTexturedMat(assetPath, texPath, baseTint, 0.35f, Vector2.one);
-            if (mat.HasProperty("_EmissionColor"))
-            {
-                mat.EnableKeyword("_EMISSION");
-                mat.SetColor("_EmissionColor", emissionTint);
-            }
-            if (tex != null && mat.HasProperty("_EmissionMap"))
-            {
-                mat.SetTexture("_EmissionMap", tex);
-            }
-            EditorUtility.SetDirty(mat);
-            return mat;
-        }
-
-        private static Material CreateEmissiveMat(string assetPath, Color baseColor, Color emissionColor)
-        {
-            Material mat = CreateColorMat(assetPath, baseColor, 0.35f, 0f);
-            if (mat.HasProperty("_EmissionColor")) { mat.EnableKeyword("_EMISSION"); mat.SetColor("_EmissionColor", emissionColor); }
-            EditorUtility.SetDirty(mat);
-            return mat;
-        }
-
-        private static void ConfigureAlphaDecalTextureImporter(string assetPath)
-        {
-            TextureImporter imp = AssetImporter.GetAtPath(assetPath) as TextureImporter;
-            if (imp == null) return;
-            imp.textureType = TextureImporterType.Default;
-            imp.sRGBTexture = true;
-            imp.alphaSource = TextureImporterAlphaSource.FromInput;
-            imp.alphaIsTransparency = true;
-            imp.mipmapEnabled = true;
-            imp.wrapMode = TextureWrapMode.Clamp;
-            imp.filterMode = FilterMode.Bilinear;
-            imp.maxTextureSize = 512;
-            imp.textureCompression = TextureImporterCompression.Uncompressed;
-            imp.SaveAndReimport();
-        }
-
-        private static void ConfigureHighDetailOrganicImporter(string assetPath)
-        {
-            TextureImporter imp = AssetImporter.GetAtPath(assetPath) as TextureImporter;
-            if (imp == null) return;
-            imp.textureType = TextureImporterType.Default;
-            imp.sRGBTexture = true;
-            imp.mipmapEnabled = true;
-            imp.wrapMode = TextureWrapMode.Clamp;
-            imp.filterMode = FilterMode.Bilinear;
-            imp.maxTextureSize = 512;
-            imp.textureCompression = TextureImporterCompression.Uncompressed;
-            imp.SaveAndReimport();
-        }
-
-        private static Material CreateAlphaBlendedDecalMat(string assetPath, string texPath, Color tint, float smoothness, int renderQueue = 3000)
-        {
-            Material mat = CreateTexturedMat(assetPath, texPath, tint, smoothness, Vector2.one);
-            if (mat.HasProperty("_Surface")) mat.SetFloat("_Surface", 1f);
-            if (mat.HasProperty("_Blend")) mat.SetFloat("_Blend", 0f);
-            if (mat.HasProperty("_AlphaClip")) mat.SetFloat("_AlphaClip", 0f);
-            if (mat.HasProperty("_SrcBlend")) mat.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
-            if (mat.HasProperty("_DstBlend")) mat.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
-            if (mat.HasProperty("_SrcBlendAlpha")) mat.SetFloat("_SrcBlendAlpha", (float)BlendMode.One);
-            if (mat.HasProperty("_DstBlendAlpha")) mat.SetFloat("_DstBlendAlpha", (float)BlendMode.OneMinusSrcAlpha);
-            if (mat.HasProperty("_ZWrite")) mat.SetFloat("_ZWrite", 0f);
-            if (mat.HasProperty("_Cull")) mat.SetFloat("_Cull", (float)CullMode.Off);
-            if (mat.HasProperty("_BlendModePreserveSpecular")) mat.SetFloat("_BlendModePreserveSpecular", 0f);
-            if (mat.HasProperty("_SpecularHighlights")) mat.SetFloat("_SpecularHighlights", 0f);
-            if (mat.HasProperty("_EnvironmentReflections")) mat.SetFloat("_EnvironmentReflections", 0f);
-            mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-            mat.EnableKeyword("_SPECULARHIGHLIGHTS_OFF");
-            mat.EnableKeyword("_ENVIRONMENTREFLECTIONS_OFF");
-            mat.DisableKeyword("_ALPHATEST_ON");
-            mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-            mat.DisableKeyword("_EMISSION");
-            mat.SetOverrideTag("RenderType", "Transparent");
-            mat.renderQueue = renderQueue;
-            EditorUtility.SetDirty(mat);
-            return mat;
-        }
-
-        private static Material CreateOpaqueTexturedMat(string assetPath, string texPath, Color tint, float smoothness)
-        {
-            Material mat = CreateTexturedMat(assetPath, texPath, tint, smoothness, Vector2.one);
-            if (mat.HasProperty("_Surface")) mat.SetFloat("_Surface", 0f);
-            if (mat.HasProperty("_AlphaClip")) mat.SetFloat("_AlphaClip", 0f);
-            if (mat.HasProperty("_SrcBlend")) mat.SetFloat("_SrcBlend", (float)BlendMode.One);
-            if (mat.HasProperty("_DstBlend")) mat.SetFloat("_DstBlend", (float)BlendMode.Zero);
-            if (mat.HasProperty("_ZWrite")) mat.SetFloat("_ZWrite", 1f);
-            if (mat.HasProperty("_Cull")) mat.SetFloat("_Cull", (float)CullMode.Off);
-            if (mat.HasProperty("_SpecularHighlights")) mat.SetFloat("_SpecularHighlights", 1f);
-            mat.DisableKeyword("_SURFACE_TYPE_TRANSPARENT");
-            mat.DisableKeyword("_ALPHATEST_ON");
-            mat.DisableKeyword("_SPECULARHIGHLIGHTS_OFF");
-            mat.DisableKeyword("_EMISSION");
-            mat.SetOverrideTag("RenderType", "Opaque");
-            mat.renderQueue = -1;
-            EditorUtility.SetDirty(mat);
-            return mat;
-        }
-
-        /// <summary>
-        /// Editor verification utility: renders 4 actual URP PlayMode-equivalent camera views
-        /// (with exact Remanencia Level 0 ambient light & exponential-squared fog) to PNG files
-        /// without modifying or saving the scene.
-        /// </summary>
-        public static void RenderEcologyVerificationViews()
-        {
-            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
-            if (!scene.IsValid())
-            {
-                throw new InvalidOperationException($"Could not open {ScenePath} for camera verification.");
-            }
-
-            string outDir = Environment.GetEnvironmentVariable("MVC_ECOLOGY_RENDER_DIR");
-            if (string.IsNullOrWhiteSpace(outDir))
-            {
-                outDir = Path.Combine(Path.GetTempPath(), "MVC_EcologyRenders");
-            }
-            Directory.CreateDirectory(outDir);
-
-            AmbientMode prevAmbMode = RenderSettings.ambientMode;
-            Color prevAmbLight = RenderSettings.ambientLight;
-            bool prevFog = RenderSettings.fog;
-            FogMode prevFogMode = RenderSettings.fogMode;
-            Color prevFogColor = RenderSettings.fogColor;
-            float prevFogDensity = RenderSettings.fogDensity;
-            Material prevSkybox = RenderSettings.skybox;
-
-            GameObject camGo = new GameObject("__TempEcologyVerifyCam__");
-            RenderTexture rt = new RenderTexture(1280, 720, 24, RenderTextureFormat.ARGB32);
-            Texture2D readTex = new Texture2D(1280, 720, TextureFormat.RGB24, false);
-
-            try
-            {
-                RenderSettings.skybox = null;
-                RenderSettings.ambientMode = AmbientMode.Flat;
-                RenderSettings.ambientLight = SecretBackroomsTransitionController.RemanenciaLevel0AmbientLight;
-                RenderSettings.fog = true;
-                RenderSettings.fogMode = FogMode.ExponentialSquared;
-                RenderSettings.fogColor = SecretBackroomsTransitionController.RemanenciaLevel0FogColor;
-                RenderSettings.fogDensity = SecretBackroomsTransitionController.RemanenciaLevel0FogDensity;
-
-                Camera cam = camGo.AddComponent<Camera>();
-                cam.clearFlags = CameraClearFlags.SolidColor;
-                cam.backgroundColor = SecretBackroomsTransitionController.RemanenciaLevel0FogColor;
-                cam.fieldOfView = 60f;
-                cam.nearClipPlane = 0.05f;
-                cam.farClipPlane = 60f;
-                cam.targetTexture = rt;
-
-                (string fileName, Vector3 pos, Vector3 lookAt)[] shots =
-                {
-                    ("verify_zoneB_maint.png",     new Vector3(-10.65f, BaseY + 1.42f, 22.12f), new Vector3( -8.72f, BaseY + 0.78f, 22.05f)),
-                    ("verify_zoneC_utility.png",   new Vector3(-13.85f, BaseY + 1.42f, 20.30f), new Vector3(-15.70f, BaseY + 0.72f, 18.65f)),
-                    ("verify_zoneA_courtyard.png", new Vector3( -2.85f, BaseY + 1.18f, 22.85f), new Vector3( -1.15f, BaseY + 0.32f, 21.75f)),
-                    ("verify_zoneD_room110.png",   new Vector3( -8.35f, BaseY + 1.10f, 32.35f), new Vector3( -9.32f, BaseY + 0.35f, 33.54f))
-                };
-
-                foreach (var shot in shots)
-                {
-                    cam.transform.position = shot.pos;
-                    cam.transform.LookAt(shot.lookAt, Vector3.up);
-                    cam.Render();
-
-                    RenderTexture.active = rt;
-                    readTex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
-                    readTex.Apply();
-                    RenderTexture.active = null;
-
-                    string fullFile = Path.Combine(outDir, shot.fileName);
-                    File.WriteAllBytes(fullFile, readTex.EncodeToPNG());
-                    Debug.Log($"[BackroomsLevel1Builder] Rendered camera verification view: {fullFile}");
-                }
-            }
-            finally
-            {
-                RenderTexture.active = null;
-                UnityEngine.Object.DestroyImmediate(camGo);
-                rt.Release();
-                UnityEngine.Object.DestroyImmediate(rt);
-                UnityEngine.Object.DestroyImmediate(readTex);
-
-                RenderSettings.skybox = prevSkybox;
-                RenderSettings.ambientMode = prevAmbMode;
-                RenderSettings.ambientLight = prevAmbLight;
-                RenderSettings.fog = prevFog;
-                RenderSettings.fogMode = prevFogMode;
-                RenderSettings.fogColor = prevFogColor;
-                RenderSettings.fogDensity = prevFogDensity;
-            }
-        }
-
-        /// <summary>
-        /// Read-only Editor camera verification utility for Implementation 07.8 (First Faunal Traces):
-        /// renders medium-range and close-inspection URP views of Zones A, B, and C without modifying the scene.
-        /// </summary>
-        public static void RenderFaunalTracesVerificationViews()
-        {
-            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
-            if (!scene.IsValid())
-            {
-                throw new InvalidOperationException($"Could not open {ScenePath} for 07.8 camera verification.");
-            }
-
-            string outDir = Environment.GetEnvironmentVariable("MVC_FAUNAL_RENDER_DIR");
-            if (string.IsNullOrWhiteSpace(outDir))
-            {
-                outDir = Path.Combine(Path.GetTempPath(), "MVC_FaunalRenders");
-            }
-            Directory.CreateDirectory(outDir);
-
-            AmbientMode prevAmbMode = RenderSettings.ambientMode;
-            Color prevAmbLight = RenderSettings.ambientLight;
-            bool prevFog = RenderSettings.fog;
-            FogMode prevFogMode = RenderSettings.fogMode;
-            Color prevFogColor = RenderSettings.fogColor;
-            float prevFogDensity = RenderSettings.fogDensity;
-            Material prevSkybox = RenderSettings.skybox;
-
-            GameObject camGo = new GameObject("__TempFaunalVerifyCam__");
-            RenderTexture rt = new RenderTexture(1280, 720, 24, RenderTextureFormat.ARGB32);
-            Texture2D readTex = new Texture2D(1280, 720, TextureFormat.RGB24, false);
-
-            try
-            {
-                RenderSettings.skybox = null;
-                RenderSettings.ambientMode = AmbientMode.Flat;
-                RenderSettings.ambientLight = SecretBackroomsTransitionController.RemanenciaLevel0AmbientLight;
-                RenderSettings.fog = true;
-                RenderSettings.fogMode = FogMode.ExponentialSquared;
-                RenderSettings.fogColor = SecretBackroomsTransitionController.RemanenciaLevel0FogColor;
-                RenderSettings.fogDensity = SecretBackroomsTransitionController.RemanenciaLevel0FogDensity;
-
-                Camera cam = camGo.AddComponent<Camera>();
-                cam.clearFlags = CameraClearFlags.SolidColor;
-                cam.backgroundColor = SecretBackroomsTransitionController.RemanenciaLevel0FogColor;
-                cam.fieldOfView = 55f;
-                cam.nearClipPlane = 0.03f;
-                cam.farClipPlane = 60f;
-                cam.targetTexture = rt;
-
-                (string fileName, Vector3 pos, Vector3 lookAt)[] shots =
-                {
-                    ("verify_078_zoneA_courtyard_close.png", new Vector3(-1.82f, BaseY + 0.42f, 21.65f), new Vector3(-1.14f, BaseY + 0.06f, 21.84f)),
-                    ("verify_078_zoneB_maint_wide.png",      new Vector3(-10.55f, BaseY + 1.38f, 22.15f), new Vector3(-8.72f, BaseY + 0.72f, 22.10f)),
-                    ("verify_078_zoneB_maint_close.png",     new Vector3(-9.42f, BaseY + 0.56f, 21.88f), new Vector3(-8.74f, BaseY + 0.30f, 21.86f)),
-                    ("verify_078_zoneC_utility_wide.png",    new Vector3(-14.00f, BaseY + 1.32f, 20.15f), new Vector3(-15.70f, BaseY + 0.58f, 18.65f)),
-                    ("verify_078_zoneC_utility_close.png",   new Vector3(-15.05f, BaseY + 0.58f, 18.92f), new Vector3(-15.72f, BaseY + 0.28f, 18.54f))
-                };
-
-                foreach (var shot in shots)
-                {
-                    cam.transform.position = shot.pos;
-                    cam.transform.LookAt(shot.lookAt, Vector3.up);
-                    cam.Render();
-
-                    RenderTexture.active = rt;
-                    readTex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
-                    readTex.Apply();
-                    RenderTexture.active = null;
-
-                    string fullFile = Path.Combine(outDir, shot.fileName);
-                    File.WriteAllBytes(fullFile, readTex.EncodeToPNG());
-                    Debug.Log($"[BackroomsLevel1Builder] Rendered 07.8 faunal verification view: {fullFile}");
-                }
-            }
-            finally
-            {
-                RenderTexture.active = null;
-                UnityEngine.Object.DestroyImmediate(camGo);
-                rt.Release();
-                UnityEngine.Object.DestroyImmediate(rt);
-                UnityEngine.Object.DestroyImmediate(readTex);
-
-                RenderSettings.skybox = prevSkybox;
-                RenderSettings.ambientMode = prevAmbMode;
-                RenderSettings.ambientLight = prevAmbLight;
-                RenderSettings.fog = prevFog;
-                RenderSettings.fogMode = prevFogMode;
-                RenderSettings.fogColor = prevFogColor;
-                RenderSettings.fogDensity = prevFogDensity;
-            }
-        }
-
-        /// <summary>
-        /// Focused runtime movement verification procedure for Implementation 07.9 (First Living Microfauna).
-        /// Opens BackroomsLevel1Scene.unity read-only, steps BOTH live RemanenciaAmbientMicrofaunaController
-        /// instances frame-by-frame (dt = 1/60s) with an approaching observer camera through the complete
-        /// Concealed -> IdleWait -> Emerging -> Paused -> Retreating -> Cooldown cycle, verifies zero
-        /// teleportation and exact concealment return, and renders keyframe URP evidence images without
-        /// modifying or saving the scene.
-        /// </summary>
-        public static void VerifyAndCaptureMicrofaunaRuntimeCycle()
-        {
-            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
-            if (!scene.IsValid())
-            {
-                throw new InvalidOperationException($"Could not open {ScenePath} for 07.9 runtime verification.");
-            }
-
-            string outDir = Environment.GetEnvironmentVariable("MVC_MICROFAUNA_RENDER_DIR");
-            if (string.IsNullOrWhiteSpace(outDir))
-            {
-                outDir = Path.Combine(Path.GetTempPath(), "MVC_MicrofaunaVerify");
-            }
-            Directory.CreateDirectory(outDir);
-
-            Transform microRoot = GameObject.Find(HotelFirstLivingMicrofaunaRootName)?.transform;
-            if (microRoot == null)
-            {
-                throw new InvalidOperationException($"Missing {HotelFirstLivingMicrofaunaRootName} in scene.");
-            }
-
-            var encounters = new (string name, Vector3 camPos, Vector3 camLookAt, Vector3 approachPos)[]
-            {
-                ("Microfauna_Utility_Encounter",
-                    new Vector3(-15.32f, BaseY + 0.24f, 18.66f),
-                    new Vector3(-15.64f, BaseY + 0.01f, 18.42f),
-                    new Vector3(-14.20f, BaseY + 1.50f, 19.60f)),
-                ("Microfauna_Maintenance_Encounter",
-                    new Vector3(-9.18f, BaseY + 0.22f, 21.74f),
-                    new Vector3(-8.82f, BaseY + 0.01f, 21.91f),
-                    new Vector3(-10.10f, BaseY + 1.50f, 21.85f))
-            };
-
-            AmbientMode prevAmbMode = RenderSettings.ambientMode;
-            Color prevAmbLight = RenderSettings.ambientLight;
-            bool prevFog = RenderSettings.fog;
-            FogMode prevFogMode = RenderSettings.fogMode;
-            Color prevFogColor = RenderSettings.fogColor;
-            float prevFogDensity = RenderSettings.fogDensity;
-            Material prevSkybox = RenderSettings.skybox;
-
-            GameObject camGo = new GameObject("__TempMicrofaunaVerifyCam__");
-            RenderTexture rt = new RenderTexture(1280, 720, 24, RenderTextureFormat.ARGB32);
-            Texture2D readTex = new Texture2D(1280, 720, TextureFormat.RGB24, false);
-
-            try
-            {
-                RenderSettings.skybox = null;
-                RenderSettings.ambientMode = AmbientMode.Flat;
-                RenderSettings.ambientLight = SecretBackroomsTransitionController.RemanenciaLevel0AmbientLight;
-                RenderSettings.fog = true;
-                RenderSettings.fogMode = FogMode.ExponentialSquared;
-                RenderSettings.fogColor = SecretBackroomsTransitionController.RemanenciaLevel0FogColor;
-                RenderSettings.fogDensity = SecretBackroomsTransitionController.RemanenciaLevel0FogDensity;
-
-                Camera cam = camGo.AddComponent<Camera>();
-                cam.clearFlags = CameraClearFlags.SolidColor;
-                cam.backgroundColor = SecretBackroomsTransitionController.RemanenciaLevel0FogColor;
-                cam.fieldOfView = 50f;
-                cam.nearClipPlane = 0.02f;
-                cam.farClipPlane = 60f;
-                cam.targetTexture = rt;
-
-                void CaptureShot(string fileName, Vector3 pos, Vector3 lookAt)
-                {
-                    cam.transform.position = pos;
-                    cam.transform.LookAt(lookAt, Vector3.up);
-                    cam.Render();
-                    RenderTexture.active = rt;
-                    readTex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
-                    readTex.Apply();
-                    RenderTexture.active = null;
-                    File.WriteAllBytes(Path.Combine(outDir, fileName), readTex.EncodeToPNG());
-                }
-
-                const float dt = 1f / 60f;
-                foreach (var enc in encounters)
-                {
-                    Transform tf = microRoot.Find(enc.name);
-                    var ctrl = tf != null ? tf.GetComponent<RemanenciaAmbientMicrofaunaController>() : null;
-                    if (ctrl == null) throw new InvalidOperationException($"Missing controller on {enc.name}.");
-
-                    ctrl.ResetToConcealedState();
-                    Vector3 startPos = tf.position;
-                    CaptureShot($"verify_079_{enc.name}_01_concealed.png", enc.camPos, enc.camLookAt);
-
-                    bool sawIdle = false, sawEmerging = false, sawPaused = false, sawRetreating = false, sawCooldown = false;
-                    bool capturedPaused = false;
-                    float maxFrameStep = 0f;
-                    float maxExcursion = 0f;
-                    Vector3 prevPos = tf.position;
-                    float elapsed = 0f;
-
-                    // Step 600 frames (10.0 s) with observer within activationRadius
-                    for (int frame = 0; frame < 600; frame++)
-                    {
-                        ctrl.StepSimulation(dt, enc.approachPos, hasObserver: true);
-                        elapsed += dt;
-
-                        float stepDist = Vector3.Distance(prevPos, tf.position);
-                        if (stepDist > maxFrameStep) maxFrameStep = stepDist;
-                        prevPos = tf.position;
-
-                        float exc = Vector3.Distance(startPos, tf.position);
-                        if (exc > maxExcursion) maxExcursion = exc;
-
-                        switch (ctrl.CurrentState)
-                        {
-                            case RemanenciaAmbientMicrofaunaController.MicrofaunaState.IdleWait: sawIdle = true; break;
-                            case RemanenciaAmbientMicrofaunaController.MicrofaunaState.Emerging: sawEmerging = true; break;
-                            case RemanenciaAmbientMicrofaunaController.MicrofaunaState.Paused:
-                                sawPaused = true;
-                                if (!capturedPaused)
-                                {
-                                    CaptureShot($"verify_079_{enc.name}_02_emerged_paused.png", enc.camPos, enc.camLookAt);
-                                    capturedPaused = true;
-                                }
-                                break;
-                            case RemanenciaAmbientMicrofaunaController.MicrofaunaState.Retreating: sawRetreating = true; break;
-                            case RemanenciaAmbientMicrofaunaController.MicrofaunaState.Cooldown: sawCooldown = true; break;
-                        }
-                        if (sawCooldown) break;
-                    }
-
-                    CaptureShot($"verify_079_{enc.name}_03_retreated.png", enc.camPos, enc.camLookAt);
-                    float endOffset = Vector3.Distance(startPos, tf.position);
-                    Debug.Log($"[MicrofaunaRuntimeVerify] {enc.name}: elapsed={elapsed:F2}s states=(Idle:{sawIdle},Emerge:{sawEmerging},Pause:{sawPaused},Retreat:{sawRetreating},Cooldown:{sawCooldown}) pathLen={ctrl.TotalPathLength:F3}m maxExcursion={maxExcursion:F3}m maxFrameStep={maxFrameStep:F4}m endReturnErr={endOffset:F5}m");
-
-                    if (!sawIdle || !sawEmerging || !sawPaused || !sawRetreating || !sawCooldown || endOffset > 0.002f || maxFrameStep > 0.005f)
-                    {
-                        throw new InvalidOperationException($"Runtime cycle verification failed for {enc.name}.");
-                    }
-                    ctrl.ResetToConcealedState();
-                }
-            }
-            finally
-            {
-                RenderTexture.active = null;
-                UnityEngine.Object.DestroyImmediate(camGo);
-                rt.Release();
-                UnityEngine.Object.DestroyImmediate(rt);
-                UnityEngine.Object.DestroyImmediate(readTex);
-
-                RenderSettings.skybox = prevSkybox;
-                RenderSettings.ambientMode = prevAmbMode;
-                RenderSettings.ambientLight = prevAmbLight;
-                RenderSettings.fog = prevFog;
-                RenderSettings.fogMode = prevFogMode;
-                RenderSettings.fogColor = prevFogColor;
-                RenderSettings.fogDensity = prevFogDensity;
-            }
-        }
-
-        /// <summary>
-        /// Read-only Editor camera verification utility for Implementation 07.11 (Room 111-B: The Impossible East Wing).
-        /// Renders the 7 required architectural verification views (plus close-up of the 111-B plaque) with exact
-        /// Remanencia Level 0 ambient light & fog without modifying or saving the scene.
-        /// </summary>
-        public static void RenderRoom111BVerificationViews()
-        {
-            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
-            if (!scene.IsValid())
-            {
-                throw new InvalidOperationException($"Could not open {ScenePath} for 07.11 camera verification.");
-            }
-
-            string outDir = Environment.GetEnvironmentVariable("MVC_ROOM111B_RENDER_DIR");
-            if (string.IsNullOrWhiteSpace(outDir))
-            {
-                outDir = Path.Combine(Path.GetTempPath(), "MVC_Room111BRenders");
-            }
-            Directory.CreateDirectory(outDir);
-
-            AmbientMode prevAmbMode = RenderSettings.ambientMode;
-            Color prevAmbLight = RenderSettings.ambientLight;
-            bool prevFog = RenderSettings.fog;
-            FogMode prevFogMode = RenderSettings.fogMode;
-            Color prevFogColor = RenderSettings.fogColor;
-            float prevFogDensity = RenderSettings.fogDensity;
-            Material prevSkybox = RenderSettings.skybox;
-
-            GameObject camGo = new GameObject("__TempRoom111BVerifyCam__");
-            RenderTexture rt = new RenderTexture(1280, 720, 24, RenderTextureFormat.ARGB32);
-            Texture2D readTex = new Texture2D(1280, 720, TextureFormat.RGB24, false);
-
-            try
-            {
-                RenderSettings.skybox = null;
-                RenderSettings.ambientMode = AmbientMode.Flat;
-                RenderSettings.ambientLight = SecretBackroomsTransitionController.RemanenciaLevel0AmbientLight;
-                RenderSettings.fog = true;
-                RenderSettings.fogMode = FogMode.ExponentialSquared;
-                RenderSettings.fogColor = SecretBackroomsTransitionController.RemanenciaLevel0FogColor;
-                RenderSettings.fogDensity = SecretBackroomsTransitionController.RemanenciaLevel0FogDensity;
-
-                Camera cam = camGo.AddComponent<Camera>();
-                cam.clearFlags = CameraClearFlags.SolidColor;
-                cam.backgroundColor = SecretBackroomsTransitionController.RemanenciaLevel0FogColor;
-                cam.fieldOfView = 62f;
-                cam.nearClipPlane = 0.04f;
-                cam.farClipPlane = 60f;
-                cam.targetTexture = rt;
-
-                (string fileName, Vector3 pos, Vector3 lookAt)[] shots =
-                {
-                    ("verify_0711_01_corridor_approach.png",        new Vector3( 8.50f, BaseY + 1.60f, 27.45f), new Vector3(16.00f, BaseY + 1.42f, 27.45f)),
-                    ("verify_0711_02_apparent_dead_end.png",        new Vector3(12.40f, BaseY + 1.60f, 27.60f), new Vector3(17.20f, BaseY + 1.38f, 27.55f)),
-                    ("verify_0711_03_concealed_opening_closeup.png",new Vector3(16.25f, BaseY + 1.54f, 27.68f), new Vector3(16.88f, BaseY + 1.28f, 24.40f)),
-                    ("verify_0711_04_east_corridor_interior.png",   new Vector3(16.80f, BaseY + 1.58f, 25.60f), new Vector3(18.10f, BaseY + 1.32f, 22.10f)),
-                    ("verify_0711_05_room111b_doorway.png",         new Vector3(17.10f, BaseY + 1.58f, 22.95f), new Vector3(19.01f, BaseY + 1.45f, 22.90f)),
-                    ("verify_0711_06_room111b_interior_plaque.png", new Vector3(19.65f, BaseY + 1.58f, 22.40f), new Vector3(24.40f, BaseY + 1.35f, 22.40f)),
-                    ("verify_0711_07_return_connection.png",        new Vector3(17.25f, BaseY + 1.58f, 23.60f), new Vector3(16.55f, BaseY + 1.40f, 27.60f)),
-                    ("verify_0711_08_plaque_111b_closeup.png",      new Vector3(18.15f, BaseY + 1.58f, 23.45f), new Vector3(18.89f, BaseY + 1.58f, 23.45f))
-                };
-
-                foreach (var shot in shots)
-                {
-                    cam.transform.position = shot.pos;
-                    cam.transform.LookAt(shot.lookAt, Vector3.up);
-                    cam.Render();
-
-                    RenderTexture.active = rt;
-                    readTex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
-                    readTex.Apply();
-                    RenderTexture.active = null;
-
-                    string fullFile = Path.Combine(outDir, shot.fileName);
-                    File.WriteAllBytes(fullFile, readTex.EncodeToPNG());
-                    Debug.Log($"[BackroomsLevel1Builder] Rendered 07.11 Room 111-B verification view: {fullFile}");
-                }
-            }
-            finally
-            {
-                RenderTexture.active = null;
-                UnityEngine.Object.DestroyImmediate(camGo);
-                rt.Release();
-                UnityEngine.Object.DestroyImmediate(rt);
-                UnityEngine.Object.DestroyImmediate(readTex);
-
-                RenderSettings.skybox = prevSkybox;
-                RenderSettings.ambientMode = prevAmbMode;
-                RenderSettings.ambientLight = prevAmbLight;
-                RenderSettings.fog = prevFog;
-                RenderSettings.fogMode = prevFogMode;
-                RenderSettings.fogColor = prevFogColor;
-                RenderSettings.fogDensity = prevFogDensity;
-            }
-        }
-    }
-}
+... [truncated for diff preview]
