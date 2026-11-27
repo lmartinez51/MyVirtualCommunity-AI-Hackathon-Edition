@@ -250,14 +250,13 @@ namespace MyVirtualCommunity.Editor
                 Assert.IsFalse(RenderSettings.fog, "Outdoor RenderSettings.fog must be restored cleanly.");
                 Assert.IsNull(ctrl.ActiveExteriorObservationSnapshot, "Single-shot observation RenderTexture must be released on exit.");
 
-                // Verify conventional exit door path ALSO works through RequestExitRemanencia("exit-door-to-street")
+                // Implementation 07.13 superseded the temporary 07.12 safeguard: legacy "exit-door-to-street"
+                // is no longer an authorized exit source and must be rejected.
                 ctrl.SetWorldTransitionStateForTest(inBackrooms: true, transitioning: false);
-                IEnumerator doorRoutine = ctrl.CreateExitRemanenciaRoutineForTest("exit-door-to-street");
-                int guard2 = 0;
-                while (doorRoutine.MoveNext() && guard2++ < 500) { }
-                Assert.IsFalse(ctrl.IsPlayerInBackrooms);
-                Assert.AreEqual("exit-door-to-street", ctrl.LastExitSource);
-                Assert.AreEqual(PlayerWorldContext.SurfaceCorridor, ctrl.CurrentWorldContext);
+                Assert.IsFalse(ctrl.RequestExitRemanencia(SecretBackroomsTransitionController.LegacyInteriorDoorExitSource),
+                    "Legacy interior door exit source must be rejected once 07.13 entry-only rule is active.");
+                Assert.IsTrue(ctrl.IsPlayerInBackrooms, "Rejected legacy exit must keep player inside Remanencia.");
+                Assert.AreEqual(PlayerWorldContext.RemanenciaLevel0, ctrl.CurrentWorldContext);
             }
             finally
             {
@@ -343,14 +342,17 @@ namespace MyVirtualCommunity.Editor
             GameObject root = GameObject.Find("BackroomsLevel1_Root");
             Assert.IsNotNull(root);
 
-            // 18. Original Backrooms_ExitDoor_ToStreet remains enabled & operational during 07.12
+            // 18. Backrooms_ExitDoor_ToStreet remains present and enabled in 07.13 entry-only mode
             Transform exitDoor = root.transform.Find("Backrooms_ExitDoor_ToStreet");
             Assert.IsNotNull(exitDoor);
             BackroomsExitDoorTrigger exitTrig = exitDoor.GetComponent<BackroomsExitDoorTrigger>();
             Assert.IsNotNull(exitTrig);
             Assert.IsTrue(exitTrig.enabled);
-            Assert.IsTrue(exitTrig.GetPrompt(isEs: true).Contains("Av. Benito Juárez"));
-            Assert.IsTrue(exitTrig.GetPrompt(isEs: false).Contains("Av. Benito Juárez"));
+            Assert.IsTrue(exitTrig.isEntryOnly, "07.13 activates entry-only mode on Backrooms_ExitDoor_ToStreet.");
+            Assert.IsFalse(exitTrig.GetPrompt(isEs: true).Contains("Av. Benito Juárez"),
+                "Entry-only interior door must no longer advertise a conventional return to Av. Benito Juárez.");
+            Assert.IsFalse(exitTrig.GetPrompt(isEs: false).Contains("Av. Benito Juárez"),
+                "Entry-only interior door must no longer advertise a conventional return to Av. Benito Juárez.");
 
             // 19, 20, 21. Strict Surface-World Preservation: BorderCorridorScene.unity byte-for-byte identical
             string actualBorderSha = ComputeFileSha256("Assets/Scenes/BorderCorridorScene.unity");

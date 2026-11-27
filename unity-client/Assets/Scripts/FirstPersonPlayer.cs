@@ -1083,9 +1083,10 @@ namespace MyVirtualCommunity.Client.World
 
                     if (WasInteractPressed())
                     {
-                        if (inBackroomsNow && currentNearbyBackroomsExit != null && cachedBackroomsTransition != null)
+                        if (inBackroomsNow && currentNearbyBackroomsExit != null)
                         {
-                            cachedBackroomsTransition.RequestExitBackrooms();
+                            // Implementation 07.13: Remanencia interior entrance is entry-only; pressing [E] never triggers exit.
+                            currentNearbyBackroomsExit.TriggerEntryOnlyFeedback(currentLanguage == "es");
                         }
                         else if (!inBackroomsNow && currentNearbyManhole != null)
                         {
@@ -8440,9 +8441,10 @@ namespace MyVirtualCommunity.Client.World
                 if (inBackroomsClick)
                 {
                     BackroomsExitDoorTrigger exitDoor = col.GetComponentInParent<BackroomsExitDoorTrigger>();
-                    if (exitDoor != null && exitDoor.IsWithinRange(transform.position) && cachedBackroomsTransition != null)
+                    if (exitDoor != null && exitDoor.IsWithinRange(transform.position))
                     {
-                        cachedBackroomsTransition.RequestExitBackrooms();
+                        // Implementation 07.13: Remanencia interior entrance is entry-only; clicking never exits.
+                        exitDoor.TriggerEntryOnlyFeedback(currentLanguage == "es");
                         return true;
                     }
                 }
@@ -8742,13 +8744,14 @@ namespace MyVirtualCommunity.Client.World
             float x = (Screen.width - w) * 0.5f;
             float y = Screen.height - 105f;
 
+            bool showingEntryOnlyFeedback = exitDoor.IsShowingEntryOnlyFeedback();
             GUI.Box(new Rect(x, y, w, h), GUIContent.none, GetOpaquePromptStyle());
             GUIStyle st = new GUIStyle(GUI.skin.label)
             {
                 fontSize = 14,
                 fontStyle = FontStyle.Bold,
                 alignment = TextAnchor.MiddleCenter,
-                normal = { textColor = new Color(1f, 0.90f, 0.42f) }
+                normal = { textColor = showingEntryOnlyFeedback ? new Color(0.86f, 0.84f, 0.78f) : new Color(1f, 0.90f, 0.42f) }
             };
             GUI.Label(new Rect(x, y, w, h), exitDoor.GetPrompt(isEs), st);
         }

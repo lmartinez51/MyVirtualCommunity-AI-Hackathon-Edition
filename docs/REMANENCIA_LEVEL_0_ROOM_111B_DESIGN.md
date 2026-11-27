@@ -4,14 +4,14 @@
 **Universe:** **Remanencia**  
 **Territory:** **Nivel 0 — Hotel de las Palomas**  
 **Target Scene:** `unity-client/Assets/Scenes/BackroomsLevel1Scene.unity`
-**Baseline Audited:** 07.10 (`2c7ad5a`) → 07.11 (`0d325c2` → `4cb412b`) → **07.12 Baseline:** Branch `product/unity-fellowship-2027`, HEAD `4cb412bde332171f8a1c8f49e3164c7d5397905d`
-**Document Status:** **UPDATED FOR IMPLEMENTATION 07.12 — PUBLIC DIRECTORY 107-110, ROOM 111-B GUEST INTERIOR, THRESHOLD OF TRUST & ISOLATED ONE-WAY ENTRANCE OBSERVATION IMPLEMENTED (ENTRY-ONLY SEALING RESERVED FOR 07.13)**
+**Baseline Audited:** 07.10 (`2c7ad5a`) → 07.11 (`4cb412b`) → 07.12 (`0c109e6`) → **07.13 Baseline:** Branch `product/unity-fellowship-2027`, HEAD `0c109e61c624f9067449081c4d7883fc55ca29b5`
+**Document Status:** **UPDATED FOR IMPLEMENTATION 07.13 — ENTRY-ONLY ENTRANCE ACTIVATED ("CHECK-IN WITHOUT CONVENTIONAL CHECK-OUT") WITH THRESHOLD OF TRUST AS ONLY AUTHORIZED IN-WORLD EXIT**
 
 > **Strict Implementation Boundary & Status Labels:**
 > Every section and requirement in this document is explicitly tagged as one of:
-> - **`VERIFIED CURRENT IMPLEMENTATION`** — Existing pre-07.12 architecture, evidence, ecology, transitions, or surface-world assets verified directly in the repository.
-> - **`IMPLEMENTED IN 07.12`** — Public North Corridor room directory (`107–110` only), Room 111-B prepared hotel guest interior, Threshold of Trust unconventional return route, and isolated Remanencia-side one-way exterior observation glass entrance added in Implementation 07.12. Visual acceptance remains pending the creator's personal PlayMode inspection.
-> - **`PROPOSED FUTURE DESIGN`** — Approved or candidate concepts for future increments (`07.13+`), strictly **not implemented** in 07.12.
+> - **`VERIFIED CURRENT IMPLEMENTATION`** — Existing pre-07.13 architecture, Room 111-B interior, Threshold of Trust, observation glass, evidence, ecology, or surface-world assets verified directly in the repository.
+> - **`IMPLEMENTED IN 07.13`** — Activation of the permanent entry-only rule on `Backrooms_ExitDoor_ToStreet`, centralized exit-source authorization (`"threshold-of-trust"` only), restrained bilingual non-yielding door feedback, and automated 07.13 test verification. Visual and gameplay acceptance remain pending the creator's personal PlayMode review.
+> - **`PROPOSED FUTURE DESIGN`** — Approved or candidate concepts for future increments (`07.14+`), strictly **not implemented** in 07.13.
 > - **`UNRESOLVED CREATOR DECISION`** — Open creative or systems questions awaiting explicit creator selection.
 
 > **Historical, Fictional & Dimensional Separation Notice:**  
@@ -461,4 +461,41 @@ Visual direction: **a modest, unexpectedly prepared fictional northern Mexican h
 
 ### F. Entrance Operational Status in 07.12 & Future 07.13 Entry-Only Requirements *(VERIFIED + PROPOSED FUTURE DESIGN)*
 - **`Backrooms_ExitDoor_ToStreet` Remains Operational in 07.12 (`VERIFIED CURRENT IMPLEMENTATION`):** `BackroomsExitDoorTrigger` remains enabled with its existing bilingual prompt and `[E]`/click exit functionality (`Room111B_InteriorEntranceIllusion` adds zero colliders), allowing the creator to verify both return routes side-by-side in PlayMode.
-- **07.13 Entry-Only Activation Gate (`PROPOSED FUTURE DESIGN — NOT IMPLEMENTED`):** Only after the creator personally approves Room 111-B, the Threshold of Trust, and the interior hotel entrance glass view in PlayMode may 07.13 switch `Backrooms_ExitDoor_ToStreet` to sealed entry-only mode with restrained bilingual feedback.
+- **07.13 Entry-Only Activation Gate *(NOW IMPLEMENTED IN 07.13 — SEE SECTION 18)*:** Activated after Room 111-B and the Threshold of Trust were completed and synchronized at `0c109e6`.
+
+---
+
+## 18. IMPLEMENTATION 07.13 — CHECK-IN WITHOUT CONVENTIONAL CHECK-OUT *(IMPLEMENTED IN 07.13)*
+
+Implementation 07.13 activates the permanent Remanencia design rule **"Check-in Without Conventional Check-out"** strictly through minimal runtime script updates (`BackroomsExitDoorTrigger.cs`, `SecretBackroomsTransitionController.cs`, and the two Remanencia-only interaction lines in `FirstPersonPlayer.cs`), requiring **zero** scene YAML edits to `BackroomsLevel1Scene.unity` and **zero** changes to `BorderCorridorScene.unity`.
+
+### A. Active Entry-Only Rule & Retained Interior Appearance *(IMPLEMENTED IN 07.13)*
+1. **Permanent In-World Rule:** Entering Remanencia through either Building A South (Threshold Veil) or the Azucenas Manhole remains unchanged, but turning around and trying the interior entrance (`Backrooms_ExitDoor_ToStreet`) can no longer return the player to Avenida Benito Juárez.
+2. **Retained Plausible Hotel Appearance (`VERIFIED CURRENT IMPLEMENTATION`):** `Backrooms_ExitDoor_ToStreet` and `Room111B_InteriorEntranceIllusion` (`InteriorEntrance_GlassPane_Unified`, dark-metal hotel framing, mullions, kickplate, brushed handles) remain visible and unchanged so the player initially expects conventional return to be possible.
+3. **Retained One-Way Observation Pane (`VERIFIED CURRENT IMPLEMENTATION`):** The single-shot `384 × 480` Avenida Benito Juárez exterior capture (`RemanenciaOneWayEntranceView`) remains active for both entry routes, showing the real street outside while remaining non-traversable (backed by solid `Wall_Outer_East`).
+4. **Restrained Bilingual Interaction & Feedback (`IMPLEMENTED IN 07.13`):**
+   - Proximity prompt: `[E] Intentar abrir la puerta` / `[E] Try the door` (no longer promises a return to Avenida Benito Juárez).
+   - On `[E]` press or mouse click: `BackroomsExitDoorTrigger.TriggerEntryOnlyFeedback()` displays **`La puerta no cede.`** / **`The door won't budge.`** in the existing HUD slot for `2.6 s` with zero modal popups, zero new audio systems, and zero spoilers pointing to Room 111-B.
+
+### B. Centralized Exit-Source Authorization & Transition Call Graph *(IMPLEMENTED IN 07.13)*
+5. **Authorization Gate (`SecretBackroomsTransitionController.IsAuthorizedInWorldExitSource`):**
+   - **Authorized in-world exit source (`1` total):** **`"threshold-of-trust"`** (`RemanenciaThresholdOfTrustTrigger.ExitSourceId`).
+   - **Rejected sources:** `"exit-door-to-street"`, `"default"`, empty/null, or any unregistered string.
+   - `RequestExitBackrooms()` is retained strictly as a non-bypassing legacy signature delegating to `RequestExitRemanencia("exit-door-to-street")`, which returns `false` and never starts `ExitBackroomsRoutine()`.
+6. **Complete Verified Call-Site Audit (`VERIFIED`):**
+   - `RemanenciaThresholdOfTrustTrigger.EvaluatePlayerCrossing()` → calls `transition.RequestExitRemanencia("threshold-of-trust")` (**ONLY authorized runtime exit caller**).
+   - `FirstPersonPlayer.cs` `[E]` handler (`inBackroomsNow`) → redirected from `RequestExitBackrooms()` to `currentNearbyBackroomsExit.TriggerEntryOnlyFeedback(...)`.
+   - `FirstPersonPlayer.cs` left-click raycast (`inBackroomsClick`) → redirected from `RequestExitBackrooms()` to `exitDoor.TriggerEntryOnlyFeedback(...)`.
+   - Zero remaining runtime callers invoke `RequestExitBackrooms()`.
+
+### C. Reachability, Anti-Softlock, Save Recovery & Surface-World Immutability *(VERIFIED CURRENT IMPLEMENTATION)*
+7. **Anti-Softlock & Reachability:** Preserved full 07.12 capsule walkability proofs from `Backrooms_SpawnPoint` and ground-floor verification for all `10` Azucenas Manhole safe-drop zones (`RandomCeilingDropZonesXZ`) to Room 111-B and `Room111B_Threshold_TriggerVolume`, with zero sewer-code, safe, portal, journal, or microfauna prerequisites.
+8. **Save & Restart Recovery:** `ProgressionSaveData.schemaVersion == 1` remains unchanged and decoupled from world spawn; restarting the application safely spawns the player on Avenida Benito Juárez without ever trapping a save file inside Remanencia or wiping permanent discoveries. No pause-menu teleport was added.
+9. **Both Entry Routes Preserved:** Building A South (`BuildingA_SouthBay_StorageDoor` + `SecretKeypadDoorController` + Threshold Veil) and `manhole_juarez_azucenas` remain 100% operational and initialize the single-shot observation snapshot identically.
+10. **Absolute Surface-World Immutability:** `BorderCorridorScene.unity` (`SHA-256: 0CFB32080F4ED9C30FAA513BB21C9BB48ADBA9C60B27FABABFAD5E64318DB42B`), `BuildingA_SouthBay_StorageDoor`, all `8` exterior door materials, and `SecretKeypadDoorController.cs` remain **100% byte-for-byte unchanged**.
+
+### D. Requirements for Future Unconventional Exits *(PROPOSED FUTURE DESIGN — 07.14+)*
+- Any future territory or unconventional exit added in `07.14+` must:
+  1. Register its explicit exit-source ID in `SecretBackroomsTransitionController.IsAuthorizedInWorldExitSource(...)`.
+  2. Reuse `ExitBackroomsRoutine(...)` without duplicating atmosphere restoration, scene unload, or World Core occupancy cleanup.
+  3. Pass deterministic capsule-walkability reachability proofs from all supported entry points before activation.

@@ -79,13 +79,27 @@ namespace MyVirtualCommunity.Client.World
 
         private RenderTexture exteriorObservationSnapshot;
         private string lastExitSource = string.Empty;
+        private int completedExitCount = 0;
+
+        public const string LegacyInteriorDoorExitSource = "exit-door-to-street";
 
         public bool IsPlayerInBackrooms => isPlayerInBackrooms;
         public bool IsTransitioning => isTransitioning;
         public bool IsOccupiedByOtherPlayer => occupiedByOtherPlayer;
         public float TransitionFadeAlpha => fadeAlpha;
         public string LastExitSource => lastExitSource;
+        public int CompletedExitCount => completedExitCount;
         public RenderTexture ActiveExteriorObservationSnapshot => exteriorObservationSnapshot;
+
+        /// <summary>
+        /// Implementation 07.13 centralized exit-source authorization.
+        /// Only explicitly authorized unconventional exits (currently "threshold-of-trust")
+        /// may initiate a return transition from Remanencia to Av. Benito Juárez.
+        /// </summary>
+        public static bool IsAuthorizedInWorldExitSource(string exitSource)
+        {
+            return string.Equals(exitSource, RemanenciaThresholdOfTrustTrigger.ExitSourceId, StringComparison.Ordinal);
+        }
 
         /// <summary>
         /// Authoritative world-context state for world-scoped player HUD presentation.
@@ -251,21 +265,31 @@ namespace MyVirtualCommunity.Client.World
         private AudioClip carpetThudClip;
         private float glitchFlashAlpha = 0f;
 
-        public void RequestExitBackrooms()
+        /// <summary>
+        /// Retained non-bypassing legacy wrapper. Delegates strictly through centralized
+        /// exit-source authorization, which rejects "exit-door-to-street" under the active
+        /// 07.13 "Check-in Without Conventional Check-out" rule.
+        /// </summary>
+        public bool RequestExitBackrooms()
         {
-            RequestExitRemanencia("exit-door-to-street");
+            return RequestExitRemanencia(LegacyInteriorDoorExitSource);
         }
 
         /// <summary>
-        /// Unified return entry point reused by both the existing Backrooms_ExitDoor_ToStreet
-        /// and the Room 111-B Threshold of Trust. Prevents duplicate/simultaneous transitions
-        /// and preserves the verified Av. Benito Juárez return position, atmosphere restoration,
-        /// scene unload, World Core occupancy release, and progression integrity.
+        /// Centralized return entry point. Under Implementation 07.13, only explicitly
+        /// authorized in-world exit sources ("threshold-of-trust") may initiate ExitBackroomsRoutine().
+        /// Prevents duplicate/simultaneous transitions and preserves the verified Av. Benito Juárez
+        /// return position, atmosphere restoration, scene unload, World Core occupancy release,
+        /// and progression integrity.
         /// </summary>
         public bool RequestExitRemanencia(string exitSource = "default", Vector3? customReturnPosition = null, float? customReturnYaw = null)
         {
             if (!isPlayerInBackrooms || isTransitioning) return false;
-            lastExitSource = string.IsNullOrEmpty(exitSource) ? "default" : exitSource;
+            if (!IsAuthorizedInWorldExitSource(exitSource))
+            {
+                return false;
+            }
+            lastExitSource = exitSource;
             Vector3 returnPos = customReturnPosition ?? streetExitReturnPosition;
             float returnYaw = customReturnYaw ?? streetExitReturnYaw;
             StartCoroutine(ExitBackroomsRoutine(returnPos, returnYaw));
@@ -274,12 +298,13 @@ namespace MyVirtualCommunity.Client.World
 
         /// <summary>
         /// Exposes the actual return transition coroutine for automated verification tests
-        /// without duplicating transition logic.
+        /// while enforcing the exact same exit-source authorization gate as runtime.
         /// </summary>
         public IEnumerator CreateExitRemanenciaRoutineForTest(string exitSource = "test", Vector3? customReturnPosition = null, float? customReturnYaw = null)
         {
             if (!isPlayerInBackrooms || isTransitioning) return EmptyRoutine();
-            lastExitSource = string.IsNullOrEmpty(exitSource) ? "test" : exitSource;
+            if (!IsAuthorizedInWorldExitSource(exitSource)) return EmptyRoutine();
+            lastExitSource = exitSource;
             Vector3 returnPos = customReturnPosition ?? streetExitReturnPosition;
             float returnYaw = customReturnYaw ?? streetExitReturnYaw;
             return ExitBackroomsRoutine(returnPos, returnYaw);
@@ -648,6 +673,7 @@ namespace MyVirtualCommunity.Client.World
 
             isPlayerInBackrooms = false;
             occupiedByOtherPlayer = false;
+            completedExitCount++;
             RefreshThresholdVeilVisibility();
             if (Application.isPlaying)
             {

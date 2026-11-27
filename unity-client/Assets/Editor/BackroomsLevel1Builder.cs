@@ -7707,4 +7707,710 @@ namespace MyVirtualCommunity.Editor
             }
             tex.Apply();
             File.WriteAllBytes(fullPath, tex.EncodeToPNG());
-... [truncated for diff preview]
+            UnityEngine.Object.DestroyImmediate(tex);
+            return assetPath;
+        }
+
+
+        private static GameObject CreateBox(string name, Transform parent, Vector3 localPos, Vector3 localScale, Material mat, bool keepCollider)
+        {
+            GameObject go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            go.name = name;
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = localPos;
+            go.transform.localRotation = Quaternion.identity;
+            go.transform.localScale = localScale;
+            SetMat(go, mat);
+            if (!keepCollider)
+            {
+                Collider col = go.GetComponent<Collider>();
+                if (col != null) UnityEngine.Object.DestroyImmediate(col);
+            }
+            return go;
+        }
+
+        private static void SetMat(GameObject go, Material mat)
+        {
+            Renderer r = go.GetComponent<Renderer>();
+            if (r != null && mat != null)
+            {
+                r.sharedMaterial = mat;
+                r.shadowCastingMode = ShadowCastingMode.On;
+                r.receiveShadows = true;
+            }
+        }
+
+        private static void AttachDesc(GameObject target, string id, string titleEs, string titleEn, string loreEs, string loreEn, Color accent)
+        {
+            var d = target.AddComponent<SecretContainmentArtifactDescriptor>();
+            d.artifactId = id;
+            d.titleEs = titleEs;
+            d.titleEn = titleEn;
+            d.loreEs = loreEs;
+            d.loreEn = loreEn;
+            d.accentColor = accent;
+        }
+
+        private static Shader FindLitShader() => Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+
+        private static Material CreateColorMat(string assetPath, Color color, float smoothness, float metallic)
+        {
+            Material mat = AssetDatabase.LoadAssetAtPath<Material>(assetPath);
+            if (mat == null) { mat = new Material(FindLitShader()); AssetDatabase.CreateAsset(mat, assetPath); }
+            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", color);
+            if (mat.HasProperty("_Color")) mat.SetColor("_Color", color);
+            if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", smoothness);
+            if (mat.HasProperty("_Metallic")) mat.SetFloat("_Metallic", metallic);
+            EditorUtility.SetDirty(mat);
+            return mat;
+        }
+
+        private static Material CreateTexturedMat(string assetPath, string texPath, Color tint, float smoothness, Vector2 tiling)
+        {
+            Texture2D tex = AssetDatabase.LoadAssetAtPath<Texture2D>(texPath);
+            Material mat = CreateColorMat(assetPath, tint, smoothness, 0f);
+            if (tex != null)
+            {
+                if (mat.HasProperty("_BaseMap")) { mat.SetTexture("_BaseMap", tex); mat.SetTextureScale("_BaseMap", tiling); }
+                if (mat.HasProperty("_MainTex")) { mat.SetTexture("_MainTex", tex); mat.SetTextureScale("_MainTex", tiling); }
+            }
+            EditorUtility.SetDirty(mat);
+            return mat;
+        }
+
+        private static Material CreateEmissiveTexturedMat(string assetPath, string texPath, Color baseTint, Color emissionTint)
+        {
+            Texture2D tex = AssetDatabase.LoadAssetAtPath<Texture2D>(texPath);
+            Material mat = CreateTexturedMat(assetPath, texPath, baseTint, 0.35f, Vector2.one);
+            if (mat.HasProperty("_EmissionColor"))
+            {
+                mat.EnableKeyword("_EMISSION");
+                mat.SetColor("_EmissionColor", emissionTint);
+            }
+            if (tex != null && mat.HasProperty("_EmissionMap"))
+            {
+                mat.SetTexture("_EmissionMap", tex);
+            }
+            EditorUtility.SetDirty(mat);
+            return mat;
+        }
+
+        private static Material CreateEmissiveMat(string assetPath, Color baseColor, Color emissionColor)
+        {
+            Material mat = CreateColorMat(assetPath, baseColor, 0.35f, 0f);
+            if (mat.HasProperty("_EmissionColor")) { mat.EnableKeyword("_EMISSION"); mat.SetColor("_EmissionColor", emissionColor); }
+            EditorUtility.SetDirty(mat);
+            return mat;
+        }
+
+        private static void ConfigureAlphaDecalTextureImporter(string assetPath)
+        {
+            TextureImporter imp = AssetImporter.GetAtPath(assetPath) as TextureImporter;
+            if (imp == null) return;
+            imp.textureType = TextureImporterType.Default;
+            imp.sRGBTexture = true;
+            imp.alphaSource = TextureImporterAlphaSource.FromInput;
+            imp.alphaIsTransparency = true;
+            imp.mipmapEnabled = true;
+            imp.wrapMode = TextureWrapMode.Clamp;
+            imp.filterMode = FilterMode.Bilinear;
+            imp.maxTextureSize = 512;
+            imp.textureCompression = TextureImporterCompression.Uncompressed;
+            imp.SaveAndReimport();
+        }
+
+        private static void ConfigureHighDetailOrganicImporter(string assetPath)
+        {
+            TextureImporter imp = AssetImporter.GetAtPath(assetPath) as TextureImporter;
+            if (imp == null) return;
+            imp.textureType = TextureImporterType.Default;
+            imp.sRGBTexture = true;
+            imp.mipmapEnabled = true;
+            imp.wrapMode = TextureWrapMode.Clamp;
+            imp.filterMode = FilterMode.Bilinear;
+            imp.maxTextureSize = 512;
+            imp.textureCompression = TextureImporterCompression.Uncompressed;
+            imp.SaveAndReimport();
+        }
+
+        private static Material CreateAlphaBlendedDecalMat(string assetPath, string texPath, Color tint, float smoothness, int renderQueue = 3000)
+        {
+            Material mat = CreateTexturedMat(assetPath, texPath, tint, smoothness, Vector2.one);
+            if (mat.HasProperty("_Surface")) mat.SetFloat("_Surface", 1f);
+            if (mat.HasProperty("_Blend")) mat.SetFloat("_Blend", 0f);
+            if (mat.HasProperty("_AlphaClip")) mat.SetFloat("_AlphaClip", 0f);
+            if (mat.HasProperty("_SrcBlend")) mat.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
+            if (mat.HasProperty("_DstBlend")) mat.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
+            if (mat.HasProperty("_SrcBlendAlpha")) mat.SetFloat("_SrcBlendAlpha", (float)BlendMode.One);
+            if (mat.HasProperty("_DstBlendAlpha")) mat.SetFloat("_DstBlendAlpha", (float)BlendMode.OneMinusSrcAlpha);
+            if (mat.HasProperty("_ZWrite")) mat.SetFloat("_ZWrite", 0f);
+            if (mat.HasProperty("_Cull")) mat.SetFloat("_Cull", (float)CullMode.Off);
+            if (mat.HasProperty("_BlendModePreserveSpecular")) mat.SetFloat("_BlendModePreserveSpecular", 0f);
+            if (mat.HasProperty("_SpecularHighlights")) mat.SetFloat("_SpecularHighlights", 0f);
+            if (mat.HasProperty("_EnvironmentReflections")) mat.SetFloat("_EnvironmentReflections", 0f);
+            mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            mat.EnableKeyword("_SPECULARHIGHLIGHTS_OFF");
+            mat.EnableKeyword("_ENVIRONMENTREFLECTIONS_OFF");
+            mat.DisableKeyword("_ALPHATEST_ON");
+            mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+            mat.DisableKeyword("_EMISSION");
+            mat.SetOverrideTag("RenderType", "Transparent");
+            mat.renderQueue = renderQueue;
+            EditorUtility.SetDirty(mat);
+            return mat;
+        }
+
+        private static Material CreateOpaqueTexturedMat(string assetPath, string texPath, Color tint, float smoothness)
+        {
+            Material mat = CreateTexturedMat(assetPath, texPath, tint, smoothness, Vector2.one);
+            if (mat.HasProperty("_Surface")) mat.SetFloat("_Surface", 0f);
+            if (mat.HasProperty("_AlphaClip")) mat.SetFloat("_AlphaClip", 0f);
+            if (mat.HasProperty("_SrcBlend")) mat.SetFloat("_SrcBlend", (float)BlendMode.One);
+            if (mat.HasProperty("_DstBlend")) mat.SetFloat("_DstBlend", (float)BlendMode.Zero);
+            if (mat.HasProperty("_ZWrite")) mat.SetFloat("_ZWrite", 1f);
+            if (mat.HasProperty("_Cull")) mat.SetFloat("_Cull", (float)CullMode.Off);
+            if (mat.HasProperty("_SpecularHighlights")) mat.SetFloat("_SpecularHighlights", 1f);
+            mat.DisableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            mat.DisableKeyword("_ALPHATEST_ON");
+            mat.DisableKeyword("_SPECULARHIGHLIGHTS_OFF");
+            mat.DisableKeyword("_EMISSION");
+            mat.SetOverrideTag("RenderType", "Opaque");
+            mat.renderQueue = -1;
+            EditorUtility.SetDirty(mat);
+            return mat;
+        }
+
+        /// <summary>
+        /// Editor verification utility: renders 4 actual URP PlayMode-equivalent camera views
+        /// (with exact Remanencia Level 0 ambient light & exponential-squared fog) to PNG files
+        /// without modifying or saving the scene.
+        /// </summary>
+        public static void RenderEcologyVerificationViews()
+        {
+            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            if (!scene.IsValid())
+            {
+                throw new InvalidOperationException($"Could not open {ScenePath} for camera verification.");
+            }
+
+            string outDir = Environment.GetEnvironmentVariable("MVC_ECOLOGY_RENDER_DIR");
+            if (string.IsNullOrWhiteSpace(outDir))
+            {
+                outDir = Path.Combine(Path.GetTempPath(), "MVC_EcologyRenders");
+            }
+            Directory.CreateDirectory(outDir);
+
+            AmbientMode prevAmbMode = RenderSettings.ambientMode;
+            Color prevAmbLight = RenderSettings.ambientLight;
+            bool prevFog = RenderSettings.fog;
+            FogMode prevFogMode = RenderSettings.fogMode;
+            Color prevFogColor = RenderSettings.fogColor;
+            float prevFogDensity = RenderSettings.fogDensity;
+            Material prevSkybox = RenderSettings.skybox;
+
+            GameObject camGo = new GameObject("__TempEcologyVerifyCam__");
+            RenderTexture rt = new RenderTexture(1280, 720, 24, RenderTextureFormat.ARGB32);
+            Texture2D readTex = new Texture2D(1280, 720, TextureFormat.RGB24, false);
+
+            try
+            {
+                RenderSettings.skybox = null;
+                RenderSettings.ambientMode = AmbientMode.Flat;
+                RenderSettings.ambientLight = SecretBackroomsTransitionController.RemanenciaLevel0AmbientLight;
+                RenderSettings.fog = true;
+                RenderSettings.fogMode = FogMode.ExponentialSquared;
+                RenderSettings.fogColor = SecretBackroomsTransitionController.RemanenciaLevel0FogColor;
+                RenderSettings.fogDensity = SecretBackroomsTransitionController.RemanenciaLevel0FogDensity;
+
+                Camera cam = camGo.AddComponent<Camera>();
+                cam.clearFlags = CameraClearFlags.SolidColor;
+                cam.backgroundColor = SecretBackroomsTransitionController.RemanenciaLevel0FogColor;
+                cam.fieldOfView = 60f;
+                cam.nearClipPlane = 0.05f;
+                cam.farClipPlane = 60f;
+                cam.targetTexture = rt;
+
+                (string fileName, Vector3 pos, Vector3 lookAt)[] shots =
+                {
+                    ("verify_zoneB_maint.png",     new Vector3(-10.65f, BaseY + 1.42f, 22.12f), new Vector3( -8.72f, BaseY + 0.78f, 22.05f)),
+                    ("verify_zoneC_utility.png",   new Vector3(-13.85f, BaseY + 1.42f, 20.30f), new Vector3(-15.70f, BaseY + 0.72f, 18.65f)),
+                    ("verify_zoneA_courtyard.png", new Vector3( -2.85f, BaseY + 1.18f, 22.85f), new Vector3( -1.15f, BaseY + 0.32f, 21.75f)),
+                    ("verify_zoneD_room110.png",   new Vector3( -8.35f, BaseY + 1.10f, 32.35f), new Vector3( -9.32f, BaseY + 0.35f, 33.54f))
+                };
+
+                foreach (var shot in shots)
+                {
+                    cam.transform.position = shot.pos;
+                    cam.transform.LookAt(shot.lookAt, Vector3.up);
+                    cam.Render();
+
+                    RenderTexture.active = rt;
+                    readTex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+                    readTex.Apply();
+                    RenderTexture.active = null;
+
+                    string fullFile = Path.Combine(outDir, shot.fileName);
+                    File.WriteAllBytes(fullFile, readTex.EncodeToPNG());
+                    Debug.Log($"[BackroomsLevel1Builder] Rendered camera verification view: {fullFile}");
+                }
+            }
+            finally
+            {
+                RenderTexture.active = null;
+                UnityEngine.Object.DestroyImmediate(camGo);
+                rt.Release();
+                UnityEngine.Object.DestroyImmediate(rt);
+                UnityEngine.Object.DestroyImmediate(readTex);
+
+                RenderSettings.skybox = prevSkybox;
+                RenderSettings.ambientMode = prevAmbMode;
+                RenderSettings.ambientLight = prevAmbLight;
+                RenderSettings.fog = prevFog;
+                RenderSettings.fogMode = prevFogMode;
+                RenderSettings.fogColor = prevFogColor;
+                RenderSettings.fogDensity = prevFogDensity;
+            }
+        }
+
+        /// <summary>
+        /// Read-only Editor camera verification utility for Implementation 07.8 (First Faunal Traces):
+        /// renders medium-range and close-inspection URP views of Zones A, B, and C without modifying the scene.
+        /// </summary>
+        public static void RenderFaunalTracesVerificationViews()
+        {
+            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            if (!scene.IsValid())
+            {
+                throw new InvalidOperationException($"Could not open {ScenePath} for 07.8 camera verification.");
+            }
+
+            string outDir = Environment.GetEnvironmentVariable("MVC_FAUNAL_RENDER_DIR");
+            if (string.IsNullOrWhiteSpace(outDir))
+            {
+                outDir = Path.Combine(Path.GetTempPath(), "MVC_FaunalRenders");
+            }
+            Directory.CreateDirectory(outDir);
+
+            AmbientMode prevAmbMode = RenderSettings.ambientMode;
+            Color prevAmbLight = RenderSettings.ambientLight;
+            bool prevFog = RenderSettings.fog;
+            FogMode prevFogMode = RenderSettings.fogMode;
+            Color prevFogColor = RenderSettings.fogColor;
+            float prevFogDensity = RenderSettings.fogDensity;
+            Material prevSkybox = RenderSettings.skybox;
+
+            GameObject camGo = new GameObject("__TempFaunalVerifyCam__");
+            RenderTexture rt = new RenderTexture(1280, 720, 24, RenderTextureFormat.ARGB32);
+            Texture2D readTex = new Texture2D(1280, 720, TextureFormat.RGB24, false);
+
+            try
+            {
+                RenderSettings.skybox = null;
+                RenderSettings.ambientMode = AmbientMode.Flat;
+                RenderSettings.ambientLight = SecretBackroomsTransitionController.RemanenciaLevel0AmbientLight;
+                RenderSettings.fog = true;
+                RenderSettings.fogMode = FogMode.ExponentialSquared;
+                RenderSettings.fogColor = SecretBackroomsTransitionController.RemanenciaLevel0FogColor;
+                RenderSettings.fogDensity = SecretBackroomsTransitionController.RemanenciaLevel0FogDensity;
+
+                Camera cam = camGo.AddComponent<Camera>();
+                cam.clearFlags = CameraClearFlags.SolidColor;
+                cam.backgroundColor = SecretBackroomsTransitionController.RemanenciaLevel0FogColor;
+                cam.fieldOfView = 55f;
+                cam.nearClipPlane = 0.03f;
+                cam.farClipPlane = 60f;
+                cam.targetTexture = rt;
+
+                (string fileName, Vector3 pos, Vector3 lookAt)[] shots =
+                {
+                    ("verify_078_zoneA_courtyard_close.png", new Vector3(-1.82f, BaseY + 0.42f, 21.65f), new Vector3(-1.14f, BaseY + 0.06f, 21.84f)),
+                    ("verify_078_zoneB_maint_wide.png",      new Vector3(-10.55f, BaseY + 1.38f, 22.15f), new Vector3(-8.72f, BaseY + 0.72f, 22.10f)),
+                    ("verify_078_zoneB_maint_close.png",     new Vector3(-9.42f, BaseY + 0.56f, 21.88f), new Vector3(-8.74f, BaseY + 0.30f, 21.86f)),
+                    ("verify_078_zoneC_utility_wide.png",    new Vector3(-14.00f, BaseY + 1.32f, 20.15f), new Vector3(-15.70f, BaseY + 0.58f, 18.65f)),
+                    ("verify_078_zoneC_utility_close.png",   new Vector3(-15.05f, BaseY + 0.58f, 18.92f), new Vector3(-15.72f, BaseY + 0.28f, 18.54f))
+                };
+
+                foreach (var shot in shots)
+                {
+                    cam.transform.position = shot.pos;
+                    cam.transform.LookAt(shot.lookAt, Vector3.up);
+                    cam.Render();
+
+                    RenderTexture.active = rt;
+                    readTex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+                    readTex.Apply();
+                    RenderTexture.active = null;
+
+                    string fullFile = Path.Combine(outDir, shot.fileName);
+                    File.WriteAllBytes(fullFile, readTex.EncodeToPNG());
+                    Debug.Log($"[BackroomsLevel1Builder] Rendered 07.8 faunal verification view: {fullFile}");
+                }
+            }
+            finally
+            {
+                RenderTexture.active = null;
+                UnityEngine.Object.DestroyImmediate(camGo);
+                rt.Release();
+                UnityEngine.Object.DestroyImmediate(rt);
+                UnityEngine.Object.DestroyImmediate(readTex);
+
+                RenderSettings.skybox = prevSkybox;
+                RenderSettings.ambientMode = prevAmbMode;
+                RenderSettings.ambientLight = prevAmbLight;
+                RenderSettings.fog = prevFog;
+                RenderSettings.fogMode = prevFogMode;
+                RenderSettings.fogColor = prevFogColor;
+                RenderSettings.fogDensity = prevFogDensity;
+            }
+        }
+
+        /// <summary>
+        /// Focused runtime movement verification procedure for Implementation 07.9 (First Living Microfauna).
+        /// Opens BackroomsLevel1Scene.unity read-only, steps BOTH live RemanenciaAmbientMicrofaunaController
+        /// instances frame-by-frame (dt = 1/60s) with an approaching observer camera through the complete
+        /// Concealed -> IdleWait -> Emerging -> Paused -> Retreating -> Cooldown cycle, verifies zero
+        /// teleportation and exact concealment return, and renders keyframe URP evidence images without
+        /// modifying or saving the scene.
+        /// </summary>
+        public static void VerifyAndCaptureMicrofaunaRuntimeCycle()
+        {
+            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            if (!scene.IsValid())
+            {
+                throw new InvalidOperationException($"Could not open {ScenePath} for 07.9 runtime verification.");
+            }
+
+            string outDir = Environment.GetEnvironmentVariable("MVC_MICROFAUNA_RENDER_DIR");
+            if (string.IsNullOrWhiteSpace(outDir))
+            {
+                outDir = Path.Combine(Path.GetTempPath(), "MVC_MicrofaunaVerify");
+            }
+            Directory.CreateDirectory(outDir);
+
+            Transform microRoot = GameObject.Find(HotelFirstLivingMicrofaunaRootName)?.transform;
+            if (microRoot == null)
+            {
+                throw new InvalidOperationException($"Missing {HotelFirstLivingMicrofaunaRootName} in scene.");
+            }
+
+            var encounters = new (string name, Vector3 camPos, Vector3 camLookAt, Vector3 approachPos)[]
+            {
+                ("Microfauna_Utility_Encounter",
+                    new Vector3(-15.32f, BaseY + 0.24f, 18.66f),
+                    new Vector3(-15.64f, BaseY + 0.01f, 18.42f),
+                    new Vector3(-14.20f, BaseY + 1.50f, 19.60f)),
+                ("Microfauna_Maintenance_Encounter",
+                    new Vector3(-9.18f, BaseY + 0.22f, 21.74f),
+                    new Vector3(-8.82f, BaseY + 0.01f, 21.91f),
+                    new Vector3(-10.10f, BaseY + 1.50f, 21.85f))
+            };
+
+            AmbientMode prevAmbMode = RenderSettings.ambientMode;
+            Color prevAmbLight = RenderSettings.ambientLight;
+            bool prevFog = RenderSettings.fog;
+            FogMode prevFogMode = RenderSettings.fogMode;
+            Color prevFogColor = RenderSettings.fogColor;
+            float prevFogDensity = RenderSettings.fogDensity;
+            Material prevSkybox = RenderSettings.skybox;
+
+            GameObject camGo = new GameObject("__TempMicrofaunaVerifyCam__");
+            RenderTexture rt = new RenderTexture(1280, 720, 24, RenderTextureFormat.ARGB32);
+            Texture2D readTex = new Texture2D(1280, 720, TextureFormat.RGB24, false);
+
+            try
+            {
+                RenderSettings.skybox = null;
+                RenderSettings.ambientMode = AmbientMode.Flat;
+                RenderSettings.ambientLight = SecretBackroomsTransitionController.RemanenciaLevel0AmbientLight;
+                RenderSettings.fog = true;
+                RenderSettings.fogMode = FogMode.ExponentialSquared;
+                RenderSettings.fogColor = SecretBackroomsTransitionController.RemanenciaLevel0FogColor;
+                RenderSettings.fogDensity = SecretBackroomsTransitionController.RemanenciaLevel0FogDensity;
+
+                Camera cam = camGo.AddComponent<Camera>();
+                cam.clearFlags = CameraClearFlags.SolidColor;
+                cam.backgroundColor = SecretBackroomsTransitionController.RemanenciaLevel0FogColor;
+                cam.fieldOfView = 50f;
+                cam.nearClipPlane = 0.02f;
+                cam.farClipPlane = 60f;
+                cam.targetTexture = rt;
+
+                void CaptureShot(string fileName, Vector3 pos, Vector3 lookAt)
+                {
+                    cam.transform.position = pos;
+                    cam.transform.LookAt(lookAt, Vector3.up);
+                    cam.Render();
+                    RenderTexture.active = rt;
+                    readTex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+                    readTex.Apply();
+                    RenderTexture.active = null;
+                    File.WriteAllBytes(Path.Combine(outDir, fileName), readTex.EncodeToPNG());
+                }
+
+                const float dt = 1f / 60f;
+                foreach (var enc in encounters)
+                {
+                    Transform tf = microRoot.Find(enc.name);
+                    var ctrl = tf != null ? tf.GetComponent<RemanenciaAmbientMicrofaunaController>() : null;
+                    if (ctrl == null) throw new InvalidOperationException($"Missing controller on {enc.name}.");
+
+                    ctrl.ResetToConcealedState();
+                    Vector3 startPos = tf.position;
+                    CaptureShot($"verify_079_{enc.name}_01_concealed.png", enc.camPos, enc.camLookAt);
+
+                    bool sawIdle = false, sawEmerging = false, sawPaused = false, sawRetreating = false, sawCooldown = false;
+                    bool capturedPaused = false;
+                    float maxFrameStep = 0f;
+                    float maxExcursion = 0f;
+                    Vector3 prevPos = tf.position;
+                    float elapsed = 0f;
+
+                    // Step 600 frames (10.0 s) with observer within activationRadius
+                    for (int frame = 0; frame < 600; frame++)
+                    {
+                        ctrl.StepSimulation(dt, enc.approachPos, hasObserver: true);
+                        elapsed += dt;
+
+                        float stepDist = Vector3.Distance(prevPos, tf.position);
+                        if (stepDist > maxFrameStep) maxFrameStep = stepDist;
+                        prevPos = tf.position;
+
+                        float exc = Vector3.Distance(startPos, tf.position);
+                        if (exc > maxExcursion) maxExcursion = exc;
+
+                        switch (ctrl.CurrentState)
+                        {
+                            case RemanenciaAmbientMicrofaunaController.MicrofaunaState.IdleWait: sawIdle = true; break;
+                            case RemanenciaAmbientMicrofaunaController.MicrofaunaState.Emerging: sawEmerging = true; break;
+                            case RemanenciaAmbientMicrofaunaController.MicrofaunaState.Paused:
+                                sawPaused = true;
+                                if (!capturedPaused)
+                                {
+                                    CaptureShot($"verify_079_{enc.name}_02_emerged_paused.png", enc.camPos, enc.camLookAt);
+                                    capturedPaused = true;
+                                }
+                                break;
+                            case RemanenciaAmbientMicrofaunaController.MicrofaunaState.Retreating: sawRetreating = true; break;
+                            case RemanenciaAmbientMicrofaunaController.MicrofaunaState.Cooldown: sawCooldown = true; break;
+                        }
+                        if (sawCooldown) break;
+                    }
+
+                    CaptureShot($"verify_079_{enc.name}_03_retreated.png", enc.camPos, enc.camLookAt);
+                    float endOffset = Vector3.Distance(startPos, tf.position);
+                    Debug.Log($"[MicrofaunaRuntimeVerify] {enc.name}: elapsed={elapsed:F2}s states=(Idle:{sawIdle},Emerge:{sawEmerging},Pause:{sawPaused},Retreat:{sawRetreating},Cooldown:{sawCooldown}) pathLen={ctrl.TotalPathLength:F3}m maxExcursion={maxExcursion:F3}m maxFrameStep={maxFrameStep:F4}m endReturnErr={endOffset:F5}m");
+
+                    if (!sawIdle || !sawEmerging || !sawPaused || !sawRetreating || !sawCooldown || endOffset > 0.002f || maxFrameStep > 0.005f)
+                    {
+                        throw new InvalidOperationException($"Runtime cycle verification failed for {enc.name}.");
+                    }
+                    ctrl.ResetToConcealedState();
+                }
+            }
+            finally
+            {
+                RenderTexture.active = null;
+                UnityEngine.Object.DestroyImmediate(camGo);
+                rt.Release();
+                UnityEngine.Object.DestroyImmediate(rt);
+                UnityEngine.Object.DestroyImmediate(readTex);
+
+                RenderSettings.skybox = prevSkybox;
+                RenderSettings.ambientMode = prevAmbMode;
+                RenderSettings.ambientLight = prevAmbLight;
+                RenderSettings.fog = prevFog;
+                RenderSettings.fogMode = prevFogMode;
+                RenderSettings.fogColor = prevFogColor;
+                RenderSettings.fogDensity = prevFogDensity;
+            }
+        }
+
+        /// <summary>
+        /// Read-only Editor camera verification utility for Implementation 07.11 (Room 111-B: The Impossible East Wing).
+        /// Renders the 7 required architectural verification views (plus close-up of the 111-B plaque) with exact
+        /// Remanencia Level 0 ambient light & fog without modifying or saving the scene.
+        /// </summary>
+        public static void RenderRoom111BVerificationViews()
+        {
+            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            if (!scene.IsValid())
+            {
+                throw new InvalidOperationException($"Could not open {ScenePath} for 07.11 camera verification.");
+            }
+
+            string outDir = Environment.GetEnvironmentVariable("MVC_ROOM111B_RENDER_DIR");
+            if (string.IsNullOrWhiteSpace(outDir))
+            {
+                outDir = Path.Combine(Path.GetTempPath(), "MVC_Room111BRenders");
+            }
+            Directory.CreateDirectory(outDir);
+
+            AmbientMode prevAmbMode = RenderSettings.ambientMode;
+            Color prevAmbLight = RenderSettings.ambientLight;
+            bool prevFog = RenderSettings.fog;
+            FogMode prevFogMode = RenderSettings.fogMode;
+            Color prevFogColor = RenderSettings.fogColor;
+            float prevFogDensity = RenderSettings.fogDensity;
+            Material prevSkybox = RenderSettings.skybox;
+
+            GameObject camGo = new GameObject("__TempRoom111BVerifyCam__");
+            RenderTexture rt = new RenderTexture(1280, 720, 24, RenderTextureFormat.ARGB32);
+            Texture2D readTex = new Texture2D(1280, 720, TextureFormat.RGB24, false);
+
+            try
+            {
+                RenderSettings.skybox = null;
+                RenderSettings.ambientMode = AmbientMode.Flat;
+                RenderSettings.ambientLight = SecretBackroomsTransitionController.RemanenciaLevel0AmbientLight;
+                RenderSettings.fog = true;
+                RenderSettings.fogMode = FogMode.ExponentialSquared;
+                RenderSettings.fogColor = SecretBackroomsTransitionController.RemanenciaLevel0FogColor;
+                RenderSettings.fogDensity = SecretBackroomsTransitionController.RemanenciaLevel0FogDensity;
+
+                Camera cam = camGo.AddComponent<Camera>();
+                cam.clearFlags = CameraClearFlags.SolidColor;
+                cam.backgroundColor = SecretBackroomsTransitionController.RemanenciaLevel0FogColor;
+                cam.fieldOfView = 62f;
+                cam.nearClipPlane = 0.04f;
+                cam.farClipPlane = 60f;
+                cam.targetTexture = rt;
+
+                (string fileName, Vector3 pos, Vector3 lookAt)[] shots =
+                {
+                    ("verify_0711_01_corridor_approach.png",        new Vector3( 8.50f, BaseY + 1.60f, 27.45f), new Vector3(16.00f, BaseY + 1.42f, 27.45f)),
+                    ("verify_0711_02_apparent_dead_end.png",        new Vector3(12.40f, BaseY + 1.60f, 27.60f), new Vector3(17.20f, BaseY + 1.38f, 27.55f)),
+                    ("verify_0711_03_concealed_opening_closeup.png",new Vector3(16.25f, BaseY + 1.54f, 27.68f), new Vector3(16.88f, BaseY + 1.28f, 24.40f)),
+                    ("verify_0711_04_east_corridor_interior.png",   new Vector3(16.80f, BaseY + 1.58f, 25.60f), new Vector3(18.10f, BaseY + 1.32f, 22.10f)),
+                    ("verify_0711_05_room111b_doorway.png",         new Vector3(17.10f, BaseY + 1.58f, 22.95f), new Vector3(19.01f, BaseY + 1.45f, 22.90f)),
+                    ("verify_0711_06_room111b_interior_plaque.png", new Vector3(19.65f, BaseY + 1.58f, 22.40f), new Vector3(24.40f, BaseY + 1.35f, 22.40f)),
+                    ("verify_0711_07_return_connection.png",        new Vector3(17.25f, BaseY + 1.58f, 23.60f), new Vector3(16.55f, BaseY + 1.40f, 27.60f)),
+                    ("verify_0711_08_plaque_111b_closeup.png",      new Vector3(18.15f, BaseY + 1.58f, 23.45f), new Vector3(18.89f, BaseY + 1.58f, 23.45f))
+                };
+
+                foreach (var shot in shots)
+                {
+                    cam.transform.position = shot.pos;
+                    cam.transform.LookAt(shot.lookAt, Vector3.up);
+                    cam.Render();
+
+                    RenderTexture.active = rt;
+                    readTex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+                    readTex.Apply();
+                    RenderTexture.active = null;
+
+                    string fullFile = Path.Combine(outDir, shot.fileName);
+                    File.WriteAllBytes(fullFile, readTex.EncodeToPNG());
+                    Debug.Log($"[BackroomsLevel1Builder] Rendered 07.11 Room 111-B verification view: {fullFile}");
+                }
+            }
+            finally
+            {
+                RenderTexture.active = null;
+                UnityEngine.Object.DestroyImmediate(camGo);
+                rt.Release();
+                UnityEngine.Object.DestroyImmediate(rt);
+                UnityEngine.Object.DestroyImmediate(readTex);
+
+                RenderSettings.skybox = prevSkybox;
+                RenderSettings.ambientMode = prevAmbMode;
+                RenderSettings.ambientLight = prevAmbLight;
+                RenderSettings.fog = prevFog;
+                RenderSettings.fogMode = prevFogMode;
+                RenderSettings.fogColor = prevFogColor;
+                RenderSettings.fogDensity = prevFogDensity;
+            }
+        }
+
+        /// <summary>
+        /// Read-only Editor camera verification utility for Implementation 07.12.
+        /// </summary>
+        public static void RenderRoom111BInteriorAndThresholdViews()
+        {
+            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            if (!scene.IsValid())
+            {
+                throw new InvalidOperationException($"Could not open {ScenePath} for 07.12 camera verification.");
+            }
+
+            string outDir = Environment.GetEnvironmentVariable("MVC_ROOM111B_0712_RENDER_DIR");
+            if (string.IsNullOrWhiteSpace(outDir))
+            {
+                outDir = Path.Combine(Path.GetTempPath(), "MVC_Room111B_0712_Renders");
+            }
+            Directory.CreateDirectory(outDir);
+
+            AmbientMode prevAmbMode = RenderSettings.ambientMode;
+            Color prevAmbLight = RenderSettings.ambientLight;
+            bool prevFog = RenderSettings.fog;
+            FogMode prevFogMode = RenderSettings.fogMode;
+            Color prevFogColor = RenderSettings.fogColor;
+            float prevFogDensity = RenderSettings.fogDensity;
+            Material prevSkybox = RenderSettings.skybox;
+
+            GameObject camGo = new GameObject("__TempRoom111B0712VerifyCam__");
+            RenderTexture rt = new RenderTexture(1280, 720, 24, RenderTextureFormat.ARGB32);
+            Texture2D readTex = new Texture2D(1280, 720, TextureFormat.RGB24, false);
+
+            try
+            {
+                RenderSettings.skybox = null;
+                RenderSettings.ambientMode = AmbientMode.Flat;
+                RenderSettings.ambientLight = SecretBackroomsTransitionController.RemanenciaLevel0AmbientLight;
+                RenderSettings.fog = true;
+                RenderSettings.fogMode = FogMode.ExponentialSquared;
+                RenderSettings.fogColor = SecretBackroomsTransitionController.RemanenciaLevel0FogColor;
+                RenderSettings.fogDensity = SecretBackroomsTransitionController.RemanenciaLevel0FogDensity;
+
+                Camera cam = camGo.AddComponent<Camera>();
+                cam.clearFlags = CameraClearFlags.SolidColor;
+                cam.backgroundColor = SecretBackroomsTransitionController.RemanenciaLevel0FogColor;
+                cam.fieldOfView = 62f;
+                cam.nearClipPlane = 0.04f;
+                cam.farClipPlane = 60f;
+                cam.targetTexture = rt;
+
+                (string fileName, Vector3 pos, Vector3 lookAt)[] shots =
+                {
+                    ("verify_0712_01_public_directory_107_110.png", new Vector3( 9.40f, BaseY + 1.62f, 27.25f), new Vector3( 9.40f, BaseY + 1.62f, 28.68f)),
+                    ("verify_0712_02_room111b_from_doorway.png",    new Vector3(19.35f, BaseY + 1.56f, 22.40f), new Vector3(23.80f, BaseY + 1.15f, 22.10f)),
+                    ("verify_0712_03_room111b_bed_and_south.png",   new Vector3(23.20f, BaseY + 1.55f, 23.60f), new Vector3(21.10f, BaseY + 0.72f, 20.60f)),
+                    ("verify_0712_04_room111b_desk_wardrobe.png",   new Vector3(23.10f, BaseY + 1.52f, 21.15f), new Vector3(20.60f, BaseY + 1.05f, 24.45f)),
+                    ("verify_0712_05_threshold_of_trust.png",       new Vector3(21.40f, BaseY + 1.50f, 22.40f), new Vector3(24.48f, BaseY + 1.12f, 22.40f)),
+                    ("verify_0712_06_interior_hotel_entrance.png",  new Vector3(17.50f, BaseY + 1.52f,  8.80f), new Vector3(19.82f, BaseY + 1.25f,  8.80f))
+                };
+
+                foreach (var shot in shots)
+                {
+                    cam.transform.position = shot.pos;
+                    cam.transform.LookAt(shot.lookAt, Vector3.up);
+                    cam.Render();
+
+                    RenderTexture.active = rt;
+                    readTex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+                    readTex.Apply();
+                    RenderTexture.active = null;
+
+                    string fullFile = Path.Combine(outDir, shot.fileName);
+                    File.WriteAllBytes(fullFile, readTex.EncodeToPNG());
+                    Debug.Log($"[BackroomsLevel1Builder] Rendered 07.12 verification view: {fullFile}");
+                }
+            }
+            finally
+            {
+                RenderTexture.active = null;
+                UnityEngine.Object.DestroyImmediate(camGo);
+                rt.Release();
+                UnityEngine.Object.DestroyImmediate(rt);
+                UnityEngine.Object.DestroyImmediate(readTex);
+
+                RenderSettings.skybox = prevSkybox;
+                RenderSettings.ambientMode = prevAmbMode;
+                RenderSettings.ambientLight = prevAmbLight;
+                RenderSettings.fog = prevFog;
+                RenderSettings.fogMode = prevFogMode;
+                RenderSettings.fogColor = prevFogColor;
+                RenderSettings.fogDensity = prevFogDensity;
+            }
+        }
+    }
+}
