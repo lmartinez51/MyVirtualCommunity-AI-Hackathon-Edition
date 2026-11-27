@@ -269,3 +269,50 @@ Before any physical expansion geometry is authored in `07.15+`, the creator's ex
 3. **Unfinished Shaft Role:** Decide whether the unfinished elevator shaft should remain **permanently non-traversable visual/environmental storytelling** (guarded ajar door peering into cables/shaft) OR eventually support a **constrained maintenance ladder/scaffold descent** in a later increment.
 4. **Upper Territory Naming & Taxonomy:** Decide whether the upper floor reached from Hotel de las Palomas should be labeled as part of **Nivel 0** (e.g., *Piso 2 / Obra Alta* within Hotel de las Palomas), designated as **Nivel 1**, or given an original creator-chosen territory name.
 5. **Architectural Tone of the Next Stratum:** Decide whether the upper hotel floor should feel *less finished* than Nivel 0 (raw exposed concrete/rebar/sky-haze), *eerily more finished* (continuing Room 111-B's anachronistic prepared-hotel contrast), or *mixed-era* (finished corridor abruptly terminating in unfinished formwork).
+
+
+---
+
+## 17. Implementation 07.15 — As-Built Northwest Service Staircase *(IMPLEMENTED IN 07.15)*
+
+Option B (**Northwest Service Staircase**) was approved by the creator and physically constructed inside `unity-client/Assets/Scenes/BackroomsLevel1Scene.unity` via the dedicated, idempotent Editor builder `NorthwestServiceStaircaseBuilder.MigrateNorthwestServiceStaircaseAndSave()` under sibling root `BackroomsLevel1_Root/Backrooms_Architecture/Hotel_NorthwestServiceStaircase`.
+
+### A. Final As-Built Geometry, Dimensions & Elevations *(VERIFIED IN 07.15)*
+
+| Parameter | Target (07.15 Spec) | As-Built Value | Status |
+| :--- | :---: | :---: | :---: |
+| **Authorized NW Reserve Envelope** | `X ∈ [-15.87, -9.71]`, `Z ∈ [28.91, 33.87]` (`6.16 × 4.96 m`) | Exact match (`6.160 m × 4.960 m = 30.55 m²`) | Exact |
+| **Lower Floor Elevation** | `Y = -50.00 m` | `Y = -50.000 m` (`NorthWing_FloorSlab` top `-50.001 m`) | Exact |
+| **Intermediate Landing Elevation** | `Y = -48.20 m` | `Y = -48.200 m` (`+1.800 m` rise) | Exact |
+| **Upper Landing Elevation** | `Y = -46.40 m` | `Y = -46.400 m` (`+3.600 m` total vertical rise) | Exact |
+| **Upper Ceiling Soffit** | Clear `≥ 2.10 m` | `Y = -43.550 m` (`2.850 m` clear height above Upper Landing) | Exceeds target |
+| **Risers / Riser Height** | `20` total (`10`/flight) × `0.18 m` | **`20`** (`10`/flight) × **`0.180 m`** | Exact |
+| **Treads / Tread Depth** | `18` total (`9`/flight) × `0.28 m` | **`18`** (`9`/flight) × **`0.280 m`** | Exact |
+| **Horizontal Run per Flight** | `2.52 m` | **`2.520 m`** (`X ∈ [-14.220, -11.700]`) | Exact |
+| **Stair Pitch** | `~32.7°` | **`32.735°`** (`atan(0.18 / 0.28)`, well within `45°` `CharacterController.slopeLimit`) | Exact |
+| **Flight Clear Width** | `≥ 1.45 m` | `1.760 m` masonry / **`1.640 m` clear inside handrails** | Exceeds target |
+| **Intermediate Landing Depth** | `≥ 1.45 m` | **`1.650 m`** × `4.960 m` (`X ∈ [-15.870, -14.220]`) | Exceeds target |
+| **Upper Landing Dimensions** | Small enclosed landing | **`1.990 m`** × `4.960 m` (`9.87 m²`, `X ∈ [-11.700, -9.710]`) | Exact fit |
+| **Minimum Headroom Along Climb** | `≥ 2.10 m` | **`2.850 m`** minimum throughout flights & landings (`+1.05 m` over `1.80 m` player capsule) | Exceeds target |
+| **Deviations from Initial Targets** | — | **Zero geometric compromises.** All 10 primary design targets were satisfied or exceeded without altering protected walls or tests. | None |
+
+### B. Staircase Route, Orientation & Traversal Architecture *(IMPLEMENTED IN 07.15)*
+- **Orientation (East–West 180° Switchback):**
+  1. Player enters the NW Reserve through the existing `2.26 m × 2.30 m` framed portal (`NorthWing_NWLanding_PortalTrimW/E`, `Z = +28.80`) into the `1.99 m`-deep East ground arrival bay (`X ∈ [-11.70, -9.71]`).
+  2. **Flight 1 (`NWStair_Flight1_Lower`, `Z ∈ [+32.02, +33.78]`):** Climbs **East → West** (`X = -11.70 → -14.22`, `Y = -50.00 → -48.20`) along the North perimeter wall (passing `2 cm` clear of the existing non-colliding `NorthWing_FutureAnchor_NorthFrame` trim at `Z = +33.80`).
+  3. **Intermediate Landing (`NWStair_IntermediateLanding`, `X ∈ [-15.87, -14.22]`, `Y = -48.20`):** `1.65 m`-deep full-width turn platform executing the 180° switchback; its unsafe low-headroom under-landing cavity is completely sealed by solid masonry (`NWStair_MidLanding_UnderWall`).
+  4. **Flight 2 (`NWStair_Flight2_Upper`, `Z ∈ [+30.06, +31.82]`):** Climbs **West → East** (`X = -14.22 → -11.70`, `Y = -48.20 → -46.40`) with an exposed poured-concrete soffit underside visible from Nivel 0 (`+0.747 m` clearance above the existing `Housekeeping_NW_Landing` EditMode walkability polyline).
+  5. **Upper Landing (`NWStair_UpperLandingShell`, `X ∈ [-11.70, -9.71]`, `Y = -46.40`):** `9.87 m²` walkable unfinished concrete platform enclosed by four solid perimeter walls and a solid upper ceiling (`Y = -43.55`).
+- **Player Collision & Fall Protection:**
+  - Visible individual concrete steps, risers, and nosings are paired with continuous concealed tilted `BoxCollider` stair-support ramps (`NWStair_F1_RampCollider`, `NWStair_F2_RampCollider`, `32.735°`, tangent to the exact 10-nosing line of each flight) for jitter-free `CharacterController.Move()` traversal with zero snagging or sinking.
+  - All exposed stairwell drop-offs are guarded by `1.05 m`-tall solid poured-concrete parapets (`NWStair_CenterParapet_*`, `NWStair_SouthParapet_Flight2`, `NWStair_MidLanding_SouthGuardParapet`, `NWStair_UpperLanding_*GuardParapet`) capped with restrained dark-steel handrails (`mats.IndustrialMetal`).
+
+### C. Localized Ceiling Modification & Sealed Upper Shell *(IMPLEMENTED IN 07.15)*
+- **In-Place Ceiling Trim:** Retained `NorthWing_CeilingSlab_North` (`fileID=582163591`) in place with its original `CeilingSoffit` material, trimming its X span strictly East of `X = -9.60` (`pos=(3.35, -47.048, 30.15)`, `scale=(25.90, 0.20, 8.30)`), keeping Rooms `107–110` and the North Guest Corridor 100% sealed.
+- **South Corridor Patch:** Added `NWStair_CeilingFill_SouthCorridor` (`X ∈ [-16.30, -9.60], Z ∈ [+26.00, +28.91]`, `mats.CeilingSoffit`, `BoxCollider=True`) so the Maintenance Corridor and Linen Room ceilings remain flush and continuous.
+- **Sealed Upper Shell:** Enclosed from `Y = -47.15` to `Y = -43.55` on all four sides (`NWStair_UpperShell_WallWest/East/North/South`) and overhead (`NWStair_UpperShell_CeilingSlab`), accented strictly with restrained unfinished construction cues (overhead concrete transfer beam, recessed sealed continuation frames on East and North walls backed by 100% solid walls, vertical conduit stub, and two emissive-only utility strip fixtures adding **zero** Unity `Light` components — total scene lights remain exactly `18`).
+
+### D. Builder, Integration Point & Verification *(IMPLEMENTED IN 07.15)*
+- **Dedicated Builder:** `unity-client/Assets/Editor/NorthwestServiceStaircaseBuilder.cs` (deterministic, strictly idempotent, scene-scoped to `BackroomsLevel1Scene.unity`, zero new materials/textures/lights/runtime scripts).
+- **Minimal `BackroomsLevel1Builder.cs` Integration (`+10/-3` lines):** Added `NorthwestServiceStaircaseRootName`, preserved the trimmed `NorthWing_CeilingSlab_North` X bounds when `Hotel_NorthwestServiceStaircase` is present during North Wing M1 re-migration, and added `NorthwestServiceStaircaseBuilder.VerifyStructurePresent(shell)` to `RunVerificationChecks()`.
+- **Automated Verification Suite:** `unity-client/Assets/Editor/RemanenciaNorthwestStaircaseTests.cs` (verifying exact geometry, headroom, localized ceiling cutout, sealed upper shell, real `CharacterController.Move()` full ascent & descent, strict idempotency, preserved Elevators/Room 111-B/Threshold of Trust/entry-only rule, and byte-identical `BorderCorridorScene.unity`). Visual and interactive PlayMode feel remain pending the creator's personal PlayMode inspection.

@@ -106,6 +106,7 @@ namespace MyVirtualCommunity.Editor
         public const string HotelFirstLivingMicrofaunaRootName = "Hotel_FirstLivingMicrofauna";
         public const string HotelRoom111BRootName = "Hotel_Room111B_Anomaly";
         public const string HotelRoom111BGuestInteriorRootName = "Hotel_Room111B_GuestInterior";
+        public const string NorthwestServiceStaircaseRootName = "Hotel_NorthwestServiceStaircase";
         public const string RoomPlaque111BTexPath = "Assets/Textures/Environment/T_Remanencia_RoomPlaque_111B.png";
         public const string RoomPlaque111BMatPath = "Assets/Settings/Remanencia_Level0_RoomPlaque_111B.mat";
 
@@ -1777,9 +1778,14 @@ namespace MyVirtualCommunity.Editor
             EnsureHotelBox(connLobby, "NorthWing_CeilingSlab_South",
                 new Vector3(0.0f, CeilingY + 0.102f, 15.10f), Quaternion.identity,
                 new Vector3(32.60f, 0.20f, 5.80f), mats.CeilingSoffit, keepCollider: true);
+            // When Implementation 07.15 (Hotel_NorthwestServiceStaircase) is installed, preserve the
+            // trimmed NorthWing_CeilingSlab_North opening above the NW reserve (X < -9.60) in-place.
+            bool hasNorthwestStaircase = shellRoot.Find(NorthwestServiceStaircaseRootName) != null;
             EnsureHotelBox(connLobby, "NorthWing_CeilingSlab_North",
-                new Vector3(0.0f, CeilingY + 0.102f, 30.15f), Quaternion.identity,
-                new Vector3(32.60f, 0.20f, 8.30f), mats.CeilingSoffit, keepCollider: true);
+                new Vector3(hasNorthwestStaircase ? NorthwestServiceStaircaseBuilder.TrimmedCeilingNorthCenterX : 0.0f, CeilingY + 0.102f, 30.15f),
+                Quaternion.identity,
+                new Vector3(hasNorthwestStaircase ? NorthwestServiceStaircaseBuilder.TrimmedCeilingNorthWidthX : 32.60f, 0.20f, 8.30f),
+                mats.CeilingSoffit, keepCollider: true);
             EnsureHotelBox(connLobby, "NorthWing_CeilingSlab_West",
                 new Vector3(-10.65f, CeilingY + 0.102f, 22.0f), Quaternion.identity,
                 new Vector3(11.30f, 0.20f, 8.00f), mats.CeilingSoffit, keepCollider: true);
@@ -6063,7 +6069,8 @@ namespace MyVirtualCommunity.Editor
                                      hasFaunalTraces &&
                                      hasFirstLivingMicrofauna &&
                                      hasRoom111B &&
-                                     hasRoom111BInterior;
+                                     hasRoom111BInterior &&
+                                     NorthwestServiceStaircaseBuilder.VerifyStructurePresent(shell);
 
             int retainedWallCount = 0, pillarCount = 0, missingVoidCount = 0, crookedHatchCount = 0;
             for (int i = 0; i < shell.childCount; i++)
