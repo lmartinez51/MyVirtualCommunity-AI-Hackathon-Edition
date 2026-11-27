@@ -69,29 +69,32 @@ namespace MyVirtualCommunity.Editor
             Assert.IsNotNull(entIllusion.Find("InteriorEntrance_HandleR"));
             Assert.IsNotNull(entIllusion.Find("InteriorEntrance_CenterMullion"));
 
-            // 3 & 8. Entry-only prompts & minimal bilingual feedback (no return promise, no tutorial/spoiler)
+            // 3 & 8 (07.14 Annex A). No idle proximity prompt in ES or EN; brief bilingual feedback ONLY on explicit [E]/click attempt
             BackroomsExitDoorTrigger trig = exitDoor.GetComponent<BackroomsExitDoorTrigger>();
             Assert.IsNotNull(trig);
             Assert.IsTrue(trig.enabled);
-            Assert.IsTrue(trig.isEntryOnly, "BackroomsExitDoorTrigger must default to isEntryOnly = true in 07.13.");
+            Assert.IsTrue(trig.isEntryOnly, "BackroomsExitDoorTrigger must default to isEntryOnly = true in 07.13+.");
 
             trig.ResetEntryOnlyFeedbackForTest();
+            Assert.IsFalse(trig.ShouldDisplayPrompt(overrideNowUnscaledTime: 10f),
+                "07.14 Annex A: Entry-only door must suppress proximity prompt completely when idle.");
             string idleEs = trig.GetPrompt(isEs: true, overrideNowUnscaledTime: 10f);
             string idleEn = trig.GetPrompt(isEs: false, overrideNowUnscaledTime: 10f);
-            Assert.AreEqual("[E] Intentar abrir la puerta", idleEs);
-            Assert.AreEqual("[E] Try the door", idleEn);
-            Assert.IsFalse(idleEs.Contains("Av. Benito Juárez"));
-            Assert.IsFalse(idleEn.Contains("Av. Benito Juárez"));
-            Assert.IsFalse(idleEs.Contains("111-B"));
-            Assert.IsFalse(idleEn.Contains("111-B"));
+            Assert.AreEqual(string.Empty, idleEs, "Spanish proximity prompt must be suppressed for entry-only door.");
+            Assert.AreEqual(string.Empty, idleEn, "English proximity prompt must be suppressed for entry-only door.");
 
             string fbEs = trig.TriggerEntryOnlyFeedback(isEs: true, overrideNowUnscaledTime: 10f);
             Assert.AreEqual("La puerta no cede.", fbEs);
+            Assert.IsTrue(trig.ShouldDisplayPrompt(overrideNowUnscaledTime: 11f),
+                "Brief post-attempt feedback must display after explicit [E] or click attempt.");
             Assert.AreEqual("La puerta no cede.", trig.GetPrompt(isEs: true, overrideNowUnscaledTime: 11f));
             Assert.AreEqual("The door won't budge.", trig.GetPrompt(isEs: false, overrideNowUnscaledTime: 11f));
             Assert.AreEqual(1, trig.EntryOnlyAttemptCount);
-            // Feedback expires cleanly back to restrained prompt after 2.6s
-            Assert.AreEqual("[E] Intentar abrir la puerta", trig.GetPrompt(isEs: true, overrideNowUnscaledTime: 13f));
+            // Feedback expires cleanly back to zero proximity prompt after 2.6s
+            Assert.IsFalse(trig.ShouldDisplayPrompt(overrideNowUnscaledTime: 13f),
+                "Entry-only feedback must expire back to silent (no proximity prompt).");
+            Assert.AreEqual(string.Empty, trig.GetPrompt(isEs: true, overrideNowUnscaledTime: 13f));
+            Assert.AreEqual(string.Empty, trig.GetPrompt(isEs: false, overrideNowUnscaledTime: 13f));
             trig.ResetEntryOnlyFeedbackForTest();
 
             // 6. Physical door boundary prevents walking through from inside Remanencia (solid Wall_Outer_East behind door)

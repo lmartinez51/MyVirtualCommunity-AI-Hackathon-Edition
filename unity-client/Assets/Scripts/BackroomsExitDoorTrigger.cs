@@ -45,6 +45,20 @@ namespace MyVirtualCommunity.Client.World
             return feedbackUntilUnscaledTime >= 0f && now < feedbackUntilUnscaledTime;
         }
 
+        /// <summary>
+        /// Implementation 07.14 Annex A: In entry-only mode, suppress any idle proximity prompt
+        /// ("[E] Try the door" / "[E] Intentar abrir la puerta") and show HUD text ONLY while
+        /// brief post-attempt feedback ("La puerta no cede." / "The door won't budge.") is active.
+        /// </summary>
+        public bool ShouldDisplayPrompt(float? overrideNowUnscaledTime = null)
+        {
+            if (isEntryOnly)
+            {
+                return IsShowingEntryOnlyFeedback(overrideNowUnscaledTime);
+            }
+            return true;
+        }
+
         public string GetPrompt(bool isEs, float? overrideNowUnscaledTime = null)
         {
             if (isEntryOnly)
@@ -53,7 +67,7 @@ namespace MyVirtualCommunity.Client.World
                 {
                     return isEs ? entryOnlyFeedbackEs : entryOnlyFeedbackEn;
                 }
-                return isEs ? entryOnlyPromptEs : entryOnlyPromptEn;
+                return string.Empty;
             }
             return isEs ? promptEs : promptEn;
         }

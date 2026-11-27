@@ -349,10 +349,13 @@ namespace MyVirtualCommunity.Editor
             Assert.IsNotNull(exitTrig);
             Assert.IsTrue(exitTrig.enabled);
             Assert.IsTrue(exitTrig.isEntryOnly, "07.13 activates entry-only mode on Backrooms_ExitDoor_ToStreet.");
-            Assert.IsFalse(exitTrig.GetPrompt(isEs: true).Contains("Av. Benito Juárez"),
-                "Entry-only interior door must no longer advertise a conventional return to Av. Benito Juárez.");
-            Assert.IsFalse(exitTrig.GetPrompt(isEs: false).Contains("Av. Benito Juárez"),
-                "Entry-only interior door must no longer advertise a conventional return to Av. Benito Juárez.");
+            exitTrig.ResetEntryOnlyFeedbackForTest();
+            Assert.IsFalse(exitTrig.ShouldDisplayPrompt(),
+                "07.14 Annex A: Entry-only interior door must suppress any idle proximity prompt.");
+            Assert.AreEqual(string.Empty, exitTrig.GetPrompt(isEs: true),
+                "Entry-only interior door must display no Spanish proximity prompt.");
+            Assert.AreEqual(string.Empty, exitTrig.GetPrompt(isEs: false),
+                "Entry-only interior door must display no English proximity prompt.");
 
             // 19, 20, 21. Strict Surface-World Preservation: BorderCorridorScene.unity byte-for-byte identical
             string actualBorderSha = ComputeFileSha256("Assets/Scenes/BorderCorridorScene.unity");

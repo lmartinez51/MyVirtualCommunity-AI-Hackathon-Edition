@@ -2880,7 +2880,7 @@ namespace MyVirtualCommunity.Client.World
                     }
                     else
                     {
-                        if (inBackroomsHud && currentNearbyBackroomsExit != null && isCursorLocked)
+                        if (inBackroomsHud && currentNearbyBackroomsExit != null && currentNearbyBackroomsExit.ShouldDisplayPrompt() && isCursorLocked)
                         {
                             DrawBackroomsExitPrompt(currentNearbyBackroomsExit);
                         }
@@ -8737,8 +8737,11 @@ namespace MyVirtualCommunity.Client.World
 
         private void DrawBackroomsExitPrompt(BackroomsExitDoorTrigger exitDoor)
         {
-            if (exitDoor == null) return;
+            if (exitDoor == null || !exitDoor.ShouldDisplayPrompt()) return;
             bool isEs = currentLanguage == "es";
+            string prompt = exitDoor.GetPrompt(isEs);
+            if (string.IsNullOrEmpty(prompt)) return;
+
             float w = 520f;
             float h = 48f;
             float x = (Screen.width - w) * 0.5f;
@@ -8753,7 +8756,7 @@ namespace MyVirtualCommunity.Client.World
                 alignment = TextAnchor.MiddleCenter,
                 normal = { textColor = showingEntryOnlyFeedback ? new Color(0.86f, 0.84f, 0.78f) : new Color(1f, 0.90f, 0.42f) }
             };
-            GUI.Label(new Rect(x, y, w, h), exitDoor.GetPrompt(isEs), st);
+            GUI.Label(new Rect(x, y, w, h), prompt, st);
         }
 
         private void DrawEquippedAstrolabeBadgeHUD()
