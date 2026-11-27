@@ -104,6 +104,9 @@ namespace MyVirtualCommunity.Editor
         public const string HotelEarlyEcologyRootName = "Hotel_Early_Ecology";
         public const string HotelFaunalTracesRootName = "Hotel_Faunal_Traces";
         public const string HotelFirstLivingMicrofaunaRootName = "Hotel_FirstLivingMicrofauna";
+        public const string HotelRoom111BRootName = "Hotel_Room111B_Anomaly";
+        public const string RoomPlaque111BTexPath = "Assets/Textures/Environment/T_Remanencia_RoomPlaque_111B.png";
+        public const string RoomPlaque111BMatPath = "Assets/Settings/Remanencia_Level0_RoomPlaque_111B.mat";
         public const float NorthWingMinX = -16.0f;
         public const float NorthWingMaxX = 16.0f;
         public const float NorthWingMinZ = 12.0f;
@@ -1767,10 +1770,13 @@ namespace MyVirtualCommunity.Editor
                 new Vector3(11.30f, 0.20f, 8.00f), mats.CeilingSoffit, keepCollider: true);
 
             // Outer M1 Perimeter Enclosure (X=-16..+16, Z=+12..+34 -> exact 32m x 22m = 704 m² envelope)
+            // When Implementation 07.11 (Hotel_Room111B_Anomaly) is installed, preserve the concealed East opening at Z = +26.80..+28.40
+            // while keeping Z = +12.0..+26.80 (including Z = +20.0) solidly sealed on the retained NorthWing_OuterWall_East GameObject.
+            float eastOuterWallEndZ = shellRoot.Find(HotelRoom111BRootName) != null ? 26.735f : 34.0f;
             EnsureHotelWallSegment(connLobby, "NorthWing_OuterWall_North",
                 new Vector2(-16.0f, 34.0f), new Vector2(16.0f, 34.0f), outerT, mats.WallConcrete, mats.BaseboardConcrete);
             EnsureHotelWallSegment(connLobby, "NorthWing_OuterWall_East",
-                new Vector2(16.0f, 12.0f), new Vector2(16.0f, 34.0f), outerT, mats.WallConcrete, mats.BaseboardConcrete);
+                new Vector2(16.0f, 12.0f), new Vector2(16.0f, eastOuterWallEndZ), outerT, mats.WallConcrete, mats.BaseboardConcrete);
             EnsureHotelWallSegment(connLobby, "NorthWing_OuterWall_West",
                 new Vector2(-16.0f, 12.0f), new Vector2(-16.0f, 34.0f), outerT, mats.WallConcrete, mats.BaseboardConcrete);
 
@@ -3336,6 +3342,336 @@ namespace MyVirtualCommunity.Editor
             }
 
             BuildOrUpdateHotelFirstLivingMicrofauna(root.transform);
+        }
+
+        // =========================================================================
+        // IMPLEMENTATION 07.11 — ROOM 111-B: THE IMPOSSIBLE EAST WING (IN-PLACE MIGRATION)
+        //   Constructs approved Option A (Hidden East Architectural Passage) strictly inside
+        //   BackroomsLevel1Scene.unity under Backrooms_Architecture/Hotel_Room111B_Anomaly:
+        //     - Shortens retained NorthWing_OuterWall_East (and _Baseboard) IN-PLACE to Z=12.0..26.80
+        //       (preserving its existing GameObject/fileID and keeping Z=+20.0 100% solid).
+        //     - Room111B_ConcealedOpening: Z=+26.80..+28.40 framed opening (1.60m x 2.20m) behind
+        //       NorthWing_NorthCorridor_EastOverlookNib, screened by offset concrete shadow-baffle wall
+        //       at X=+17.55 so the corridor East end initially reads as a solid architectural dead end.
+        //     - Room111B_EastCorridor: phantom East corridor (X=+16.13..+18.90, Z=+20.20..+28.68,
+        //       continuous floor & ceiling slabs, misaligned floor expansion joint, 1 emissive-only strip).
+        //     - Room111B_RoomShell: empty architectural shell (X=+19.12..+24.52, Z=+20.00..+24.80,
+        //       5.40m x 4.80m extending beyond original hotel East boundary X=+20.0, weathered plaster
+        //       finish contrast, older framed doorway at X=+19.01 Z=+21.70..+23.10, zero furniture/props/lights).
+        //     - Room111B_Signage: upright non-mirrored '111-B' room plaque facing West into East Corridor.
+        //   Strictly preserves BorderCorridorScene.unity, Backrooms_ExitDoor_ToStreet, Hotel_Elevator_Core,
+        //   07.6-07.9 content, exact 18 scene lights (0 shadows), and save/progression schemas.
+        // =========================================================================
+        [MenuItem("MyVirtualCommunity/Migrate Remanencia Room 111-B Architecture (In-Place)")]
+        public static void MigrateRemanenciaRoom111BAndSave()
+        {
+            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            if (!scene.IsValid())
+            {
+                throw new InvalidOperationException($"Failed to open existing scene at {ScenePath}.");
+            }
+
+            MigrateRemanenciaRoom111BInOpenScene(scene);
+            AssetDatabase.SaveAssets();
+            EditorSceneManager.MarkSceneDirty(scene);
+            if (!EditorSceneManager.SaveScene(scene, ScenePath))
+            {
+                throw new InvalidOperationException($"Failed to save migrated scene at {ScenePath}.");
+            }
+            Debug.Log($"[BackroomsLevel1Builder] Remanencia Room 111-B (Impossible East Wing) architecture migrated and saved to {ScenePath}.");
+        }
+
+        public static void MigrateRemanenciaRoom111BInOpenScene(UnityEngine.SceneManagement.Scene scene)
+        {
+            if (!scene.IsValid() || !string.Equals(scene.path, ScenePath, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    $"Remanencia Room 111-B migration requires open scene '{ScenePath}', but found '{scene.path}'.");
+            }
+
+            GameObject root = null;
+            foreach (GameObject go in scene.GetRootGameObjects())
+            {
+                if (go.name == "BackroomsLevel1_Root")
+                {
+                    root = go;
+                    break;
+                }
+            }
+            if (root == null)
+            {
+                throw new InvalidOperationException("BackroomsLevel1_Root not found in open scene.");
+            }
+
+            Transform shellRoot = root.transform.Find("Backrooms_Architecture");
+            if (shellRoot == null)
+            {
+                throw new InvalidOperationException("Backrooms_Architecture not found under BackroomsLevel1_Root.");
+            }
+            if (shellRoot.Find(NorthWingM1RootName) == null)
+            {
+                throw new InvalidOperationException($"Expected '{NorthWingM1RootName}' under Backrooms_Architecture before running 07.11 Room 111-B migration.");
+            }
+            if (root.transform.Find(HotelFirstLivingMicrofaunaRootName) == null)
+            {
+                throw new InvalidOperationException($"Expected '{HotelFirstLivingMicrofaunaRootName}' under BackroomsLevel1_Root before running 07.11 Room 111-B migration.");
+            }
+
+            BuildOrUpdateRoom111BAnomaly(shellRoot);
+        }
+
+        private static void BuildOrUpdateRoom111BAnomaly(Transform shellRoot)
+        {
+            const float wallT = 0.22f;
+            const float outerT = 0.26f;
+
+            // Reuse existing canonical Nivel 0 materials read-only (ZERO mutations to existing material/texture assets)
+            Material wallConcrete = AssetDatabase.LoadAssetAtPath<Material>(WallConcreteMatPath);
+            Material wallPlaster = AssetDatabase.LoadAssetAtPath<Material>(PlasterWallMatPath);
+            Material columnConcrete = AssetDatabase.LoadAssetAtPath<Material>(ColumnConcreteMatPath);
+            Material floorConcrete = AssetDatabase.LoadAssetAtPath<Material>(FloorConcreteMatPath);
+            Material ceilingSoffit = AssetDatabase.LoadAssetAtPath<Material>(CeilingSoffitMatPath);
+            Material baseboardConcrete = AssetDatabase.LoadAssetAtPath<Material>(BaseboardMatPath);
+            Material industrialMetal = AssetDatabase.LoadAssetAtPath<Material>(IndustrialMetalMatPath);
+            Material elevatorMetal = AssetDatabase.LoadAssetAtPath<Material>(ElevatorDoorMetalMatPath);
+            Material fluorOn = AssetDatabase.LoadAssetAtPath<Material>(FluorOnMatPath);
+            Material utilityWarmOn = AssetDatabase.LoadAssetAtPath<Material>(UtilityWarmOnMatPath);
+
+            if (wallConcrete == null || wallPlaster == null || columnConcrete == null ||
+                floorConcrete == null || ceilingSoffit == null || baseboardConcrete == null ||
+                industrialMetal == null || elevatorMetal == null || fluorOn == null || utilityWarmOn == null)
+            {
+                throw new InvalidOperationException("One or more canonical Remanencia Nivel 0 architectural materials are missing.");
+            }
+
+            // Generate/load only the dedicated 111-B room plaque texture & material (matte, zero glow)
+            string plaque111BTex = EnsureRoom111BPlaqueTexture(RoomPlaque111BTexPath);
+            AssetDatabase.Refresh();
+            ConfigurePlaqueTextureImporter(plaque111BTex);
+            Material plaque111BMat = CreateTexturedMat(RoomPlaque111BMatPath, plaque111BTex, Color.white, 0.28f, Vector2.one);
+
+            // 1. Shorten retained NorthWing_OuterWall_East (and _Baseboard) IN-PLACE to Z = +12.00..+26.80
+            //    Preserves existing GameObject/Transform/Collider fileIDs and keeps Z = +20.00 100% solid.
+            Transform connLobby = shellRoot.Find($"{NorthWingM1RootName}/NorthWing_Connection_Lobby");
+            if (connLobby == null)
+            {
+                throw new InvalidOperationException("Missing NorthWing_Connection_Lobby under Hotel_NorthWing_M1.");
+            }
+            UpdateRetainedWallSegmentInPlace(
+                connLobby, "NorthWing_OuterWall_East",
+                new Vector2(16.0f, 12.0f), new Vector2(16.0f, 26.735f),
+                outerT, wallConcrete, baseboardConcrete);
+
+            Transform anomalyRoot = EnsureHotelSubgroup(shellRoot, HotelRoom111BRootName);
+            anomalyRoot.localPosition = Vector3.zero;
+            anomalyRoot.localRotation = Quaternion.identity;
+            anomalyRoot.localScale = Vector3.one;
+
+            // =========================================================================
+            // SUBGROUP 1: Room111B_ConcealedOpening
+            //   Opening at X = +16.00, Z in [+26.80, +28.40] (1.60m clear width x 2.20m clear height).
+            //   Offset concrete shadow-baffle wall at X = +17.55 (West face +17.43, Z = +25.40..+28.80)
+            //   leaves a 1.30m clear South dogleg throat (2.03x player capsule diameter) while completely
+            //   occluding the East Corridor from normal North Guest Corridor approach sightlines.
+            // =========================================================================
+            Transform openingGroup = EnsureHotelSubgroup(anomalyRoot, "Room111B_ConcealedOpening");
+
+            // North continuation of East perimeter wall sealing Room 107 East wall (Z = +28.40..+34.065)
+            EnsureHotelWallSegment(openingGroup, "Room111B_OuterWallEast_NorthStub",
+                new Vector2(16.0f, 28.465f), new Vector2(16.0f, 34.0f), outerT, wallConcrete, baseboardConcrete);
+
+            // Overhead concrete transom above the 2.20m clear opening (Y = -47.80..-47.15)
+            EnsureHotelBox(openingGroup, "Room111B_Opening_Transom",
+                new Vector3(16.0f, BaseY + 2.525f, 27.60f), Quaternion.identity,
+                new Vector3(outerT, 0.65f, 1.64f), wallConcrete, keepCollider: true);
+
+            // Restrained unfinished structural concrete recess jambs (blends as a solid recessed dead end from corridor approach)
+            EnsureHotelBox(openingGroup, "Room111B_Opening_RevealS",
+                new Vector3(16.00f, BaseY + 1.10f, 26.815f), Quaternion.identity,
+                new Vector3(0.27f, 2.20f, 0.03f), baseboardConcrete, keepCollider: false);
+            EnsureHotelBox(openingGroup, "Room111B_Opening_RevealN",
+                new Vector3(16.00f, BaseY + 1.10f, 28.385f), Quaternion.identity,
+                new Vector3(0.27f, 2.20f, 0.03f), baseboardConcrete, keepCollider: false);
+            EnsureHotelBox(openingGroup, "Room111B_Opening_RevealTop",
+                new Vector3(16.00f, BaseY + 2.205f, 27.60f), Quaternion.identity,
+                new Vector3(0.27f, 0.03f, 1.60f), baseboardConcrete, keepCollider: false);
+
+            // Offset concrete shadow-baffle wall (X = +17.55, thickness 0.24m -> West face +17.43, East +17.67)
+            // Reads as a solid recessed concrete dead-end wall from corridor approach X <= +13.5
+            EnsureHotelWallSegment(openingGroup, "Room111B_ConcealedBaffle_Wall",
+                new Vector2(17.55f, 25.40f), new Vector2(17.55f, 28.80f), 0.24f, wallConcrete, baseboardConcrete);
+
+            // North enclosure wall continuing Room 107's corridor wall line (Z = +28.80) across the recess
+            EnsureHotelWallSegment(openingGroup, "Room111B_Opening_NorthSeal",
+                new Vector2(16.0f, 28.80f), new Vector2(17.55f, 28.80f), 0.24f, wallConcrete, baseboardConcrete);
+
+            // Transverse shoulder sealing the step-out from baffle X = +17.55 to corridor East wall X = +19.01 at Z = +25.40
+            EnsureHotelWallSegment(openingGroup, "Room111B_Baffle_EastShoulder",
+                new Vector2(17.55f, 25.40f), new Vector2(19.01f, 25.40f), wallT, wallConcrete, baseboardConcrete);
+
+            // Subtle dark concrete floor expansion seam visible only on close inspection inside the recess (zero bright cue from afar)
+            EnsureHotelBox(openingGroup, "Room111B_Opening_FloorJointCue",
+                new Vector3(16.42f, BaseY + 0.002f, 26.82f), Quaternion.identity,
+                new Vector3(0.84f, 0.004f, 0.032f), baseboardConcrete, keepCollider: false);
+
+            // =========================================================================
+            // SUBGROUP 2: Room111B_EastCorridor
+            //   Phantom East Corridor extending South behind the Banquet Hall's East wall:
+            //   Clear interior X in [+16.13, +18.90] (2.77m wide), Z in [+20.20, +28.68] (8.48m total length),
+            //   floor Y = -50.00, clear height 2.85m. Zero exterior void gaps.
+            // =========================================================================
+            Transform corridorGroup = EnsureHotelSubgroup(anomalyRoot, "Room111B_EastCorridor");
+
+            // Continuous floor & ceiling slabs (5cm overlap with NorthWing slabs, 0.5mm Y delta -> zero Z-fighting, zero seam gap)
+            EnsureHotelBox(corridorGroup, "Room111B_EastCorr_FloorSlab",
+                new Vector3(17.725f, BaseY - 0.1515f, 24.45f), Quaternion.identity,
+                new Vector3(2.95f, 0.30f, 9.10f), floorConcrete, keepCollider: true);
+            EnsureHotelBox(corridorGroup, "Room111B_EastCorr_CeilingSlab",
+                new Vector3(17.725f, CeilingY + 0.1025f, 24.45f), Quaternion.identity,
+                new Vector3(2.95f, 0.20f, 9.10f), ceilingSoffit, keepCollider: true);
+
+            // Solid South end wall (inner North face at Z = +20.20, outer South face at Z = +19.98)
+            EnsureHotelWallSegment(corridorGroup, "Room111B_EastCorr_SouthWall",
+                new Vector2(16.00f, 20.09f), new Vector2(19.01f, 20.09f), wallT, wallConcrete, baseboardConcrete);
+
+            // Engaged concrete structural pilaster on East face of NorthWing_OuterWall_East mirroring Banquet pilaster at Z = +22.40
+            EnsureHotelBox(corridorGroup, "Room111B_EastCorr_WestPilaster",
+                new Vector3(16.21f, BaseY + ClearHeight * 0.5f, 22.40f), Quaternion.identity,
+                new Vector3(0.18f, ClearHeight, 0.34f), columnConcrete, keepCollider: true);
+
+            // Subtle architectural irregularity #1: misaligned dark floor expansion-joint strip running off-axis down East Corridor
+            EnsureHotelBox(corridorGroup, "Room111B_EastCorr_FloorJointMisaligned",
+                new Vector3(16.82f, BaseY + 0.002f, 23.40f), Quaternion.identity,
+                new Vector3(0.036f, 0.004f, 6.20f), baseboardConcrete, keepCollider: false);
+
+            // Overhead concrete soffit beams (non-colliding)
+            EnsureHotelBox(corridorGroup, "Room111B_EastCorr_Beam_0",
+                new Vector3(17.52f, CeilingY - 0.16f, 22.40f), Quaternion.identity,
+                new Vector3(2.80f, 0.32f, 0.28f), columnConcrete, keepCollider: false);
+            EnsureHotelBox(corridorGroup, "Room111B_EastCorr_Beam_1",
+                new Vector3(17.52f, CeilingY - 0.16f, 25.40f), Quaternion.identity,
+                new Vector3(2.80f, 0.32f, 0.28f), columnConcrete, keepCollider: false);
+
+            // Single restrained emissive-only ceiling strip (ZERO Light components -> preserves exact 18-light budget)
+            EnsureHotelBox(corridorGroup, "Room111B_EastCorr_FixtureStrip",
+                new Vector3(17.52f, CeilingY - 0.07f, 22.80f), Quaternion.Euler(0f, 90f, 0f),
+                new Vector3(1.36f, 0.046f, 0.068f), fluorOn, keepCollider: false);
+            EnsureHotelBox(corridorGroup, "Room111B_EastCorr_FixtureStrip_Backplate",
+                new Vector3(17.52f, CeilingY - 0.024f, 22.80f), Quaternion.Euler(0f, 90f, 0f),
+                new Vector3(1.44f, 0.046f, 0.14f), industrialMetal, keepCollider: false);
+
+            // East dividing wall at X = +19.01 (West face +18.90, East face +19.12) with framed Room 111-B doorway (Z = +21.70..+23.10)
+            // Wall ends trimmed flush to doorway opening (no jamb Z-fighting); full 1.40m masonry clear width x 2.20m clear height.
+            // Subtle architectural irregularity #2: slightly older, more complete brushed-metal doorway jambs & floor threshold plate
+            EnsureHotelWallSegment(corridorGroup, "Room111B_DoorWall_South",
+                new Vector2(19.01f, 19.87f), new Vector2(19.01f, 21.645f), wallT, wallConcrete, baseboardConcrete);
+            EnsureHotelWallSegment(corridorGroup, "Room111B_DoorWall_North",
+                new Vector2(19.01f, 23.155f), new Vector2(19.01f, 25.40f), wallT, wallConcrete, baseboardConcrete);
+            EnsureHotelBox(corridorGroup, "Room111B_DoorWall_Transom",
+                new Vector3(19.01f, BaseY + 2.20f + 0.325f, 22.40f), Quaternion.identity,
+                new Vector3(wallT, 0.65f, 1.44f), wallConcrete, keepCollider: false);
+            EnsureHotelBox(corridorGroup, "Room111B_DoorWall_JambS",
+                new Vector3(19.01f, BaseY + 1.10f, 21.725f), Quaternion.identity,
+                new Vector3(wallT + 0.06f, 2.20f, 0.05f), elevatorMetal, keepCollider: false);
+            EnsureHotelBox(corridorGroup, "Room111B_DoorWall_JambN",
+                new Vector3(19.01f, BaseY + 1.10f, 23.075f), Quaternion.identity,
+                new Vector3(wallT + 0.06f, 2.20f, 0.05f), elevatorMetal, keepCollider: false);
+            EnsureHotelBox(corridorGroup, "Room111B_DoorWall_HeaderTrim",
+                new Vector3(19.01f, BaseY + 2.20f, 22.40f), Quaternion.identity,
+                new Vector3(wallT + 0.06f, 0.055f, 1.46f), elevatorMetal, keepCollider: false);
+            EnsureHotelBox(corridorGroup, "Room111B_Doorway_ThresholdPlate",
+                new Vector3(19.01f, BaseY + 0.004f, 22.40f), Quaternion.identity,
+                new Vector3(0.28f, 0.008f, 1.38f), industrialMetal, keepCollider: false);
+
+            // =========================================================================
+            // SUBGROUP 3: Room111B_RoomShell
+            //   Empty architectural volume extending beyond original hotel East boundary (X = +20.0):
+            //   Clear interior X in [+19.12, +24.52] (5.40m), Z in [+20.00, +24.80] (4.80m), 25.92 m².
+            //   Weathered plaster wall finish contrasts subtly with raw corridor concrete.
+            //   Strictly empty: ZERO furniture, ZERO props, ZERO documents, ZERO organisms, ZERO Light components.
+            // =========================================================================
+            Transform shellGroup = EnsureHotelSubgroup(anomalyRoot, "Room111B_RoomShell");
+
+            // Continuous floor & ceiling slabs (5cm overlap with East Corridor slabs at X = +19.15..+19.20)
+            EnsureHotelBox(shellGroup, "Room111B_Shell_FloorSlab",
+                new Vector3(22.00f, BaseY - 0.1510f, 22.40f), Quaternion.identity,
+                new Vector3(5.70f, 0.30f, 5.40f), floorConcrete, keepCollider: true);
+            EnsureHotelBox(shellGroup, "Room111B_Shell_CeilingSlab",
+                new Vector3(22.00f, CeilingY + 0.1020f, 22.40f), Quaternion.identity,
+                new Vector3(5.70f, 0.20f, 5.40f), ceilingSoffit, keepCollider: true);
+
+            // Full perimeter enclosure of Room 111-B (inner faces X=+24.52, Z=+20.00, Z=+24.80; West closed by Room111B_DoorWall X=+19.12)
+            EnsureHotelWallSegment(shellGroup, "Room111B_Shell_WallEast",
+                new Vector2(24.65f, 19.87f), new Vector2(24.65f, 24.93f), outerT, wallPlaster, baseboardConcrete);
+            EnsureHotelWallSegment(shellGroup, "Room111B_Shell_WallSouth",
+                new Vector2(19.01f, 19.87f), new Vector2(24.65f, 19.87f), outerT, wallPlaster, baseboardConcrete);
+            EnsureHotelWallSegment(shellGroup, "Room111B_Shell_WallNorth",
+                new Vector2(19.01f, 24.93f), new Vector2(24.65f, 24.93f), outerT, wallPlaster, baseboardConcrete);
+
+            // Engaged East wall structural pilasters & overhead ceiling beam (pure empty concrete/plaster architecture)
+            EnsureHotelBox(shellGroup, "Room111B_Shell_EastPilasterS",
+                new Vector3(24.44f, BaseY + ClearHeight * 0.5f, 20.90f), Quaternion.identity,
+                new Vector3(0.16f, ClearHeight, 0.34f), columnConcrete, keepCollider: true);
+            EnsureHotelBox(shellGroup, "Room111B_Shell_EastPilasterN",
+                new Vector3(24.44f, BaseY + ClearHeight * 0.5f, 23.90f), Quaternion.identity,
+                new Vector3(0.16f, ClearHeight, 0.34f), columnConcrete, keepCollider: true);
+            EnsureHotelBox(shellGroup, "Room111B_Shell_CeilingBeam",
+                new Vector3(21.82f, CeilingY - 0.14f, 22.40f), Quaternion.identity,
+                new Vector3(5.40f, 0.28f, 0.26f), columnConcrete, keepCollider: false);
+
+            // Single restrained emissive-only ceiling strip cleanly mounted to underside of ceiling beam (warm utility tint, ZERO Light components)
+            EnsureHotelBox(shellGroup, "Room111B_Shell_FixtureStrip",
+                new Vector3(21.82f, CeilingY - 0.335f, 22.40f), Quaternion.identity,
+                new Vector3(1.36f, 0.046f, 0.068f), utilityWarmOn, keepCollider: false);
+            EnsureHotelBox(shellGroup, "Room111B_Shell_FixtureStrip_Backplate",
+                new Vector3(21.82f, CeilingY - 0.295f, 22.40f), Quaternion.identity,
+                new Vector3(1.44f, 0.040f, 0.14f), industrialMetal, keepCollider: false);
+
+            // =========================================================================
+            // SUBGROUP 4: Room111B_Signage
+            //   Upright, non-mirrored '111-B' room plaque mounted beside the Room 111-B doorway
+            //   on the West-facing East Corridor wall (X = +18.888, Z = +23.45), facing West (-X).
+            // =========================================================================
+            Transform signageGroup = EnsureHotelSubgroup(anomalyRoot, "Room111B_Signage");
+
+            // Orient Unity Cube's upright +Z face West (-X) toward the player approaching along the East Corridor
+            EnsureHotelBox(signageGroup, "Room111B_Plaque_111B",
+                new Vector3(18.888f, BaseY + 1.58f, 23.45f), Quaternion.Euler(0f, -90f, 0f),
+                new Vector3(0.28f, 0.11f, 0.016f), plaque111BMat, keepCollider: false);
+        }
+
+        private static string EnsureRoom111BPlaqueTexture(string assetPath)
+        {
+            string fullPath = Path.GetFullPath(Path.Combine(Application.dataPath, "..", assetPath));
+            Directory.CreateDirectory(Path.GetDirectoryName(fullPath));
+            const int w = 192, h = 64;
+            Texture2D tex = new Texture2D(w, h, TextureFormat.RGB24, false);
+
+            // Slightly aged brushed-steel plaque matching Rooms 101-110 signage palette with subtle patina
+            Color plate = new Color(0.65f, 0.65f, 0.63f);
+            Color rim = new Color(0.23f, 0.24f, 0.25f);
+            Color ink = new Color(0.13f, 0.14f, 0.15f);
+
+            for (int y = 0; y < h; y++)
+            {
+                for (int x = 0; x < w; x++)
+                {
+                    bool border = x < 4 || x >= w - 4 || y < 4 || y >= h - 4;
+                    float grain = (PeriodicHash(x, y, w, h, 7111) - 0.5f) * 0.045f;
+                    Color c = border
+                        ? rim
+                        : new Color(Mathf.Clamp01(plate.r + grain), Mathf.Clamp01(plate.g + grain), Mathf.Clamp01(plate.b + grain));
+                    tex.SetPixel(x, y, c);
+                }
+            }
+
+            // Centered crisp 5x7 stencil lettering "111-B" at scale 5 (total width 145px inside 192px)
+            DrawBitmapTextCentered(tex, w, h, "111-B", (h - 7 * 5) / 2, 5, ink, fadeLastChar: false);
+
+            tex.Apply();
+            File.WriteAllBytes(fullPath, tex.EncodeToPNG());
+            UnityEngine.Object.DestroyImmediate(tex);
+            return assetPath;
         }
 
         private static void BuildOrUpdateHotelFirstLivingMicrofauna(Transform backroomsRoot)
@@ -5149,6 +5485,12 @@ namespace MyVirtualCommunity.Editor
             Transform ecologyRoot = root.transform.Find(HotelEarlyEcologyRootName);
             Transform faunalRoot = root.transform.Find(HotelFaunalTracesRootName);
             Transform microfaunaRoot = root.transform.Find(HotelFirstLivingMicrofaunaRootName);
+            Transform room111BRoot = shell.Find(HotelRoom111BRootName);
+            bool hasRoom111B = room111BRoot != null &&
+                               room111BRoot.Find("Room111B_ConcealedOpening") != null &&
+                               room111BRoot.Find("Room111B_EastCorridor") != null &&
+                               room111BRoot.Find("Room111B_RoomShell") != null &&
+                               room111BRoot.Find("Room111B_Signage") != null;
             bool hasFirstLivingMicrofauna = microfaunaRoot != null &&
                                             microfaunaRoot.Find("Microfauna_Utility_Encounter") != null &&
                                             microfaunaRoot.Find("Microfauna_Maintenance_Encounter") != null;
@@ -5199,7 +5541,8 @@ namespace MyVirtualCommunity.Editor
                                      hasNarrativeLayer &&
                                      hasEarlyEcology &&
                                      hasFaunalTraces &&
-                                     hasFirstLivingMicrofauna;
+                                     hasFirstLivingMicrofauna &&
+                                     hasRoom111B;
 
             int retainedWallCount = 0, pillarCount = 0, missingVoidCount = 0, crookedHatchCount = 0;
             for (int i = 0; i < shell.childCount; i++)
@@ -7341,6 +7684,102 @@ namespace MyVirtualCommunity.Editor
                         throw new InvalidOperationException($"Runtime cycle verification failed for {enc.name}.");
                     }
                     ctrl.ResetToConcealedState();
+                }
+            }
+            finally
+            {
+                RenderTexture.active = null;
+                UnityEngine.Object.DestroyImmediate(camGo);
+                rt.Release();
+                UnityEngine.Object.DestroyImmediate(rt);
+                UnityEngine.Object.DestroyImmediate(readTex);
+
+                RenderSettings.skybox = prevSkybox;
+                RenderSettings.ambientMode = prevAmbMode;
+                RenderSettings.ambientLight = prevAmbLight;
+                RenderSettings.fog = prevFog;
+                RenderSettings.fogMode = prevFogMode;
+                RenderSettings.fogColor = prevFogColor;
+                RenderSettings.fogDensity = prevFogDensity;
+            }
+        }
+
+        /// <summary>
+        /// Read-only Editor camera verification utility for Implementation 07.11 (Room 111-B: The Impossible East Wing).
+        /// Renders the 7 required architectural verification views (plus close-up of the 111-B plaque) with exact
+        /// Remanencia Level 0 ambient light & fog without modifying or saving the scene.
+        /// </summary>
+        public static void RenderRoom111BVerificationViews()
+        {
+            var scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Single);
+            if (!scene.IsValid())
+            {
+                throw new InvalidOperationException($"Could not open {ScenePath} for 07.11 camera verification.");
+            }
+
+            string outDir = Environment.GetEnvironmentVariable("MVC_ROOM111B_RENDER_DIR");
+            if (string.IsNullOrWhiteSpace(outDir))
+            {
+                outDir = Path.Combine(Path.GetTempPath(), "MVC_Room111BRenders");
+            }
+            Directory.CreateDirectory(outDir);
+
+            AmbientMode prevAmbMode = RenderSettings.ambientMode;
+            Color prevAmbLight = RenderSettings.ambientLight;
+            bool prevFog = RenderSettings.fog;
+            FogMode prevFogMode = RenderSettings.fogMode;
+            Color prevFogColor = RenderSettings.fogColor;
+            float prevFogDensity = RenderSettings.fogDensity;
+            Material prevSkybox = RenderSettings.skybox;
+
+            GameObject camGo = new GameObject("__TempRoom111BVerifyCam__");
+            RenderTexture rt = new RenderTexture(1280, 720, 24, RenderTextureFormat.ARGB32);
+            Texture2D readTex = new Texture2D(1280, 720, TextureFormat.RGB24, false);
+
+            try
+            {
+                RenderSettings.skybox = null;
+                RenderSettings.ambientMode = AmbientMode.Flat;
+                RenderSettings.ambientLight = SecretBackroomsTransitionController.RemanenciaLevel0AmbientLight;
+                RenderSettings.fog = true;
+                RenderSettings.fogMode = FogMode.ExponentialSquared;
+                RenderSettings.fogColor = SecretBackroomsTransitionController.RemanenciaLevel0FogColor;
+                RenderSettings.fogDensity = SecretBackroomsTransitionController.RemanenciaLevel0FogDensity;
+
+                Camera cam = camGo.AddComponent<Camera>();
+                cam.clearFlags = CameraClearFlags.SolidColor;
+                cam.backgroundColor = SecretBackroomsTransitionController.RemanenciaLevel0FogColor;
+                cam.fieldOfView = 62f;
+                cam.nearClipPlane = 0.04f;
+                cam.farClipPlane = 60f;
+                cam.targetTexture = rt;
+
+                (string fileName, Vector3 pos, Vector3 lookAt)[] shots =
+                {
+                    ("verify_0711_01_corridor_approach.png",        new Vector3( 8.50f, BaseY + 1.60f, 27.45f), new Vector3(16.00f, BaseY + 1.42f, 27.45f)),
+                    ("verify_0711_02_apparent_dead_end.png",        new Vector3(12.40f, BaseY + 1.60f, 27.60f), new Vector3(17.20f, BaseY + 1.38f, 27.55f)),
+                    ("verify_0711_03_concealed_opening_closeup.png",new Vector3(16.25f, BaseY + 1.54f, 27.68f), new Vector3(16.88f, BaseY + 1.28f, 24.40f)),
+                    ("verify_0711_04_east_corridor_interior.png",   new Vector3(16.80f, BaseY + 1.58f, 25.60f), new Vector3(18.10f, BaseY + 1.32f, 22.10f)),
+                    ("verify_0711_05_room111b_doorway.png",         new Vector3(17.10f, BaseY + 1.58f, 22.95f), new Vector3(19.01f, BaseY + 1.45f, 22.90f)),
+                    ("verify_0711_06_room111b_interior_plaque.png", new Vector3(19.65f, BaseY + 1.58f, 22.40f), new Vector3(24.40f, BaseY + 1.35f, 22.40f)),
+                    ("verify_0711_07_return_connection.png",        new Vector3(17.25f, BaseY + 1.58f, 23.60f), new Vector3(16.55f, BaseY + 1.40f, 27.60f)),
+                    ("verify_0711_08_plaque_111b_closeup.png",      new Vector3(18.15f, BaseY + 1.58f, 23.45f), new Vector3(18.89f, BaseY + 1.58f, 23.45f))
+                };
+
+                foreach (var shot in shots)
+                {
+                    cam.transform.position = shot.pos;
+                    cam.transform.LookAt(shot.lookAt, Vector3.up);
+                    cam.Render();
+
+                    RenderTexture.active = rt;
+                    readTex.ReadPixels(new Rect(0, 0, rt.width, rt.height), 0, 0);
+                    readTex.Apply();
+                    RenderTexture.active = null;
+
+                    string fullFile = Path.Combine(outDir, shot.fileName);
+                    File.WriteAllBytes(fullFile, readTex.EncodeToPNG());
+                    Debug.Log($"[BackroomsLevel1Builder] Rendered 07.11 Room 111-B verification view: {fullFile}");
                 }
             }
             finally
