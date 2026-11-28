@@ -415,14 +415,26 @@ namespace MyVirtualCommunity.Editor
             float wallMidY = wallBotY + wallH * 0.5f;                    // -45.075f
             float wallWidthZ = GalleryClearWidthZ + GalleryWallThickness * 2f; // 3.440f
 
-            // Solid, collision-protected sealed Eastern terminal wall aligned with NorthWing_OuterWall_East (X = +16.00)
+            // When Implementation 07.21 (Hotel_EastOverhang) is installed, preserve the authorized
+            // pre-framed East terminal aperture (Z in [+30.280, +32.320]) by retaining
+            // NUGallery_TerminalWall_East & NUGallery_Terminal_Baseboard in-place as the South pier.
+            bool hasEastOverhang = group.parent != null &&
+                                   group.parent.parent != null &&
+                                   group.parent.parent.Find(BackroomsLevel1Builder.EastOverhangRootName) != null;
+
+            float termWallCenterZ = hasEastOverhang ? EastOverhangBuilder.TrimmedTerminalSouthPierCenterZ : PortalCenterZ;
+            float termWallLenZ = hasEastOverhang ? EastOverhangBuilder.TrimmedTerminalSouthPierLengthZ : wallWidthZ;
+            float termBaseCenterZ = hasEastOverhang ? EastOverhangBuilder.TrimmedTerminalSouthBaseboardCenterZ : PortalCenterZ;
+            float termBaseLenZ = hasEastOverhang ? EastOverhangBuilder.TrimmedTerminalSouthBaseboardLengthZ : GalleryClearWidthZ;
+
+            // Solid, collision-protected Eastern terminal wall aligned with NorthWing_OuterWall_East (X = +16.00)
             EnsureBox(group, "NUGallery_TerminalWall_East",
-                new Vector3(GalleryTerminalWallCenterX, wallMidY, PortalCenterZ), Quaternion.identity,
-                new Vector3(GalleryTerminalWallThickness, wallH, wallWidthZ), mats.WallConcrete, keepCollider: true);
+                new Vector3(GalleryTerminalWallCenterX, wallMidY, termWallCenterZ), Quaternion.identity,
+                new Vector3(GalleryTerminalWallThickness, wallH, termWallLenZ), mats.WallConcrete, keepCollider: true);
 
             EnsureBox(group, "NUGallery_Terminal_Baseboard",
-                new Vector3(GalleryClearMaxX - 0.012f, GalleryFloorY + 0.06f, PortalCenterZ), Quaternion.identity,
-                new Vector3(0.025f, 0.12f, GalleryClearWidthZ), mats.BaseboardConcrete, keepCollider: false);
+                new Vector3(GalleryClearMaxX - 0.012f, GalleryFloorY + 0.06f, termBaseCenterZ), Quaternion.identity,
+                new Vector3(0.025f, 0.12f, termBaseLenZ), mats.BaseboardConcrete, keepCollider: false);
 
             // Sealed interrupted-construction continuation frame (100% solid TerminalWall_East behind it; zero passage)
             float frameX = GalleryClearMaxX - 0.035f;

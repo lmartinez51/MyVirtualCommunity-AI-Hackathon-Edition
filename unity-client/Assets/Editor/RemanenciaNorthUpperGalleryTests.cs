@@ -177,11 +177,24 @@ namespace MyVirtualCommunity.Editor
                 }
             }
 
-            // 9. Sealed Eastern terminal wall blocks passage across full Z width
-            foreach (float testZ in new[] { 30.20f, 31.30f, 32.40f })
+            // 9. Eastern terminal wall: sealed across full Z width unless 07.21 East Overhang opens Z in [30.28, 32.32]
+            bool hasEastOverhang = shell.Find(EastOverhangBuilder.RootName) != null;
+            foreach (float testZ in new[] { 30.00f, 31.30f, 32.60f })
             {
-                Assert.IsTrue(Physics.Linecast(new Vector3(15.20f, eyeY, testZ), new Vector3(16.80f, eyeY, testZ), ~0, QueryTriggerInteraction.Ignore),
-                    $"Eastern terminal wall must be solidly sealed at Z={testZ:F2}.");
+                bool insideAuthorizedEastOpening =
+                    hasEastOverhang &&
+                    testZ > EastOverhangBuilder.PortalMinZ + 0.05f &&
+                    testZ < EastOverhangBuilder.PortalMaxZ - 0.05f;
+                if (insideAuthorizedEastOpening)
+                {
+                    Assert.IsFalse(Physics.Linecast(new Vector3(15.20f, eyeY, testZ), new Vector3(16.80f, eyeY, testZ), ~0, QueryTriggerInteraction.Ignore),
+                        $"Authorized 07.21 East terminal opening should be traversable at Z={testZ:F2}.");
+                }
+                else
+                {
+                    Assert.IsTrue(Physics.Linecast(new Vector3(15.20f, eyeY, testZ), new Vector3(16.80f, eyeY, testZ), ~0, QueryTriggerInteraction.Ignore),
+                        $"Eastern terminal wall pier must remain solidly sealed at Z={testZ:F2}.");
+                }
             }
         }
 
@@ -239,13 +252,22 @@ namespace MyVirtualCommunity.Editor
                 Assert.AreEqual(-46.40f, ccGo.transform.position.y, 0.08f,
                     "Player Y elevation drifted unexpectedly along North Upper Gallery.");
 
-                // Attempt to push past the sealed Eastern terminal wall — must be physically stopped inside X < 15.87!
+                // Attempt to push East at gallery terminal: stopped inside X < 15.65 when sealed, or contained inside East Overhang facade (X < 20.30) when 07.21 is installed
+                bool hasEastOverhang = GameObject.Find(EastOverhangBuilder.RootName) != null;
                 for (int k = 0; k < 40; k++)
                 {
                     cc.Move(new Vector3(3.4f, -4.0f, 0f) * 0.04f);
                 }
-                Assert.Less(ccGo.transform.position.x, 15.65f,
-                    $"Player CC penetrated sealed Eastern terminal wall (X={ccGo.transform.position.x:F2})!");
+                if (hasEastOverhang)
+                {
+                    Assert.Less(ccGo.transform.position.x, 20.30f,
+                        $"Player CC penetrated 07.21 East Overhang facade (X={ccGo.transform.position.x:F2})!");
+                }
+                else
+                {
+                    Assert.Less(ccGo.transform.position.x, 15.65f,
+                        $"Player CC penetrated sealed Eastern terminal wall (X={ccGo.transform.position.x:F2})!");
+                }
 
                 // Turn around, return through East opening onto 07.15 Upper Landing, and descend back to Nivel 0
                 WalkTo(new Vector2(-10.70f, 31.30f), 260);

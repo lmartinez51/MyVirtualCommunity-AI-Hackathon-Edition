@@ -69,6 +69,10 @@ namespace MyVirtualCommunity.Client.World
         private float savedFogDensity;
         private FogMode savedFogMode;
         private bool hasSavedRenderState = false;
+        private Camera savedPlayerCamera;
+        private CameraClearFlags savedCameraClearFlags;
+        private Color savedCameraBackgroundColor;
+        private bool hasSavedCameraState = false;
         private Texture2D fadeBlackTex;
 
         // Implementation 07.12: Low-cost single-shot exterior observation snapshot (384x480 matching 1.36x1.72m glass aspect, ~0.70 MB VRAM, 0 per-frame cost)
@@ -322,6 +326,13 @@ namespace MyVirtualCommunity.Client.World
             isTransitioning = false;
             ApplyBackroomsAtmosphere();
             BindExteriorSnapshotToInteriorEntranceView();
+        }
+
+        public void RestoreOutdoorAtmosphereForTest()
+        {
+            isPlayerInBackrooms = false;
+            isTransitioning = false;
+            RestoreOutdoorAtmosphere();
         }
 
         /// <summary>
@@ -824,6 +835,13 @@ namespace MyVirtualCommunity.Client.World
             if (cachedPlayerCC != null) cachedPlayerCC.enabled = true;
         }
 
+        private Camera ResolveActivePlayerCamera()
+        {
+            Camera cam = cachedPlayerTransform != null ? cachedPlayerTransform.GetComponentInChildren<Camera>() : null;
+            if (cam == null) cam = Camera.main;
+            return cam;
+        }
+
         private void ApplyBackroomsAtmosphere()
         {
             if (!hasSavedRenderState)
@@ -857,6 +875,22 @@ namespace MyVirtualCommunity.Client.World
             RenderSettings.fogMode = FogMode.ExponentialSquared;
             RenderSettings.fogColor = RemanenciaLevel0FogColor;
             RenderSettings.fogDensity = RemanenciaLevel0FogDensity;
+
+            // Match empty void pixels behind exterior windows (e.g. 07.21 East Overhang) to Remanencia fog color
+            // so Unity does not clear background void to its default blue when RenderSettings.skybox is null.
+            Camera playerCam = ResolveActivePlayerCamera();
+            if (playerCam != null)
+            {
+                if (!hasSavedCameraState)
+                {
+                    savedPlayerCamera = playerCam;
+                    savedCameraClearFlags = playerCam.clearFlags;
+                    savedCameraBackgroundColor = playerCam.backgroundColor;
+                    hasSavedCameraState = true;
+                }
+                playerCam.clearFlags = CameraClearFlags.SolidColor;
+                playerCam.backgroundColor = RemanenciaLevel0FogColor;
+            }
         }
 
         private void RestoreOutdoorAtmosphere()
@@ -866,6 +900,18 @@ namespace MyVirtualCommunity.Client.World
                 if (l != null) l.enabled = true;
             }
             suspendedOutdoorLights.Clear();
+
+            if (hasSavedCameraState)
+            {
+                Camera camToRestore = savedPlayerCamera != null ? savedPlayerCamera : ResolveActivePlayerCamera();
+                if (camToRestore != null)
+                {
+                    camToRestore.clearFlags = savedCameraClearFlags;
+                    camToRestore.backgroundColor = savedCameraBackgroundColor;
+                }
+                savedPlayerCamera = null;
+                hasSavedCameraState = false;
+            }
 
             if (hasSavedRenderState)
             {
