@@ -6079,7 +6079,8 @@ namespace MyVirtualCommunity.Editor
                                      NorthUpperGalleryBuilder.VerifyStructurePresent(shell) &&
                                      CourtyardLightwellOverlookBuilder.VerifyStructurePresent(shell) &&
                                      EastOverhangBuilder.VerifyStructurePresent(shell) &&
-                                     UpperElevatorApproachBuilder.VerifyStructurePresent(shell);
+                                     UpperElevatorApproachBuilder.VerifyStructurePresent(shell) &&
+                                     UpperElevatorBayArchitectureBuilder.VerifyStructurePresent(shell);
 
             int retainedWallCount = 0, pillarCount = 0, missingVoidCount = 0, crookedHatchCount = 0;
             for (int i = 0; i < shell.childCount; i++)

@@ -192,28 +192,37 @@ namespace MyVirtualCommunity.Editor
             Assert.GreaterOrEqual(approachRoot.Find("UpperElevatorApproach_SupportStructure").childCount, 7,
                 "Articulated architectural support girders must be present.");
 
-            // Compare Bay 1 and Bay 2 placeholders strictly component-by-component for equivalence & alignment
+            // Compare Bay 1 and Bay 2 placeholders (07.23 uniform mode vs. 07.24 differentiated static bay architecture)
             Transform baysGrp = approachRoot.Find("UpperElevatorApproach_SealedBayFrames");
             Transform lowerBay1Seam = elevCore.Find("Hotel_ElevatorBay_1_CenterSeam");
             Transform lowerBay2Seam = elevCore.Find("Hotel_ElevatorBay_2_CenterSeam");
             Assert.IsNotNull(lowerBay1Seam);
             Assert.IsNotNull(lowerBay2Seam);
 
-            string[] suffixes = { "SealedBackingPanel", "FrameJambS", "FrameJambN", "FrameHeader", "FloorSill", "RecessSeamVert" };
-            foreach (string sfx in suffixes)
+            bool hasBayArch0724 = approachRoot.Find(UpperElevatorBayArchitectureBuilder.GroupName) != null;
+            if (hasBayArch0724)
             {
-                Transform b1 = baysGrp.Find($"UpperElev_SealedBay_1_{sfx}");
-                Transform b2 = baysGrp.Find($"UpperElev_SealedBay_2_{sfx}");
-                Assert.IsNotNull(b1, $"Missing Bay 1 placeholder part {sfx}.");
-                Assert.IsNotNull(b2, $"Missing Bay 2 placeholder part {sfx}.");
-                Assert.AreEqual(b1.position.x, b2.position.x, 0.001f, $"Bay 1 & Bay 2 X mismatch on {sfx}.");
-                Assert.AreEqual(b1.position.y, b2.position.y, 0.001f, $"Bay 1 & Bay 2 Y mismatch on {sfx}.");
-                Assert.AreEqual(b1.localScale, b2.localScale, $"Bay 1 & Bay 2 scale mismatch on {sfx}.");
-                Assert.AreEqual(b1.GetComponent<MeshRenderer>().sharedMaterial, b2.GetComponent<MeshRenderer>().sharedMaterial,
-                    $"Bay 1 & Bay 2 material mismatch on {sfx} — both bays must be visually equivalent!");
-                Collider c1 = b1.GetComponent<Collider>();
-                Collider c2 = b2.GetComponent<Collider>();
-                Assert.AreEqual(c1 != null && c1.enabled, c2 != null && c2.enabled, $"Bay 1 & Bay 2 collider mismatch on {sfx}.");
+                Assert.IsTrue(UpperElevatorBayArchitectureBuilder.VerifyStructurePresent(shell),
+                    "07.24 differentiated bay architecture must be intact.");
+            }
+            else
+            {
+                string[] suffixes = { "SealedBackingPanel", "FrameJambS", "FrameJambN", "FrameHeader", "FloorSill", "RecessSeamVert" };
+                foreach (string sfx in suffixes)
+                {
+                    Transform b1 = baysGrp.Find($"UpperElev_SealedBay_1_{sfx}");
+                    Transform b2 = baysGrp.Find($"UpperElev_SealedBay_2_{sfx}");
+                    Assert.IsNotNull(b1, $"Missing Bay 1 placeholder part {sfx}.");
+                    Assert.IsNotNull(b2, $"Missing Bay 2 placeholder part {sfx}.");
+                    Assert.AreEqual(b1.position.x, b2.position.x, 0.001f, $"Bay 1 & Bay 2 X mismatch on {sfx}.");
+                    Assert.AreEqual(b1.position.y, b2.position.y, 0.001f, $"Bay 1 & Bay 2 Y mismatch on {sfx}.");
+                    Assert.AreEqual(b1.localScale, b2.localScale, $"Bay 1 & Bay 2 scale mismatch on {sfx}.");
+                    Assert.AreEqual(b1.GetComponent<MeshRenderer>().sharedMaterial, b2.GetComponent<MeshRenderer>().sharedMaterial,
+                        $"Bay 1 & Bay 2 material mismatch on {sfx} — both bays must be visually equivalent!");
+                    Collider c1 = b1.GetComponent<Collider>();
+                    Collider c2 = b2.GetComponent<Collider>();
+                    Assert.AreEqual(c1 != null && c1.enabled, c2 != null && c2.enabled, $"Bay 1 & Bay 2 collider mismatch on {sfx}.");
+                }
             }
 
             Transform b1Panel = baysGrp.Find("UpperElev_SealedBay_1_SealedBackingPanel");

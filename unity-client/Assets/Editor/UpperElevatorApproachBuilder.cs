@@ -564,6 +564,13 @@ namespace MyVirtualCommunity.Editor
 
         private static void BuildSealedBayFrames(Transform group, ApproachMaterials mats)
         {
+            // When Implementation 07.24 (UpperElevatorApproach_BayArchitecture) is installed, preserve
+            // the sealed backing panels in-place without recreating superseded uniform 07.23 trim strips.
+            if (group.parent != null && group.parent.Find(UpperElevatorBayArchitectureBuilder.GroupName) != null)
+            {
+                return;
+            }
+
             // Strictly identical helper invoked for Bay 1 (South, Z = +5.750) and Bay 2 (North, Z = +7.850).
             // Both bays are 100% visually equivalent, physically sealed, non-interactive, and unassigned.
             BuildIdenticalSealedPlaceholder(group, "UpperElev_SealedBay_1", Bay1CenterZ, mats);
