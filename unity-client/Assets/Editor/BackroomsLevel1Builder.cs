@@ -111,6 +111,9 @@ namespace MyVirtualCommunity.Editor
         public const string CourtyardLightwellOverlookRootName = "Hotel_CourtyardLightwellOverlook";
         public const string EastOverhangRootName = "Hotel_EastOverhang";
         public const string UpperElevatorApproachRootName = "Hotel_UpperElevatorApproach";
+        public const string UpperPassengerElevatorShaftRootName = "Hotel_UpperPassengerElevatorShaft";
+        public const string UpperPassengerElevatorCabinRootName = "Hotel_UpperPassengerElevatorCabin";
+        public const string UpperPassengerElevatorDoorsRootName = "Hotel_UpperPassengerElevatorDoors";
         public const string OverlookSafetyGlassMatPath = "Assets/Settings/Remanencia_Level0_OverlookSafetyGlass.mat";
         public const string RoomPlaque111BTexPath = "Assets/Textures/Environment/T_Remanencia_RoomPlaque_111B.png";
         public const string RoomPlaque111BMatPath = "Assets/Settings/Remanencia_Level0_RoomPlaque_111B.mat";
@@ -1022,6 +1025,14 @@ namespace MyVirtualCommunity.Editor
 
             Transform ceilingTf = shellRoot.Find("Backrooms_Ceiling");
             if (ceilingTf != null) SetSharedMatPreservingRendererSettings(ceilingTf.gameObject, mats.CeilingSoffit);
+            Transform shaftCeilingSplit = shellRoot.Find($"{UpperPassengerElevatorShaftRootName}/Bay1Shaft_CeilingSplit");
+            if (shaftCeilingSplit != null)
+            {
+                for (int i = 0; i < shaftCeilingSplit.childCount; i++)
+                {
+                    SetSharedMatPreservingRendererSettings(shaftCeilingSplit.GetChild(i).gameObject, mats.CeilingSoffit);
+                }
+            }
 
             ApplyWallSurfaceVariation(shellRoot, mats.WallConcrete, mats.WallPlaster);
 
@@ -6080,7 +6091,10 @@ namespace MyVirtualCommunity.Editor
                                      CourtyardLightwellOverlookBuilder.VerifyStructurePresent(shell) &&
                                      EastOverhangBuilder.VerifyStructurePresent(shell) &&
                                      UpperElevatorApproachBuilder.VerifyStructurePresent(shell) &&
-                                     UpperElevatorBayArchitectureBuilder.VerifyStructurePresent(shell);
+                                     UpperElevatorBayArchitectureBuilder.VerifyStructurePresent(shell) &&
+                                     UpperPassengerElevatorShaftBuilder.VerifyStructurePresent(shell) &&
+                                     UpperPassengerElevatorCabinBuilder.VerifyStructurePresent(shell) &&
+                                     UpperPassengerElevatorDoorsBuilder.VerifyStructurePresent(shell);
 
             int retainedWallCount = 0, pillarCount = 0, missingVoidCount = 0, crookedHatchCount = 0;
             for (int i = 0; i < shell.childCount; i++)

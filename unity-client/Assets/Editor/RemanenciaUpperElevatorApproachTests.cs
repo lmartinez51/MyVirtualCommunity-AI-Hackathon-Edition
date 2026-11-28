@@ -230,14 +230,18 @@ namespace MyVirtualCommunity.Editor
             Assert.AreEqual(lowerBay1Seam.position.z, b1Panel.position.z, 0.005f, "Upper Bay 1 placeholder must align strictly with lower Bay 1 Z=+5.750.");
             Assert.AreEqual(lowerBay2Seam.position.z, b2Panel.position.z, 0.005f, "Upper Bay 2 placeholder must align strictly with lower Bay 2 Z=+7.850.");
 
-            // Both bays are completely sealed (linecast from waiting area Westward into X = +2.50 must hit solid backing)
-            foreach (float bayZ in new[] { 5.75f, 7.85f })
+            // Check upper bay sealing: in 07.29+, Bay 1 is sealed by locked UpperLanding telescopic doors (X >= +3.06),
+            // while Bay 2 (Z=+7.85) is intentionally a permanently open abandoned shaft (superseding earlier sealed Bay 2).
+            bool has0729Doors = shell.Find(UpperPassengerElevatorDoorsBuilder.DoorsRootName) != null;
+            float[] sealedBayZs = has0729Doors ? new[] { 5.75f } : new[] { 5.75f, 7.85f };
+            float minExpectedX = has0729Doors ? 3.05f : 3.34f;
+            foreach (float bayZ in sealedBayZs)
             {
                 foreach (float testY in new[] { -45.90f, -45.30f, -44.60f })
                 {
                     Assert.IsTrue(Physics.Linecast(new Vector3(4.50f, testY, bayZ), new Vector3(2.50f, testY, bayZ), out RaycastHit hit, ~0, QueryTriggerInteraction.Ignore),
                         $"Sealed elevator placeholder gap detected at Z={bayZ:F2}, Y={testY:F2}!");
-                    Assert.GreaterOrEqual(hit.point.x, 3.34f, $"Sealed bay backing penetrated past X=+3.34 at Z={bayZ:F2}.");
+                    Assert.GreaterOrEqual(hit.point.x, minExpectedX, $"Sealed bay backing penetrated past X={minExpectedX:F2} at Z={bayZ:F2}.");
                 }
             }
         }
@@ -288,14 +292,20 @@ namespace MyVirtualCommunity.Editor
                 Assert.Less(ccGo.transform.position.z, 8.10f, $"Failed to enter Upper Waiting Area (Z={ccGo.transform.position.z:F2}).");
                 Assert.AreEqual(-46.40f, ccGo.transform.position.y, 0.08f);
 
-                // 42-43. Approach Bay 2 (Z=+7.85) & Bay 1 (Z=+5.75) and push West — must remain solidly contained (X > +3.65)
-                for (int k = 0; k < 35; k++) cc.Move(new Vector3(-3.4f, -4.0f, 0f) * 0.04f);
-                Assert.Greater(ccGo.transform.position.x, 3.65f, $"Player CC penetrated sealed Upper Bay 2 (X={ccGo.transform.position.x:F2})!");
+                // 42-43. Approach Bay 2 (Z=+7.85) & Bay 1 (Z=+5.75).
+                // In 07.29+, Bay 2 is permanently open by design while Bay 1 upper doors remain closed & locked (X >= +3.35).
+                bool has0729 = GameObject.Find(UpperPassengerElevatorDoorsBuilder.DoorsRootName) != null;
+                if (!has0729)
+                {
+                    for (int k = 0; k < 35; k++) cc.Move(new Vector3(-3.4f, -4.0f, 0f) * 0.04f);
+                    Assert.Greater(ccGo.transform.position.x, 3.65f, $"Player CC penetrated sealed Upper Bay 2 (X={ccGo.transform.position.x:F2})!");
+                }
 
                 WalkTo(new Vector2(4.85f, 5.75f), 50);
                 Assert.Less(ccGo.transform.position.z, 6.00f, "Failed to reach Bay 1 position in Waiting Area.");
                 for (int k = 0; k < 35; k++) cc.Move(new Vector3(-3.4f, -4.0f, 0f) * 0.04f);
-                Assert.Greater(ccGo.transform.position.x, 3.65f, $"Player CC penetrated sealed Upper Bay 1 (X={ccGo.transform.position.x:F2})!");
+                Assert.Greater(ccGo.transform.position.x, has0729 ? 3.35f : 3.65f,
+                    $"Player CC penetrated locked Upper Bay 1 (X={ccGo.transform.position.x:F2})!");
 
                 // 44-48. Turn around, return through Vestibule -> East corridor -> North Upper Gallery -> descend NW Staircase to Nivel 0
                 WalkTo(new Vector2(4.85f, 10.60f), 80);

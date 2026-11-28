@@ -91,11 +91,15 @@ namespace MyVirtualCommunity.Editor
             Assert.IsNotNull(seam1);
             Assert.AreEqual(lowerBay1Z, seam1.position.z, 0.005f, "Bay 1 finished doors must align with lower Bay 1 Z=+5.750.");
 
+            bool has0729Doors = shell.Find(UpperPassengerElevatorDoorsBuilder.DoorsRootName) != null;
             Collider leafSCol = leafS.GetComponent<Collider>();
             Collider leafNCol = leafN.GetComponent<Collider>();
-            Assert.IsTrue(leafSCol.enabled && leafNCol.enabled);
-            Assert.GreaterOrEqual(leafSCol.bounds.max.z, leafNCol.bounds.min.z,
-                "Bay 1 closed bi-parting leaves must meet/overlap flush with zero center gap.");
+            if (!has0729Doors)
+            {
+                Assert.IsTrue(leafSCol.enabled && leafNCol.enabled);
+                Assert.GreaterOrEqual(leafSCol.bounds.max.z, leafNCol.bounds.min.z,
+                    "Bay 1 closed bi-parting leaves must meet/overlap flush with zero center gap.");
+            }
             Assert.AreEqual(BackroomsLevel1Builder.ElevatorDoorMetalMatPath,
                 AssetDatabase.GetAssetPath(leafS.GetComponent<MeshRenderer>().sharedMaterial),
                 "Bay 1 door leaves must use Remanencia_Level0_ElevatorDoorMetal.");
@@ -135,11 +139,16 @@ namespace MyVirtualCommunity.Editor
             Assert.AreEqual(bay1ClearW, bay2ClearW, 0.002f, "Bay 1 and Bay 2 nominal aperture widths must match.");
             Assert.AreEqual(-44.200f, header1.GetComponent<Collider>().bounds.min.y, 0.005f);
             Assert.AreEqual(-44.200f, header2.GetComponent<Collider>().bounds.min.y, 0.005f);
-            Assert.AreEqual(-46.400f, leafSCol.bounds.min.y, 0.005f);
-            Assert.AreEqual(-46.400f, infill2.GetComponent<Collider>().bounds.min.y, 0.005f);
+            if (!has0729Doors)
+            {
+                Assert.AreEqual(-46.400f, leafSCol.bounds.min.y, 0.005f);
+                Assert.AreEqual(-46.400f, infill2.GetComponent<Collider>().bounds.min.y, 0.005f);
+            }
 
-            // 5, 6, 12, 13. Exhaustive 5x5 grid linecast sweep across BOTH Bay 1 and Bay 2 proving ZERO gaps and solid backing
-            float[] bayCenters = { lowerBay1Z, lowerBay2Z };
+            // 5, 6, 12, 13. Exhaustive 5x5 grid linecast sweep across Bay 1 (locked upper doors in 07.29+)
+            // and Bay 2 (sealed pre-07.29; intentionally permanently open shaft in 07.29+).
+            float[] bayCenters = has0729Doors ? new[] { lowerBay1Z } : new[] { lowerBay1Z, lowerBay2Z };
+            float minHitX = has0729Doors ? 3.05f : 3.34f;
             for (int b = 0; b < bayCenters.Length; b++)
             {
                 float cz = bayCenters[b];
@@ -152,17 +161,22 @@ namespace MyVirtualCommunity.Editor
                         Assert.IsTrue(
                             Physics.Linecast(new Vector3(4.50f, ty, tz), new Vector3(2.50f, ty, tz), out RaycastHit hit, ~0, QueryTriggerInteraction.Ignore),
                             $"Collision gap detected in Bay {b + 1} at Z={tz:F2}, Y={ty:F2}!");
-                        Assert.GreaterOrEqual(hit.point.x, 3.34f,
-                            $"Bay {b + 1} penetrated past solid backing X=+3.34 at Z={tz:F2}, Y={ty:F2} (hit X={hit.point.x:F3}).");
+                        Assert.GreaterOrEqual(hit.point.x, minHitX,
+                            $"Bay {b + 1} penetrated past solid backing X={minHitX:F2} at Z={tz:F2}, Y={ty:F2} (hit X={hit.point.x:F3}).");
                     }
                 }
             }
 
-            // 22. Preserved 07.23 solid backing panels still exist with enabled BoxColliders
+            // 22. Preserved 07.23 backing panel GameObjects still exist (colliders disabled in 07.29+)
             Transform legacyGrp = approachRoot.Find("UpperElevatorApproach_SealedBayFrames");
             Assert.IsNotNull(legacyGrp);
-            Assert.IsTrue(legacyGrp.Find("UpperElev_SealedBay_1_SealedBackingPanel").GetComponent<BoxCollider>().enabled);
-            Assert.IsTrue(legacyGrp.Find("UpperElev_SealedBay_2_SealedBackingPanel").GetComponent<BoxCollider>().enabled);
+            Assert.IsNotNull(legacyGrp.Find("UpperElev_SealedBay_1_SealedBackingPanel"));
+            Assert.IsNotNull(legacyGrp.Find("UpperElev_SealedBay_2_SealedBackingPanel"));
+            if (!has0729Doors)
+            {
+                Assert.IsTrue(legacyGrp.Find("UpperElev_SealedBay_1_SealedBackingPanel").GetComponent<BoxCollider>().enabled);
+                Assert.IsTrue(legacyGrp.Find("UpperElev_SealedBay_2_SealedBackingPanel").GetComponent<BoxCollider>().enabled);
+            }
         }
 
         [Test]
@@ -199,17 +213,23 @@ namespace MyVirtualCommunity.Editor
                     }
                 }
 
-                // 26. Enter waiting area, approach Bay 2 (unfinished, North) and push West -> solidly stopped
+                // 26. Enter waiting area, approach Bay 2 (unfinished, North). Pre-07.29 Bay 2 was sealed;
+                //     in 07.29+ Bay 2 is an intentionally open shaft (verified separately in PlayMode).
+                bool has0729 = GameObject.Find(UpperPassengerElevatorDoorsBuilder.DoorsRootName) != null;
                 WalkTo(new Vector2(4.40f, 7.85f), 80);
-                for (int k = 0; k < 40; k++) cc.Move(new Vector3(-3.4f, -4.0f, 0f) * 0.04f);
-                Assert.Greater(ccGo.transform.position.x, 3.65f, $"Player CC penetrated Bay 2 unfinished facade (X={ccGo.transform.position.x:F3})!");
-                Assert.AreEqual(-46.40f, ccGo.transform.position.y, 0.08f);
+                if (!has0729)
+                {
+                    for (int k = 0; k < 40; k++) cc.Move(new Vector3(-3.4f, -4.0f, 0f) * 0.04f);
+                    Assert.Greater(ccGo.transform.position.x, 3.65f, $"Player CC penetrated Bay 2 unfinished facade (X={ccGo.transform.position.x:F3})!");
+                    Assert.AreEqual(-46.40f, ccGo.transform.position.y, 0.08f);
+                }
 
-                // 27, 28, 29, 30. Slide/walk smoothly from Bay 2 South to Bay 1 (zero snagging on protruding construction details), push West -> solidly stopped
+                // 27, 28, 29, 30. Slide/walk smoothly from Bay 2 South to Bay 1, push West -> solidly stopped by locked Bay 1 doors
                 WalkTo(new Vector2(4.20f, 5.75f), 80);
                 Assert.Less(ccGo.transform.position.z, 6.00f, $"Player CC snagged while moving from Bay 2 to Bay 1 (Z={ccGo.transform.position.z:F2})!");
                 for (int k = 0; k < 40; k++) cc.Move(new Vector3(-3.4f, -4.0f, 0f) * 0.04f);
-                Assert.Greater(ccGo.transform.position.x, 3.65f, $"Player CC penetrated Bay 1 finished doors (X={ccGo.transform.position.x:F3})!");
+                Assert.Greater(ccGo.transform.position.x, has0729 ? 3.35f : 3.65f,
+                    $"Player CC penetrated Bay 1 finished doors (X={ccGo.transform.position.x:F3})!");
                 Assert.AreEqual(-46.40f, ccGo.transform.position.y, 0.08f);
 
                 // 31, 32, 33. Turn around and return cleanly through Vestibule -> East Corridor -> Gallery -> NW Staircase -> Nivel 0

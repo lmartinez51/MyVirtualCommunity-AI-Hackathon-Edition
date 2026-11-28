@@ -511,11 +511,27 @@ namespace MyVirtualCommunity.Editor
                 new Vector3(slabCenterX, wallMidY, WaitingMinZ - WallThickness * 0.5f), Quaternion.identity,
                 new Vector3(slabWidthX, wallH, WallThickness), mats.PlasterWall, keepCollider: true);
 
-            // West Elevator Core Upper Facade: continuous 100% solid concrete backing (X in [+3.150, +3.350])
-            // aligned vertically above Nivel 0's Hotel_ElevatorCore_FrontPier* (zero shaft cutout, zero divider!)
+            // West Elevator Core Upper Facade: continuous solid concrete backing (X in [+3.150, +3.350]).
+            // When 07.29 Bay 2 Open Shaft is installed, preserve the Mid pier (Z in [+6.435, +7.165]);
+            // when only 07.26 Bay 1 Shaft Isolation is installed, preserve the North section (Z in [+6.435, +9.400]).
+            Transform archShell = group.parent != null ? group.parent.parent : null;
+            bool hasDoorsAndBay2Open = archShell != null &&
+                                       archShell.Find(UpperPassengerElevatorDoorsBuilder.DoorsRootName) != null;
+            bool hasShaftIsolation = archShell != null &&
+                                     archShell.Find(UpperPassengerElevatorShaftBuilder.RootName) != null;
+            float backingCenterZ = hasDoorsAndBay2Open
+                ? (UpperPassengerElevatorShaftBuilder.UpperPortalMaxZ + UpperPassengerElevatorDoorsBuilder.Bay2PortalMinZ) * 0.5f
+                : (hasShaftIsolation
+                    ? (UpperPassengerElevatorShaftBuilder.UpperPortalMaxZ + WaitingMaxZ) * 0.5f
+                    : WaitingCenterZ);
+            float backingWidthZ = hasDoorsAndBay2Open
+                ? (UpperPassengerElevatorDoorsBuilder.Bay2PortalMinZ - UpperPassengerElevatorShaftBuilder.UpperPortalMaxZ)
+                : (hasShaftIsolation
+                    ? (WaitingMaxZ - UpperPassengerElevatorShaftBuilder.UpperPortalMaxZ)
+                    : WaitingWidthZ);
             EnsureBox(group, "UpperElev_Waiting_WestCoreBackingWall",
-                new Vector3(3.250f, wallMidY, WaitingCenterZ), Quaternion.identity,
-                new Vector3(0.200f, wallH, WaitingWidthZ), mats.ColumnConcrete, keepCollider: true);
+                new Vector3(3.250f, wallMidY, backingCenterZ), Quaternion.identity,
+                new Vector3(0.200f, wallH, backingWidthZ), mats.ColumnConcrete, keepCollider: true);
 
             // Three concrete facade piers & header proud to X = +3.410 (matching lower core piers S / Mid / N)
             // creating two symmetrical 0.060m-deep architectural bay recesses at Bay 1 (Z=+5.75) & Bay 2 (Z=+7.85)

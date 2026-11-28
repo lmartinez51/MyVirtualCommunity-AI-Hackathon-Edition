@@ -120,6 +120,13 @@ namespace MyVirtualCommunity.Editor
             BuildBay1FinishedFacade(EnsureSubgroup(bayArchRoot, Bay1RootName), mats);
             BuildBay2UnfinishedFacade(EnsureSubgroup(bayArchRoot, Bay2RootName), mats);
 
+            // 3. When 07.29 Bay 1 Functional Doors & Bay 2 Permanently Open Shaft are installed,
+            //    preserve disabled states on superseded static leaves, Bay 2 infill, and sealed backing panels.
+            if (shell.Find(UpperPassengerElevatorDoorsBuilder.DoorsRootName) != null)
+            {
+                UpperPassengerElevatorDoorsBuilder.MigrateElevatorDoorsAndBay2OpenShaftInOpenScene(scene);
+            }
+
             Physics.SyncTransforms();
         }
 

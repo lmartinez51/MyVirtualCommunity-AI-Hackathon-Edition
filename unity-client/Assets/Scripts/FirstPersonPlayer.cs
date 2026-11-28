@@ -90,6 +90,7 @@ namespace MyVirtualCommunity.Client.World
         private SecretContainmentArtifactDescriptor currentAimedArtifact = null;
         private SecretBackroomsTransitionController cachedBackroomsTransition = null;
         private BackroomsExitDoorTrigger currentNearbyBackroomsExit = null;
+        private RemanenciaElevatorDoorInteractable currentNearbyElevatorDoor = null;
         private bool lastKnownInBackrooms = false;
         private string lastRecordedArtifactId = null;
         private bool confirmNewGameReset = false;
@@ -980,6 +981,7 @@ namespace MyVirtualCommunity.Client.World
                         cachedDimensionVault = null;
                         currentAimedArtifact = null;
                         currentNearbyBackroomsExit = null;
+                        currentNearbyElevatorDoor = null;
                         if (!inBackroomsNow)
                         {
                             // Clear any transient Remanencia in-world feedback banner when returning to the surface world
@@ -1087,6 +1089,11 @@ namespace MyVirtualCommunity.Client.World
                         {
                             // Implementation 07.13: Remanencia interior entrance is entry-only; pressing [E] never triggers exit.
                             currentNearbyBackroomsExit.TriggerEntryOnlyFeedback(currentLanguage == "es");
+                        }
+                        else if (inBackroomsNow && currentNearbyElevatorDoor != null)
+                        {
+                            // Implementation 07.29: Bay 1 passenger elevator synchronized doors (lower floor / inside cabin).
+                            currentNearbyElevatorDoor.Interact();
                         }
                         else if (!inBackroomsNow && currentNearbyManhole != null)
                         {
@@ -1261,12 +1268,30 @@ namespace MyVirtualCommunity.Client.World
             bool isInsideSecretRoom = inBackrooms || (playerPos.x < -12.02f && playerPos.z >= -13.52f && playerPos.z <= -11.15f);
 
             currentNearbyBackroomsExit = null;
+            currentNearbyElevatorDoor = null;
             if (inBackrooms)
             {
                 BackroomsExitDoorTrigger exitDoor = FindFirstObjectByType<BackroomsExitDoorTrigger>();
                 if (exitDoor != null && exitDoor.IsWithinRange(playerPos))
                 {
                     currentNearbyBackroomsExit = exitDoor;
+                }
+
+                Vector3 camFwd = playerCamera != null ? playerCamera.forward : transform.forward;
+                RemanenciaElevatorDoorInteractable[] elevInteractables =
+                    FindObjectsByType<RemanenciaElevatorDoorInteractable>(FindObjectsSortMode.None);
+                float bestElevDist = float.MaxValue;
+                for (int i = 0; i < elevInteractables.Length; i++)
+                {
+                    var ei = elevInteractables[i];
+                    if (ei == null || !ei.isActiveAndEnabled) continue;
+                    if (!ei.IsAvailableForPlayer(playerPos, camFwd)) continue;
+                    float d = Vector3.Distance(playerPos, ei.transform.position);
+                    if (d < bestElevDist)
+                    {
+                        bestElevDist = d;
+                        currentNearbyElevatorDoor = ei;
+                    }
                 }
             }
 
@@ -2883,6 +2908,14 @@ namespace MyVirtualCommunity.Client.World
                         if (inBackroomsHud && currentNearbyBackroomsExit != null && currentNearbyBackroomsExit.ShouldDisplayPrompt() && isCursorLocked)
                         {
                             DrawBackroomsExitPrompt(currentNearbyBackroomsExit);
+                        }
+                        else if (inBackroomsHud && currentNearbyElevatorDoor != null && isCursorLocked)
+                        {
+                            string elevPrompt = currentNearbyElevatorDoor.GetPromptText(currentLanguage == "es");
+                            if (!string.IsNullOrEmpty(elevPrompt))
+                            {
+                                DrawSewerInteractPrompt(elevPrompt);
+                            }
                         }
                         else if (!inBackroomsHud && currentNearbyManhole != null && isCursorLocked)
                         {

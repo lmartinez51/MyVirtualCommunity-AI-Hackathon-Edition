@@ -120,14 +120,26 @@ namespace MyVirtualCommunity.Editor
                 Assert.IsNotNull(elev.Find(part), $"Missing elevator architectural part '{part}'.");
             }
 
-            // Both elevator doors must block player entry with solid non-trigger colliders (no shaft fall hazard)
-            foreach (float bayZ in new[] { 5.75f, 7.85f })
+            // Bay 1 presents closed solid elevator doors (functional LowerDoor_* in 07.29+, or legacy Hotel_ElevatorBay_* pre-07.29).
+            // In 07.29+, Bay 2 (Z=7.85) is intentionally a permanently open abandoned unfinished shaft.
+            bool has0729Doors = GameObject.Find(BackroomsLevel1Builder.UpperPassengerElevatorDoorsRootName) != null;
+            float[] closedBayZs = has0729Doors ? new[] { 5.75f } : new[] { 5.75f, 7.85f };
+            foreach (float bayZ in closedBayZs)
             {
                 Vector3 lobbyEye = new Vector3(4.6f, BaseY + 1.2f, bayZ);
                 bool hitDoor = Physics.Raycast(lobbyEye, Vector3.left, out RaycastHit hit, 2.2f, ~0, QueryTriggerInteraction.Ignore);
                 Assert.IsTrue(hitDoor, $"Elevator bay at Z={bayZ} must present a solid closed barrier facing the lobby.");
-                StringAssert.Contains("Hotel_ElevatorBay_", hit.collider.gameObject.name,
-                    $"Expected solid closed elevator door blocking shaft at Z={bayZ}, hit '{hit.collider.gameObject.name}'.");
+                if (has0729Doors)
+                {
+                    Assert.IsTrue(
+                        hit.collider.gameObject.name.StartsWith("LowerDoor_", System.StringComparison.Ordinal),
+                        $"Expected closed Bay 1 telescopic door at Z={bayZ}, hit '{hit.collider.gameObject.name}'.");
+                }
+                else
+                {
+                    StringAssert.Contains("Hotel_ElevatorBay_", hit.collider.gameObject.name,
+                        $"Expected solid closed elevator door blocking shaft at Z={bayZ}, hit '{hit.collider.gameObject.name}'.");
+                }
             }
 
             // Floor slab under elevator core remains intact (zero unguarded floor void)
