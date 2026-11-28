@@ -275,17 +275,32 @@ namespace MyVirtualCommunity.Editor
             float wallH = CeilingSoffitY - SlabBottomY; // 3.050f
             float wallMidY = SlabBottomY + wallH * 0.5f; // -45.075f
 
-            // Retain NUGallery_WallSouth GameObject/fileID in-place as the East segment (X in [+0.060, +16.130])
-            wallSouth.position = new Vector3(TrimmedSouthWallEastCenterX, wallMidY, NorthUpperGalleryBuilder.GalleryWallSouthCenterZ);
+            bool hasUpperElevatorApproach = galleryRoot.parent != null &&
+                                            galleryRoot.parent.Find(BackroomsLevel1Builder.UpperElevatorApproachRootName) != null;
+            float southWallCenterX = hasUpperElevatorApproach
+                ? UpperElevatorApproachBuilder.TrimmedSouthWallMidCenterX
+                : TrimmedSouthWallEastCenterX;
+            float southWallLenX = hasUpperElevatorApproach
+                ? UpperElevatorApproachBuilder.TrimmedSouthWallMidLengthX
+                : TrimmedSouthWallEastLengthX;
+            float southBaseCenterX = hasUpperElevatorApproach
+                ? UpperElevatorApproachBuilder.TrimmedSouthBaseboardMidCenterX
+                : TrimmedSouthBaseboardEastCenterX;
+            float southBaseLenX = hasUpperElevatorApproach
+                ? UpperElevatorApproachBuilder.TrimmedSouthBaseboardMidLengthX
+                : TrimmedSouthBaseboardEastLengthX;
+
+            // Retain NUGallery_WallSouth GameObject/fileID in-place as East (07.19) or Mid (07.23) segment
+            wallSouth.position = new Vector3(southWallCenterX, wallMidY, NorthUpperGalleryBuilder.GalleryWallSouthCenterZ);
             wallSouth.rotation = Quaternion.identity;
-            wallSouth.localScale = new Vector3(TrimmedSouthWallEastLengthX, wallH, NorthUpperGalleryBuilder.GalleryWallThickness);
+            wallSouth.localScale = new Vector3(southWallLenX, wallH, NorthUpperGalleryBuilder.GalleryWallThickness);
 
             Transform baseSouth = structure.Find("NUGallery_BaseboardSouth");
             if (baseSouth != null)
             {
-                baseSouth.position = new Vector3(TrimmedSouthBaseboardEastCenterX, GalleryFloorY + 0.06f, NorthUpperGalleryBuilder.GalleryClearMinZ + 0.012f);
+                baseSouth.position = new Vector3(southBaseCenterX, GalleryFloorY + 0.06f, NorthUpperGalleryBuilder.GalleryClearMinZ + 0.012f);
                 baseSouth.rotation = Quaternion.identity;
-                baseSouth.localScale = new Vector3(TrimmedSouthBaseboardEastLengthX, 0.12f, 0.025f);
+                baseSouth.localScale = new Vector3(southBaseLenX, 0.12f, 0.025f);
             }
 
             // Replace the 07.17 sealed South decorative relief spanning X in [-1.42, +1.82]

@@ -293,9 +293,16 @@ namespace MyVirtualCommunity.Editor
             bool hasLightwellOverlook = group.parent != null &&
                                         group.parent.parent != null &&
                                         group.parent.parent.Find(BackroomsLevel1Builder.CourtyardLightwellOverlookRootName) != null;
+            bool hasUpperElevatorApproach = group.parent != null &&
+                                            group.parent.parent != null &&
+                                            group.parent.parent.Find(BackroomsLevel1Builder.UpperElevatorApproachRootName) != null;
 
-            float wallSouthLenX = hasLightwellOverlook ? CourtyardLightwellOverlookBuilder.TrimmedSouthWallEastLengthX : slabLenX;
-            float wallSouthCenterX = hasLightwellOverlook ? CourtyardLightwellOverlookBuilder.TrimmedSouthWallEastCenterX : slabCenterX;
+            float wallSouthLenX = (hasLightwellOverlook && hasUpperElevatorApproach)
+                ? UpperElevatorApproachBuilder.TrimmedSouthWallMidLengthX
+                : hasLightwellOverlook ? CourtyardLightwellOverlookBuilder.TrimmedSouthWallEastLengthX : slabLenX;
+            float wallSouthCenterX = (hasLightwellOverlook && hasUpperElevatorApproach)
+                ? UpperElevatorApproachBuilder.TrimmedSouthWallMidCenterX
+                : hasLightwellOverlook ? CourtyardLightwellOverlookBuilder.TrimmedSouthWallEastCenterX : slabCenterX;
 
             EnsureBox(group, "NUGallery_WallNorth",
                 new Vector3(slabCenterX, wallMidY, GalleryWallNorthCenterZ), Quaternion.identity,
@@ -307,8 +314,12 @@ namespace MyVirtualCommunity.Editor
             // Baseboards along North & South walls (non-colliding)
             float innerLenX = GalleryClearLengthX;
             float innerCenterX = (GalleryClearMinX + GalleryClearMaxX) * 0.5f; // +3.190f
-            float baseSouthLenX = hasLightwellOverlook ? CourtyardLightwellOverlookBuilder.TrimmedSouthBaseboardEastLengthX : innerLenX;
-            float baseSouthCenterX = hasLightwellOverlook ? CourtyardLightwellOverlookBuilder.TrimmedSouthBaseboardEastCenterX : innerCenterX;
+            float baseSouthLenX = (hasLightwellOverlook && hasUpperElevatorApproach)
+                ? UpperElevatorApproachBuilder.TrimmedSouthBaseboardMidLengthX
+                : hasLightwellOverlook ? CourtyardLightwellOverlookBuilder.TrimmedSouthBaseboardEastLengthX : innerLenX;
+            float baseSouthCenterX = (hasLightwellOverlook && hasUpperElevatorApproach)
+                ? UpperElevatorApproachBuilder.TrimmedSouthBaseboardMidCenterX
+                : hasLightwellOverlook ? CourtyardLightwellOverlookBuilder.TrimmedSouthBaseboardEastCenterX : innerCenterX;
 
             EnsureBox(group, "NUGallery_BaseboardNorth",
                 new Vector3(innerCenterX, GalleryFloorY + 0.06f, GalleryClearMaxZ - 0.012f), Quaternion.identity,

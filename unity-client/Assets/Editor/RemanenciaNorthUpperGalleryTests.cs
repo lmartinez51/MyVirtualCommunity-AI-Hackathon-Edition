@@ -161,6 +161,10 @@ namespace MyVirtualCommunity.Editor
                         shell.Find(CourtyardLightwellOverlookBuilder.RootName) != null &&
                         x > CourtyardLightwellOverlookBuilder.OpeningMinX + 0.10f &&
                         x < CourtyardLightwellOverlookBuilder.OpeningMaxX - 0.10f;
+                    bool insideAuthorizedUpperElevatorBay =
+                        shell.Find(UpperElevatorApproachBuilder.RootName) != null &&
+                        x > UpperElevatorApproachBuilder.PortalMinX + 0.10f &&
+                        x < UpperElevatorApproachBuilder.PortalMaxX - 0.10f;
 
                     if (insideAuthorizedOverlookBay)
                     {
@@ -168,6 +172,11 @@ namespace MyVirtualCommunity.Editor
                             $"Authorized 07.19 single-bay South opening should be open at X={x:F2}.");
                         Assert.IsTrue(Physics.Linecast(new Vector3(x, eyeY, 31.30f), new Vector3(x, eyeY, 26.80f), ~0, QueryTriggerInteraction.Ignore),
                             $"Overlook South barrier must seal the authorized opening at X={x:F2}.");
+                    }
+                    else if (insideAuthorizedUpperElevatorBay)
+                    {
+                        Assert.IsFalse(Physics.Linecast(new Vector3(x, eyeY, 31.30f), new Vector3(x, eyeY, 28.50f), ~0, QueryTriggerInteraction.Ignore),
+                            $"Authorized 07.23 Bay 2 South elevator-approach opening should be open at X={x:F2}.");
                     }
                     else
                     {
